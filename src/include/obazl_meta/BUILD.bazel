@@ -1,0 +1,43 @@
+########
+genrule(
+    name = "obazl_meta",
+    srcs = [
+        "//src/lib/obazl_meta:api.c",
+        "//src/lib/obazl_meta:metalexer.c",
+        "//src/lib/obazl_meta:metaparser.c",
+        "//src/lib/obazl_meta:metaparser_impl.c",
+        "//src/lib/obazl_meta:meta_entries.c",
+        "//src/lib/obazl_meta:meta_flags.c",
+        "//src/lib/obazl_meta:meta_packages.c",
+        "//src/lib/obazl_meta:meta_properties.c",
+        "//src/lib/obazl_meta:meta_settings.c",
+        "//src/lib/obazl_meta:meta_values.c",
+        "//src/lib/obazl_meta:driver.c",
+        "//src/lib/obazl_utils:obazl_utils.c",
+        "@uthash//:include",
+    ],
+    outs = [
+        "obazl_meta.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location //src/lib/obazl_meta:driver.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) -H \\",
+        "    $(location //src/lib/obazl_meta:api.c) \\",
+        "    $(location //src/lib/obazl_meta:metalexer.c) \\",
+        "    $(location //src/lib/obazl_meta:metaparser.c) \\",
+        "    $(location //src/lib/obazl_meta:metaparser_impl.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_entries.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_flags.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_packages.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_properties.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_settings.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_values.c) \\",
+        "    $(location //src/lib/obazl_meta:driver.c) \\",
+        "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
+        "    $(locations @uthash//:include) \\",
+        "    > $@",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)

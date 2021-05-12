@@ -1,0 +1,48 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+# we export these srcs so mkhdrs from other libs can use them
+exports_files([
+    "obazl_utils.c",
+])
+
+
+##########
+cc_library(
+    name  = "obazl_utils",
+    srcs  = [
+        "obazl_utils.c",
+        "obazl_utils.h",
+    ],
+    linkstatic = 1,
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+
+        "-I", "$(GENDIR)/src/lib/obazl_utils",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_utils",
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_utils",
+    ],
+    deps = [
+        "//vendored/logc"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl_utils.c",
+    ],
+    outs = [
+        "obazl_utils.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl_utils.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "    $(location @makeheaders//:makeheaders) \\",
+        "    $(location obazl_utils.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)

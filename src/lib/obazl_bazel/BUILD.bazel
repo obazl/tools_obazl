@@ -1,0 +1,118 @@
+## library to emit BUILD.bazel files from AST of parsed ocamlfind META files
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# we export these srcs so //src/include/obazl:mkhdrs can generate the export interface obazl.h
+exports_files([
+    "emit_build_bazel.c",
+])
+
+##########
+cc_library(
+    name  = "obazl_bazel",
+    # alwayslink = True,
+    linkstatic = 1,
+    srcs  = [
+        "emit_build_bazel.c",
+        "emit_build_bazel.h",
+        "//src/include/obazl_meta:obazl_meta.h",
+    ],
+    hdrs = [
+        "@uthash//:include",
+        "//vendored/logc:log.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }),
+    copts = [
+        "-std=c11",
+        "-g", "-O0",
+        "-I", ".",
+        "-I", "$(GENDIR)/src/lib/obazl_bazel", # emit_build_bazel.h
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_bazel", # emit_build_bazel.h
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_bazel", # emit_build_bazel.h
+        "-I", "$(GENDIR)/src/include/obazl_meta",
+        "-I", "src/include/obazl_meta",
+        "-I", "external/uthash/include",
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc"
+    ],
+    deps = [
+        "//src/lib/obazl_meta",
+        "//src/lib/obazl_fs",
+        "//vendored/logc"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "emit_build_bazel.c",
+
+        "//src/lib/obazl_meta:api.c",
+        "//src/lib/obazl_meta:metalexer.c",
+        "//src/lib/obazl_meta:metaparser.c",
+        "//src/lib/obazl_meta:metaparser_impl.c",
+        "//src/lib/obazl_meta:meta_entries.c",
+        "//src/lib/obazl_meta:meta_flags.c",
+        "//src/lib/obazl_meta:meta_packages.c",
+        "//src/lib/obazl_meta:meta_properties.c",
+        "//src/lib/obazl_meta:meta_settings.c",
+        "//src/lib/obazl_meta:meta_values.c",
+        "//src/lib/obazl_meta:driver.c",
+        "//src/lib/obazl_utils:obazl_utils.c",
+
+        "@uthash//:include"
+    ],
+    outs = [
+        "emit_build_bazel.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location emit_build_bazel.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(locations @uthash//:include) \\",
+        "    $(location emit_build_bazel.c) \\",
+        "    $(location //src/lib/obazl_meta:api.c) \\",
+        "    $(location //src/lib/obazl_meta:metalexer.c) \\",
+        "    $(location //src/lib/obazl_meta:metaparser.c) \\",
+        "    $(location //src/lib/obazl_meta:metaparser_impl.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_entries.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_flags.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_packages.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_properties.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_settings.c) \\",
+        "    $(location //src/lib/obazl_meta:meta_values.c) \\",
+        "    $(location //src/lib/obazl_meta:driver.c) \\",
+        "    $(location //src/lib/obazl_utils:obazl_utils.c)",
+        "cp $${SRCDIR1}/emit_build_bazel.h $@",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+########
+# genrule(
+#     name = "mkhdrs_export",
+#     srcs = [
+#         "obazl_fs.c",
+#         # "@uthash//:include"
+#     ],
+#     outs = [
+#         "obazl_fs.h"
+#     ],
+#     cmd = "\n".join([
+#         "SRC1=$(location obazl_fs.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(location @makeheaders//:makeheaders) \\",
+#         "    -h \\",
+#         "    $(location obazl_fs.c) > $@"
+#         # "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = ["@makeheaders//:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )

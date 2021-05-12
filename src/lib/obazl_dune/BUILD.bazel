@@ -1,0 +1,111 @@
+## library for parsing ocamlfind META files
+
+load("@rules_cc//cc:defs.bzl",
+     "cc_binary",
+     "cc_library")
+load("@rules_foreign_cc//foreign_cc:defs.bzl",
+     "configure_make",
+     "make")
+
+# we export these srcs so //src/include/obazl:mkhdrs can generate the export interface obazl.h
+exports_files([
+    "obazl_dune.c",
+    "dune_parser.c",
+    "dune_constants.c",
+])
+
+##########
+cc_library(
+    name  = "obazl_dune",
+    # alwayslink = True,
+    # linkstatic = 1,
+    srcs  = [
+        "obazl_dune.c",
+        "dune_parser.c",
+        "dune_parser.h",
+        "dune_constants.c",
+        "dune_constants.h",
+        "@uthash//:include",
+        "debug.c",
+        "debug.h",
+    ],
+    hdrs = [
+        ":obazl_dune.h",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }),
+    copts = [
+        "-std=c11",
+        "-I", "$(GENDIR)/src/lib/obazl_dune", # mkhdrs output
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_dune", # mkhdrs output
+
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_meta",
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_meta",
+
+        "-I", "external/uthash/include",
+
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc"
+    ],
+    deps = [
+        ":sfsexp",
+        "//vendored/logc"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl_dune.c",
+        "dune_parser.c",
+        "dune_constants.c",
+        "@uthash//:include",
+        "debug.c"
+    ],
+    outs = [
+        "obazl_dune.h",
+        "dune_parser.h",
+        "dune_constants.h",
+        "debug.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl_dune.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location debug.c) \\",
+        "    $(locations @uthash//:include) \\",
+        "    $(location obazl_dune.c) \\",
+        "    $(location dune_constants.c) \\",
+        "    $(location dune_parser.c) ",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)
+
+###############
+configure_make(
+    name = "sfsexp",
+    configure_in_place = True,
+    autoreconf = True,
+    autoreconf_options = ["--install"],
+    lib_source = "@sfsexp//:all",
+    out_static_libs = ["libsexp.a"], # no shared lib
+)
+
+###########
+cc_library(
+    name = "uthash",
+    srcs = [
+        "@uthash//:include"
+    ],
+    includes = [
+        "@uthash//:include"
+    ],
+    linkstatic=1,
+    visibility = ["//visibility:public"]
+)

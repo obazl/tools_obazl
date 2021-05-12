@@ -1,0 +1,93 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+cc_binary(
+    name  = "obazl.so",
+    linkshared = True,
+    srcs  = [
+        "obazl.c",
+        "obazl_dune.c",
+        "obazl_dune.h",
+        "obazl_dune_lua.c",
+        "obazl_dune_lua.h",
+        "//src/include/obazl:obazl.h",
+        "@uthash//:include",
+
+        # "//src/lib/obazl_dune:obazl",
+        # ":libobazl_dir.a",
+        # ":obazl_dir.h"
+    ],
+    linkopts = [
+        "-L/usr/local/lib",
+        "-llua",
+    ],
+    copts = [
+        "-std=c11",
+        "-I", "$(GENDIR)/src/bindings/lua", # mkhdrs output
+        "-I", "external/uthash/include",
+        "-I", "$(GENDIR)/src/include/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
+        "-I", "vendored/logc",
+    ],
+    deps = [
+        "//src/lib/obazl_dune",
+        "//src/lib/obazl_meta",
+        "//external/lua/lib:lua",
+        ":obazl_dir",
+        "//vendored/logc",
+    ],
+    # linkstatic = 1,
+    visibility = ["//visibility:public"]
+)
+
+##########
+cc_library(
+    name  = "obazl_dir",
+    # linkshared = True,
+    srcs  = [
+        "obazl_dir.c",
+        # "obazl_dir.h",
+        "//vendored/logc",      # provides liblogc.a
+    ],
+    hdrs = ["obazl_dir.h"],
+    linkopts = [
+        "-L/usr/local/lib",
+        "-llua",
+    ],
+    copts = [
+        "-std=c11",
+        "-I", "external/uthash/include",
+        "-I", "vendored/logc",  # for log.h
+    ],
+    deps = [
+        "//src/lib/obazl_meta",
+        "//external/lua/lib:lua",
+        "//vendored/logc",
+    ],
+    # linkstatic = 1,
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl_dune.c",
+        "obazl_dune_lua.c",
+        "@uthash//:include",
+    ],
+    outs = [
+        "obazl_dune.h",
+        "obazl_dune_lua.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl_dune_lua.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(locations @uthash//:include) \\",
+        "    $(location obazl_dune.c) \\",
+        "    $(location obazl_dune_lua.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)
