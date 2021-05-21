@@ -51,7 +51,7 @@ cc_library(
         "-I", "external/tools_obazl/vendored/logc"
     ],
     deps = [
-        ":sfsexp",
+        "//external/sfsexp",
         "//vendored/logc"
     ],
     visibility = ["//visibility:public"]
@@ -85,16 +85,6 @@ genrule(
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
     tools = ["@makeheaders//:makeheaders"]
-)
-
-###############
-configure_make(
-    name = "sfsexp",
-    configure_in_place = True,
-    autoreconf = True,
-    autoreconf_options = ["--install"],
-    lib_source = "@sfsexp//:all",
-    out_static_libs = ["libsexp.a"], # no shared lib
 )
 
 ###########
