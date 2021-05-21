@@ -1,3 +1,8 @@
 .bazel
 bazel-*
 user.bazelrc
+
+*.log
+obsolete
+tmp
+trace
