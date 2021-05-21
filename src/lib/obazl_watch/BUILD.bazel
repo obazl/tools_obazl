@@ -3,6 +3,8 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 # we export these srcs so //src/app/obazl:mkhdrs can use it
 exports_files([
     "obazl_watch.c",
+    "obazl_watch_client.c",
+    "obazl_watch_config.c",
 ])
 
 
@@ -12,6 +14,8 @@ cc_library(
     srcs  = [
         "obazl_watch.c",
         "obazl_watch.h",
+        "obazl_watch_lua.c",
+        "obazl_watch_lua.h",
         "daemonize.c",
         "daemonize.h",
         "@uthash//:include",
@@ -43,14 +47,79 @@ cc_library(
     ],
     deps = [
         "//src/lib/obazl_bazel",
+        "//src/lib/obazl_deps",
+        "//src/lib/obazl_dune",
+        "//src/lib/obazl_fs",
+        "//src/lib/obazl_lua",
+        "//src/lib/obazl_opam",
+        "//external/fswatch",
+        "//external/lua/lib:lua",
+        "//vendored/logc"
+    ],
+    linkopts = [
+        "-L/usr/local/lib",     # FIXME
+        "-llua",
+    ] + select({
+        "//bzl/host:linux": [],
+        "//bzl/host:macos": ["-framework", "CoreServices"], # for fswatch
+    }),
+    visibility = ["//visibility:public"]
+)
+
+##########
+cc_library(
+    name  = "obazl_watch_client",
+    srcs  = [
+        "obazl_watch_client.c",
+        "obazl_watch_client.h",
+        "obazl_watch_config.c",
+        "obazl_watch_config.h",
+         "@uthash//:include",
+    ],
+    # linkstatic = 1,
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+
+        "-I", "$(GENDIR)/src/lib/obazl_watch",
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_watch",
+
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
+
+        "-I", "$(GENDIR)/src/app/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/src/app/obazl",
+
+        "-I", "$(GENDIR)/src/lib/obazl_dune",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
+
+        "-I", "$(GENDIR)/src/include/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
+
+        "-I", "external/libinih",
+
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc",
+
+        "-I", "external/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_fs",
         "//src/lib/obazl_meta",
         "//src/lib/obazl_opam",
+        "//src/lib/obazl_utils",
         "//external/fswatch",
-        "//vendored/logc"
+        "//vendored/logc",
+        "//external/lua/lib:lua",
+        "//external/libinih:inih"
     ],
-    linkopts = select({
+    linkopts = [
+        "-L/usr/local/lib",
+        "-llua",
+    ] + select({
         "//bzl/host:linux": [],
         "//bzl/host:macos": ["-framework", "CoreServices"],
     }),
@@ -62,14 +131,25 @@ genrule(
     name = "mkhdrs",
     srcs = [
         "obazl_watch.c",
+        "obazl_watch_lua.c",
+        "obazl_watch_client.c",
+        "obazl_watch_config.c",
         "daemonize.c",
+        "//src/lib/obazl_deps:obazl_codept.c",
+        "//src/lib/obazl_deps:obazl_codept_lua.c",
+        # "//src/lib/obazl_deps:obazl_codept_parser.c",
         "//src/lib/obazl_fs:obazl_fs.c",
+        "//src/lib/obazl_lua:obazl_lua.c",
+        "//src/lib/obazl_utils:obazl_utils.c",
         "//src/lib/obazl_opam:obazl_opam.c",
         "//src/include/obazl:obazl.h",
         "@uthash//:include"
     ],
     outs = [
         "obazl_watch.h",
+        "obazl_watch_lua.h",
+        "obazl_watch_client.h",
+        "obazl_watch_config.h",
         "daemonize.h"
     ],
     cmd = "\n".join([
@@ -78,9 +158,17 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         # "    $(locations @uthash//:include) \\",
         "    $(location //src/include/obazl:obazl.h) \\",
-        "    $(location //src/lib/obazl_opam:obazl_opam.c) \\",
+        "    $(location //src/lib/obazl_deps:obazl_codept.c) \\",
+        "    $(location //src/lib/obazl_deps:obazl_codept_lua.c) \\",
+        # "    $(location //src/lib/obazl_deps:obazl_codept_parser.c) \\",
         "    $(location //src/lib/obazl_fs:obazl_fs.c) \\",
+        "    $(location //src/lib/obazl_lua:obazl_lua.c) \\",
+        "    $(location //src/lib/obazl_opam:obazl_opam.c) \\",
+        "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
         "    $(location obazl_watch.c) \\",
+        "    $(location obazl_watch_lua.c) \\",
+        "    $(location obazl_watch_client.c) \\",
+        "    $(location obazl_watch_config.c) \\",
         "    $(location daemonize.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),

@@ -5,6 +5,7 @@
 #else // FIXME: macos test
 #include <limits.h>
 #endif
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,8 @@
 #include <sys/time.h>
 
 #include "log.h"
+#include "utstring.h"
+
 #include "daemonize.h"
 
 /* https://sandervanderburg.blogspot.com/2020/01/writing-well-behaving-daemon-in-c.html */
@@ -98,7 +101,7 @@ enum daemon_status_e
     STATUS_CANNOT_FORK_ONE               = 0xa,
     STATUS_CANNOT_READ_FROM_PIPE         = 0xb,
     STATUS_CANNOT_SET_SID                = 0xc,
-    STATUS_CANNOT_FORK_DAEMON_PROCESS    = 0xd,
+    STATUS_CANNOT_FORK_FSWATCH_PROCESS    = 0xd,
     STATUS_UNKNOWN_DAEMON_ERROR          = 0xe
 };
 
@@ -186,7 +189,7 @@ static int reset_signal_handlers(void)
     }
     return TRUE;
 #else
-    log_debug("_NSIG not #defined");
+    /* log_debug("_NSIG not #defined"); */
     /* signals whose default action is "discard signal" */
     set_sig_handler(SIGURG, &act);  /* urgent condition present on socket */
     set_sig_handler(SIGCONT, &act); /* continue after stop */
@@ -302,8 +305,8 @@ static int reset_signal_handlers(void)
 
 int config_log(void)
 {
-    FILE *logf;
-    log_debug("mkdir %s", utstring_body(obazl_d));
+    log_debug("config_log, pid %d", getpid());
+    /* log_debug("mkdir %s", utstring_body(obazl_d)); */
     int rc = mkdir(utstring_body(obazl_d), S_IRWXU | S_IRGRP | S_IWGRP);
     if (rc != 0) {
         if (errno != EEXIST) {
@@ -311,15 +314,15 @@ int config_log(void)
             log_error("mkdir error");
         }
     }
-    log_debug("fopen %s", utstring_body(obazl_watch_log));
-    logf = fopen(utstring_body(obazl_watch_log), "w");
-
-    if (logf == NULL) {
+    obazl_watch_log_fp = fopen(utstring_body(obazl_watch_log), "w");
+    if (obazl_watch_log_fp == NULL) {
         perror(utstring_body(obazl_watch_log));
         log_fatal("fopen logfile failure");
         exit(EXIT_FAILURE);
     }
-    log_add_fp(logf, LOG_TRACE);
+    log_debug("opened logfile %s", utstring_body(obazl_watch_log));
+    log_debug("redirecting logging to logfile");
+    log_add_fp(obazl_watch_log_fp, LOG_TRACE);
 }
 
 int close_file_descriptors(void)
@@ -344,10 +347,11 @@ int saved_stderr;
 //NOTE: once we nullify std fds, we cannot log debug msgs to stdout/stderr!
 int config_std_fds(void)
 {
+    log_debug("nulling std fds, pid %d", getpid());
     saved_stdout = dup(STDOUT_FILENO);
     saved_stderr = dup(STDERR_FILENO);
 
-    log_debug("config_std_fds");
+    /* log_debug("config_std_fds"); */
     int null_fd_read, null_fd_write;
 #define NULL_DEV_FILE "/dev/null"
     return(((null_fd_read = open(NULL_DEV_FILE, O_RDONLY)) != -1)
@@ -364,7 +368,7 @@ static void notify_parent_process(int writefd, enum daemon_status_e message)
     close(writefd);
 }
 
-static pid_t fork_daemon_process(int pipefd,
+static pid_t fork_fswatch_process(int pipefd,
                                  const char *pid_file,
                                  char *rootdir,
                                  void *data)
@@ -372,45 +376,51 @@ static pid_t fork_daemon_process(int pipefd,
                                  /* int (*run_main_loop) (void *data) */
                                  /* ) */
 {
-    log_debug("fork_daemon_process entry");
+    log_debug("fork_fswatch_process entry, pid %d, tid %d", getpid(), pthread_self());
     pid_t pid = fork();
     if(pid == 0)
     {
+        log_debug("fork_fswatch_process child entry, pid %d", getpid());
         /* NB: once we nullify std fds we cannot use them for log msgs! */
-        if(!config_std_fds())
-        {
-            notify_parent_process(pipefd, STATUS_CANNOT_ATTACH_STD_FDS_TO_NULL);
-            exit(STATUS_CANNOT_ATTACH_STD_FDS_TO_NULL);
-        }
+        /* if(!config_std_fds()) */
+        /* { */
+        /*     notify_parent_process(pipefd, STATUS_CANNOT_ATTACH_STD_FDS_TO_NULL); */
+        /*     exit(STATUS_CANNOT_ATTACH_STD_FDS_TO_NULL); */
+        /* } */
 
         /* config_log(); */
         umask(0);
 
-        log_debug("grandchild (fork_daemon_process child) sending SUCCESS notification");
+        log_debug("fork_fswatch_process child sending SUCCESS notification");
         notify_parent_process(pipefd, STATUS_INIT_SUCCESS);
 
-        log_debug("starting watcher");
+        log_debug("fork_fswatch_process child: starting watcher from pid %d, tid %d", getpid(), pthread_self());
         /* int exit_status = run_main_loop(data); */
 
-        int exit_status = obazl_watch_start(rootdir);
-        log_debug("obazl_watch_start exit: %d", exit_status);
-        log_debug("exiting fork_daemon_process child, pid: %d", getpid());
-        exit(exit_status);
+        int exit_status = obazl_fswatch_start(rootdir);
+        log_debug("obazl_fswatch_process child exit, pid: %d", getpid());
+        /* fflush(stdout); */
+        /* fflush(stderr); */
+        exit(EXIT_SUCCESS);
     }
-    log_debug("fork_daemon_process child pid: %d", pid);
+    /* log_debug("fork_fswatch_process child pid: %d", pid); */
     return pid;
 }
 
+/**
+   returns: 0 for success
+ */
 static pid_t fork_one(int pipefd[2], const char *pid_file, char *rootdir, void *data)
                       /* int (*initialize_daemon) (void *data), */
                       /* int (*run_main_loop) (void *data) */
                       /* ) */
 {
-    log_debug("fork_one entry");
-    pid_t pid = fork();
+    log_debug("fork_one entry, pid %d", getpid());
+    pid_t child_pid = fork();
 
-    if(pid == 0)
+    if(child_pid == 0)
     {
+        log_debug("fork_one child process entry, pid %d", getpid());
         close(pipefd[0]); /* Close unneeded read-end */
 
         if(setsid() == -1)
@@ -420,20 +430,22 @@ static pid_t fork_one(int pipefd[2], const char *pid_file, char *rootdir, void *
         }
 
         /* Fork again, so that the terminal can not be acquired again */
-        log_debug("fork_one child calling fork_daemon_process");
-        pid_t gcpid = fork_daemon_process(pipefd[1], pid_file, rootdir, data);
+        /* log_debug("fork_one child calling fork_fswatch_process"); */
+        pid_t gcpid = fork_fswatch_process(pipefd[1], pid_file, rootdir, data);
         if(gcpid == -1) {
-            notify_parent_process(pipefd[1], STATUS_CANNOT_FORK_DAEMON_PROCESS);
-            exit(STATUS_CANNOT_FORK_DAEMON_PROCESS);
-        } else {
-            log_debug("fork_one child: fork_daemon_process returned grandchild pid: %d", gcpid);
-            log_debug("fork_one child: exiting");
-            /* Exit fork_one child process, so that the grandchild (daemon) process gets adopted by PID 1 */
-            exit(EXIT_SUCCESS);
+            notify_parent_process(pipefd[1], STATUS_CANNOT_FORK_FSWATCH_PROCESS);
+            log_error("child child fork failed, exiting");
+            exit(STATUS_CANNOT_FORK_FSWATCH_PROCESS);
+        /* } else { */
+        /*     /\* fork_fswatch_process child will notify_parent_process *\/ */
+        /*     /\* Exit fork_one child process, so that the grandchild (daemon) process gets adopted by PID 1 *\/ */
+        /*     exit(EXIT_SUCCESS); */
         }
+        log_debug("fork_one child process exiting, pid %d", getpid());
+        exit(EXIT_SUCCESS);
     }
-    log_debug("fork_one child pid: %d", pid);
-    return pid;
+    log_debug("fork_one parent pid %d returning, child_pid: %d", getpid(), child_pid);
+    return 0;
 }
 
 /*
@@ -455,6 +467,7 @@ static enum daemon_status_e wait_for_notification_message(int readfd)
 /* int daemonize(void (*run_main_loop)(void *), void *data) */
 int obazl_watch_daemonize(char *rootdir, void *data)
 {
+    log_debug("obazl_watch_daemonize");
     int rc;
     int pipefd[2];
     char *pid_file = "obazlw.pid";
@@ -475,27 +488,49 @@ int obazl_watch_daemonize(char *rootdir, void *data)
     /* reset signal mask, set sig handlers */
     /* config_signals(); */
     rc = clear_signal_mask();
-    log_debug("clear_signal_mask rc: %d", rc);
-    rc = 0;
+    /* log_debug("clear_signal_mask rc: %d", rc); */
+    /* rc = 0; */
     rc = reset_signal_handlers();
-    log_debug("reset_signal_handlers rc: %d", rc);
+    /* log_debug("reset_signal_handlers rc: %d", rc); */
+
+    /* char cwd[PATH_MAX]; */
+    /* if (getcwd(cwd, sizeof(cwd)) != NULL) { */
+    /*     log_debug("Current working dir: %s", cwd); */
+    /* } */
+
+    /* log_debug("changing dir to %s", utstring_body(proj_root)); */
+    rc = chdir(utstring_body(proj_root));
+    if (rc) {
+        perror("chdir");
+        log_fatal("Unable to chdir to projroot %", utstring_body(proj_root));
+        exit(EXIT_FAILURE);
+    }
 
     if(pipe(pipefd) == -1)
         return STATUS_CANNOT_CREATE_PIPE;
     else {
-        log_debug("daemonize calling fork_one");
-        pid_t cpid = fork_one(pipefd, pid_file, rootdir, data);
-        if (cpid == -1)
+
+        /* log_debug("daemonize calling fork_one"); */
+        rc = fork_one(pipefd, pid_file, rootdir, data);
+
+        if (rc != 0) {
+            log_error("fork_one error, returned %d", rc);
             return STATUS_CANNOT_FORK_ONE;
-        else {
+        } else {
             enum daemon_status_e exit_status;
 
             close(pipefd[1]); /* Close unneeded write end */
-            log_debug("daemonize awaiting notification from fork_one child pid %d", cpid);
+            /* wait for child of child to send notification */
+            /* log_debug("daemonize awaiting notification from fork_one child pid %d", cpid); */
             exit_status = wait_for_notification_message(pipefd[0]);
             close(pipefd[0]);
-            log_debug("daemonize recd notification: %d", exit_status);
-            log_debug("daemonize exiting");
+            if (exit_status == STATUS_INIT_SUCCESS) {
+                log_debug("daemonize fork parent recd success notification: %d", exit_status);
+            } else {
+                log_error("daemonize fork parent recd fail notification from child: %d", exit_status);
+                exit(EXIT_FAILURE); /* FIXME */
+            }
+            log_debug("daemonize returning, pid: %d", getpid());
             return exit_status;
         }
     }
@@ -507,6 +542,7 @@ int obazl_watch_daemonize(char *rootdir, void *data)
     /* if( (setsid() == -1) ) */
     /*     daemon_error_exit("Can't setsid: %m\n"); */
 
+    log_debug("DAEMONIZE returning, pid: %d", getpid());
     return EXIT_SUCCESS;
 
     // call user functions for the optional initialization
