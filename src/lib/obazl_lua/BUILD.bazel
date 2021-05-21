@@ -1,0 +1,71 @@
+## file system utilities
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# we export these srcs so //src/include/obazl:mkhdrs can generate the export interface obazl.h
+exports_files([
+    "obazl_lua.c",
+])
+
+##########
+cc_library(
+    name  = "obazl_lua",
+    # alwayslink = True,
+    linkstatic = 1,
+    srcs  = [
+        "obazl_lua.c",
+        "obazl_lua.h",
+    ],
+    hdrs = [
+        "@uthash//:include",
+        "//vendored/logc:log.h"
+    ],
+    data  = [
+        "//src/lua:datadumper.lua",
+        "//src/lua:obazl.lua"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }),
+    copts = [
+        "-std=c11",
+        "-g", "-O0",
+        "-I", "$(GENDIR)/src/lib/obazl_lua", # obazl_lua.h
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_lua", # obazl_lua.h
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_lua", # obazl_lua.h
+        "-I", "external/uthash/include",
+        # "-I", "vendored/logc",
+        # "-I", "external/obazl/vendored/logc",
+        # "-I", "external/tools_obazl/vendored/logc"
+    ],
+    linkopts = [
+        "-L/usr/local/lib",     # FIXME
+        "-llua",
+    ],
+    deps = [
+        "//external/lua/lib:lua",
+        # "//src/lib/obazl_utils",
+        # "//vendored/logc"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl_lua.c",
+    ],
+    outs = [
+        "obazl_lua.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl_lua.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location obazl_lua.c)",
+        "cp $${SRCDIR1}/obazl_lua.h $@",
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)
