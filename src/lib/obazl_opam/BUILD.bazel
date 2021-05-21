@@ -40,6 +40,7 @@ cc_library(
     ],
     deps = [
         "//src/lib/obazl_fs",
+        "//src/lib/obazl_utils",
         "//vendored/logc"
     ],
     visibility = ["//visibility:public"]
@@ -51,6 +52,7 @@ genrule(
     srcs = [
         "obazl_opam.c",
         "//src/lib/obazl_fs:obazl_fs.c",
+        "//src/lib/obazl_utils:obazl_utils.c",
         "@uthash//:include"
     ],
     outs = [
@@ -61,6 +63,7 @@ genrule(
         "SRCDIR1=`dirname $$SRC1`",
         "    $(location @makeheaders//:makeheaders) \\",
         "    $(location //src/lib/obazl_fs:obazl_fs.c) \\",
+        "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
         "    $(location obazl_opam.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
