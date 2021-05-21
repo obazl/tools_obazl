@@ -46,101 +46,6 @@ bool watch = false;
 const char cwd[PATH_MAX];
 int cwd_len = 0;
 
-void invalid_watch_arg(UT_string *watch_arg)
-{
-    log_error("Invalid arg to -w: %s", utstring_body(watch_arg));
-    log_info("Allowed -w args: start, stop, restart, status");
-}
-
-void control_watcher(UT_string *watch_arg)
-{
-    log_debug("controlling obazl watch...");
-    int rc;
-    if (strncmp(utstring_body(watch_arg), "start", 5) == 0) {
-        // FIXME: ping first to see if its already running
-
-        log_debug("starting");
-        rc = obazl_watch();
-    } else {
-        char *bwsd = getenv("BUILD_WORKSPACE_DIRECTORY");
-        /* log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bwsd); */
-        UT_string *obazl_watch_fifo;
-        utstring_new(obazl_watch_fifo);
-        utstring_printf(obazl_watch_fifo, "%s/%s", bwsd, ".obazl.d/obazlw.fifo");
-        int fifo_fd;
-        fifo_fd = open(utstring_body(obazl_watch_fifo), O_WRONLY);
-        if (fifo_fd < 0) {
-            int errnum = errno;
-            if (strncmp(utstring_body(watch_arg), "status", 4) == 0) {
-                fprintf(stdout, "obazl_watch status: down\n");
-                exit(EXIT_SUCCESS);
-            } else {
-                log_fatal("failed to open obazl_watch_fifo for writing 'stop', errno: %d", errnum);
-                exit(EXIT_FAILURE);
-            }
-        }
-        log_debug("opened fifo %d for writing", fifo_fd);
-        if (strncmp(utstring_body(watch_arg), "stop", 4) == 0) {
-            log_debug("writing 'stop' to fifo %s", utstring_body(obazl_watch_fifo));
-            write(fifo_fd, "stop", 5);
-        } else {
-            if (strncmp(utstring_body(watch_arg), "status", 6) == 0) {
-                if (strlen(utstring_body(watch_arg)) > 6) {
-                    invalid_watch_arg(watch_arg);
-                    close(fifo_fd);
-                    exit(EXIT_FAILURE);
-                }
-                log_debug("writing 'status' to fifo %s", utstring_body(obazl_watch_fifo));
-                write(fifo_fd, "status", 7);
-
-                /* now get response */
-                close(fifo_fd);
-                fifo_fd = open(utstring_body(obazl_watch_fifo), O_RDONLY);
-                if (fifo_fd < 0) {
-                    log_fatal("failed to open obazl_watch_fifo for read after 'status', errno: %d", errno);
-                    exit(EXIT_FAILURE);
-                }
-
-                /* struct timespec tim, tim2; */
-                /* tim.tv_sec  = 0; */
-                /* tim.tv_nsec = 500000000L; */
-                /* nanosleep(); */
-                /* nanosleep((const struct timespec[]){{0, 500000000L}}, NULL); */
-                char obazl_watch_status[80];
-                int ct = 0;
-                ssize_t sz;
-            read_status:
-                /* log_debug("reading fifo_fd..."); */
-                sz = read(fifo_fd, obazl_watch_status, 80);
-                /* log_debug("readed %d chars from fifo_fd", sz); */
-                if (sz < 0) {
-                    perror(utstring_body(obazl_watch_fifo));
-                    log_error("failed to read status from fifo %s", utstring_body(obazl_watch_fifo));
-                } else {
-                    if (strlen(obazl_watch_status) < 10) {
-                        if (strncmp(obazl_watch_status, "status", 6) == 0) {
-                            /* try again */
-                            /* log_debug("try again"); */
-                            memset(obazl_watch_status, '\0', 80);
-                            if (ct++ < 3)
-                                goto read_status;
-                        }
-                    } else {
-                        /* log_debug("fifo read sz: %d", sz); */
-                        obazl_watch_status[sz] = '\0';
-                        fprintf(stdout, "%s\n", obazl_watch_status);
-                    }
-                }
-            } else {
-                invalid_watch_arg(watch_arg);
-                exit(EXIT_FAILURE);
-                close(fifo_fd);
-            }
-        }
-        close(fifo_fd);
-    }
-}
-
 int main(int argc, char *argv[])
 {
     int opt;
@@ -253,7 +158,7 @@ int main(int argc, char *argv[])
     /* } */
 
     if (watch) {
-        control_watcher(watch_arg);
+        control_watcher(utstring_body(watch_arg));
     }
     exit(EXIT_FAILURE);         /* debugging */
 

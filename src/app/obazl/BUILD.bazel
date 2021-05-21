@@ -38,6 +38,7 @@ cc_binary(
         # "//src/lib/obazl_lua:obazl.so",
         "//src/lib/obazl_meta",
         "//src/lib/obazl_watch",
+        "//src/lib/obazl_watch:obazl_watch_client",
         "//vendored/logc"
     ],
     # linkopts = select({
@@ -54,6 +55,7 @@ genrule(
         "debug.c",
         "obazl.c",
         "//src/lib/obazl_watch:obazl_watch.c",
+        "//src/lib/obazl_watch:obazl_watch_client.c",
         "//src/include/obazl:obazl.h",
         "@uthash//:include"
     ],
@@ -68,7 +70,8 @@ genrule(
         "    $(location debug.c) \\",
         "    $(location //src/include/obazl:obazl.h) \\",
         "    $(location obazl.c) \\",
-        "    $(location //src/lib/obazl_watch:obazl_watch.c)",
+        "    $(location //src/lib/obazl_watch:obazl_watch.c) \\",
+        "    $(location //src/lib/obazl_watch:obazl_watch_client.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
 
         # "tree ./",
