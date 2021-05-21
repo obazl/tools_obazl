@@ -1,0 +1,82 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+cc_binary(
+    name  = "watch",
+    srcs  = [
+        "watch.c",
+        "watch.h",
+        # "debug.c",
+        # "debug.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+
+        "-I", "$(GENDIR)/watch",
+        "-I", "$(GENDIR)/external/obazl/watch",
+        "-I", "$(GENDIR)/external/tools_obazl/watch",
+
+        "-I", "$(GENDIR)/src/lib/obazl_dune",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
+
+        "-I", "$(GENDIR)/src/lib/obazl_watch",
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_watch",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_watch",
+
+        "-I", "$(GENDIR)/src/include/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
+
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc",
+
+        "-I", "external/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_dune",
+        "//src/lib/obazl_meta",
+        "//src/lib/obazl_watch",
+        "//src/lib/obazl_watch:obazl_watch_client",
+        "//vendored/logc"
+    ],
+    # linkopts = select({
+    #     "//bzl/host:linux": [],
+    #     "//bzl/host:macos": ["-framework", "CoreServices"],
+    # }),
+    linkstatic = 1
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        # "debug.c",
+        "watch.c",
+        "//src/lib/obazl_watch:obazl_watch.c",
+        "//src/lib/obazl_watch:obazl_watch_client.c",
+        "//src/include/obazl:obazl.h",
+        "@uthash//:include"
+    ],
+    outs = [
+        # "debug.h",
+        "watch.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location watch.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        # "    $(location debug.c) \\",
+        "    $(location watch.c) \\",
+        "    $(location //src/include/obazl:obazl.h) \\",
+        "    $(location //src/lib/obazl_watch:obazl_watch.c) \\",
+        "    $(location //src/lib/obazl_watch:obazl_watch_client.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+
+        # "tree ./",
+        # "cp *.h $@"
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)
