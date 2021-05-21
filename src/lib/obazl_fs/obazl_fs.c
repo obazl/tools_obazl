@@ -705,7 +705,7 @@ int link_dir_rec(char *basedir,
 
 int dirseq(char *curr_dir, UT_array *dirs)
 {
-    log_debug("dirseq %s, %p", curr_dir, dirs);
+    /* log_debug("dirseq %s, %p", curr_dir, dirs); */
     /* UT_string *dir; */
     /* utstring_new(dir); */
     /* utstring_printf(dir, "%s", curr_dir); */
@@ -752,7 +752,7 @@ int dirseq_impl(char *curr_dir, UT_array *dirs)
     if (the_dir) {
         while ((dir_entry = readdir(the_dir)) != NULL) {
             if ( dir_entry->d_type == DT_DIR ) {
-                if ( (dir_entry->d_name[0] == '.') ) {
+                if ( dir_entry->d_name[0] == '.' ) {
                     if (strncmp(dir_entry->d_name, ".pack", 5) == 0) {
                         ;
                         /* what about .private in OPAM repo? found in ounit2, dune-configurator */
@@ -777,23 +777,53 @@ int dirseq_impl(char *curr_dir, UT_array *dirs)
     return(0);
 }
 
-int fileseq(char *_curr_dir, UT_array *files)
+/* emulate a closure */
+char *root_dir;
+
+int fileseq(char *_root_dir,
+            UT_array *subdirs,     /* string list */
+            UT_array *files)
 {
-    log_debug("fileseq %s, %p", _curr_dir, files);
+    log_debug("fileseq");
     /* UT_string *dir; */
     /* utstring_new(dir); */
     /* utstring_printf(dir, "%s", curr_dir); */
     /* log_debug("fileseq len (preimpl): %d", utarray_len(files)); */
 
+    root_dir = _root_dir;
+
     char curr_dir[PATH_MAX];
-    memset(curr_dir, '\0', PATH_MAX);
-    strncat(curr_dir, _curr_dir, strlen(_curr_dir));
-
     char rel_dir[PATH_MAX];
-    memset(rel_dir, '\0', PATH_MAX);
-    rel_dir[0] = '.';
 
-    int rc = fileseq_impl(curr_dir, rel_dir, files);
+    /* char **p = NULL; */
+    /* while ( (p=(char**)utarray_next(, p)) ) { */
+    /*     free(p); */
+    /* } */
+    utarray_clear(files);
+
+    char **p = NULL;
+    while ( (p=(char**)utarray_next(subdirs, p)) ) {
+
+        /* memset(curr_dir, '\0', PATH_MAX); */
+        /* strncat(curr_dir, root_dir, strlen(root_dir)); */
+        /* strncat(curr_dir, "/", 1); */
+        /* strncat(curr_dir, *p, strlen(*p)); */
+
+        memset(rel_dir, '\0', PATH_MAX);
+        /* strncat(reldir_dir, "/", 1); */
+        strncat(rel_dir, *p, strlen(*p));
+        /* rel_dir[0] = '.'; */
+
+        /* log_debug("fileseq for %s/%s", root_dir, rel_dir); */
+
+        int rc = fileseq_impl(rel_dir, files);
+
+        if (rc) {
+            log_error("fileseq_impl rc: %d", rc);
+        } else {
+        }
+        // FIXME: remove root dir?
+    }
 
     /* log_debug("fileseq len (postimpl): %d", utarray_len(files)); */
     /* char **p = NULL; */
@@ -802,14 +832,18 @@ int fileseq(char *_curr_dir, UT_array *files)
     /*     printf("\t%s\n", *p); */
     /* } */
 
-    // FIXME: remove root dir?
-
-    return rc;
+    return 0;
 }
 
-int fileseq_impl(char *curr_dir, char* rel_dir, UT_array *files)
+int fileseq_impl(char* rel_dir, UT_array *files)
 {
-    /* log_debug("fileseq_impl %p", files); */
+    /* log_debug("fileseq_impl rootdir: %s, reldir: %s", root_dir, rel_dir); */
+
+    static curr_dir[PATH_MAX];
+    memset(curr_dir, '\0', PATH_MAX);
+    strncat(curr_dir, root_dir, strlen(root_dir));
+    strncat(curr_dir, "/", 1);
+    strncat(curr_dir, rel_dir, strlen(rel_dir));
 
     DIR *the_dir;
     struct dirent *dir_entry;
@@ -817,9 +851,11 @@ int fileseq_impl(char *curr_dir, char* rel_dir, UT_array *files)
     the_dir = opendir(curr_dir);
     if (the_dir == NULL) {
         errnum = errno;
-        printf("opendir failure for %s", curr_dir);
-        fprintf(stderr, "Value of errno: %d\n", errnum);
-        fprintf(stderr, "opendir error %s: %s\n", curr_dir, strerror( errnum ));
+        perror(curr_dir);
+        log_fatal("fileseq_impl opendir");
+        /* printf("opendir failure for %s", curr_dir); */
+        /* fprintf(stderr, "Value of errno: %d\n", errnum); */
+        /* fprintf(stderr, "opendir error %s: %s\n", curr_dir, strerror( errnum )); */
         exit(1);
         /* return(-1); */
     }
@@ -830,14 +866,17 @@ int fileseq_impl(char *curr_dir, char* rel_dir, UT_array *files)
             if (dir_entry->d_type == DT_REG) {
                 if ( (fext(dir_entry->d_name) == ML)
                      || (fext(dir_entry->d_name) == MLI) ) {
+
                     strncat(rel_dir, "/", 1);
                     strncat(rel_dir, dir_entry->d_name, strlen(dir_entry->d_name));
                     /* log_debug("pushing %s", rel_dir); */
                     utarray_push_back(files, &rel_dir);
                     rel_dir[strlen(rel_dir) - strlen(dir_entry->d_name) - 1] = '\0';
+
                 } else {
                     /* log_debug("skipping %s/%s", curr_dir, dir_entry->d_name); */
                 }
+
             } else {
                 if ( dir_entry->d_type == DT_DIR ) {
                     if ( (dir_entry->d_name[0] == '.') ) {
@@ -849,13 +888,15 @@ int fileseq_impl(char *curr_dir, char* rel_dir, UT_array *files)
                             continue;
                         }
                     }
-                    strncat(curr_dir, "/", 1);
-                    strncat(curr_dir, dir_entry->d_name, strlen(dir_entry->d_name));
+                    /* strncat(curr_dir, "/", 1); */
+                    /* strncat(curr_dir, dir_entry->d_name, strlen(dir_entry->d_name)); */
                     strncat(rel_dir, "/", 1);
                     strncat(rel_dir, dir_entry->d_name, strlen(dir_entry->d_name));
+
                     /* log_debug("recurring on: %s", rel_dir); */
-                    fileseq_impl(curr_dir, rel_dir, files);
-                    curr_dir[strlen(curr_dir) - strlen(dir_entry->d_name) - 1] = '\0';
+                    fileseq_impl(rel_dir, files);
+
+                    /* curr_dir[strlen(curr_dir) - strlen(dir_entry->d_name) - 1] = '\0'; */
                     rel_dir[strlen(rel_dir) - strlen(dir_entry->d_name) - 1] = '\0';
                 } else {
                     ; /* skip all other types */
@@ -864,5 +905,5 @@ int fileseq_impl(char *curr_dir, char* rel_dir, UT_array *files)
         }
         closedir(the_dir);
     }
-    return(0);
+    return 0;
 }
