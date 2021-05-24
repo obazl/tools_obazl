@@ -18,6 +18,9 @@ cc_binary(
         "-I", "$(GENDIR)/external/obazl/watch",
         "-I", "$(GENDIR)/external/tools_obazl/watch",
 
+        "-I", "$(GENDIR)/src/lib/obazl_config",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_config",
+
         "-I", "$(GENDIR)/src/lib/obazl_dune",
         "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
 
@@ -35,6 +38,7 @@ cc_binary(
         "-I", "external/uthash/include",
     ],
     deps = [
+        "//src/lib/obazl_config",
         "//src/lib/obazl_bazel",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_meta",
@@ -55,6 +59,7 @@ genrule(
     srcs = [
         # "debug.c",
         "watch.c",
+        "//src/lib/obazl_config:obazl_config.c",
         "//src/lib/obazl_watch:obazl_watch.c",
         "//src/lib/obazl_watch:obazl_watch_client.c",
         "//src/include/obazl:obazl.h",
@@ -71,6 +76,7 @@ genrule(
         # "    $(location debug.c) \\",
         "    $(location watch.c) \\",
         "    $(location //src/include/obazl:obazl.h) \\",
+        "    $(location //src/lib/obazl_config:obazl_config.c) \\",
         "    $(location //src/lib/obazl_watch:obazl_watch.c) \\",
         "    $(location //src/lib/obazl_watch:obazl_watch_client.c)",
         "cp $${SRCDIR1}/*.h $(@D)",

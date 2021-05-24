@@ -32,6 +32,16 @@ EXPORT char* mystrcat( char* dest, char* src )
      return --dest;
 }
 
+bool is_empty(const char *s)
+{
+  while (*s) {
+    if (!isspace(*s))
+      return false;
+    s++;
+  }
+  return true;
+}
+
 /**
    prereq: fname is .ml or .mli
    user must free result
@@ -112,6 +122,18 @@ bool is_structfile(char *fname)
     int len = strlen(fname);
     bool result = strncmp(&fname[len-3], ".ml", 3);
     return (bool)!result;       /* 0 = eq, 1 = true */
+}
+
+bool is_sigfile(char *fname)
+{
+    /* log_debug("is_sigfile %s", fname); */
+    int len = strlen(fname);
+    char *p = fname;
+    if (strncmp(".mli", p+len-4, 4) == 0) {
+        /* log_debug("sigfile yes"); */
+        return true;
+    }
+    else return false;
 }
 
 //FIXME: switch from popen to posix_spawn

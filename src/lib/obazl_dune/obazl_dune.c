@@ -15,7 +15,8 @@
 
 #include "log.h"
 
-#include "utarray.h"
+/* #include "utarray.h" */
+#include "utstring.h"
 
 #include "obazl_dune.h"
 
@@ -43,27 +44,23 @@ EXPORT char *obzl_dune_version()
     return "0.1.0";
 }
 
-LOCAL char *package_name_from_file_name(char *fname)
+void obazl_config_dune(void)
 {
-    char *bn = basename(fname);
-    int x = strlen(bn) - 5;
-    if ( strncmp(&bn[x], ".DUNE", 5) == 0) {
-        bn[x] = '\0';
-        return bn;
-    } else {
-        return basename(dirname(fname));
-    }
+    log_debug("obazl_config_dune");
+    /* obazl_configure(); */
 }
 
-LOCAL bool is_empty(const char *s)
-{
-  while (*s) {
-    if (!isspace(*s))
-      return false;
-    s++;
-  }
-  return true;
-}
+/* LOCAL char *package_name_from_file_name(char *fname) */
+/* { */
+/*     char *bn = basename(fname); */
+/*     int x = strlen(bn) - 5; */
+/*     if ( strncmp(&bn[x], ".DUNE", 5) == 0) { */
+/*         bn[x] = '\0'; */
+/*         return bn; */
+/*     } else { */
+/*         return basename(dirname(fname)); */
+/*     } */
+/* } */
 
 /* EXPORT struct dune_package_s *obzl_dune_parse_file(char *fname) */
 /* { */

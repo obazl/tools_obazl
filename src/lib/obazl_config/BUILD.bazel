@@ -1,0 +1,58 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+# we export these srcs so mkhdrs from other libs can use them
+exports_files([
+    "obazl_config.c",
+])
+
+
+##########
+cc_library(
+    name  = "obazl_config",
+    srcs  = [
+        "obazl_config.c",
+        "obazl_config.h",
+        "@uthash//:include",
+    ],
+    alwayslink = True,
+    linkstatic = 1,
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+
+        "-I", "external/libinih",
+
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc",
+
+        "-I", "$(GENDIR)/src/lib/obazl_config",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_config",
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_config",
+        "-I", "external/uthash/include",
+    ],
+    deps = [
+        "//external/libinih:inih",
+        "//vendored/logc"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl_config.c",
+    ],
+    outs = [
+        "obazl_config.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl_config.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "    $(location @makeheaders//:makeheaders) \\",
+        "    $(location obazl_config.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"]
+)

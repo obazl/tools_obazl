@@ -542,7 +542,7 @@ int obazl_watch_daemonize(char *rootdir, void *data)
     /* if( (setsid() == -1) ) */
     /*     daemon_error_exit("Can't setsid: %m\n"); */
 
-    log_debug("DAEMONIZE returning, pid: %d", getpid());
+    log_debug("daemonize returning, pid: %d", getpid());
     return EXIT_SUCCESS;
 
     // call user functions for the optional initialization

@@ -290,27 +290,28 @@ int obazl_fswatch_start(void *dir) // (char *dir)
 
         UT_string *workstr;
         utstring_new(workstr);
+        char *projroot = utstring_body(proj_root);
         char **p = NULL;
         while ( (p=(char**)utarray_next(obazl_config.watch_dirs, p))) {
             utstring_clear(workstr);
-            utstring_printf(workstr, "%s.*\\.ml$", *p);
-            /* log_debug("adding filter: %s", utstring_body(workstr)); */
+            utstring_printf(workstr, "%s/%s/.*\\.ml$", projroot, *p);
+            log_debug("adding filter: %s", utstring_body(workstr));
             filter.text = utstring_body(workstr);
             if (FSW_OK != fsw_add_filter(handle, filter)) {
                 log_error("add filter error: %d", fsw_last_error());
                 fsw_last_error();
             }
             utstring_clear(workstr);
-            utstring_printf(workstr, "%s.*\\.mli$", *p);
-            /* log_debug("adding filter: %s", utstring_body(workstr)); */
+            utstring_printf(workstr, "%s/%s/.*\\.mli$", projroot, *p);
+            log_debug("adding filter: %s", utstring_body(workstr));
             filter.text = utstring_body(workstr);
             if (FSW_OK != fsw_add_filter(handle, filter)) {
                 log_error("add filter error: %d", fsw_last_error());
                 fsw_last_error();
             }
             utstring_clear(workstr);
-            utstring_printf(workstr, "%s.*/dune$", *p);
-            /* log_debug("adding filter: %s", utstring_body(workstr)); */
+            utstring_printf(workstr, "%s/%s/.*/dune$", projroot, *p);
+            log_debug("adding filter: %s", utstring_body(workstr));
             filter.text = utstring_body(workstr);
             if (FSW_OK != fsw_add_filter(handle, filter)) {
                 log_error("add filter error: %d", fsw_last_error());
@@ -422,8 +423,7 @@ int obazl_watch_start(void) //char *dir)
     /* FIFOs for communication with client */
     obazl_config_fifos();
 
-    /* experimental: lua */
-    config_lua();
+    /* obazl_config_lua(proj_root, obazl_d); */
 
     /* initial write of build files, before we start watching for changes */
     /* list opam dirs, to parameterize codept */

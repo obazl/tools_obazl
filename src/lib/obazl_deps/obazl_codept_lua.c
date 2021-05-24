@@ -243,36 +243,38 @@ void handle_file(sexp_t *exp)
 */
 void handle_file_deps(sexp_t *the_deps_list)
 {
-    log_trace("handle_file_deps, stacktop: %d", lua_gettop(L));
+    /* log_trace("handle_file_deps, stacktop: %d", lua_gettop(L)); */
 
     int ftype = lua_getfield(L, -1, "deps");
     if (ftype == LUA_TNIL) {
-        log_debug("fld 'deps' not found in table; creating");
+        /* log_debug("fld 'deps' not found in table; creating"); */
         /* getfield left a nil val on the stack; pop it */
         lua_pop(L, 1);
         lua_pushliteral(L, "deps"); /* key */
         /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps"] */
         lua_newtable(L);
         lua_settable(L, -3);
-        log_debug("created 'deps' table");
+        /* log_debug("created 'deps' table"); */
         /* put 'deps.modules' on stack */
         ftype = lua_getfield(L, -1, "deps");
         if (ftype == LUA_TNIL) {
             log_error("deps tbl not found after creating");
         } else {
-            log_debug("created 'deps' table");
+            ;
+            /* log_debug("created 'deps' table"); */
             /* lua_pop(L,1); */
             /* stack: [tbzl tpkgs modpkg */
         }
     } else {
-        log_debug("found fld 'deps' in table");
+        ;
+        /* log_debug("found fld 'deps' in table"); */
     }
     /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps] */
-    log_debug("stacktop after find/create 'deps' fld: %d", lua_gettop(L));
+    /* log_debug("stacktop after find/create 'deps' fld: %d", lua_gettop(L)); */
 
     ftype = lua_getfield(L, -1, "modules");
     if (ftype == LUA_TNIL) {
-        log_debug("fld 'modules' not found in deps table; creating");
+        /* log_debug("fld 'modules' not found in deps table; creating"); */
         lua_pop(L, 1);
         lua_pushliteral(L, "modules"); /* key */
         lua_newtable(L);
@@ -284,15 +286,17 @@ void handle_file_deps(sexp_t *the_deps_list)
         if (ftype == LUA_TNIL) {
             log_error("deps.modules not found after creating");
         } else {
-            log_debug("created 'deps.modules' table");
+            ;
+            /* log_debug("created 'deps.modules' table"); */
             /* lua_pop(L,1); */
             /* stack: [tbzl tpkgs modpkg */
         }
     } else {
-        log_debug("found fld 'modules' in 'deps' table");
+        ;
+        /* log_debug("found fld 'modules' in 'deps' table"); */
     }
     /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps tmodules] */
-    log_debug("stacktop after find/create 'deps.modules' tbl: %d", lua_gettop(L));
+    /* log_debug("stacktop after find/create 'deps.modules' tbl: %d", lua_gettop(L)); */
 
     sexp_t *deps = the_deps_list->list;
     /* deps is a list of lists, each of one atom */
@@ -303,18 +307,18 @@ void handle_file_deps(sexp_t *the_deps_list)
         if (sexp_list_length(deps->list) != 1) {
             log_warn("list len should be 1: %d", sexp_list_length(deps->list));
         }
-        log_debug("pushing module dep %d: %s", ct, deps->list->val);
+        /* log_debug("pushing module dep %d: %s", ct, deps->list->val); */
         lua_newtable(L);
         /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps tmodules tm] */
         lua_pushstring(L, "dep");               /* key */
         /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps tmodules tm "dep"] */
         lua_pushstring(L, deps->list->val); /* val */
         lua_settable(L, -3);
-        log_debug("stacktop after creating dtbl: %d", lua_gettop(L));
+        /* log_debug("stacktop after creating dtbl: %d", lua_gettop(L)); */
         /* stack: [... deps.modules dtbl] */
 
         lua_seti(L, -2, ct++);
-        log_debug("stacktop after pushing dtbl to deps tbl: %d", lua_gettop(L));
+        /* log_debug("stacktop after pushing dtbl to deps tbl: %d", lua_gettop(L)); */
         /* stack: [... deps.modules] */
 
         /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps tmodules tm] */
@@ -327,7 +331,7 @@ void handle_file_deps(sexp_t *the_deps_list)
         deps = deps->next;
     }
     /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps] */
-    log_debug("stacktop after pushing module deps to 'deps.modules' tbl: %d", lua_gettop(L));
+    /* log_debug("stacktop after pushing module deps to 'deps.modules' tbl: %d", lua_gettop(L)); */
     /* lua_settable(L, -3); */
     /* /\* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl "deps" tdeps] *\/ */
     /* lua_settable(L, -3); */
@@ -360,7 +364,8 @@ LOCAL void _get_modules()
             /* stack: [tbzl tpkgs tpkg tmods] */
         }
     } else {
-        log_debug("found fld 'modules' in table");
+        ;
+        /* log_debug("found fld 'modules' in table"); */
         /* lua_pop(L,1); */
         /* type should be LUA_TTABLE */
         /* stack: [bzl tpkgs tpkg tmods] */
@@ -374,15 +379,15 @@ LOCAL void _get_modules()
 */
 LOCAL void _add_module(char *fname, sexp_t *deps_sexp)
 {
-    log_debug("_add_module: %s, stacktop: %d", fname, lua_gettop(L));
+    /* log_debug("_add_module: %s, stacktop: %d", fname, lua_gettop(L)); */
     /* if (lua_gettop(L) != 4) error */
 
     char *module_name = fname_to_mname(fname);
-    log_debug("MOD NAME: %s", module_name);
+    /* log_debug("MOD NAME: %s", module_name); */
 
     int ftype = lua_getfield(L, -1, module_name);
     if (ftype == LUA_TNIL) {
-        log_debug("module %s not found in pkg table; creating", module_name);
+        /* log_debug("module %s not found in pkg table; creating", module_name); */
         lua_pop(L, 1); /* getfield left a nil val on the stack; pop it */
         lua_pushstring(L, module_name);
         lua_newtable(L);
@@ -393,16 +398,18 @@ LOCAL void _add_module(char *fname, sexp_t *deps_sexp)
         if (ftype == LUA_TNIL) {
             log_error("module %s not found after creating", module_name);
         } else {
-            log_info("created entry for module %s", module_name);
+            ;
+            /* log_info("created entry for module %s", module_name); */
         }
     } else {
-        log_debug("found module %s in table", module_name);
+        ;
+        /* log_debug("found module %s in table", module_name); */
         /* type should be LUA_TTABLE */
     }
-    log_debug("stacktop after find/add module %d", lua_gettop(L));
+    /* log_debug("stacktop after find/add module %d", lua_gettop(L)); */
 
     /* now add entries for struct/sig filepaths, which should not already exist */
-    log_debug("%s is structfile? %d", fname, is_structfile(fname));
+    /* log_debug("%s is structfile? %d", fname, is_structfile(fname)); */
 
     // outcome: { <sfile> = { name = "foo/bar.ml" deps = {...} } }
 
@@ -412,20 +419,20 @@ LOCAL void _add_module(char *fname, sexp_t *deps_sexp)
     } else {
         lua_pushliteral(L, "sigfile"); /* key */
     }
-    log_debug("stacktop after pushing sfile: %d", lua_gettop(L));
+    /* log_debug("stacktop after pushing sfile: %d", lua_gettop(L)); */
 
     lua_newtable(L);
     lua_pushstring(L, basename(fname)); /* path is pkg.path */
     lua_setfield(L, -2, "name");
-    log_debug("stacktop after pushing tbl with name fld: %d", lua_gettop(L));
+    /* log_debug("stacktop after pushing tbl with name fld: %d", lua_gettop(L)); */
     /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl] */
 
     handle_file_deps(deps_sexp->next);
-    log_debug("stacktop after pushing deps: %d", lua_gettop(L));
+    /* log_debug("stacktop after pushing deps: %d", lua_gettop(L)); */
     /* stack: [tbzl tpkgs tpkg tmods tmod <sfile> tbl] */
 
     lua_settable(L, -3);
-    log_debug("stacktop after settable 1: %d", lua_gettop(L));
+    /* log_debug("stacktop after settable 1: %d", lua_gettop(L)); */
     /* stack: [tbzl tpkgs tpkg tmods tmod] */
 
     lua_pop(L, 1);              /* pop new module */
@@ -441,8 +448,8 @@ LOCAL void _add_module(char *fname, sexp_t *deps_sexp)
 */
 void handle_file_deps_spec(sexp_t *fdeps_spec)
 {
-    log_debug("");
-    log_debug("handle_file_deps_spec, stacktop: %d", lua_gettop(L));
+    /* log_debug(""); */
+    /* log_debug("handle_file_deps_spec, stacktop: %d", lua_gettop(L)); */
 
     /* log_debug("fdeps_spec type: %d", fdeps_spec->ty); */
     /* log_debug("fdeps_spec->list type: %d", fdeps_spec->list->ty); */
@@ -476,17 +483,17 @@ void handle_file_deps_spec(sexp_t *fdeps_spec)
     } else {
         ; // FIXME
     }
-    log_debug("fname: %s", fname);
+    /* log_debug("fname: %s", fname); */
     pkg_name = fname_to_pkgname(fname);
     pkg_path = fname_to_pkgpath(fname);
-    log_debug("PKG NAME: %s", pkg_name);
-    log_debug("PKG PATH: %s", pkg_path);
+    /* log_debug("PKG NAME: %s", pkg_name); */
+    /* log_debug("PKG PATH: %s", pkg_path); */
 
     int ftype;                  /* lua field type */
-    log_debug("stacktop %d", lua_gettop(L));
+    /* log_debug("stacktop %d", lua_gettop(L)); */
     ftype = lua_getfield(L, -1, pkg_name);
     if (ftype == LUA_TNIL) {
-        log_debug("pkg %s not found in table; creating", pkg_name);
+        /* log_debug("pkg %s not found in table; creating", pkg_name); */
         /* getfield left a nil val on the stack; pop it */
         lua_pop(L, 1);
         lua_pushstring(L, pkg_name);
@@ -498,31 +505,33 @@ void handle_file_deps_spec(sexp_t *fdeps_spec)
         if (ftype == LUA_TNIL) {
             log_error("pkg %s not found after creating", pkg_name);
         } else {
-            log_info("created %s table", pkg_name);
+            ;
+            /* log_info("created %s table", pkg_name); */
             /* lua_pop(L,1); */
             /* stack: [tbzl tpkgs modpkg */
         }
     } else {
-        log_debug("found pkg %s in table", pkg_name);
+        ;
+        /* log_debug("found pkg %s in table", pkg_name); */
         /* type should be LUA_TTABLE */
     }
     /* stack: [bzl tpkgs tpkg] */
     /* lua_pop(L,1); */
-    log_debug("stacktop after find/add pkg %s table: %d", pkg_name, lua_gettop(L));
+    /* log_debug("stacktop after find/add pkg %s table: %d", pkg_name, lua_gettop(L)); */
     /* tos: [tbzl tpkgs pkg] */
-    log_debug("pkg_path: %s", pkg_path);
+    /* log_debug("pkg_path: %s", pkg_path); */
 
     lua_pushstring(L, pkg_path);
     lua_setfield(L, -2, "path");
 
     _get_modules(); // find or create 'modules' subtable of pkg table
-    log_debug("stacktop after get_modules: %d", lua_gettop(L));
+    /* log_debug("stacktop after get_modules: %d", lua_gettop(L)); */
     /* stack: [tbzl tpkgs tpkg tmods] */
 
     /* add module */
     _add_module(fname, deps_atom);
     /* stack: [tbzl tpkgs tpkg tmods] */
-    log_debug("stacktop after add_module: %d", lua_gettop(L));
+    /* log_debug("stacktop after add_module: %d", lua_gettop(L)); */
 
     lua_pop(L, 2);
     /* stack: [tbzl tpkgs] */
@@ -577,6 +586,7 @@ void handle_dependencies(sexp_t *the_sexp)
     /* ( (file etc/uri_services.mli) (deps ((Uri))) ) */
     /* from which we derive pkg (etc), module(Uri_services), filename, and deps */
     /* which we add to the bazel.packages table */
+
     lua_getglobal(L, "bazel");       /* tos: bazel (table) */
     lua_getfield(L, -1, "packages"); /* tos: bazel.packages (table) */
 
@@ -627,7 +637,7 @@ UT_string *join_lib_sexp(sexp_t *the_list)
         /* return NULL; */
     } else {
         int rc = memcmp(opam_prefix, utstring_body(libpath), opam_prefix_len);
-        log_debug("memcmp rc: %d", rc);
+        /* log_debug("memcmp rc: %d", rc); */
         if ( rc  ) {
             log_error("OPAM prefix '%s' not a prefix of externel module '%s' (len: %d)",
                       opam_prefix, utstring_body(libpath), opam_prefix_len);
@@ -869,10 +879,10 @@ void handle_external_module_spec(sexp_t *the_module_spec)
             utstring_printf(opam_target, "%s", "@opam//");
 
             UT_string *libpath = join_lib_sexp(lib->next);
-            log_debug("module %s libpath: %s", module_name, utstring_body(libpath));
+            /* log_debug("module %s libpath: %s", module_name, utstring_body(libpath)); */
             /* module->lib = strndup(utstring_body(libpath), utstring_len(libpath) + 1); */
             utstring_concat(opam_target, libpath);
-            log_debug("pushing %s", utstring_body(opam_target));
+            /* log_debug("pushing %s", utstring_body(opam_target)); */
             /* lua_pushliteral(L, "target");           /\* key *\/ */
             lua_pushstring(L, utstring_body(opam_target)); /* val */
             lua_setfield(L, -2, module_name);

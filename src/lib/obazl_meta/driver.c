@@ -51,15 +51,15 @@ LOCAL char *package_name_from_file_name(char *fname)
     }
 }
 
-LOCAL bool is_empty(const char *s)
-{
-  while (*s) {
-    if (!isspace(*s))
-      return false;
-    s++;
-  }
-  return true;
-}
+/* LOCAL bool is_empty(const char *s) */
+/* { */
+/*   while (*s) { */
+/*     if (!isspace(*s)) */
+/*       return false; */
+/*     s++; */
+/*   } */
+/*   return true; */
+/* } */
 
 EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *fname)
 {

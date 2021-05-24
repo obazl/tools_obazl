@@ -20,6 +20,10 @@ cc_library(
         "daemonize.h",
         "@uthash//:include",
     ],
+    data  = [
+        "//src/lua:datadumper.lua",
+        "//src/lua:obazl_watch.lua"
+    ],
     # linkstatic = 1,
     copts = [
         "-std=c11",
@@ -47,6 +51,7 @@ cc_library(
     ],
     deps = [
         "//src/lib/obazl_bazel",
+        "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_fs",
@@ -105,6 +110,7 @@ cc_library(
     ],
     deps = [
         "//src/lib/obazl_bazel",
+        "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_fs",
@@ -135,6 +141,7 @@ genrule(
         "obazl_watch_client.c",
         "obazl_watch_config.c",
         "daemonize.c",
+        "//src/lib/obazl_config:obazl_config.c",
         "//src/lib/obazl_deps:obazl_codept.c",
         "//src/lib/obazl_deps:obazl_codept_lua.c",
         # "//src/lib/obazl_deps:obazl_codept_parser.c",
@@ -158,6 +165,7 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         # "    $(locations @uthash//:include) \\",
         "    $(location //src/include/obazl:obazl.h) \\",
+        "    $(location //src/lib/obazl_config:obazl_config.c) \\",
         "    $(location //src/lib/obazl_deps:obazl_codept.c) \\",
         "    $(location //src/lib/obazl_deps:obazl_codept_lua.c) \\",
         # "    $(location //src/lib/obazl_deps:obazl_codept_parser.c) \\",

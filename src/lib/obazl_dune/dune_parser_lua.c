@@ -22,7 +22,7 @@
 
 #include "log.h"
 
-#include "dune_parser.h"
+#include "dune_parser_lua.h"
 
 /* hashmap array - list of UT_hash pointers, not UT_hash structs */
 
