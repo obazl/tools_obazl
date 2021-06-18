@@ -1,14 +1,25 @@
-# build file parsing etc.
+# BUILD.bazel parsing
+
+
+testing:
+
+```
+$ bazel run src/lib/obazl_bazel:test_parse --  -f `pwd`/data/test.BUILD.bazel
+```
+
+similar for `test_lex`
+
 
 starlark grammar: https://github.com/bazelbuild/starlark/blob/master/spec.md#grammar-reference
 
 bazelbuild buildfile parser stuff:  https://github.com/bazelbuild/buildtools/tree/master/build
 
-lexer:  https://github.com/bazelbuild/buildtools/blob/master/build/lex.go
+lexer (Golang impl):  https://github.com/bazelbuild/buildtools/blob/master/build/lex.go
 
 
+### misc
 
-generate tokens.h from tokens.txt
+generate tokens.h from tokens.txt (list of TOKEN names)
 
 rg -N . src/lib/obazl_bazel/tokens.txt | sort | uniq > toks.h
 nl -w 2 -n rz -s ' ' toks.h > toksnl.h
