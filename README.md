@@ -1,5 +1,7 @@
 # tools_obazl
 
+WARNING: currently under heavy development, do not use.
+
 A collection of Bazel tools, mainly for OCaml development using obazl_rules_ocaml.
 
 WORKSPACE.bazel:
