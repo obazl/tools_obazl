@@ -55,16 +55,6 @@ LOCAL char *package_name_from_file_name(char *fname)
     }
 }
 
-LOCAL bool is_empty(const char *s)
-{
-  while (*s) {
-    if (!isspace(*s))
-      return false;
-    s++;
-  }
-  return true;
-}
-
 /* EXPORT struct dune_package_s *obzl_dune_parse_file(char *fname) */
 /* { */
 /*     log_info("obzl_dune_parse_file: %s", fname); */

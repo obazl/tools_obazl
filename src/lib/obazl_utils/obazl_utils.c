@@ -32,6 +32,16 @@ EXPORT char* mystrcat( char* dest, char* src )
      return --dest;
 }
 
+bool is_empty(const char *s)
+{
+  while (*s) {
+    if (!isspace(*s))
+      return false;
+    s++;
+  }
+  return true;
+}
+
 /**
    prereq: fname is .ml or .mli
    user must free result
