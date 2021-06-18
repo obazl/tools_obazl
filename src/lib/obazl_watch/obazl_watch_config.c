@@ -74,8 +74,8 @@ const char * const fifo_to_client_name = "fifo.to_client";
 UT_string *fifo_to_client_path = NULL;
 int fifo_to_client_fd;
 
-UT_string *proj_root;
-UT_string *obazl_d;
+/* UT_string *proj_root; */
+/* UT_string *obazl_d; */
 UT_string *obazl_watch_log;
 FILE *obazl_watch_log_fp;
 
@@ -89,9 +89,9 @@ const char *codept_deps_filename = "codept.deps";
 
 char *codept_cmd;
 
-bool ini_error = false;
-UT_string *obazl_ini_path;
-const char *obazl_ini_file = ".obazlrc";
+/* bool ini_error = false; */
+/* UT_string *obazl_ini_path; */
+/* const char *obazl_ini_file = ".obazlrc"; */
 
 int config_handler(void* config, const char* section, const char* name, const char* value)
 {
@@ -292,10 +292,8 @@ int obazl_watch_configure_server()
 
     _watch_configure_common();
 
-    /* experimental: lua */
-    utstring_new(lua_file);
-    utstring_printf(lua_file, "%s/%s", utstring_body(obazl_d), lua_file_name);
-    log_debug("lua_file: %s", utstring_body(lua_file));
+    obazl_config_lua("obazl_watch.lua"); //obazl_d);
+    obazl_init_lua(); // default_lua_file);
 
     /* opam prefix */
     char *cmd = "opam var prefix";
@@ -367,33 +365,35 @@ LOCAL int _watch_configure_common()
 
     char **p = NULL;            /* debuggin */
 
-    char *_proj_root = getenv("BUILD_WORKSPACE_DIRECTORY");
-    if (_proj_root == NULL) {
-        log_error("Env var 'BUILD_WORKSPACE_DIRECTORY' not found. This program must be run in a Bazel project.");
-        exit(EXIT_FAILURE);
-    }
-    /* log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bazel_proj_root); */
+    /* obazl_configure(); */
 
-    utstring_new(proj_root);
-    utstring_printf(proj_root, "%s", _proj_root);
-    /* log_debug("proj_root: %s", utstring_body(proj_root)); */
+    /* char *_proj_root = getenv("BUILD_WORKSPACE_DIRECTORY"); */
+    /* if (_proj_root == NULL) { */
+    /*     log_error("Env var 'BUILD_WORKSPACE_DIRECTORY' not found. This program must be run in a Bazel project."); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+    /* /\* log_debug("BUILD_WORKSPACE_DIRECTORY: %s", bazel_proj_root); *\/ */
 
-    /* .obazl.d hidden directory */
-    utstring_new(obazl_d);
-    utstring_printf(obazl_d, "%s/%s", utstring_body(proj_root), ".obazl.d");
-    /* log_debug("obazl_d: %s", utstring_body(obazl_d)); */
-    /* log_debug("mkdir %s", utstring_body(obazl_d)); */
-    int rc = mkdir(utstring_body(obazl_d), S_IRWXU | S_IRGRP | S_IWGRP);
-    if (rc != 0) {
-        if (errno != EEXIST) {
-            perror(utstring_body(obazl_d));
-            log_error("mkdir error");
-        }
-    }
+    /* utstring_new(proj_root); */
+    /* utstring_printf(proj_root, "%s", _proj_root); */
+    /* /\* log_debug("proj_root: %s", utstring_body(proj_root)); *\/ */
 
-    /* .obazlrc config file */
-    utstring_new(obazl_ini_path);
-    utstring_printf(obazl_ini_path, "%s/%s", utstring_body(proj_root), obazl_ini_file);
+    /* /\* .obazl.d hidden directory *\/ */
+    /* utstring_new(obazl_d); */
+    /* utstring_printf(obazl_d, "%s/%s", utstring_body(proj_root), ".obazl.d"); */
+    /* /\* log_debug("obazl_d: %s", utstring_body(obazl_d)); *\/ */
+    /* /\* log_debug("mkdir %s", utstring_body(obazl_d)); *\/ */
+    /* int rc = mkdir(utstring_body(obazl_d), S_IRWXU | S_IRGRP | S_IWGRP); */
+    /* if (rc != 0) { */
+    /*     if (errno != EEXIST) { */
+    /*         perror(utstring_body(obazl_d)); */
+    /*         log_error("mkdir error"); */
+    /*     } */
+    /* } */
+
+    /* /\* .obazlrc config file *\/ */
+    /* utstring_new(obazl_ini_path); */
+    /* utstring_printf(obazl_ini_path, "%s/%s", utstring_body(proj_root), obazl_ini_file); */
 
     rc = access(utstring_body(obazl_ini_path), R_OK);
     if (rc) {

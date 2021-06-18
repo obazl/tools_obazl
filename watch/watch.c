@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
         /*     printf("%s ", argv[optind++]); */
         /* printf("\n"); */
 
-        obazl_watch_controller(argv[optind]);
+        obazl_watch_controller(argv[0], argv[optind]);
 
     } else {
         if ( (argc - optind) > 1) {
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
     /* /\* } *\/ */
 
     /* if (watch) { */
-    /*     control_watcher(utstring_body(watch_arg)); */
+    /*     obazl_watch_controller(utstring_body(watch_arg)); */
     /* } */
     /* exit(EXIT_FAILURE);         /\* debugging *\/ */
 

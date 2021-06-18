@@ -124,6 +124,18 @@ bool is_structfile(char *fname)
     return (bool)!result;       /* 0 = eq, 1 = true */
 }
 
+bool is_sigfile(char *fname)
+{
+    /* log_debug("is_sigfile %s", fname); */
+    int len = strlen(fname);
+    char *p = fname;
+    if (strncmp(".mli", p+len-4, 4) == 0) {
+        /* log_debug("sigfile yes"); */
+        return true;
+    }
+    else return false;
+}
+
 //FIXME: switch from popen to posix_spawn
 char *run_cmd(char *cmd)
 {

@@ -50,7 +50,7 @@ cc_library(
         "-llua",
     ],
     deps = [
-        # "//src/lib/obazl_meta",
+        "//src/lib/obazl_config",
         "//src/lib/obazl_fs",
         "//src/lib/obazl_lua",
         "//external/sfsexp",
@@ -93,6 +93,7 @@ cc_binary(
     ],
     deps = [
         # "//src/lib/obazl_meta",
+        "//src/lib/obazl_config",
         "//src/lib/obazl_fs",
         "//vendored/logc",
         "//external/sfsexp",
@@ -108,6 +109,7 @@ genrule(
         "obazl_codept_lua.c",
         # "obazl_codept_parser.c",
         "obazl_deps_test.c",
+        "//src/lib/obazl_config:obazl_config.c",
         "//src/lib/obazl_lua:obazl_lua.c",
         "//src/lib/obazl_watch:obazl_watch_config.c",
         "//src/lib/obazl_utils:obazl_utils.c",
@@ -128,6 +130,7 @@ genrule(
         "    $(location obazl_deps_test.c) \\",
         "    $(location obazl_codept_lua.c) \\",
         # "    $(location obazl_codept_parser.c) \\",
+        "    $(location //src/lib/obazl_config:obazl_config.c) \\",
         "    $(location //src/lib/obazl_lua:obazl_lua.c) \\",
         "    $(location //src/lib/obazl_watch:obazl_watch_config.c) \\",
         "    $(location //src/lib/obazl_utils:obazl_utils.c)",

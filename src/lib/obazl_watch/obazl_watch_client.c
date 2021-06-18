@@ -120,11 +120,13 @@ int get_daemon_status(void) // (UT_string *fifo_name, int fifo_fd)
    args:
    watch_arg: one of start, stop, restart, status
  */
-void obazl_watch_controller(char *watch_arg)
+void obazl_watch_controller(char *exec_root, char *watch_arg)
 {
     log_debug("obazl_watch_controller, cmd: %s", watch_arg);
 
+    obazl_configure(exec_root);
     obazl_watch_configure_client();
+    /* client does not use lua */
 
     int rc;
 
