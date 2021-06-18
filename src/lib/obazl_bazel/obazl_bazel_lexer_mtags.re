@@ -21,7 +21,7 @@
 #include "utarray.h"
 #include "log.h"
 /* #include "tokens.h" */
-#include "obazl_bazel_lexer.h"
+#include "obazl_bazel_lexer_mtags.h"
 
 // for mtags:
 static const int ROOT = -1;
@@ -49,7 +49,6 @@ UT_icd loadsyms_icd = {sizeof(char**), NULL, NULL, NULL};
 #if EXPORT_INTERFACE
 struct bzl_token_s
 {
-    int line, col;
     /* type STRING_LIT */
     char *s;                    /* raw string for other types */
 
@@ -67,6 +66,13 @@ struct position_s {
     int line; // line in input (starting at 1)
     int line_rune; // rune in line (starting at 1)
     int col; // col in input (starting at 0)
+};
+
+// syntax.go: A Comment represents a single # comment.
+/* type Comment struct { */
+struct comment_s {
+    struct position_s start;
+    char *str; /* Token string // without trailing newline */
 };
 
 struct bf_lexer
@@ -110,27 +116,27 @@ int return_token(int tok)
 /* typedef std::vector<Mtag> MtagTree; */
 
 /* loadsym_push will be called twice per token, once for start mtag, once for end mtag */
-/* static void loadsym_push(int *idx, const char *t, struct node_s **mtok) */
-/* { */
-/*     static int ct = 0; */
-/*     log_debug("loadsym_push: %d, ct: %d, s: %s", *idx, ct, t); */
-/*     /\*  if ( (ct % 2) == 0) { *\/ */
-/*     /\*     log_debug("pushing new load sym w/alias"); *\/ */
-/*     /\* } *\/ */
-/*     /\* we push the ptr, not a string *\/ */
-/*     utarray_push_back((*mtok)->load.syms, &t); */
-/*     (*mtok)->load.sym_ct++; */
-/*     (*idx)++; */
-/*     ct++; */
-/*     log_debug("subexpr ct: %d", utarray_len((*mtok)->load.syms)); */
+static void loadsym_push(int *idx, const char *t, struct bzl_token_s **mtok)
+{
+    static int ct = 0;
+    log_debug("loadsym_push: %d, ct: %d, s: %s", *idx, ct, t);
+    /*  if ( (ct % 2) == 0) { */
+    /*     log_debug("pushing new load sym w/alias"); */
+    /* } */
+    /* we push the ptr, not a string */
+    utarray_push_back((*mtok)->load.syms, &t);
+    (*mtok)->load.sym_ct++;
+    (*idx)++;
+    ct++;
+    log_debug("subexpr ct: %d", utarray_len((*mtok)->load.syms));
 
-/*     /\* Mtag m = {*idx, t}; *\/ */
-/*     /\* *idx = (int)tree->size(); *\/ */
-/*     /\* tree->push_back(m); *\/ */
-/* } */
+    /* Mtag m = {*idx, t}; */
+    /* *idx = (int)tree->size(); */
+    /* tree->push_back(m); */
+}
 
 /* called for non-matching optional subexprs (i.e. soid, eoid) */
-/* static void loadsym_null(int *idx, struct node_s **tok) */
+/* static void loadsym_null(int *idx, struct bzl_token_s **tok) */
 /* { */
 /*     static int ct; */
 /*     log_debug("loadsym_null: %d, ct: %d", *idx, ct); */
@@ -141,9 +147,8 @@ int return_token(int tok)
 /*     ct++; */
 /* } */
 
-int get_next_token(struct bf_lexer *lexer, struct node_s **mtok)
+int get_next_token(struct bf_lexer *lexer, struct bzl_token_s **mtok)
 {
-    log_debug("");
     //int c = yycinit;
     /* lexer->mode = yycinit; */
     int countNL = 0;
@@ -175,8 +180,8 @@ loop:
       // The way tag variables are accessed from the lexer (not needed if tag variables are defined as local variables).
       re2c:tags:expression = "lexer->@@";
       // for the following, '@@' will be replaced by 'lexer->@@' (re2c:tags:expression)
-      /* re2c:define:YYMTAGP = "loadsym_push(&@@, lexer->cursor, mtok);"; // , mtag_list);"; */
-      /* re2c:define:YYMTAGN = "loadsym_push(&@@, NULL, mtok);"; // , NULL, mtag_list);"; */
+      re2c:define:YYMTAGP = "loadsym_push(&@@, lexer->cursor, mtok);"; // , mtag_list);";
+      re2c:define:YYMTAGN = "loadsym_push(&@@, NULL, mtok);"; // , NULL, mtag_list);";
 
       re2c:flags:tags = 1;
       re2c:yyfill:enable  = 0;
@@ -207,22 +212,20 @@ loop:
             /* in.startToken(val); */
             /* in.readRune(); */
             /* in.endToken(val); */
-            // return TK_NEWLINE;
+            // return NEWLINE;
         }
         countNL++;
         goto loop;
     }
 
     string_lit = [^"]+;  // ([a-zA-Z0-9=/_-:.])+;
-    <xstr> @s1 string_lit @s2 "\"" => init {
+      <xstr> string_lit "\"" => init {
             log_debug("<xstr>, mode: %d", lexer->mode);
-            /* lexer->clean_line = false; */
-            /* lexer->pos.col = lexer->tok - lexer->sol; */
-            (*mtok)->line = lexer->pos.line;
-            (*mtok)->col  = lexer->tok - lexer->sol;
+            lexer->clean_line = false;
+            lexer->pos.col = lexer->tok - lexer->sol;
             /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
             (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-            return TK_DQSTRING;
+            return STRING;
       }
 
       /* <load_file> string_lit "\"" => load { */
@@ -231,7 +234,7 @@ loop:
       /*       lexer->pos.col = lexer->tok - lexer->sol; */
       /*       /\* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); *\/ */
       /*       (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-      /*       return TK_DQSTRING */
+      /*       return STRING; */
       /* } */
 
       // IDENTIFIERS "an identifier is a sequence of
@@ -256,96 +259,90 @@ loop:
       &=   |=   ^=   <<=  >>=
     */
 
-    <init> "**" { return return_token(TK_STARSTAR); }
-    <init> "->" { return TK_ARROW; }
-    <init> "<=" { return TK_LE; }
-    <init> ">=" { return TK_GE; }
+    <init> "**" { return return_token(STARSTAR); }
+    <init> "->" { return ARROW; }
+    <init> "<=" { return LE; }
+    <init> ">=" { return GE; }
 
-    <init> "." { return TK_DOT; }
+    <init> "." { return DOT; }
     <init, load> "," {
-          //lexer->pos.col = lexer->tok - lexer->sol;
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          return TK_COMMA;
-      }
-    <init> ";" { return TK_SEMI; }
-    <init> ":" { return TK_COLON; }
-    <init> "!=" { return TK_BANG_EQ; }
-    <init> "!"  { return TK_BANG; }
-    <init> "+=" { return TK_PLUS_EQ; }
-    <init> "+" { return TK_PLUS; }
-    <init> "-=" { return TK_MINUS_EQ; }
-    <init> "-" { return TK_MINUS; }
-    <init> "*=" { return TK_STAR_EQ; }
-    <init> "*" { return TK_STAR; }
-    <init> "//=" { return TK_DIVDIV_EQ; }
-    <init> "//" { return TK_DIVDIV; }
-    <init> "/=" { return TK_DIV_EQ; }
-    <init> "/" { return TK_SLASH; }
-    <init> "%=" { return TK_PCT_EQ; }
-    <init> "%" { return TK_PCT; }
-    <init> "&=" { return TK_AMP_EQ; }
-    <init> "&" { return TK_AMP; }
-/*    <init> "|=" { return TK_VBAR_EQ; } */
-    <init> "|" { return TK_VBAR; }
-    <init> "^=" { return TK_CARET_EQ; }
-    <init> "^" { return TK_CARET; }
-    <init> "~" { return TK_TILDE; }
-    <init> "[" { return TK_LBRACK; }
-    <init> "]" { return TK_RBRACK; }
-    <init> "{" { return TK_LBRACE; }
-    <init> "}" { return TK_RBRACE; }
+            lexer->pos.col = lexer->tok - lexer->sol;
+            return COMMA;
+     }
+    <init> ";" { return SEMI; }
+    <init> ":" { return COLON; }
+    <init> "!=" { return BANG_EQ; }
+    <init> "!"  { return BANG; }
+    <init> "+=" { return PLUS_EQ; }
+    <init> "+" { return PLUS; }
+    <init> "-=" { return MINUS_EQ; }
+    <init> "-" { return MINUS; }
+    <init> "*=" { return STAR_EQ; }
+    <init> "*" { return STAR; }
+    <init> "//=" { return DIVDIV_EQ; }
+    <init> "//" { return DIVDIV; }
+    <init> "/=" { return DIV_EQ; }
+    <init> "/" { return SLASH; }
+    <init> "%=" { return PCT_EQ; }
+    <init> "%" { return PCT; }
+    <init> "&=" { return AMP_EQ; }
+    <init> "&" { return AMP; }
+/*    <init> "|=" { return VBAR_EQ; } */
+    <init> "|" { return VBAR; }
+    <init> "^=" { return CARET_EQ; }
+    <init> "^" { return CARET; }
+    <init> "~" { return TILDE; }
+    <init> "[" { return LBRACK; }
+    <init> "]" { return RBRACK; }
+    <init> "{" { return LBRACE; }
+    <init> "}" { return RBRACE; }
     <init> "(" {
-        /* log_debug("<init> LPAREN"); */
+        log_debug("<init> LPAREN");
             lexer->pos.col = lexer->tok - lexer->sol;
             /* (*mtok)->s = NULL; */
-            return TK_LPAREN;
+            return LPAREN;
         }
     /* <load> "(" { */
     /*         log_debug("<load> LPAREN, mode: %d", lexer->mode); */
     /*         lexer->pos.col = lexer->tok - lexer->sol; */
     /*         /\* (*mtok)->s = NULL; *\/ */
-    /*         return TK_LPAREN; */
+    /*         return LPAREN; */
     /*     } */
     <init> ")"  {
             log_debug("<init> RPAREN, mode: %d", lexer->mode);
             /* (*mtok)->pos.line = lexer->pos.line; */
             lexer->pos.col = lexer->tok - lexer->sol;
             /* (*mtok)->s = NULL; */
-            return TK_RPAREN;
+            return RPAREN;
         }
     /* <load> ")" => init { */
     /*         log_debug("<load> RPAREN, mode: %d", lexer->mode); */
     /*         /\* (*mtok)->pos.line = lexer->pos.line; *\/ */
     /*         lexer->pos.col = lexer->tok - lexer->sol; */
     /*         /\* (*mtok)->s = NULL; *\/ */
-    /*         return TK_RPAREN; */
+    /*         return RPAREN; */
     /*     } */
-    <init> "<<=" { return TK_LLANGLE_EQ; }
-    <init> "<<"  { return TK_LLANGLE; }
-    <init> "<"   { return TK_LANGLE; }
-    <init> ">>=" { return TK_RRANGLE_EQ; }
-    <init> ">>"  { return TK_RRANGLE; }
-    <init> ">"   { return TK_RANGLE; }
-    <init> "=="  { return TK_EQEQ; }
-    <init> "="   {
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          return TK_EQ;
-      }
+    <init> "<<=" { return LLANGLE_EQ; }
+    <init> "<<"  { return LLANGLE; }
+    <init> "<"   { return LANGLE; }
+    <init> ">>=" { return RRANGLE_EQ; }
+    <init> ">>"  { return RRANGLE; }
+    <init> ">"   { return RANGLE; }
+    <init> "=="  { return EQEQ; }
+    <init> "="   { return EQ; }
 
     /* LITERALS: integer, floating point, string, byte  */
 
-    <init> "\"\"\"" { return TK_SQ3; } /* triple quoted string delim */
-    <init> "r'" { return TK_RSQ; } /* raw single-quoted string */
-    <init> "r\"" { return TK_RDQ; }        /* raw single-quoted string */
-    <init> "b'"  { return TK_BSQ; }         /* single-quoted bytestring, e.g. b'hello' */
-    <init> "b\"" { return TK_BDQ; }        /* double-quoted bytestring, e.g. b"hello" */
-    <init> "b'''" { return TK_BSQ3; } /* triple single-quoted bytestring */
-    <init> "b\"\"\"" { return TK_BDQ3; } /* triple single-quoted bytestring */
-    <init> "rb'" { return TK_RBSQ; }        /* raw bytes literal, rb'hello' */
-    <init> "rb\"" { return TK_RBDQ; }        /* raw bytes literal, rb"hello" */
-    <init> "'" { return TK_SQ; }
+    <init> "\"\"\"" { return SQ3; } /* triple quoted string delim */
+    <init> "r'" { return RSQ; } /* raw single-quoted string */
+    <init> "r\"" { return RDQ; }        /* raw single-quoted string */
+    <init> "b'"  { return BSQ; }         /* single-quoted bytestring, e.g. b'hello' */
+    <init> "b\"" { return BDQ; }        /* double-quoted bytestring, e.g. b"hello" */
+    <init> "b'''" { return BSQ3; } /* triple single-quoted bytestring */
+    <init> "b\"\"\"" { return BDQ3; } /* triple single-quoted bytestring */
+    <init> "rb'" { return RBSQ; }        /* raw bytes literal, rb'hello' */
+    <init> "rb\"" { return RBDQ; }        /* raw bytes literal, rb"hello" */
+    <init> "'" { return SQ; }
     <init> "\"" :=> xstr
     /* <load> "\"" :=> load_file */
 
@@ -357,7 +354,7 @@ loop:
         /* \r   \x0D carriage return */
         /* \t   \x09 horizontal tab */
         /* \v   \x0B vertical tab */
-    <init> "\\" { return TK_ESC_BACKSLASH; }
+    <init> "\\" { return ESC_BACKSLASH; }
 
         /* octals */
         /* '\0'			# "\x00"  a string containing a single NUL element */
@@ -376,70 +373,80 @@ loop:
         /* '\U0001F600'            # "😀", an Emoji (U+1F600) */
 
         /* KEYWORDS */
-    <init> "and" { return TK_AND; }
-    <init> "else" { return TK_ELSE; }
+    <init> "and" { return AND; }
+    <init> "else" { return ELSE; }
 
     /* LoadStmt = 'load' '(' string {',' [identifier '='] string} [','] ')' . */
-    <init> "load" {
+    <init> "load" => load {
         log_debug("<init> LOAD, mode: %d", lexer->mode);
-        return TK_LOAD;
+        utarray_new((*mtok)->load.syms, &loadsyms_icd);
+        lexer->cursor = lexer->tok; /* reset ptr */
+        goto loop;
     }
-    <init> "break" { return TK_BREAK; }
-    <init> "for" { return TK_FOR; }
-    <init> "not" { return TK_NOT; }
-    <init> "continue" { return TK_CONTINUE; }
-    <init> "if" { return TK_IF; }
-    <init> "or" { return TK_OR; }
-    <init> "def" { return TK_DEF; }
-    <init> "in" { return TK_IN; }
-    <init> "pass" { return TK_PASS; }
-    <init> "elif" { return TK_ELIF; }
-    <init> "lambda" { return TK_LAMBDA; }
-    <init> "return" { return TK_RETURN; }
+    <load> "load" wsnl* "(" wsnl* "\"" @s1 string_lit @s2 "\"" wsnl* "," wsnl* ( (#soid identifier #eoid "=")? "\"" #sosym string_lit #eosym "\"" wsnl* ","? wsnl*)+ wsnl* ")" => init {
+        log_debug("LOAD");
+        log_debug("soid: %d, eoid: %d", soid, eoid);
+        log_debug("sosym: %d, eosym: %d", sosym, eosym);
+        /* lexer->pos.col = lexer->tok - lexer->sol; */
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        log_debug("string: %s", (*mtok)->s);
+        (*mtok)->load.label = strndup(s1, (size_t)(s2 - s1));
+        log_debug("Subexpr ct: %d", utarray_len((*mtok)->load.syms));
+        log_debug("load.syms ptr: %p", (*mtok)->load.syms);
+        return LOAD;
+    }
+    <init> "break" { return BREAK; }
+    <init> "for" { return FOR; }
+    <init> "not" { return NOT; }
+    <init> "continue" { return CONTINUE; }
+    <init> "if" { return IF; }
+    <init> "or" { return OR; }
+    <init> "def" { return DEF; }
+    <init> "in" { return IN; }
+    <init> "pass" { return PASS; }
+    <init> "elif" { return ELIF; }
+    <init> "lambda" { return LAMBDA; }
+    <init> "return" { return RETURN; }
 
         /* RESERVED */
         /* "The tokens below also may not be used as identifiers although they do not appear in the grammar; they are reserved as possible future keywords:"
          */
-    <init> "as" { return TK_AS; }
-    <init> "import" { return TK_IMPORT; }
-    <init> "assert" { return TK_ASSERT; }
-    <init> "is" { return TK_IS; }
-    <init> "class" { return TK_CLASS; }
-    <init> "nonlocal" { return TK_NONLOCAL; }
-    <init> "del" { return TK_DEL; }
-    <init> "raise" { return TK_RAISE; }
-    <init> "except" { return TK_EXCEPT; }
-    <init> "try" { return TK_TRY; }
-    <init> "finally" { return TK_FINALLY; }
-    <init> "while" { return TK_WHILE; }
-    <init> "from" { return TK_FROM; }
-    <init> "with" { return TK_WITH; }
-    <init> "global" { return TK_GLOBAL; }
-    <init> "yield" { return TK_YIELD; }
+    <init> "as" { return AS; }
+    <init> "import" { return IMPORT; }
+    <init> "assert" { return ASSERT; }
+    <init> "is" { return IS; }
+    <init> "class" { return CLASS; }
+    <init> "nonlocal" { return NONLOCAL; }
+    <init> "del" { return DEL; }
+    <init> "raise" { return RAISE; }
+    <init> "except" { return EXCEPT; }
+    <init> "try" { return TRY; }
+    <init> "finally" { return FINALLY; }
+    <init> "while" { return WHILE; }
+    <init> "from" { return FROM; }
+    <init> "with" { return WITH; }
+    <init> "global" { return GLOBAL; }
+    <init> "yield" { return YIELD; }
 
     <init> identifier {
-          /* log_debug("<init> IDENTIFIER"); */
-          /* (*mtok)->type = NODE_ID; */
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-        return TK_ID;
+                       log_debug("<init> IDENTIFIER");
+            lexer->clean_line = false;
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+        return ID;
         }
 
-    <init> [0-9] { return TK_NUMBER; }
+    <init> [0-9] { return NUMBER; }
 
     inline_cmt = [^\n]+;
     <inline_cmt> inline_cmt => init {
             lexer->clean_line = true;
             /* lexer->indent = 0; */
             /* lexer->pos.col = lexer->tok - lexer->sol; */
-            /* lexer->pos.col = s1 - lexer->sol; */
+            lexer->pos.col = s1 - lexer->sol;
             /* (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-            (*mtok)->line = lexer->pos.line;
-            (*mtok)->col  = lexer->tok - lexer->sol;
-            /* eocomment is cursor, not @s2! */
             (*mtok)->s = strndup(s1, (size_t)(lexer->cursor - s1));
-            return TK_COMMENT;
+            return COMMENT;
             /* goto loop;          /\* skip comments *\/ */
         }
 
@@ -453,7 +460,7 @@ loop:
     /*         (*mtok)->pos.line = lexer->pos.line; */
     /*         (*mtok)->pos.col += lexer->tok - lexer->sol; */
     /*         (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-    /*         return TK_COMMENT; */
+    /*         return COMMENT; */
     /*         /\* goto loop;          /\\* skip comments *\\/ *\/ */
     /*     } */
 
