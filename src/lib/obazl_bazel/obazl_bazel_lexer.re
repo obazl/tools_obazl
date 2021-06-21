@@ -186,7 +186,12 @@ loop:
       ws     = [ \t]*;
       wsnl   = [ \t\n]*;
 
-    <!init> { lexer->pos.col = lexer->tok - lexer->sol; }
+    <!init> {
+        // lexer->pos.col = lexer->tok - lexer->sol;
+        (*mtok)->line = lexer->pos.line;
+        (*mtok)->col  = lexer->tok - lexer->sol;
+        // productions using tags must explicitly set mtok line and col
+    }
 
     <*> " " {
         lexer->pos.col++;
@@ -213,26 +218,28 @@ loop:
         goto loop;
     }
 
-    string_lit = [^"]+;  // ([a-zA-Z0-9=/_-:.])+;
-    <xstr> @s1 string_lit @s2 "\"" => init {
-            log_debug("<xstr>, mode: %d", lexer->mode);
+    sqstring_lit = [^']+;
+    <sqstr> @s1 sqstring_lit @s2 "'" => init {
+            log_debug("<sqstr>, mode: %d", lexer->mode);
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            return TK_STRING;
+      }
+    <init> "\'" :=> sqstr
+
+    dqstring_lit = [^"]+;  // ([a-zA-Z0-9=/_-:.])+;
+    <dqstr> @s1 dqstring_lit @s2 "\"" => init {
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            log_debug("<dqstr>: %s", (*mtok)->s);
             /* lexer->clean_line = false; */
             /* lexer->pos.col = lexer->tok - lexer->sol; */
             (*mtok)->line = lexer->pos.line;
             (*mtok)->col  = lexer->tok - lexer->sol;
             /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
-            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-            return TK_DQSTRING;
+            return TK_STRING;
       }
-
-      /* <load_file> string_lit "\"" => load { */
-      /*       log_debug("<load_file> string_lit, mode: %d", lexer->mode); */
-      /*       lexer->clean_line = false; */
-      /*       lexer->pos.col = lexer->tok - lexer->sol; */
-      /*       /\* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); *\/ */
-      /*       (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-      /*       return TK_DQSTRING */
-      /* } */
+    <init> "\"" :=> dqstr
 
       // IDENTIFIERS "an identifier is a sequence of
       // Unicode letters, decimal digits, and underscores (_), not
@@ -262,12 +269,7 @@ loop:
     <init> ">=" { return TK_GE; }
 
     <init> "." { return TK_DOT; }
-    <init, load> "," {
-          //lexer->pos.col = lexer->tok - lexer->sol;
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          return TK_COMMA;
-      }
+    <init, load> "," { return TK_COMMA; }
     <init> ";" { return TK_SEMI; }
     <init> ":" { return TK_COLON; }
     <init> "!=" { return TK_BANG_EQ; }
@@ -328,11 +330,7 @@ loop:
     <init> ">>"  { return TK_RRANGLE; }
     <init> ">"   { return TK_RANGLE; }
     <init> "=="  { return TK_EQEQ; }
-    <init> "="   {
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          return TK_EQ;
-      }
+    <init> "="   { return TK_EQ; }
 
     /* LITERALS: integer, floating point, string, byte  */
 
@@ -345,9 +343,6 @@ loop:
     <init> "b\"\"\"" { return TK_BDQ3; } /* triple single-quoted bytestring */
     <init> "rb'" { return TK_RBSQ; }        /* raw bytes literal, rb'hello' */
     <init> "rb\"" { return TK_RBDQ; }        /* raw bytes literal, rb"hello" */
-    <init> "'" { return TK_SQ; }
-    <init> "\"" :=> xstr
-    /* <load> "\"" :=> load_file */
 
         /* string escapes */
         /* \a   \x07 alert or bell */
@@ -418,44 +413,22 @@ loop:
     <init> "yield" { return TK_YIELD; }
 
     <init> identifier {
-          /* log_debug("<init> IDENTIFIER"); */
-          /* (*mtok)->type = NODE_ID; */
-          (*mtok)->line = lexer->pos.line;
-          (*mtok)->col  = lexer->tok - lexer->sol;
-          (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
         return TK_ID;
-        }
+    }
 
     <init> [0-9] { return TK_NUMBER; }
 
     inline_cmt = [^\n]+;
     <inline_cmt> inline_cmt => init {
-            lexer->clean_line = true;
-            /* lexer->indent = 0; */
-            /* lexer->pos.col = lexer->tok - lexer->sol; */
-            /* lexer->pos.col = s1 - lexer->sol; */
-            /* (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
             (*mtok)->line = lexer->pos.line;
-            (*mtok)->col  = lexer->tok - lexer->sol;
-            /* eocomment is cursor, not @s2! */
+            /* start of comment is stag 's1', not lexer->tok */
+            /* end of comment is cursor, not @s2! */
+            (*mtok)->col  = s1 - lexer->sol;
             (*mtok)->s = strndup(s1, (size_t)(lexer->cursor - s1));
             return TK_COMMENT;
-            /* goto loop;          /\* skip comments *\/ */
         }
-
     <init> ws* @s1 "#" @s2 :=> inline_cmt
-    <init> "#" :=> inline_cmt
-    /* <init> "#" .* eol { //FIXME: excluding newline? */
-    /*         lexer->pos.line++; */
-    /*         lexer->pos.col = 0; */
-    /*         lexer->clean_line = true; */
-    /*         lexer->indent = 0; */
-    /*         (*mtok)->pos.line = lexer->pos.line; */
-    /*         (*mtok)->pos.col += lexer->tok - lexer->sol; */
-    /*         (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-    /*         return TK_COMMENT; */
-    /*         /\* goto loop;          /\\* skip comments *\\/ *\/ */
-    /*     } */
 
     <init> end       {
         printf("<init> ending\n");
@@ -474,5 +447,6 @@ void lexer_init(struct bf_lexer *lexer,
                 const char *sob /* start of buffer */ )
 {
     lexer->cursor = sob;
+    // lexer->pos.line = 1;
     lexer->sol = sob;
 }

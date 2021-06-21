@@ -72,16 +72,19 @@ void _parse_file(char *fname)
 
     while ( (tok = get_next_token(lexer, &btok)) != 0 ) {
         btok->type = tok;
-        /* log_debug("token code: %d", tok); */
+        /* btok->line = lexer->pos.line; */
+        /* btok->col  = lexer->pos.col; */
+        log_debug("token code: %d, %d", tok, btok->type);
         /* log_debug("token name: %s", token_name[tok]); */
         /* if (btok->s != NULL) { */
         /*     log_debug("token str: %p", btok->s); */
         /* } */
         log_debug("lexer pos: line %d col %d", lexer->pos.line, lexer->pos.col);
 
-        log_debug("token: %s (%d), mode: %d str: '%s'\n",
+        log_debug("token: %s (%d), mode: %d, (%d:%d), str: '%s'\n",
                   token_name[tok], tok,
                   lexer->mode,
+                  btok->line, btok->col,
                   btok->s
                   /* lexer->clean_line, */
                   /* lexer->indent */

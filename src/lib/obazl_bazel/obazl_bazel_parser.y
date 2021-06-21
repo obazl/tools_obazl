@@ -42,6 +42,8 @@ static char *sp = " ";
 %token COMMENT .
 %token CONTINUE .
 %token DEF .
+%token DEF_PARAMS .
+%token DEF_STMT .
 %token DEL .
 %token DIVDIV .
 %token DIVDIV_EQ .
@@ -72,6 +74,7 @@ static char *sp = " ";
 %token LLANGLE .
 %token LLANGLE_EQ .
 %token LOAD .
+%token LOAD_STMT .
 %token LPAREN .
 %token MINUS .
 %token MINUS_EQ .
@@ -104,7 +107,7 @@ static char *sp = " ";
 %token STAR .
 %token STARSTAR .
 %token STAR_EQ .
-%token DQSTRING .
+%token STRING .
 %token TILDE .
 %token TRY .
 %token VBAR .
@@ -139,21 +142,113 @@ static char *sp = " ";
     /* utarray_free($$->list); */
 }
 
-%type alias_node { struct node_s* }
-%destructor alias_node {
-    log_trace("freeing alias_node");
+%type str_alias { struct node_s* } /* subnodes: ID cmt* EQ cmt* STRING  */
+%destructor str_alias {
+    log_trace("freeing STR_ALIAS");
     /* utarray_free($$->list); */
 }
 
-%type sym_list { UT_array* }    /* list of struct node_s */
-%destructor sym_list {
-    log_trace("freeing sym_list");
+/* %type comma_str_alias { UT_array* }    /\* list: COMMA str_alias *\/ */
+/* %destructor comma_str_alias { */
+/*     log_trace("freeing comma_str_alias"); */
+/*     /\* utarray_free($$->list); *\/ */
+/* } */
+
+%type load_list { UT_array* }    /* list of struct node_s */
+%destructor load_list {
+    log_trace("freeing load_list");
     /* utarray_free($$->list); */
 }
 
-%type cmt_list { UT_array* }    /* list of struct node_s ???? */
+%type cmt_list { UT_array* }    /* list of cmt nodes */
 %destructor cmt_list {
     log_trace("freeing cmt_list");
+    /* utarray_free($$->list); */
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+%type def_stmt { struct node_s* }
+%destructor def_stmt {
+    log_trace("freeing def_stmt");
+    /* utarray_free($$->list); */
+}
+
+%type load_stmt { struct node_s* }
+%destructor load_stmt {
+    log_trace("freeing load_stmt");
+    /* utarray_free($$->list); */
+}
+
+%type params { struct node_s* }
+%destructor params {
+    log_trace("freeing params");
+    /* utarray_free($$->list); */
+}
+
+%type params_req { UT_array* }
+%destructor params {
+    log_trace("freeing params");
+    /* utarray_free($$->list); */
+}
+
+/* suite :: approximately 'body' (of a fn defn, for example) */
+/* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
+%type suite { struct node_s* }
+%destructor suite {
+    log_trace("freeing suite");
+    /* utarray_free($$->list); */
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+%type xCOLON { struct node_s* }
+%destructor xCOLON {
+    log_trace("freeing xCOLON");
+}
+
+%type xCOMMA { struct node_s* }
+%destructor xCOMMA {
+    log_trace("freeing xCOMMA");
+}
+
+%type xDEF { struct node_s* }
+%destructor xDEF {
+    log_trace("freeing xDEF");
+    /* utarray_free($$->list); */
+}
+
+%type xEQ { struct node_s* }
+%destructor xEQ {
+    log_trace("freeing xEQ");
+    /* utarray_free($$->list); */
+}
+
+%type xID { struct node_s* }
+%destructor xID {
+    log_trace("freeing xID");
+    /* utarray_free($$->list); */
+}
+
+%type xLOAD { struct node_s* }    /* LOAD COMMENT* */
+%destructor xLOAD {
+    log_trace("freeing xLOAD");
+    /* utarray_free($$->list); */
+}
+
+%type xLPAREN { struct node_s* }
+%destructor xLPAREN {
+    log_trace("freeing xLPAREN");
+    /* utarray_free($$->list); */
+}
+
+%type xRPAREN { struct node_s* }
+%destructor xRPAREN {
+    log_trace("freeing xRPAREN");
+    /* utarray_free($$->list); */
+}
+
+%type xSTRING { struct node_s* }
+%destructor xSTRING {
+    log_trace("freeing xSTRING");
     /* utarray_free($$->list); */
 }
 
@@ -170,470 +265,425 @@ static char *sp = " ";
     log_trace("\n\n\t\t%%%%%%%%%%%%%%%% PARSE: SUCCESS %%%%%%%%%%%%%%%%\n");
 }
 
-%start_symbol symlist_test
+%start_symbol nodes_test
 
 /* **************************************************************** */
-/* buildfile(BLDFILE) ::= nodelist(NODES) . { */
+nodes_test ::= nodelist(NODES) . {
+#if DEBUG_TRACE
+    log_trace("\n");
+    log_trace(">>nodes_test ::= nodelist .");
+    log_trace("  rhs nodelist (NODES)");
+#endif
+    dump_nodes(NODES);
+}
+
+/* load_stmt_test ::= load_stmt(LS) . { */
 /* #if DEBUG_TRACE */
 /*     log_trace("\n"); */
-/*     log_trace(">>buildfile ::= nodelist"); */
-/*     log_trace("  buildfile (BLDFILE)"); */
-/*     log_trace("  nodelist (NODES)"); */
-/*     /\* dump_nodes(0, NODES); *\/ */
+/*     log_trace(">>load_stmt_test ::= load_stmt ."); */
+/*     log_trace("  rhs load_stmt (LS)"); */
 /* #endif */
-/*     /\* BLDFILE = (struct obazl_buildfile_s*)calloc(sizeof(struct obazl_buildfile_s), 1); *\/ */
-/*     (*ast)->nodelist = NODES; */
-/* #if DEBUG_TRACE */
-/*     /\* dump_buildfile(0, PKG); *\/ */
-/*     /\* *ast = BLDFILE; *\/ */
-/* #endif */
+    /* dump_nodes(NODES); */
 /* } */
 
-/* **************************************************************** */
-symlist_test ::= sym_list(SL) COMMA . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>symlist_test ::= sym_list COMMA .");
-    log_trace("  rhs STRINGLIST (SL)");
-#endif
-    struct node_s *p=NULL;
-    while( (p=(struct node_s*)utarray_next(SL, p))) {
-        switch(p->type) {
-        case TK_ALIAS:
-            log_debug("dump alias");
-            /* log_debug("alias: '%s' (%d, %d) = '%s' (%d, %d)", */
-            /*           p->alias->alias.s? p->alias->alias.s : "", */
-            /*           p->alias->alias.line, p->alias->alias.col, */
-            /*           p->alias->sym.s, */
-            /*           p->alias->sym.line, p->alias->sym.col); */
-            break;
-        case TK_COMMA:
-            log_debug("COMMA: %d, %d", p->line, p->col);
-            break;
-        case TK_COMMENT:
-            log_debug("COMMENT: %s (ln: %d, col: %d)",
-                      p->comment->s,
-                      p->comment->line, p->comment->col);
-            break;
-        case TK_LOAD:
-            log_debug("LOAD");
-            break;
-        case TK_SYM:
-            log_debug("SYM: %s", p->sym->sym);
-            break;
-        }
-    }
+/* load_list_test ::= load_list(SL) . { */
+/* #if DEBUG_TRACE */
+/*     log_trace("\n"); */
+/*     log_trace(">>load_list_test ::= load_list ."); */
+/*     log_trace("  rhs load_list (SL)"); */
+/* #endif */
+    /* dump_nodes(NODES); */
+/* } */
+
+str_alias(ALIAS) ::= xID(IDENT) xEQ(XEQ) xSTRING(S). {
+    log_trace(">>str_alias ::= xID xEQ xSTRING");
+    log_trace("  rhs xID(IDENT)");
+    log_trace("  rhs xEQ(XEQ)");
+    log_trace("  rhs xSTRING(S)");
+    ALIAS = calloc(sizeof(struct node_s), 1);
+    ALIAS->type = TK_ALIAS;
+    ALIAS->line  = IDENT->line;
+    ALIAS->col   = IDENT->col;
+    utarray_new(ALIAS->subnodes, &node_icd);
+    utarray_push_back(ALIAS->subnodes, IDENT);
+    utarray_push_back(ALIAS->subnodes, XEQ);
+    utarray_push_back(ALIAS->subnodes, S);
 }
 
-symlist_test ::= sym_list(SL) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>symlist_test ::= sym_list .");
-    log_trace("  rhs sym_list (SL)");
-#endif
-    struct node_s *p=NULL;
-    while( (p=(struct node_s*)utarray_next(SL, p))) {
-        switch(p->type) {
-        case TK_ALIAS:
-            log_debug("TK_ALIAS");
-            /* log_debug("dump alias: %p, %d", */
-            /*           p->subnodes, */
-            /*           utarray_len(p->subnodes)); */
-            struct node_s *subnode=NULL;
-            int subnodes_len = utarray_len(p->subnodes);
-            for(int i=0; i<subnodes_len; i++) {
-                subnode = utarray_eltptr(p->subnodes, i);
-                switch(subnode->type) {
-                case TK_ALIAS:
-                    log_debug("SUBNODE_ALIAS %d,%d",
-                              subnode->line, subnode->col);
-                    break;
-                case TK_COMMA:
-                    log_debug("SUBNODE_COMMA %d:%d",
-                              subnode->line, subnode->col);
-                    break;
-                case TK_COMMENT:
-                    log_debug("SUBNODE_COMMENT %d:%d",
-                              subnode->line, subnode->col);
-                    break;
-                case TK_EQ:
-                    log_debug("SUBNODE_EQ %d:%d",
-                              subnode->line, subnode->col);
-                    break;
-                case TK_ID:
-                    log_debug("SUBNODE_ID %d,%d: %s",
-                              subnode->line, subnode->col, subnode->s);
-                    break;
-                case TK_LOAD:
-                    log_debug("SUBNODE_LOAD %d:%d",
-                              subnode->line, subnode->col);
-                    /* should not happen */
-                    break;
-                case TK_SYM:
-                    log_debug("SUBNODE_SYM %d,%d: %s",
-                              subnode->line, subnode->col, subnode->s);
-                    break;
-                default:
-                    log_debug("SUBNODE DEFAULT");
-                    break;
-                }
-            }
-            break;
-        case TK_COMMA:
-            log_debug("COMMA: %d, %d", p->line, p->col);
-            break;
-        case TK_COMMENT:
-            log_debug("COMMENT: %s", p->comment->s);
-            break;
-        case TK_LOAD:
-            log_debug("LOAD");
-            break;
-        case TK_SYM:
-            log_debug("SYM: %s", p->sym->sym);
-            break;
-        }
-    }
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+xCOLON(XC) ::= COLON(C) . {
+    log_trace(">>xCOLON ::= COLON .");
+    XC = C;
 }
 
-sym_list(SYMLIST) ::= sym_list(SL) cmt_list(CL1) COMMA(C) cmt_list(CL2) DQSTRING(A) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= sym_list cmt_list COMMA cmt_list DQSTRING");
-    log_trace("  sym_list (SYMLIST)");
-    log_trace("  rhs: cmt_list (CL)");
-    log_trace("  rhs: DQSTRING (A): %s", A->s);
-    log_trace("  rhs: STRINGLIST (SL)");
-#endif
-    utarray_concat(SL, CL1);
+/* xCOLON(XC) ::= COLON(C) cmt_list(CL) . { */
+/*     log_trace(">>xCOLON ::= COLON cmt_list"); */
+/*     C->comments = CL; */
+/*     XC = C; */
+/* } */
 
-    struct node_s *comma_node = calloc(sizeof(struct node_s), 1);
-    comma_node->type = TK_COMMA;
-    comma_node->line  = C->line;
-    comma_node->col   = C->col;
-    utarray_push_back(SL, comma_node);
-
-    utarray_concat(SL, CL2);
-
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_SYM;
-    node->line  = A->line;
-    node->col   = A->col;
-
-    struct symdecl_s *sym = calloc(sizeof(struct symdecl_s), 1);
-    sym->line  = A->line;
-    sym->col   = A->col;
-    sym->sym = A->s;            /* just copy the ptr? */
-    node->sym  = sym;
-    utarray_push_back(SL, node);
-    SYMLIST = SL;
+xCOMMA(XC) ::= COMMA(C) . {
+    log_trace(">>xCOMMA ::= COMMA .");
+    XC = C;
 }
 
-sym_list(SYMLIST) ::= sym_list(SL) COMMA(C) cmt_list(CL) DQSTRING(A) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= sym_list cmt_list COMMA cmt_list DQSTRING");
-    log_trace("  sym_list (SYMLIST)");
-    log_trace("  rhs: cmt_list (CL)");
-    log_trace("  rhs: DQSTRING (A): %s", A->s);
-#endif
-    struct node_s *comma_node = calloc(sizeof(struct node_s), 1);
-    comma_node->type = TK_COMMA;
-    comma_node->line  = C->line;
-    comma_node->col   = C->col;
-    utarray_push_back(SL, comma_node);
-
-    utarray_concat(SL, CL);
-
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_SYM;
-    node->line  = A->line;
-    node->col   = A->col;
-
-    struct symdecl_s *sym = calloc(sizeof(struct symdecl_s), 1);
-    sym->line  = A->line;
-    sym->col   = A->col;
-    sym->sym = A->s;            /* just copy the ptr? */
-    node->sym  = sym;
-    utarray_push_back(SL, node);
-    SYMLIST = SL;
+xCOMMA(XC) ::= COMMA(C) cmt_list(CL) . {
+    log_trace(">>xCOMMA ::= COMMA cmt_list");
+    C->comments = CL;
+    XC = C;
 }
 
-sym_list(SYMLIST) ::= sym_list(SL) cmt_list(CL) COMMA DQSTRING(A) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= sym_list cmt_list COMMA DQSTRING");
-    log_trace("  sym_list (SYMLIST)");
-    log_trace("  rhs: cmt_list (CL)");
-    log_trace("  rhs: DQSTRING (A): %s", A->s);
-    log_trace("  rhs: STRINGLIST (SL)");
-#endif
-    struct symdecl_s *sym = calloc(sizeof(struct symdecl_s), 1);
-    sym->sym = A->s;            /* just copy the ptr? */
-    utarray_push_back(SL, sym);
-    SYMLIST = SL;
+xDEF(XDEF) ::= DEF(D) . {
+    log_trace(">>xDEF ::= DEF .");
+    XDEF = D;
 }
 
-sym_list(SYMLIST) ::= sym_list(SL) COMMA(C) DQSTRING(A) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= sym_list COMMA DQSTRING");
-    log_trace("  sym_list (SYMLIST)");
-    log_trace("  DQSTRING (A): %s", A->s);
-    log_trace("  rhs STRINGLIST (SL)");
-#endif
-    struct node_s *comma_node = calloc(sizeof(struct node_s), 1);
-    comma_node->type = TK_COMMA;
-    comma_node->line  = C->line;
-    comma_node->col   = C->col;
-    utarray_push_back(SL, comma_node);
-
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_SYM;
-    node->line  = A->line;
-    node->col   = A->col;
-
-    struct symdecl_s *sym = calloc(sizeof(struct symdecl_s), 1);
-    sym->line  = A->line;
-    sym->col   = A->col;
-    sym->sym = A->s;            /* just copy the ptr? */
-    node->sym  = sym;
-    utarray_push_back(SL, node);
-
-    SYMLIST = SL;
+xDEF(XDEF) ::= DEF(D) cmt_list(CL) . {
+    log_trace(">>xDEF ::= DEF cmt_list");
+    /* D->comments = CL; */
+    XDEF = D;
 }
 
-sym_list(SYMLIST) ::= sym_list(SL) COMMA(C) alias_node(ALIAS) . {
- //ID(IDENT) EQ DQSTRING(S). {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= sym_list COMMA alias_node");
-    log_trace("  lhs sym_list (SYMLIST)");
-    log_trace("  rhs sym_list (SL)");
-    log_trace("  rhs COMMA (C)");
-    log_trace("  rhs alias_node (ALIAS)");
-#endif
-    struct node_s *comma_node = calloc(sizeof(struct node_s), 1);
-    comma_node->type = TK_COMMA;
-    comma_node->line  = C->line;
-    comma_node->col   = C->col;
-    utarray_push_back(SL, comma_node);
-    utarray_push_back(SL, ALIAS);
-    SYMLIST = SL;
+xEQ(XEQ) ::= EQ(Eq) . {
+    log_trace(">>xEQ ::= EQ");
+    XEQ = Eq;
 }
 
-alias_node(ALIAS_NODE) ::= ID(IDENT) EQ(Eq) DQSTRING(S). {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>alias_node ::= ID EQ DQSTRING");
-    log_trace(" lhs alias_node(ALIAS_NODE)");
-    log_trace(" rhs ID(IDENT): %s", IDENT->s);
-    log_trace(" rhs DQSTRING(S): %s", S->s);
-#endif
-    /* utarray_new(ALIAS, &node_icd); */
-    ALIAS_NODE = calloc(sizeof(struct node_s), 1);
-    ALIAS_NODE->type = TK_ALIAS;
-    ALIAS_NODE->line = IDENT->line;
-    ALIAS_NODE->col  = IDENT->col;
-
-    /* struct node_s *alias = calloc(sizeof(struct node_s), 1); */
-    /* alias->line  = IDENT->line; */
-    /* alias->col   = IDENT->col; */
-    utarray_new(ALIAS_NODE->subnodes, &node_icd);
-
-    /* struct node_s *id_node = calloc(sizeof(struct node_s), 1); */
-    /* id_node->type = TK_ID; */
-    /* id_node->line = IDENT->line; */
-    /* id_node->col  = IDENT->col; */
-    /* id_node->s    = strdup(IDENT->s); */
-    utarray_push_back(ALIAS_NODE->subnodes, IDENT); // id_node);
-
-    struct node_s *eq_node = calloc(sizeof(struct node_s), 1);
-    eq_node->type = TK_EQ;
-    eq_node->line = Eq->line;
-    eq_node->col  = Eq->col;
-    utarray_push_back(ALIAS_NODE->subnodes, eq_node);
-
-    struct node_s *sym_node = calloc(sizeof(struct node_s), 1);
-    sym_node->type = TK_SYM;
-    sym_node->line = S->line;
-    sym_node->col  = S->col;
-    sym_node->s    = strdup(S->s);
-    utarray_push_back(ALIAS_NODE->subnodes, sym_node);
-
-    /* ALIAS_NODE->alias = alias; */
+xEQ(XEQ) ::= EQ(Eq) cmt_list(CL) . {
+    log_trace(">>xEQ ::= Eq cmt_list");
+    log_trace("   EQ(Eq)");
+    log_trace("   cmt_list(CL)");
+    Eq->comments = CL;
+    XEQ = Eq;
 }
 
-sym_list(SL) ::= DQSTRING(A). {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= DQSTRING .");
-    log_trace("  sym_list (SL)");
-    log_trace("  DQSTRING (A): %s", A->s);
-#endif
-    utarray_new(SL, &node_icd);
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_SYM;
-    node->line  = A->line;
-    node->col   = A->col;
-
-    struct symdecl_s *sym = calloc(sizeof(struct symdecl_s), 1);
-    sym->line  = A->line;
-    sym->col   = A->col;
-    sym->sym   = A->s;
-
-    node->sym = sym;
-    utarray_push_back(SL, node);
+xID(XID) ::= ID(IDENT) . {
+    log_trace(">>xID ::= ID");
+    XID = IDENT;
 }
 
-sym_list(SL) ::= alias_node(ALIAS) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>sym_list ::= alias_node .");
-    log_trace("  sym_list (SL)");
-    log_trace("  rhs alias_node(ALIAS)"); //: %s", IDENT->s);
-    /* log_trace("  DQSTRING (A): %s", A->s); */
-#endif
-    utarray_new(SL, &node_icd);
-    /* struct node_s *node = calloc(sizeof(struct node_s), 1); */
-    /* node->type = TK_ALIAS; */
-    /* node->line  = ALIAS->line; */
-    /* node->col   = ALIAS->col; */
+xID(XID) ::= ID(IDENT) cmt_list(CL) . {
+    log_trace(">>xID ::= ID cmt_list");
+    log_trace("   ID(IDENT): %s", IDENT->s);
+    log_trace("   cmt_list(CL)");
+    IDENT->comments = CL;
+    XID = IDENT;
+}
 
-    /* node->alias = sym; */
-    utarray_push_back(SL, ALIAS);
+xLOAD(XLD) ::= LOAD(LD) . {
+    log_trace("");
+    log_trace(">>xLOAD ::= LOAD");
+    log_trace("  lhs xLOAD (XLD)");
+    log_trace("  rhs LOAD (LD)");
+    /* utarray_new(NODE, &node_icd); */
+    /* utarray_push_back(NODE, LD); */
+    XLD = LD;
+}
+
+xLOAD(NODE) ::= LOAD(LD) cmt_list(CL) . {
+    log_trace("");
+    log_trace(">>xLOAD ::= LOAD cmt_list");
+    log_trace("  xLOAD (LD)");
+    log_trace("  LOAD (LD)");
+    log_trace("  cmt_list (CL)");
+    LD->comments = CL;
+    NODE = LD;
+}
+
+xLPAREN(XLP) ::= LPAREN(LP) . {
+    log_trace("");
+    log_trace(">>xLPAREN ::= LPAREN");
+    log_trace("  lhs xLPAREN(NODE)");
+    log_trace("  rhs LPAREN(LP)");
+    /* utarray_new(NODE, &node_icd); */
+    /* utarray_push_back(NODE, LP); */
+    XLP = LP;
+}
+
+xLPAREN(NODE) ::= LPAREN(LP) cmt_list(CL) . {
+    log_trace("");
+    log_trace(">>xLPAREN ::= LPAREN cmt_list");
+    log_trace("  LPAREN (LP)");
+    log_trace("  cmt_list (CL)");
+    LP->comments = CL;
+    NODE = LP;
+}
+
+xRPAREN(XRP) ::= RPAREN(RP) . {
+    log_trace("");
+    log_trace(">>xRPAREN ::= RPAREN");
+    log_trace("  lhs xRPAREN(NODE)");
+    log_trace("  rhs RPAREN(RP)");
+    XRP = RP;
+}
+
+xRPAREN(NODE) ::= RPAREN(RP) cmt_list(CL) . {
+    log_trace("");
+    log_trace(">>xRPAREN ::= RPAREN cmt_list");
+    log_trace("  RPAREN (RP)");
+    log_trace("  cmt_list (CL)");
+    RP->comments = CL;
+    NODE = RP;
+}
+
+xSTRING(XSTR) ::= STRING(S) . {
+    log_trace("");
+    log_trace(">>xSTRING ::= STRING");
+    log_trace("  lhs xSTRING (XSTR)");
+    XSTR = S;
+}
+
+xSTRING(XSTR) ::= STRING(S) cmt_list(CL) . {
+    log_trace("");
+    log_trace(">>xSTRING ::= STRING cmt_list");
+    log_trace("  xSTRING (S)");
+    log_trace("  STRING (S)");
+    log_trace("  cmt_list (CL)");
+    S->comments = CL;
+    XSTR = S;
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+load_list(LOAD_LIST) ::= str_alias(A) . {
+    log_trace(">>load_list ::= load_list str_alias");
+    utarray_new(LOAD_LIST, &node_icd);
+    utarray_push_back(LOAD_LIST, A);
+}
+
+load_list(LOAD_LIST) ::= xSTRING(XS) . {
+    log_trace(">>load_list ::= STRING");
+    utarray_new(LOAD_LIST, &node_icd);
+    utarray_push_back(LOAD_LIST, XS);
+}
+
+load_list(LOAD_LIST) ::= load_list(LL) xCOMMA(XC) xSTRING(XS) . {
+    log_trace(">>load_list ::= load_list xCOMMA xSTRING");
+    utarray_push_back(LL, XC);
+    utarray_push_back(LL, XS);
+    LOAD_LIST = LL;
+}
+
+load_list(LOAD_LIST) ::= load_list(LL) xCOMMA(XC) str_alias(A) . {
+    log_trace(">>load_list ::= load_list xCOMMA str_alias");
+    utarray_push_back(LL, XC);
+    utarray_push_back(LL, A);
+    LOAD_LIST = LL;
+}
+
+/* optional trailing comma */
+load_list(LOAD_LIST) ::= load_list(LL) xCOMMA(XC) . {
+    log_trace(">>load_list ::= load_list xCOMMA");
+    utarray_push_back(LL, XC);
+    LOAD_LIST = LL;
 }
 
 cmt_list(COMMENTS) ::= cmt_list(CL) COMMENT(C) . {
-#if DEBUG_TRACE
-    log_trace("\n");
     log_trace(">>cmt_list ::= cmt_list COMMENT");
-    log_trace("  cmt_list (COMMENTS)");
-    log_trace("  rhs cmt_list (CL)");
-    log_trace("  COMMENT (C): %s", C->s);
-#endif
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_COMMENT;
-    node->line  = C->line;
-    node->col   = C->col;
-
-    struct comment_s *cmt = calloc(sizeof(struct comment_s), 1);
-    cmt->line = C->line;
-    cmt->col  = C->col;
-    cmt->s    = strdup(C->s);
-    node->comment = cmt;
-    utarray_push_back(CL, node); /* NB: push_back copies node */
-
+    utarray_push_back(CL, C);
     COMMENTS = CL;
 }
 
 cmt_list(COMMENTS) ::= COMMENT(C) . {
-#if DEBUG_TRACE
-    log_trace("\n");
     log_trace(">>cmt_list ::= COMMENT");
-    log_trace("  cmt_list (COMMENTS)");
-    log_trace("  COMMENT (C): '%s'", C->s);
-#endif
     utarray_new(COMMENTS, &node_icd);
-    struct node_s *node = calloc(sizeof(struct node_s), 1);
-    node->type = TK_COMMENT;
-    node->line  = C->line;
-    node->col   = C->col;
-
-    struct comment_s *cmt = calloc(sizeof(struct comment_s), 1);
-    cmt->line = C->line;
-    cmt->col  = C->col;
-    cmt->s    = strdup(C->s);
-    node->comment = cmt;
-    utarray_push_back(COMMENTS, node); /* NB: push_back copies node */
+    utarray_push_back(COMMENTS, C);
 }
 
-/* nodelist(NODES) ::= node(NODE) . { */
-/* #if DEBUG_TRACE */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
+/* suite(SUITE) ::= . */
+/* { */
 /*     log_trace("\n"); */
-/*     log_trace(">>nodelist ::= node"); */
-/*     log_trace("%*snodelist lhs (NODES)", indent, sp); */
-/*     log_trace("%*snode (NODE)", indent, sp); */
-/*     log_trace("%*snode type: %d", indent, sp, NODE->type); */
-/*     /\* dump_node(indent, NODE); *\/ */
-/* #endif */
-/*     /\* lhs NODELIST: lemon only allocates the type (a ptr); we must allocate/init the struct *\/ */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, NODE); */
-/* #if DEBUG_TRACE */
-/*     /\* dump_nodes(indent, NODES); *\/ */
-/* #endif */
+/*     log_trace(">>suite"); */
+/*     log_trace("  suite(SUITE)"); */
 /* } */
 
-/* nodelist(NODES) ::= nodelist(PREVNODES) node(NODE) . { */
-/* #if DEBUG_TRACE */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* Parameters = Parameter {',' Parameter}. */
+/* Parameter = identifier | identifier '=' Test | '*' identifier | '**' identifier . */
+
+/* id_params(PARAMS) ::= xID(IDPARAM) . */
+/* { */
 /*     log_trace("\n"); */
-/*     log_trace(">>nodelist ::= nodelist node"); */
-/*     log_trace("%*snodelist lhs(NODES)", indent, sp); */
-/*     log_trace("%*snodelist rhs(PREVNODES)", indent, sp); */
-/*     /\* dump_nodes(delta+indent, PREVNODES); *\/ */
-/*     log_trace("%*snode (NODE)", indent, sp); //, obzl_meta_nodes_count(PREVNODES)); */
-/*     /\* dump_node(delta+indent, NODE); *\/ */
-/* #endif */
-/*     utarray_push_back(PREVNODES, NODE); */
-/*     NODES = PREVNODES; */
-/*     /\* log_trace("after normalization"); *\/ */
-/* #if DEBUG_TRACE */
-/*     /\* log_trace("//nodes ::= nodes node DONE"); *\/ */
-/*     /\* dump_nodes(delta+indent, NODES); *\/ */
-/* #endif */
+/*     log_trace(">>id_params ::= xID"); */
+/*     log_trace("  id_params(PARAMS)"); */
+/*     log_trace("  xID(IDPARAM)"); */
 /* } */
 
-/* **************************************************************** */
+/* id_params(PARAMS) ::= id_params(IDPARAMS) xID(IDPARAM) . */
+/* { */
+/*     log_trace("\n"); */
+/*     log_trace(">>id_params ::= id_params xID"); */
+/*     log_trace("  lhs: id_params(PARAMS)"); */
+/*     log_trace("  rhs: id_params(IDPARAMS)"); */
+/*     log_trace("  rhs: xID(IDPARAM)"); */
+/* } */
+
+/* param(PARAM) ::= id_params(IDPARAMS) . */
+/* { */
+/*     log_trace("\n"); */
+/*     log_trace(">>param ::= id_params"); */
+/*     log_trace("  lhs: param(PARAM)"); */
+/*     log_trace("  rhs: id_params(IDPARAMS)"); */
+/* } */
+
+params_req(PARAMS) ::= xID(P) .
+{
+    log_trace("\n");
+    log_trace(">>params_req ::= xID");
+    log_trace("  lhs: params_req(PARAMS)");
+    log_trace("  rhs: xID(P)");
+    utarray_new(PARAMS, &node_icd);
+    utarray_push_back(PARAMS, P);
+}
+
+params_req(PARAMS) ::= params_req(PREQS) xCOMMA(XC) xID(P) .
+{
+    log_trace("\n");
+    log_trace(">>params_req ::= params_req xCOMMA xID");
+    log_trace("  lhs: params_req(PARAMS)");
+    log_trace("  rhs: params_req(PREQS)");
+    log_trace("  rhs: xCOMMA(XC)");
+    log_trace("  rhs: xID(P)");
+    utarray_push_back(PREQS, XC);
+    utarray_push_back(PREQS, P);
+    PARAMS = PREQS;
+}
+
+params(PARAMS) ::= params_req(PRS) .
+{
+    log_trace("\n");
+    log_trace(">>params ::= params_req");
+    log_trace("  lhs: params(PARAMS)");
+    log_trace("  rhs: params_req(PRS)");
+
+    PARAMS = calloc(sizeof(struct node_s), 1);
+    PARAMS->type = TK_DEF_PARAMS;
+    /* PARAMS->line = PRS->line; */
+    /* PARAMS->col  = PRS->col; */
+    /* utarray_new(PARAMS->subnodes, &node_icd); */
+    /* utarray_push_back(PARAMS, PRS); */
+    PARAMS->subnodes = PRS;
+    dump_nodes(PARAMS->subnodes);
+}
+
+params(PARAMS) ::= .
+{
+    log_trace("\n");
+    log_trace(">>params ::= params_req");
+    log_trace("  lhs: params(PARAMS)");
+
+    PARAMS = calloc(sizeof(struct node_s), 1);
+    PARAMS->type = TK_DEF_PARAMS;
+    /* PARAMS->line = PRS->line; */
+    /* PARAMS->col  = PRS->col; */
+    /* utarray_new(PARAMS->subnodes, &node_icd); */
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* 'def' defines a function */
+/* DefStmt = 'def' identifier '(' [Parameters [',']] ')' ':' Suite . */
+def_stmt(STMT) ::= xDEF(XDEF) xID(XID) xLPAREN(XLP) params(Params) xRPAREN(XRP) xCOLON(XColon) .
+{
+    log_trace("\n");
+    log_trace(">>def_stmt ::= xDEF xID xLPAREN params xRPAREN xCOLON xSUITE");
+    log_trace("  lhs: def_stmt(STMT)");
+    log_trace("  rhs: xDEF(XDEF)");
+    log_trace("  rhs: xID(XID): %s", XID->s);
+    log_trace("  rhs: xLPAREN(XLP)");
+    log_trace("  rhs: params(Params)");
+    log_trace("  rhs: xRPAREN(XRP)");
+    log_trace("  rhs: xCOLOR(XColon)");
+    /* /\* log_trace("  rhs: suite(S)"); *\/ */
+
+    STMT = calloc(sizeof(struct node_s), 1);
+    STMT->type = TK_DEF_STMT;
+    STMT->line = XDEF->line;
+    STMT->col  = XDEF->col;
+    utarray_new(STMT->subnodes, &node_icd);
+
+    utarray_push_back(STMT->subnodes, XDEF);
+    utarray_push_back(STMT->subnodes, XID);
+    utarray_push_back(STMT->subnodes, XLP);
+    utarray_push_back(STMT->subnodes, Params);
+    /* utarray_push_back(STMT->subnodes, XC); */
+    /* utarray_concat(STMT->subnodes, LL); */
+    utarray_push_back(STMT->subnodes, XRP);
+    utarray_push_back(STMT->subnodes, XColon);
+}
+
 /* LoadStmt = 'load' '(' string {',' [identifier '='] string} [','] ')' . */
+load_stmt(STMT) ::= xLOAD(XLD) xLPAREN(XLP) xSTRING(XS) xCOMMA(XC) load_list(LL) RPAREN(RP) . {
+#if DEBUG_TRACE
+    log_trace("\n");
+    log_trace(">>load_stmt ::= xLOAD xLPAREN xSTRING xCOMMA load_list xRPAREN");
+    log_trace("  load_stmt (STMT)");
+    log_trace("  xLOAD (XLD)");
+    log_trace("  xLPAREN (XLP)");
+    log_trace("  xCOMMA (XC)");
+    log_trace("  xSTRING (XS): %s", XS->s);
+    log_trace("  load_list (LL)");
+    log_trace("  xRPAREN (RP)");
+#endif
+    STMT = calloc(sizeof(struct node_s), 1);
+    STMT->type = TK_LOAD_STMT;
+    STMT->line  = STMT->line;
+    STMT->col   = STMT->col;
+    utarray_new(STMT->subnodes, &node_icd);
 
-/* node(NODE) ::= LOAD LPAREN DQSTRING(A) COMMA DQSTRING(B) RPAREN . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>node ::= LOAD LPAREN DQSTRING COMMA DQSTRING RPAREN"); */
-/*     log_trace("  node (NODE)"); */
-/*     log_trace("  libstr (A): %s", A->s); */
-/*     log_trace("  symstr (B): %s", B->s); */
-/*     /\* if (W) *\/ */
-/*     /\*     log_trace("  WORD (W): %s", W->s); *\/ */
-/*     /\* else *\/ */
-/*     /\*     log_trace("  WORD (W): <empty>", W->s); *\/ */
-/* #endif */
-/*     NODE = (struct node_s*)calloc(sizeof(struct node_s), 1); */
-/*     NODE->type = TK_LOAD; */
-/*     /\* NODE = handle_simple_prop(VAR, OPCODE, W); *\/ */
-/*     /\* dump_node(indent, NODE); *\/ */
-/* } */
+    /* utarray_push_back(STMT->subnodes, LD); */
+    utarray_push_back(STMT->subnodes, XLD);
+    utarray_push_back(STMT->subnodes, XLP);
+    utarray_push_back(STMT->subnodes, XS);
+    utarray_push_back(STMT->subnodes, XC);
+    utarray_concat(STMT->subnodes, LL);
+    utarray_push_back(STMT->subnodes, RP);
+}
 
-/* node(NODE) ::= LOAD LPAREN DQSTRING(A) COMMA sym_list(B) RPAREN . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>node ::= LOAD LPAREN DQSTRING COMMA sym_list RPAREN"); */
-/*     log_trace("  node (NODE)"); */
-/*     log_trace("  DQSTRING (A): %s", A->s); */
-/*     log_trace("  sym_list (B)"); */
-/*     /\* if (W) *\/ */
-/*     /\*     log_trace("  WORD (W): %s", W->s); *\/ */
-/*     /\* else *\/ */
-/*     /\*     log_trace("  WORD (W): <empty>", W->s); *\/ */
-/* #endif */
-/*     NODE = (struct node_s*)calloc(sizeof(struct node_s), 1); */
-/*     NODE->type = TK_LOAD; */
-/*     /\* NODE = handle_simple_prop(VAR, OPCODE, W); *\/ */
-/*     /\* dump_node(indent, NODE); *\/ */
-/* } */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+nodelist(NODES) ::= nodelist(PREVNODES) load_stmt(LOAD) . {
+    log_trace(">>nodelist ::= nodelist load_stmt");
+    log_trace("  nodelist lhs(NODES)");
+    log_trace("  nodelist rhs(PREVNODES)");
+    log_trace("  load_stmt (LOAD)");
+    utarray_push_back(PREVNODES, LOAD);
+    NODES = PREVNODES;
+}
 
-/* /\* **************************************************************** *\/ */
-/* node(NODE) ::= COMMENT . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>node ::= COMMENT"); */
-/*     /\* log_trace("text: ", C->str); *\/ */
-/* #endif */
-/*     NODE = (struct node_s*)calloc(sizeof(struct node_s), 1); */
-/*     NODE->type = TK_COMMENT; */
+nodelist(NODES) ::= load_stmt(LOAD) . {
+    log_trace(">>nodelist ::= load_stmt .");
+    log_trace("  nodelist lhs load_stmt(LOAD)");
+    utarray_new(NODES, &node_icd);
+    utarray_push_back(NODES, LOAD);
+}
 
-/* #if DEBUG_TRACE */
-/*     /\* dump_node(0, NODE); *\/ */
-/* #endif */
-/* } */
+nodelist(NODES) ::= nodelist(PREVNODES) def_stmt(LOAD) . {
+    log_trace(">>nodelist ::= nodelist def_stmt");
+    log_trace("  nodelist lhs(NODES)");
+    log_trace("  nodelist rhs(PREVNODES)");
+    log_trace("  def_stmt (LOAD)");
+    utarray_push_back(PREVNODES, LOAD);
+    NODES = PREVNODES;
+}
 
+nodelist(NODES) ::= def_stmt(DEF) . {
+    log_trace(">>nodelist ::= def_stmt .");
+    log_trace("  nodelist lhs def_stmt(DEF)");
+    utarray_new(NODES, &node_icd);
+    utarray_push_back(NODES, DEF);
+}
+
+nodelist(NODES) ::= COMMENT(C) . {
+    log_trace(">>nodelist ::= COMMENT .");
+    utarray_new(NODES, &node_icd);
+    utarray_push_back(NODES, C);
+}
+
+nodelist(NODES) ::= nodelist(PREVNODES) COMMENT(C) . {
+    log_trace(">>nodelist ::= nodelist COMMENT");
+    log_trace("  nodelist lhs(NODES)");
+    log_trace("  nodelist rhs(PREVNODES)");
+    log_trace("  COMMENT (C)");
+    utarray_push_back(PREVNODES, C);
+    NODES = PREVNODES;
+}

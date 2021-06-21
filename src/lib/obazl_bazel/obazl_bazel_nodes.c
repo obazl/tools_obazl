@@ -9,16 +9,6 @@ struct obazl_buildfile_s {
     UT_array *nodelist;
 };
 
-/* enum node_type_e { */
-/*                   NODE_ALIAS = 1, */
-/*                   NODE_COMMA, */
-/*                   NODE_COMMENT, */
-/*                   NODE_EQ, */
-/*                   NODE_ID, */
-/*                   NODE_LOAD, */
-/*                   NODE_SYM */
-/* }; */
-
 struct node_s {
     /* enum node_type_e type; */
     int type;
@@ -26,11 +16,8 @@ struct node_s {
     union {
         char *s;
         UT_array *subnodes;
-        struct comment_s *comment;
-        /* struct alias_s *alias; */
-        struct identifier_s *id;
-        struct symdecl_s *sym;
     };
+    UT_array *comments;
 };
 #endif
 
@@ -53,18 +40,30 @@ void node_copy(void *_dst, void *_src)
         /*           src->alias->alias.s, src->alias->sym.s); */
         /* dst->subnodes = (struct node_s*)calloc(sizeof(struct node_s), 1); */
         /* nodelist_copy(dst->subnodes, src->subnodes); */
-        dst->subnodes = src->subnodes;
+        *dst = *src;
+        /* dst->subnodes = src->subnodes; */
+        break;
+    case TK_COLON:
+        log_debug("TK_COLON");
+        *dst = *src;
         break;
     case TK_COMMA:
-        log_debug("comma");
-        dst->line = src->line;
-        dst->col  = src->col;
+        log_debug("TK_COMMA");
+        *dst = *src;
         break;
     case TK_COMMENT:
-        /* log_debug("cmt: %s", src->comment->s); */
-        dst->comment = (struct comment_s*)calloc(sizeof(struct comment_s), 1);
-        comment_copy(dst->comment, src->comment);
-        /* log_debug("cmt: %s", dst->comment->s); */
+        log_debug("TK_COMMENT: %s", src->s);
+        *dst = *src;
+        /* dst->line = src->line; */
+        /* dst->col  = src->col; */
+        break;
+    case TK_DEF_PARAMS:
+        log_debug("TK_DEF_PARAMS");
+        *dst = *src;
+        break;
+    case TK_DEF_STMT:
+        log_debug("TK_DEF_STMT");
+        *dst = *src;
         break;
     case TK_EQ:
         log_debug("TK_EQ");
@@ -74,6 +73,7 @@ void node_copy(void *_dst, void *_src)
         break;
     case TK_ID:
         log_debug("TK_ID: %s", src->s);
+        log_debug("TK_ID cmts: %p", src->comments);
         /* dst->line = src->line; */
         /* dst->col   = src->col; */
         /* dst->s = strdup(src->s); */
@@ -81,9 +81,22 @@ void node_copy(void *_dst, void *_src)
         break;
     case TK_LOAD:
         log_debug("TK_LOAD");
+        *dst = *src;
         break;
-    case TK_SYM:
-        log_debug("TK_SYM: %s", src->s);
+    case TK_LOAD_STMT:
+        log_debug("TK_LOAD_STMT");
+        *dst = *src;
+        break;
+    case TK_LPAREN:
+        log_debug("TK_LPAREN");
+        *dst = *src;
+        break;
+    case TK_RPAREN:
+        log_debug("TK_RPAREN");
+        *dst = *src;
+        break;
+    case TK_STRING:
+        log_debug("TK_STRING: %s", src->s);
         /* dst->sym = (struct symdecl_s*)calloc(sizeof(struct symdecl_s), 1); */
         /* sym_copy(dst->sym, src->sym); */
         /* dst->line = src->line; */
@@ -98,7 +111,7 @@ void node_copy(void *_dst, void *_src)
 }
 
 void node_dtor(void *_elt) {
-    log_debug("XXXXXXXXXXXXXXXX NODE_DTOR");
+    log_debug("NODE_DTOR type %d", ((struct node_s*)_elt)->type);
     struct node_s *elt = (struct node_s*)_elt;
     /* if (elt->s) free(elt->s); */
 }
@@ -137,16 +150,6 @@ void comment_dtor(void *_comment) {
 
 UT_icd comments_icd = {sizeof(struct comment_s), NULL,
                        comment_copy, comment_dtor};
-
-/* void log_symcomments(UT_array *comments) */
-/* { */
-/*     struct comment_s *p=NULL; */
-/*     while( (p=(struct comment_s*)utarray_next(comments, p))) { */
-/*         log_debug("\t'%s'; (ln: %d, col: %d)", */
-/*                       p->s, */
-/*                       p->line, p->col); */
-/*     } */
-/* } */
 
 #if INTERFACE
 struct symdecl_s {

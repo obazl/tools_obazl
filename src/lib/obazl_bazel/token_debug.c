@@ -1,4 +1,5 @@
 #include "log.h"
+#include "utarray.h"
 #include "token_debug.h"
 
 const char *token_name[256] = {
@@ -24,6 +25,7 @@ const char *token_name[256] = {
 [TK_COMMENT] = "TK_COMMENT",
 [TK_CONTINUE] = "TK_CONTINUE",
 [TK_DEF] = "TK_DEF",
+[TK_DEF_STMT] = "TK_DEF_STMT",
 [TK_DEL] = "TK_DEL",
 [TK_DIVDIV] = "TK_DIVDIV",
 [TK_DIVDIV_EQ] = "TK_DIVDIV_EQ",
@@ -54,6 +56,7 @@ const char *token_name[256] = {
 [TK_LLANGLE] = "TK_LLANGLE",
 [TK_LLANGLE_EQ] = "TK_LLANGLE_EQ",
 [TK_LOAD] = "TK_LOAD",
+[TK_LOAD_STMT] = "TK_LOAD_STMT",
 [TK_LPAREN] = "TK_LPAREN",
 [TK_MINUS] = "TK_MINUS",
 [TK_MINUS_EQ] = "TK_MINUS_EQ",
@@ -84,7 +87,7 @@ const char *token_name[256] = {
 [TK_STAR] = "TK_STAR",
 [TK_STARSTAR] = "TK_STARSTAR",
 [TK_STAR_EQ] = "TK_STAR_EQ",
-[TK_DQSTRING] = "TK_DQSTRING",
+[TK_STRING] = "TK_STRING",
 [TK_TILDE] = "TK_TILDE",
 [TK_TRY] = "TK_TRY",
 [TK_VBAR] = "TK_VBAR",
@@ -106,5 +109,88 @@ void dump_ast(struct obazl_buildfile_s *ast)
         p!=NULL;
         p=(struct node_s*)utarray_next(ast->nodelist, p)) {
         log_debug("node type: %d", p->type);
+    }
+}
+
+void dump_node(struct node_s *node)
+{
+    log_debug("dump_node");
+
+    /* struct node_s *p=NULL; */
+    /* while( (p=(struct node_s*)utarray_next(nodes, p))) { */
+    /* } */
+}
+
+void dump_nodes(UT_array *nodes)
+{
+    log_debug("dump_nodes: %p", nodes);
+
+    struct node_s *p=NULL;
+    while( (p=(struct node_s*)utarray_next(nodes, p))) {
+        /* log_debug("type: %d", p->type); */
+        switch(p->type) {
+        case TK_ALIAS:
+            log_debug("TK_ALIAS %d,%d",
+                      p->line, p->col);
+            dump_nodes(p->subnodes);
+            break;
+        case TK_COLON:
+            log_debug("TK_COLON: %d, %d", p->line, p->col);
+            break;
+        case TK_COMMA:
+            log_debug("TK_COMMA: %d, %d", p->line, p->col);
+            break;
+        case TK_COMMENT:
+            log_debug("TK_COMMENT %d:%d: %s", p->line, p->col, p->s);
+            break;
+        case TK_DEF:
+            log_debug("TK_DEF %d:%d", p->line, p->col);
+            break;
+        case TK_DEF_PARAMS:
+            log_debug("TK_DEF_PARAMS %d:%d", p->line, p->col);
+            if (p->subnodes)
+                dump_nodes(p->subnodes);
+            log_debug("end TK_DEF_PARAMS");
+            break;
+        case TK_DEF_STMT:
+            log_debug("TK_DEF_STMT %d:%d", p->line, p->col);
+            dump_nodes(p->subnodes);
+            break;
+        case TK_EQ:
+            log_debug("TK_EQ %d:%d", p->line, p->col);
+            break;
+        case TK_ID:
+            log_debug("TK_ID %d,%d: %s",
+                      p->line, p->col, p->s);
+            break;
+        case TK_LOAD:
+            log_debug("TK_LOAD %d:%d",
+                      p->line, p->col);
+            break;
+        case TK_LOAD_STMT:
+            log_debug("TK_LOAD_STMT");
+            dump_nodes(p->subnodes);
+            break;
+        case TK_LPAREN:
+            log_debug("TK_LPAREN %d:%d",
+                      p->line, p->col);
+            break;
+        case TK_RPAREN:
+            log_debug("TK_RPAREN %d:%d",
+                      p->line, p->col);
+            break;
+        case TK_STRING:
+            log_debug("TK_STRING %d,%d: %s",
+                      p->line, p->col, p->s);
+            break;
+        default:
+            log_debug("DEFAULT for tok type %d", p->type);
+            break;
+        }
+        if (p->comments) {
+            log_debug("dumping comments");
+            dump_nodes(p->comments);
+            log_debug("end dumping comments");
+        }
     }
 }

@@ -65,7 +65,8 @@ void _lex_file(char *fname)
     /* InitParserState(ast); */
     /* ParseTrace(stdout, "trace_"); */
     int tok;
-    struct bzl_token_s *btok = calloc(sizeof(struct bzl_token_s), 1);
+    /* struct bzl_token_s *btok = calloc(sizeof(struct bzl_token_s), 1); */
+    struct node_s *btok = calloc(sizeof(struct node_s), 1);
 
     log_set_quiet(false);
     log_set_level(LOG_TRACE);
@@ -90,7 +91,7 @@ void _lex_file(char *fname)
 
         /* Parse(pParser, tok, btok, &ast); // , &sState); */
 
-        btok = calloc(sizeof(struct bzl_token_s), 1);
+        btok = calloc(sizeof(struct node_s), 1);
     }
     /* return 0; */
 }
