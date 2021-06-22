@@ -58,59 +58,63 @@ void _lex_file(char *fname)
         exit(EXIT_FAILURE);
     }
 
-    struct bf_lexer * lexer = malloc(sizeof(struct bf_lexer));
+    struct bf_lexer_s * lexer = malloc(sizeof(struct bf_lexer_s));
     lexer_init(lexer, buffer);
 
     /* void* pParser = ParseAlloc (malloc); */
     /* InitParserState(ast); */
     /* ParseTrace(stdout, "trace_"); */
     int tok;
-    struct bzl_token_s *btok = calloc(sizeof(struct bzl_token_s), 1);
+    struct node_s *btok = calloc(sizeof(struct node_s), 1);
 
     log_set_quiet(false);
     log_set_level(LOG_TRACE);
     log_info("starting lex");
 
     while ( (tok = get_next_token(lexer, &btok)) != 0 ) {
-        /* log_debug("token code: %d", tok); */
+        /* log_debug("token: %d (%d:%d)", tok, btok->line, btok->col); */
         /* log_debug("token name: %s", token_name[tok]); */
         /* if (btok->s != NULL) { */
         /*     log_debug("token str: %p", btok->s); */
         /* } */
-        log_debug("lexer pos: line %d col %d", lexer->pos.line, lexer->pos.col);
-        log_debug("token: %s (%d), mode: %d; label: '%s'",
+        /* log_debug("lexer pos: line %d col %d", lexer->pos.line, lexer->pos.col); */
+        log_debug("token: %s (%d) @ (%d:%d) %p",
                   token_name[tok],
                   tok,
-                  lexer->mode,
-                  btok->load.label
+                  btok->line, btok->col,
+                  btok
+                  /* lexer->mode, */
+                  /* btok->s // load.label */
                   /* lexer->clean_line, */
                   /* lexer->indent */
                   );
-        log_debug("rawstr: [[%s]]", btok->s);
-        log_debug("subexpr ct: %d", btok->load.sym_ct / 4);
-        if (tok == LOAD) {
-            log_debug("load.syms ptr: %p", btok->load.syms);
-            log_debug("Subexpr ct: %d", utarray_len(btok->load.syms));
-            char **p = NULL;
-            int ct = utarray_len(btok->load.syms);
-            char **s, **e;
-            for (int i = 0; i < ct; i+=4) {
-                log_debug("\tidx %d", i);
-                s = utarray_eltptr(btok->load.syms, i);
-                e = utarray_eltptr(btok->load.syms, i+1);
-                if (*s == NULL) { log_debug("\talias: NULL"); }
-                else {
-                    log_debug("\talias: %.*s", *e-*s, *s);
-                }
-                s = utarray_eltptr(btok->load.syms, i+2);
-                e = utarray_eltptr(btok->load.syms, i+3);
-                log_debug("\tsym: %.*s", *e-*s, *s);
-            }
-        }
+        log_debug("\trawstr: [[%s]]", btok->s);
+        btok->type = tok;
+        dump_node(btok);
+        /* log_debug("subexpr ct: %d", btok->load.sym_ct / 4); */
+        /* if (tok == TK_LOAD) { */
+        /*     log_debug("load.syms ptr: %p", btok->load.syms); */
+        /*     log_debug("Subexpr ct: %d", utarray_len(btok->load.syms)); */
+        /*     char **p = NULL; */
+        /*     int ct = utarray_len(btok->load.syms); */
+        /*     char **s, **e; */
+        /*     for (int i = 0; i < ct; i+=4) { */
+        /*         log_debug("\tidx %d", i); */
+        /*         s = utarray_eltptr(btok->load.syms, i); */
+        /*         e = utarray_eltptr(btok->load.syms, i+1); */
+        /*         if (*s == NULL) { log_debug("\talias: NULL"); } */
+        /*         else { */
+        /*             log_debug("\talias: %.*s", *e-*s, *s); */
+        /*         } */
+        /*         s = utarray_eltptr(btok->load.syms, i+2); */
+        /*         e = utarray_eltptr(btok->load.syms, i+3); */
+        /*         log_debug("\tsym: %.*s", *e-*s, *s); */
+        /*     } */
+        /* } */
 
         /* Parse(pParser, tok, btok, &ast); // , &sState); */
 
-        btok = calloc(sizeof(struct bzl_token_s), 1);
+        btok = calloc(sizeof(struct node_s), 1);
     }
     /* return 0; */
 }

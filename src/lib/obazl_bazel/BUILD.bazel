@@ -133,13 +133,41 @@ genrule(
     name = "gen_lexer",
     srcs = [
         "obazl_bazel_lexer.re",
-        "obazl_bazel_lexer_mtags.re",
+        "literals.re",
         # "obazl_tokens.h",
         # "@libre2c//:include/unicode_categories.re"
     ],
     tools = ["//external/re2c"],
     outs  = [
         "obazl_bazel_lexer.c",
+    ],
+    cmd   = "\n".join([
+        "for f in $(locations //external/re2c)",
+        "do",
+        "    if [ -f $$f ]",
+        "    then",
+        "        if [ re2c = `basename $$f` -a -x $$f ]",
+        "        then",
+        "            break",
+        "        fi",
+        "    fi",
+        "done",
+        "$$f --conditions --tags -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
+        # "$$f --conditions -o $(@D)/obazl_bazel_lexer_mtags.c $(location obazl_bazel_lexer_mtags.re)",
+    ]),
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "gen_lexer_mtags",
+    srcs = [
+        "obazl_bazel_lexer_mtags.re",
+        "literals.re",
+        # "obazl_tokens.h",
+        # "@libre2c//:include/unicode_categories.re"
+    ],
+    tools = ["//external/re2c"],
+    outs  = [
         "obazl_bazel_lexer_mtags.c"
     ],
     cmd   = "\n".join([
@@ -153,8 +181,8 @@ genrule(
         "        fi",
         "    fi",
         "done",
-        "$$f --conditions -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
-        "$$f --conditions -o $(@D)/obazl_bazel_lexer_mtags.c $(location obazl_bazel_lexer_mtags.re)",
+        # "$$f --conditions -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
+        "$$f --conditions --tags -o $(@D)/obazl_bazel_lexer_mtags.c $(location obazl_bazel_lexer_mtags.re)",
     ]),
     visibility = ["//visibility:public"]
 )
@@ -166,10 +194,12 @@ genrule(
     srcs = [
         "emit_build_bazel.c",
         "obazl_bazel_lexer.c",
+        # "obazl_bazel_lexer_mtags.c",
         "obazl_bazel_nodes.c",
         "obazl_bazel_parser.c",
         "token_debug.c",
         "test_lex.c",
+        # "test_lex_mtags.c",
         "test_parse.c",
         "//src/lib/obazl_utils:obazl_utils.c",
     ],
@@ -181,6 +211,7 @@ genrule(
         "obazl_bazel_parser.h",
         "token_debug.h",
         "test_lex.h",
+        # "test_lex_mtags.h",
         "test_parse.h"
     ],
     cmd = "\n".join([
@@ -190,10 +221,12 @@ genrule(
         "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
         "    $(location emit_build_bazel.c) \\",
         "    $(location obazl_bazel_lexer.c) \\",
+        # "    $(location obazl_bazel_lexer_mtags.c) \\",
         "    $(location obazl_bazel_nodes.c) \\",
         "    $(location obazl_bazel_parser.c) \\",
         "    $(location token_debug.c) \\",
         "    $(location test_lex.c) \\",
+        # "    $(location test_lex_mtags.c) \\",
         "    $(location test_parse.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
@@ -296,6 +329,8 @@ cc_binary(
         "test_lex_mtags.h",
         "token_debug.c",
         "token_debug.h",
+        "obazl_bazel_nodes.c",
+        "obazl_bazel_nodes.h",
         "obazl_bazel_lexer_mtags.c",
         "obazl_bazel_lexer_mtags.h",
         "@uthash//:include",

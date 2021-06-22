@@ -82,7 +82,9 @@ void _parse_file(char *fname)
         log_debug("lexer pos: line %d col %d", lexer->pos.line, lexer->pos.col);
 
         log_debug("token: %s (%d), mode: %d, (%d:%d), str: '%s'\n",
-                  token_name[tok], tok,
+                  token_name[tok],
+                  /* yyTokenName[tok], */
+                  tok,
                   lexer->mode,
                   btok->line, btok->col,
                   btok->s

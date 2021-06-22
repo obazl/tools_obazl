@@ -26,7 +26,7 @@ void nodelist_copy(UT_array *_dst, UT_array *_src)
     log_debug("node_copy: %p <- %p", _dst, _src);
 }
 
-void node_copy(void *_dst, void *_src)
+void node_copy(void *_dst, const void *_src)
 {
     log_debug("node_copy: %p <- %p", _dst, _src);
     struct node_s *dst = (struct node_s*)_dst;
@@ -52,10 +52,16 @@ void node_copy(void *_dst, void *_src)
         *dst = *src;
         break;
     case TK_COMMENT:
-        log_debug("TK_COMMENT: %s", src->s);
+        log_debug("TK_COMMENT (%d:%d): %s",
+                  src->line, src->col,
+                  src->s);
         *dst = *src;
         /* dst->line = src->line; */
         /* dst->col  = src->col; */
+        break;
+    case TK_DEF:
+        log_debug("TK_DEF");
+        *dst = *src;
         break;
     case TK_DEF_PARAMS:
         log_debug("TK_DEF_PARAMS");
@@ -67,16 +73,18 @@ void node_copy(void *_dst, void *_src)
         break;
     case TK_EQ:
         log_debug("TK_EQ");
-        /* dst->line = src->line; */
-        /* dst->col   = src->col; */
+        *dst = *src;
+        break;
+    case TK_FLOAT:
+        log_debug("TK_FLOAT");
         *dst = *src;
         break;
     case TK_ID:
         log_debug("TK_ID: %s", src->s);
-        log_debug("TK_ID cmts: %p", src->comments);
-        /* dst->line = src->line; */
-        /* dst->col   = src->col; */
-        /* dst->s = strdup(src->s); */
+        *dst = *src;
+        break;
+    case TK_INT:
+        log_debug("TK_INT: %s", src->s);
         *dst = *src;
         break;
     case TK_LOAD:
@@ -95,13 +103,16 @@ void node_copy(void *_dst, void *_src)
         log_debug("TK_RPAREN");
         *dst = *src;
         break;
+    case TK_STAR_ARGS:
+        log_debug("TK_STAR_ARGS");
+        *dst = *src;
+        break;
+    case TK_STARSTAR_ARGS:
+        log_debug("TK_STARSTAR_ARGS");
+        *dst = *src;
+        break;
     case TK_STRING:
         log_debug("TK_STRING: %s", src->s);
-        /* dst->sym = (struct symdecl_s*)calloc(sizeof(struct symdecl_s), 1); */
-        /* sym_copy(dst->sym, src->sym); */
-        /* dst->line = src->line; */
-        /* dst->col   = src->col; */
-        /* dst->s = strdup(src->s); */
         *dst = *src;
         break;
     default:
@@ -132,7 +143,7 @@ struct comment_s {
 }
 #endif
 
-void comment_copy(void *_dst, void *_src)
+void comment_copy(void *_dst, const void *_src)
 {
     /* log_debug("comment_copy"); */
     struct comment_s *src = (struct comment_s*)_src;

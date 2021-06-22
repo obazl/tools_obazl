@@ -38,30 +38,9 @@ int curr_tag = 0;
 
 /*!types:re2c */
 
-/* struct load_syms_s { */
-/*     int idx; */
-/*     const char *alias; */
-/*     const char *sym; */
-/* }; */
-
 UT_icd loadsyms_icd = {sizeof(char**), NULL, NULL, NULL};
 
 #if EXPORT_INTERFACE
-struct bzl_token_s
-{
-    int line, col;
-    /* type STRING_LIT */
-    char *s;                    /* raw string for other types */
-
-    union {
-        /* type LOAD: raw string, label (file), load syms, aliases */
-        struct {
-            char *label;
-            int sym_ct;
-            UT_array *syms; /* array of char**, not strings (char*) */
-        } load;
-    };
-};
 
 struct position_s {
     int line; // line in input (starting at 1)
@@ -92,11 +71,8 @@ struct bf_lexer
     const char *marker;
     int mode;                   /* i.e. start condition */
 
-    /* stags - re2c will insert const char *yyt1, yyt2, etc.  These are ptrs to the recognized tags. */
+    /* stags - re2c will insert const char *yyt1, yyt2, etc. */
     /*!stags:re2c format = 'const char *@@;'; */
-
-    /* mtags - re2c will insert 'int yyt3', 'int yyt4', etc. These are subexpr indices, not ptrs to the tokens recognized. */
-    /*!mtags:re2c format = 'int @@;'; */
 };
 
 #endif
@@ -106,40 +82,6 @@ int return_token(int tok)
     return tok;
 }
 
-
-/* typedef std::vector<Mtag> MtagTree; */
-
-/* loadsym_push will be called twice per token, once for start mtag, once for end mtag */
-/* static void loadsym_push(int *idx, const char *t, struct node_s **mtok) */
-/* { */
-/*     static int ct = 0; */
-/*     log_debug("loadsym_push: %d, ct: %d, s: %s", *idx, ct, t); */
-/*     /\*  if ( (ct % 2) == 0) { *\/ */
-/*     /\*     log_debug("pushing new load sym w/alias"); *\/ */
-/*     /\* } *\/ */
-/*     /\* we push the ptr, not a string *\/ */
-/*     utarray_push_back((*mtok)->load.syms, &t); */
-/*     (*mtok)->load.sym_ct++; */
-/*     (*idx)++; */
-/*     ct++; */
-/*     log_debug("subexpr ct: %d", utarray_len((*mtok)->load.syms)); */
-
-/*     /\* Mtag m = {*idx, t}; *\/ */
-/*     /\* *idx = (int)tree->size(); *\/ */
-/*     /\* tree->push_back(m); *\/ */
-/* } */
-
-/* called for non-matching optional subexprs (i.e. soid, eoid) */
-/* static void loadsym_null(int *idx, struct node_s **tok) */
-/* { */
-/*     static int ct; */
-/*     log_debug("loadsym_null: %d, ct: %d", *idx, ct); */
-/*    if ( (ct % 2) == 0) { */
-/*        log_debug("pushing new load sym w/o alias"); */
-/*    } */
-/*     (*idx)++; */
-/*     ct++; */
-/* } */
 
 int get_next_token(struct bf_lexer *lexer, struct node_s **mtok)
 {
@@ -152,12 +94,6 @@ int get_next_token(struct bf_lexer *lexer, struct node_s **mtok)
     const char *s1, *s2;
     // not used: local defs /*!stags:re2c format = "const char *@@;"; */
     // see struct bf_lexer_s above
-
-    // mtags - to be used as #sosym, #eosym, #soid, #eoid in regexpr.
-    // not used: local defns: /*!mtags:re2c format = "int @@ = 0;"; */
-    // defs are in struct bf_lexer_s
-    int sosym, eosym;           /* after lexing, will contain count of syms found */
-    int soid, eoid;
 
 loop:
     /* log_debug("loop lexmode: %d", lexer->mode); */
@@ -206,7 +142,7 @@ loop:
         lexer->pos.line++;
         lexer->pos.col = 0;
         lexer->indent = 0;
-        lexer->clean_line = true;
+        /* lexer->clean_line = true; */
         if (lexer->depth == 0) {
             // Not in a statememt. Tell parser about top-level blank line.
             /* in.startToken(val); */
@@ -217,29 +153,6 @@ loop:
         countNL++;
         goto loop;
     }
-
-    sqstring_lit = [^']+;
-    <sqstr> @s1 sqstring_lit @s2 "'" => init {
-            log_debug("<sqstr>, mode: %d", lexer->mode);
-            (*mtok)->line = lexer->pos.line;
-            (*mtok)->col  = lexer->tok - lexer->sol;
-            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-            return TK_STRING;
-      }
-    <init> "\'" :=> sqstr
-
-    dqstring_lit = [^"]+;  // ([a-zA-Z0-9=/_-:.])+;
-    <dqstr> @s1 dqstring_lit @s2 "\"" => init {
-            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-            log_debug("<dqstr>: %s", (*mtok)->s);
-            /* lexer->clean_line = false; */
-            /* lexer->pos.col = lexer->tok - lexer->sol; */
-            (*mtok)->line = lexer->pos.line;
-            (*mtok)->col  = lexer->tok - lexer->sol;
-            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
-            return TK_STRING;
-      }
-    <init> "\"" :=> dqstr
 
       // IDENTIFIERS "an identifier is a sequence of
       // Unicode letters, decimal digits, and underscores (_), not
@@ -262,6 +175,9 @@ loop:
       +=   -=   *=   //=  %=
       &=   |=   ^=   <<=  >>=
     */
+
+    <init> "**args" { return return_token(TK_STARSTAR_ARGS); }
+    <init> "*args" { return return_token(TK_STAR_ARGS); }
 
     <init> "**" { return return_token(TK_STARSTAR); }
     <init> "->" { return TK_ARROW; }
@@ -332,17 +248,95 @@ loop:
     <init> "=="  { return TK_EQEQ; }
     <init> "="   { return TK_EQ; }
 
+    /* !include "literals.re"; */
     /* LITERALS: integer, floating point, string, byte  */
 
-    <init> "\"\"\"" { return TK_SQ3; } /* triple quoted string delim */
-    <init> "r'" { return TK_RSQ; } /* raw single-quoted string */
-    <init> "r\"" { return TK_RDQ; }        /* raw single-quoted string */
-    <init> "b'"  { return TK_BSQ; }         /* single-quoted bytestring, e.g. b'hello' */
-    <init> "b\"" { return TK_BDQ; }        /* double-quoted bytestring, e.g. b"hello" */
-    <init> "b'''" { return TK_BSQ3; } /* triple single-quoted bytestring */
-    <init> "b\"\"\"" { return TK_BDQ3; } /* triple single-quoted bytestring */
-    <init> "rb'" { return TK_RBSQ; }        /* raw bytes literal, rb'hello' */
-    <init> "rb\"" { return TK_RBDQ; }        /* raw bytes literal, rb"hello" */
+    raw_sqstring_lit = [^']+;
+    <rawsqstr> @s1 raw_sqstring_lit @s2 "'" => init {
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            log_debug("<rawsqstr>: %s", (*mtok)->s);
+            /* lexer->clean_line = false; */
+            /* lexer->pos.col = lexer->tok - lexer->sol; */
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+            return TK_RAWSTRING;
+      }
+    <init> "r'" :=> rawsqstr
+
+    raw_dqstring_lit = [^"]+;
+    <rawdqstr> @s1 raw_dqstring_lit @s2 "\"" => init {
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            log_debug("<rawdqstr>: %s", (*mtok)->s);
+            /* lexer->clean_line = false; */
+            /* lexer->pos.col = lexer->tok - lexer->sol; */
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+            return TK_RAWSTRING;
+      }
+    <init> "r\"" :=> rawdqstr
+
+    sqstring_lit = [^'\n]+;
+    <sqstr> @s1 sqstring_lit @s2 "'" => init {
+            log_debug("<sqstr>, mode: %d", lexer->mode);
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            return TK_STRING;
+      }
+    <init> "\'" :=> sqstr
+
+    dqstring_lit = [^"\n]+;
+    <dqstr> @s1 dqstring_lit @s2 "\"" => init {
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            log_debug("<dqstr>: %s", (*mtok)->s);
+            /* lexer->clean_line = false; */
+            /* lexer->pos.col = lexer->tok - lexer->sol; */
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+            return TK_STRING;
+      }
+    <init> "\"" :=> dqstr
+
+    // MULTI-LINE (TRIPLE-QUOTED) STRINGS
+    dq3string_lit = [^"]+;
+    <dq3str> @s1 dq3string_lit @s2 "\"\"\"" => init {
+            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+            log_debug("<dq3str>: %s", (*mtok)->s);
+            /* lexer->clean_line = false; */
+            /* lexer->pos.col = lexer->tok - lexer->sol; */
+            (*mtok)->line = lexer->pos.line;
+            (*mtok)->col  = lexer->tok - lexer->sol;
+            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+            return TK_MLSTRING;
+      }
+    <init> "\"\"\"" :=> dq3str
+
+    // BYTESTRINGS
+    /* single-quoted, e.g. b'hello' */
+    sqbytestr_lit = [^']+;
+    <sqbytes> @s1 sqbytestr_lit @s2 "'" => init {
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        return TK_BYTESTR;
+    }
+    <init> "b'" :=> sqbytes
+
+    /* double-quoted, e.g. b"hello" */
+    dqbytestr_lit = [^"]+;
+    <dqbytes> @s1 dqbytestr_lit @s2 "\"" => init {
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        return TK_BYTESTR;
+    }
+    <init> "b\"" :=> dqbytes
+
+
+
+    // <init> "b'''" { return TK_BSQ3; } /* triple single-quoted bytestring */
+    // <init> "b\"\"\"" { return TK_BDQ3; } /* triple single-quoted bytestring */
+    // <init> "rb'" { return TK_RBSQ; }        /* raw bytes literal, rb'hello' */
+    // <init> "rb\"" { return TK_RBDQ; }        /* raw bytes literal, rb"hello" */
 
         /* string escapes */
         /* \a   \x07 alert or bell */
@@ -417,7 +411,14 @@ loop:
         return TK_ID;
     }
 
-    <init> [0-9] { return TK_NUMBER; }
+    <init> [0-9]* "." [0-9]+ {
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        return TK_FLOAT;
+    }
+    <init> [0-9]+ {
+        (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
+        return TK_INT;
+    }
 
     inline_cmt = [^\n]+;
     <inline_cmt> inline_cmt => init {
