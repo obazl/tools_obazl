@@ -86,10 +86,10 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
         http_archive,
         name = "libre2c",
         urls = [
-            "https://github.com/skvadrik/re2c/archive/2.0.3.zip"
+            "https://github.com/skvadrik/re2c/archive/refs/tags/2.1.1.zip"
         ],
-        strip_prefix = "re2c-2.0.3",
-        sha256 = "8f74163d02b4ce371d69876af1610177b45055b387656d0fb22c3eab131ccbf9",
+        strip_prefix = "re2c-2.1.1",
+        sha256 = "080931d214943ea021fa9360a4694e824674e5c0f2e880153e8cb41982453aa6",
         build_file_content = all_content,
         workspace_file_content = "workspace( name = \"opam-re2c\" )"
     )
@@ -118,6 +118,18 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
         sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
         build_file_content = all_content,
         workspace_file_content = "workspace( name = \"fswatch\" )"
+    )
+
+    # http://www.throwtheswitch.org/unity
+    maybe(
+        http_archive,
+        name = "unity",
+        urls = [
+            "https://github.com/ThrowTheSwitch/Unity/archive/refs/tags/v2.5.2.zip",
+        ],
+        strip_prefix = "v2.5.2",
+        build_file_content = all_content,
+        workspace_file_content = "workspace( name = \"unity\" )"
     )
 
 ####################

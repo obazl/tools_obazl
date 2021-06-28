@@ -1,0 +1,156 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+test_suite(
+    name = "test",
+    tests = [
+        ":keywords",
+        ":numbers",
+        ":punctuation",
+        ":strings",
+    ])
+
+cc_test(
+    name = "keywords",
+    srcs = [
+        "unity_keywords.c",
+        "unity_keywords.h",
+        "//src/lib/obazl_bazel:obazl_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_bazel",
+        "-I$(GENDIR)/src/lib/obazl_bazel/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel:obazl_bazel_lexer",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "numbers",
+    srcs = [
+        "unity_numbers.c",
+        "unity_numbers.h",
+        "//src/lib/obazl_bazel:obazl_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_bazel",
+        "-I$(GENDIR)/src/lib/obazl_bazel/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel:obazl_bazel_lexer",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "punctuation",
+    srcs = [
+        "unity_punctuation.c",
+        "unity_punctuation.h",
+        "//src/lib/obazl_bazel:obazl_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_bazel",
+        "-I$(GENDIR)/src/lib/obazl_bazel/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel:obazl_bazel_lexer",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "strings",
+    srcs = [
+        "unity_strings.c",
+        "unity_strings.h",
+        "//src/lib/obazl_bazel:obazl_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel.h",
+        # "obazl_bazel.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_bazel",
+        "-I$(GENDIR)/src/lib/obazl_bazel/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_bazel:obazl_bazel_lexer",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "unity_keywords.c",
+        "unity_numbers.c",
+        "unity_punctuation.c",
+        "unity_strings.c",
+        "//src/lib/obazl_bazel:emit_build_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel.c",
+        "//src/lib/obazl_bazel:obazl_bazel_lexer.c",
+        "//src/lib/obazl_bazel:obazl_bazel_nodes.c",
+        "//src/lib/obazl_bazel:obazl_bazel_parser.c",
+        "//src/lib/obazl_bazel:token_debug.c",
+        "//src/lib/obazl_bazel:test_lex.c",
+        # "//src/lib/obazl_bazel/test_parse.c",
+        "//src/lib/obazl_utils:obazl_utils.c",
+    ],
+    outs = [
+        "unity_keywords.h",
+        "unity_numbers.h",
+        "unity_punctuation.h",
+        "unity_strings.h",
+        # "obazl_bazel_lexer.h",
+        # "obazl_bazel.h",
+        # "test_lex.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location unity_strings.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "SRC2=$(location //src/lib/obazl_bazel:obazl_bazel.c)",
+        "SRCDIR2=`dirname $$SRC2`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location unity_keywords.c) \\",
+        "    $(location unity_numbers.c) \\",
+        "    $(location unity_punctuation.c) \\",
+        "    $(location unity_strings.c) \\",
+        "    $(location //src/lib/obazl_bazel:emit_build_bazel.c) \\",
+        "    $(location //src/lib/obazl_bazel:obazl_bazel_lexer.c) \\",
+        "    $(location //src/lib/obazl_bazel:obazl_bazel.c) \\",
+        "    $(location //src/lib/obazl_bazel:obazl_bazel_nodes.c) \\",
+        "    $(location //src/lib/obazl_bazel:token_debug.c) \\",
+        "    $(location //src/lib/obazl_bazel:test_lex.c) \\",
+        "    $(location //src/lib/obazl_bazel:obazl_bazel_parser.c) \\",
+        # "    $(location //src/lib/obazl_bazel:test_parse.c)",
+        "    $(location //src/lib/obazl_utils:obazl_utils.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+        # "cp $${SRCDIR2}/*.h $(@D)",
+        # "cp $${SRCDIR1}/unity_strings.h $@",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)

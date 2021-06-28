@@ -30,12 +30,8 @@ static char *sp = " ";
 %token ASSERT .
 %token BANG .
 %token BANG_EQ .
-/* %token BDQ . */
-%token BDQ3 .
 %token BREAK .
-/* %token BSQ . */
-%token BSQ3 .
-%token BYTESTR .
+/* BSTRING below */
 %token CARET .
 %token CARET_EQ .
 %token CLASS .
@@ -59,6 +55,7 @@ static char *sp = " ";
 %token ESC_BACKSLASH .
 %token EXCEPT .
 %token FINALLY .
+%token FLOAT_LIT .
 %token FLOAT .
 %token FOR .
 %token FROM .
@@ -68,6 +65,9 @@ static char *sp = " ";
 %token IF .
 %token IMPORT .
 %token INT .
+%token INT_DEC .
+%token INT_HEX .
+%token INT_OCT .
 %token IN .
 %token IS .
 %token LAMBDA .
@@ -113,9 +113,17 @@ static char *sp = " ";
 %token STARSTAR .
 %token STARSTAR_ARGS .
 %token STAR_EQ .
-%token MLSTRING .
-%token RAWSTRING .
 %token STRING .
+%token BSTRING .
+%token BLANK .                  /* blank line */
+%token BRSTRING .
+%token RSTRING .
+%token RBSTRING .
+%token MLSTRING .
+%token MLBSTRING .
+%token MLRSTRING .
+%token MLBRSTRING .
+%token MLRBSTRING .
 %token TILDE .
 %token TRY .
 %token VBAR .
@@ -965,6 +973,22 @@ nodelist(NODES) ::= nodelist(PREVNODES) COMMENT(C) . {
     NODES = PREVNODES;
 }
 
+nodelist(NODES) ::= STRING(S) . {
+    log_trace(">>nodelist ::= STRING .");
+    log_trace("  rhs STRING(S)[%d]: %s", S->type, S->s);
+    utarray_new(NODES, &node_icd);
+    utarray_push_back(NODES, S);
+}
+
+nodelist(NODES) ::= nodelist(PREVNODES) STRING(S) . {
+    log_trace(">>nodelist ::= nodelist STRING");
+    log_trace("  nodelist lhs(NODES)");
+    log_trace("  nodelist rhs(PREVNODES)");
+    log_trace("  STRING (S)");
+    utarray_push_back(PREVNODES, S);
+    NODES = PREVNODES;
+}
+
 nodelist(NODES) ::= operand(OP) . {
     log_trace(">>nodelist ::= nodelist operand");
     log_trace("  nodelist lhs(NODES)");
@@ -972,6 +996,7 @@ nodelist(NODES) ::= operand(OP) . {
     utarray_new(NODES, &node_icd);
     utarray_push_back(NODES, OP);
 }
+
 nodelist(NODES) ::= nodelist(PREVNODES) operand(OP) . {
     log_trace(">>nodelist ::= nodelist operand");
     log_trace("  nodelist lhs(NODES)");

@@ -3,9 +3,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 # we export these srcs so //src/include/obazl:mkhdrs can generate the export interface obazl.h
-exports_files([
-    "emit_build_bazel.c",
-])
+exports_files(glob(["*.c"]))
 
 ##########
 cc_library(
@@ -51,6 +49,7 @@ cc_library(
 ##########
 cc_library(
     name  = "obazl_bazel_parser",
+    visibility = ["//visibility:public"],
     srcs  = [
         "obazl_bazel_parser.c",
         "obazl_bazel_parser.h",
@@ -105,9 +104,14 @@ genrule(
 ##########
 cc_library(
     name  = "obazl_bazel_lexer",
+    visibility = ["//visibility:public"],
     srcs  = [
-        ":obazl_bazel_lexer.c",
-        ":obazl_bazel_lexer.h",
+        "obazl_bazel_lexer.c",
+        "obazl_bazel_lexer.h",
+        "obazl_bazel_nodes.c",
+        "obazl_bazel_nodes.h",
+        "token_debug.c",
+        "token_debug.h",
         # "tokens.h",
         # ":metaparser.h",
         # ":driver.h",
@@ -120,15 +124,49 @@ cc_library(
         "-I", "$(GENDIR)/src/lib/obazl_bazel",
 
         "-I", "external/uthash/include",
+        "-I", "vendored/logc",
+        "-I", "external/obazl/vendored/logc",
+        "-I", "external/tools_obazl/vendored/logc",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
     }),
-    linkstatic = 1
+    linkstatic = 1,
+    deps = [
+        "//vendored/logc"
+    ]
 )
 
 ########
+# genrule(
+#     name = "gen_lexer",
+#     srcs = [
+#         "obazl_bazel_lexer.re",
+#         "literals.re",
+#         # "obazl_tokens.h",
+#         # "@libre2c//:include/unicode_categories.re"
+#     ],
+#     tools = ["//external/re2c"],
+#     outs  = [
+#         "obazl_bazel_lexer.c",
+#     ],
+#     cmd   = "\n".join([
+#         "for f in $(locations //external/re2c)",
+#         "do",
+#         "    if [ -f $$f ]",
+#         "    then",
+#         "        if [ re2c = `basename $$f` -a -x $$f ]",
+#         "        then",
+#         "            break",
+#         "        fi",
+#         "    fi",
+#         "done",
+#         "$$f --conditions --tags -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
+#     ]),
+#     visibility = ["//visibility:public"]
+# )
+
 genrule(
     name = "gen_lexer",
     srcs = [
@@ -139,7 +177,7 @@ genrule(
     ],
     tools = ["//external/re2c"],
     outs  = [
-        "obazl_bazel_lexer.c",
+        "obazl_bazel_lexer.c"
     ],
     cmd   = "\n".join([
         "for f in $(locations //external/re2c)",
@@ -153,36 +191,6 @@ genrule(
         "    fi",
         "done",
         "$$f --conditions --tags -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
-        # "$$f --conditions -o $(@D)/obazl_bazel_lexer_mtags.c $(location obazl_bazel_lexer_mtags.re)",
-    ]),
-    visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "gen_lexer_mtags",
-    srcs = [
-        "obazl_bazel_lexer_mtags.re",
-        "literals.re",
-        # "obazl_tokens.h",
-        # "@libre2c//:include/unicode_categories.re"
-    ],
-    tools = ["//external/re2c"],
-    outs  = [
-        "obazl_bazel_lexer_mtags.c"
-    ],
-    cmd   = "\n".join([
-        "for f in $(locations //external/re2c)",
-        "do",
-        "    if [ -f $$f ]",
-        "    then",
-        "        if [ re2c = `basename $$f` -a -x $$f ]",
-        "        then",
-        "            break",
-        "        fi",
-        "    fi",
-        "done",
-        # "$$f --conditions -o $(@D)/obazl_bazel_lexer.c $(location obazl_bazel_lexer.re)",
-        "$$f --conditions --tags -o $(@D)/obazl_bazel_lexer_mtags.c $(location obazl_bazel_lexer_mtags.re)",
     ]),
     visibility = ["//visibility:public"]
 )
@@ -193,25 +201,26 @@ genrule(
     name = "mkhdrs",
     srcs = [
         "emit_build_bazel.c",
+        # "obazl_bazel_lexer.c",
+        "obazl_bazel.c",
         "obazl_bazel_lexer.c",
-        # "obazl_bazel_lexer_mtags.c",
         "obazl_bazel_nodes.c",
         "obazl_bazel_parser.c",
         "token_debug.c",
+        # "test_lex.c",
         "test_lex.c",
-        # "test_lex_mtags.c",
         "test_parse.c",
         "//src/lib/obazl_utils:obazl_utils.c",
     ],
     outs = [
         "emit_build_bazel.h",
+        "obazl_bazel.h",
+        # "obazl_bazel_lexer.h",
         "obazl_bazel_lexer.h",
-        # "obazl_bazel_lexer_mtags.h",
         "obazl_bazel_nodes.h",
         "obazl_bazel_parser.h",
         "token_debug.h",
         "test_lex.h",
-        # "test_lex_mtags.h",
         "test_parse.h"
     ],
     cmd = "\n".join([
@@ -220,13 +229,14 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
         "    $(location emit_build_bazel.c) \\",
+        "    $(location obazl_bazel.c) \\",
+        # "    $(location obazl_bazel_lexer.c) \\",
         "    $(location obazl_bazel_lexer.c) \\",
-        # "    $(location obazl_bazel_lexer_mtags.c) \\",
-        "    $(location obazl_bazel_nodes.c) \\",
+       "    $(location obazl_bazel_nodes.c) \\",
         "    $(location obazl_bazel_parser.c) \\",
         "    $(location token_debug.c) \\",
+        # "    $(location test_lex.c) \\",
         "    $(location test_lex.c) \\",
-        # "    $(location test_lex_mtags.c) \\",
         "    $(location test_parse.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
@@ -234,51 +244,108 @@ genrule(
     visibility = ["//visibility:public"]
 )
 
-genrule(
-    name = "mkhdrs_mtags",
-    srcs = [
-        "emit_build_bazel.c",
-        "obazl_bazel_lexer_mtags.c",
-        "obazl_bazel_nodes.c",
-        "obazl_bazel_parser.c",
-        "token_debug.c",
-        "test_lex_mtags.c",
-        "test_parse.c",
-        "//src/lib/obazl_utils:obazl_utils.c",
-    ],
-    outs = [
-        "obazl_bazel_lexer_mtags.h",
-        "test_lex_mtags.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location emit_build_bazel.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(location @makeheaders//:makeheaders) \\",
-        "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
-        "    $(location emit_build_bazel.c) \\",
-        "    $(location obazl_bazel_lexer_mtags.c) \\",
-        "    $(location obazl_bazel_nodes.c) \\",
-        "    $(location obazl_bazel_parser.c) \\",
-        "    $(location token_debug.c) \\",
-        "    $(location test_lex_mtags.c) \\",
-        "    $(location test_parse.c)",
-        "cp $${SRCDIR1}/*.h $(@D)",
-    ]),
-    tools = ["@makeheaders//:makeheaders"],
-    visibility = ["//visibility:public"]
-)
+# genrule(
+#     name = "mkhdrs_mtags",
+#     srcs = [
+#         "emit_build_bazel.c",
+#         "obazl_bazel.c",
+#         "obazl_bazel_lexer_mtags.c",
+#         "obazl_bazel_nodes.c",
+#         "obazl_bazel_parser.c",
+#         "token_debug.c",
+#         "test_lex_mtags.c",
+#         "test_parse.c",
+#         "//src/lib/obazl_utils:obazl_utils.c",
+#     ],
+#     outs = [
+#         "obazl_bazel_lexer_mtags.h",
+#         "obazl_bazel.h",
+#         "test_lex_mtags.h",
+#     ],
+#     cmd = "\n".join([
+#         "SRC1=$(location emit_build_bazel.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(location @makeheaders//:makeheaders) \\",
+#         "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
+#         "    $(location emit_build_bazel.c) \\",
+#         "    $(location obazl_bazel.c) \\",
+#         "    $(location obazl_bazel_lexer_mtags.c) \\",
+#         "    $(location obazl_bazel_nodes.c) \\",
+#         "    $(location obazl_bazel_parser.c) \\",
+#         "    $(location token_debug.c) \\",
+#         "    $(location test_lex_mtags.c) \\",
+#         "    $(location test_parse.c)",
+#         "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = ["@makeheaders//:makeheaders"],
+#     visibility = ["//visibility:public"]
+# )
 
 ################################################################
 ## testing lexer, parser
 
 ##########
+# cc_binary(
+#     name  = "test_lex",
+#     srcs  = [
+#         "test_lex.c",
+#         "test_lex.h",
+#         "token_debug.c",
+#         "token_debug.h",
+#         "obazl_bazel_lexer.c",
+#         "obazl_bazel_lexer.h",
+#         "@uthash//:include",
+#     ],
+#     copts = [
+#         "-std=c11",
+#         "-pedantic-errors",
+
+#         # "-I", ".",
+#         "-I", "src/lib/obazl_bazel",
+
+#         # "-I", "$(GENDIR)/src/app/obazl",
+#         # "-I", "$(GENDIR)/external/tools_obazl/src/app/obazl",
+#         # "-I", "$(GENDIR)/external/obazl/src/app/obazl",
+
+#         "-I", "$(GENDIR)/src/lib/obazl_bazel",
+#         "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_bazel",
+
+#         # "-I", "$(GENDIR)/src/include/obazl",
+#         # "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
+
+#         "-I", "vendored/logc",
+#         "-I", "external/obazl/vendored/logc",
+#         "-I", "external/tools_obazl/vendored/logc",
+
+#         "-I", "external/uthash/include",
+#     ],
+#     deps = [
+#         # "//src/lib/obazl_bazel",
+#         "//src/lib/obazl_utils",
+#         # "//src/lib/obazl_dune",
+#         # "//src/lib/obazl_meta",
+#         # "//src/lib/obazl_watch",
+#         # "//src/lib/obazl_watch:obazl_watch_client",
+#         "//vendored/logc"
+#     ],
+#     # linkopts = select({
+#     #     "//bzl/host:linux": [],
+#     #     "//bzl/host:macos": ["-framework", "CoreServices"],
+#     # }),
+#     linkstatic = 1
+# )
+
 cc_binary(
     name  = "test_lex",
     srcs  = [
         "test_lex.c",
         "test_lex.h",
+        "obazl_bazel.c",
+        "obazl_bazel.h",
         "token_debug.c",
         "token_debug.h",
+        "obazl_bazel_nodes.c",
+        "obazl_bazel_nodes.h",
         "obazl_bazel_lexer.c",
         "obazl_bazel_lexer.h",
         "@uthash//:include",
@@ -307,58 +374,8 @@ cc_binary(
         "-I", "external/uthash/include",
     ],
     deps = [
-        # "//src/lib/obazl_bazel",
-        "//src/lib/obazl_utils",
-        # "//src/lib/obazl_dune",
-        # "//src/lib/obazl_meta",
-        # "//src/lib/obazl_watch",
-        # "//src/lib/obazl_watch:obazl_watch_client",
-        "//vendored/logc"
-    ],
-    # linkopts = select({
-    #     "//bzl/host:linux": [],
-    #     "//bzl/host:macos": ["-framework", "CoreServices"],
-    # }),
-    linkstatic = 1
-)
-
-cc_binary(
-    name  = "test_lex_mtags",
-    srcs  = [
-        "test_lex_mtags.c",
-        "test_lex_mtags.h",
-        "token_debug.c",
-        "token_debug.h",
-        "obazl_bazel_nodes.c",
-        "obazl_bazel_nodes.h",
-        "obazl_bazel_lexer_mtags.c",
-        "obazl_bazel_lexer_mtags.h",
-        "@uthash//:include",
-    ],
-    copts = [
-        "-std=c11",
-        "-pedantic-errors",
-
-        # "-I", ".",
-        "-I", "src/lib/obazl_bazel",
-
-        # "-I", "$(GENDIR)/src/app/obazl",
-        # "-I", "$(GENDIR)/external/tools_obazl/src/app/obazl",
-        # "-I", "$(GENDIR)/external/obazl/src/app/obazl",
-
-        "-I", "$(GENDIR)/src/lib/obazl_bazel",
-        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_bazel",
-
-        # "-I", "$(GENDIR)/src/include/obazl",
-        # "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
-
-        "-I", "vendored/logc",
-        "-I", "external/obazl/vendored/logc",
-        "-I", "external/tools_obazl/vendored/logc",
-
-        "-I", "external/uthash/include",
-    ],
-    deps = [
+        ":obazl_bazel_lexer",
+        ":obazl_bazel_parser",
         # "//src/lib/obazl_bazel",
         "//src/lib/obazl_utils",
         # "//src/lib/obazl_dune",
@@ -380,10 +397,14 @@ cc_binary(
     srcs  = [
         "test_parse.c",
         "test_parse.h",
+        "obazl_bazel.c",
+        "obazl_bazel.h",
         "token_debug.c",
         "token_debug.h",
-        "obazl_bazel_lexer.c",
-        "obazl_bazel_lexer.h",
+        "obazl_bazel_nodes.c",
+        "obazl_bazel_nodes.h",
+        # "obazl_bazel_lexer.c",
+        # "obazl_bazel_lexer.h",
         "@uthash//:include",
     ],
     defines = ["DEBUG", "DEBUG_TRACE"],
@@ -402,10 +423,10 @@ cc_binary(
         "-I", "external/uthash/include",
     ],
     deps = [
+        ":obazl_bazel_lexer",
         ":obazl_bazel_parser",
         "//src/lib/obazl_utils",
         "//vendored/logc"
     ],
     linkstatic = 1
 )
-

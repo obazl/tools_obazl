@@ -13,11 +13,12 @@ struct node_s {
     /* enum node_type_e type; */
     int type;
     int line, col;
+    char *q;
     union {
         char *s;
         UT_array *subnodes;
     };
-    UT_array *comments;
+    UT_array *comments;         /* list of struct node_s type comment */
 };
 #endif
 
@@ -32,93 +33,13 @@ void node_copy(void *_dst, const void *_src)
     struct node_s *dst = (struct node_s*)_dst;
     struct node_s *src = (struct node_s*)_src;
     dst->type = src->type;
-    /* log_debug("node type: %d", src->type); */
-    switch(src->type) {
-    case TK_ALIAS:
-        log_debug("TK_ALIAS");
-        /* log_debug("alias: %s = %s", */
-        /*           src->alias->alias.s, src->alias->sym.s); */
-        /* dst->subnodes = (struct node_s*)calloc(sizeof(struct node_s), 1); */
-        /* nodelist_copy(dst->subnodes, src->subnodes); */
-        *dst = *src;
-        /* dst->subnodes = src->subnodes; */
-        break;
-    case TK_COLON:
-        log_debug("TK_COLON");
-        *dst = *src;
-        break;
-    case TK_COMMA:
-        log_debug("TK_COMMA");
-        *dst = *src;
-        break;
-    case TK_COMMENT:
-        log_debug("TK_COMMENT (%d:%d): %s",
-                  src->line, src->col,
-                  src->s);
-        *dst = *src;
-        /* dst->line = src->line; */
-        /* dst->col  = src->col; */
-        break;
-    case TK_DEF:
-        log_debug("TK_DEF");
-        *dst = *src;
-        break;
-    case TK_DEF_PARAMS:
-        log_debug("TK_DEF_PARAMS");
-        *dst = *src;
-        break;
-    case TK_DEF_STMT:
-        log_debug("TK_DEF_STMT");
-        *dst = *src;
-        break;
-    case TK_EQ:
-        log_debug("TK_EQ");
-        *dst = *src;
-        break;
-    case TK_FLOAT:
-        log_debug("TK_FLOAT");
-        *dst = *src;
-        break;
-    case TK_ID:
-        log_debug("TK_ID: %s", src->s);
-        *dst = *src;
-        break;
-    case TK_INT:
-        log_debug("TK_INT: %s", src->s);
-        *dst = *src;
-        break;
-    case TK_LOAD:
-        log_debug("TK_LOAD");
-        *dst = *src;
-        break;
-    case TK_LOAD_STMT:
-        log_debug("TK_LOAD_STMT");
-        *dst = *src;
-        break;
-    case TK_LPAREN:
-        log_debug("TK_LPAREN");
-        *dst = *src;
-        break;
-    case TK_RPAREN:
-        log_debug("TK_RPAREN");
-        *dst = *src;
-        break;
-    case TK_STAR_ARGS:
-        log_debug("TK_STAR_ARGS");
-        *dst = *src;
-        break;
-    case TK_STARSTAR_ARGS:
-        log_debug("TK_STARSTAR_ARGS");
-        *dst = *src;
-        break;
-    case TK_STRING:
-        log_debug("TK_STRING: %s", src->s);
-        *dst = *src;
-        break;
-    default:
-        log_debug("DEFAULT case for type %d", src->type);
-        break;
-    }
+    /* log_debug("node posn: %d:%d", src->line, src->col); */
+    log_debug("\tnode type: %d", src->type);
+    log_debug("\t%s[%d] (%d:%d)",
+              token_name[src->type][0],
+              src->type,
+              src->line, src->col);
+    *dst = *src;
 }
 
 void node_dtor(void *_elt) {

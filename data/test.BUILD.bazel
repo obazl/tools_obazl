@@ -1,1 +1,3 @@
-v1="var1"
+"hello" #cmt1
+    #cmt2
+    'bye' #cmt3
