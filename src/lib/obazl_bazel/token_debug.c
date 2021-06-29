@@ -26,15 +26,15 @@ const char *token_name[256][2] =
 [TK_DEF] = { "TK_DEF", "def" },
 [TK_DEF_STMT] = { "TK_DEF_STMT", "" },
 [TK_DEL] = { "TK_DEL", "del" },
-[TK_DIVDIV] = { "TK_DIVDIV", "//" },
-[TK_DIVDIV_EQ] = { "TK_DIVDIV_EQ", "//=" },
+[TK_SLASH2] = { "TK_SLASH2", "//" },
+[TK_SLASH2_EQ] = { "TK_SLASH2_EQ", "//=" },
 [TK_DIV_EQ] = { "TK_DIV_EQ", "/=" },
 [TK_DOT] = { "TK_DOT", "." },
 [TK_DQ] = { "TK_DQ", "\"" },
 [TK_ELIF] = { "TK_ELIF", "elif" },
 [TK_ELSE] = { "TK_ELSE", "else" },
 [TK_EQ] = { "TK_EQ", "=" },
-[TK_EQEQ] = { "TK_EQEQ", "==" },
+[TK_EQ2] = { "TK_EQ2", "==" },
 [TK_ESC_BACKSLASH] = { "TK_ESC_BACKSLASH", "\\" },
 [TK_EXCEPT] = { "TK_EXCEPT", "except" },
 [TK_FINALLY] = { "TK_FINALLY", "finally" },
@@ -111,7 +111,17 @@ const char *token_name[256][2] =
 [TK_WITH] = { "TK_WITH", "with" },
 [TK_YIELD] = { "TK_YIELD", "yield" },
 /* [TK_NUMBER] = { "TK_NUMBER", */
-[TK_NEWLINE] = { "TK_NEWLINE", "" }
+ [TK_NEWLINE] = { "TK_NEWLINE", "" },
+ /* non-terminals */
+[TK_Arg_List] = { "TK_Arg_List", "" },
+[TK_Arg_Named] = { "TK_Arg_Named", "" },
+[TK_Bin_Expr] = { "TK_Bin_Expr", "" },
+[TK_Call_Expr] = { "TK_Call_Expr", "" },
+[TK_Call_Sfx] = { "TK_Call_Sfx", "" },
+[TK_Primary_Expr] = { "TK_Primary_Expr", "" },
+ [TK_Unary_Expr] = { "TK_Unary_Expr", "" },
+[TK_Dot_Sfx] = { "TK_Dot_Sfx", "" },
+[TK_Slice_Sfx] = { "TK_Slice_Sfx", "" },
 };
 
 void dump_ast(struct obazl_buildfile_s *ast)
@@ -134,8 +144,11 @@ void dump_node(struct node_s *node)
               token_name[node->type][0],
               node->type,
               node->line, node->col);
-    if (node->s) log_debug("\tstarttok: %s", node->s);
-    /* if (node->subnodes) dump_nodes(node->subnodes); */
+    switch (node->type) {
+    case TK_ID: log_debug("\tstarttok: %s", node->s); break;
+    case TK_INT: log_debug("\tstarttok: %s", node->s); break;
+    case TK_STRING: log_debug("\tstarttok: %s", node->s); break;
+    }
     if (node->comments) {
         if (utarray_len(node->comments) > 0) {
             log_debug("\tdumping comments");
@@ -143,6 +156,7 @@ void dump_node(struct node_s *node)
             log_debug("\tend dumping comments");
         }
     }
+    if (node->subnodes) dump_nodes(node->subnodes);
     log_debug("/dump_node");
 }
 
@@ -156,15 +170,29 @@ void dump_nodes(UT_array *nodes)
         log_debug("%s[%d] %s (%d:%d)",
                   token_name[node->type][0],
                   node->type,
-                  node->q,
+                  node->type == TK_STRING? node->q: "",
                   node->line, node->col);
-        if (node->s) log_debug("\tstarttok: :]%s[:", node->s);
-        /* if (node->subnodes) dump_nodes(node->subnodes); */
+        /* if (node->s) log_debug("\tstarttok: :]%s[:", node->s); */
+        switch (node->type) {
+        case TK_COMMENT: log_debug("\tstarttok: %s", node->s); break;
+        case TK_ID: log_debug("\tstarttok: %s", node->s); break;
+        case TK_INT: log_debug("\tstarttok: %s", node->s); break;
+        case TK_STRING: log_debug("\tstarttok: %s", node->s); break;
+        /* case TK_Call_Sfx: log_debug("\tstarttok: %s", node->s); break; */
+        case TK_Dot_Sfx: log_debug("\tstarttok: %s", node->s); break;
+        }
         if (node->comments) {
             if (utarray_len(node->comments) > 0) {
-                log_debug("\tdumping comments");
+                log_debug("  dumping comments");
                 dump_nodes(node->comments);
-                log_debug("\tend dumping comments");
+                log_debug("  /dumping comments");
+            }
+        }
+        if (node->subnodes) {
+            if (utarray_len(node->subnodes) > 0) {
+                log_debug("  subnodes:");
+                dump_nodes(node->subnodes);
+                log_debug("  /subnodes");
             }
         }
     }

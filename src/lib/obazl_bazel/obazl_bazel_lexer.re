@@ -569,8 +569,8 @@ loop:
     <init> "-" COMMENTS { return TK_MINUS; }
     <init> "*=" COMMENTS { return TK_STAR_EQ; }
     <init> "*" COMMENTS { return TK_STAR; }
-    <init> "//=" COMMENTS { return TK_DIVDIV_EQ; }
-    <init> "//" COMMENTS { return TK_DIVDIV; }
+    <init> "//=" COMMENTS { return TK_SLASH2_EQ; }
+    <init> "//" COMMENTS { return TK_SLASH2; }
     <init> "/=" COMMENTS { return TK_DIV_EQ; }
     <init> "/" COMMENTS { return TK_SLASH; }
     <init> "%=" COMMENTS { return TK_PCT_EQ; }
@@ -605,7 +605,7 @@ loop:
     <init> ">>=" COMMENTS { return TK_RRANGLE_EQ; }
     <init> ">>"  COMMENTS { return TK_RRANGLE; }
     <init> ">"   COMMENTS { return TK_RANGLE; }
-    <init> "=="  COMMENTS { return TK_EQEQ; }
+    <init> "=="  COMMENTS { return TK_EQ2; }
     <init> "="   COMMENTS { return TK_EQ; }
     <init> "\\"  COMMENTS { return TK_ESC_BACKSLASH; }
 
@@ -627,19 +627,19 @@ loop:
     <init> @s1 ( "0" | [1-9][0-9]*) @s2 COMMENTS
     {
         (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
-        return TK_INT_DEC;
+        return TK_INT; // TK_INT_DEC;
     }
     /* INT OCTAL */
     <init> @s1 "0" [oO] [0-7]+ @s2 COMMENTS
     {
         (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
-        return TK_INT_OCT;
+        return TK_INT; // TK_INT_OCT;
     }
     /* INT HEX */
     <init> @s1 "0" [xX] [0-9a-fA-F]+ @s2 COMMENTS
     {
         (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
-        return TK_INT_HEX;
+        return TK_INT; // TK_INT_HEX;
     }
 
     /* FLOAT literals */

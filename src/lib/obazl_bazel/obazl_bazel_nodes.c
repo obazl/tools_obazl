@@ -14,10 +14,10 @@ struct node_s {
     int type;
     int line, col;
     char *q;
-    union {
+    /* union { */
         char *s;
         UT_array *subnodes;
-    };
+    /* }; */
     UT_array *comments;         /* list of struct node_s type comment */
 };
 #endif
@@ -33,13 +33,22 @@ void node_copy(void *_dst, const void *_src)
     struct node_s *dst = (struct node_s*)_dst;
     struct node_s *src = (struct node_s*)_src;
     dst->type = src->type;
+
     /* log_debug("node posn: %d:%d", src->line, src->col); */
-    log_debug("\tnode type: %d", src->type);
-    log_debug("\t%s[%d] (%d:%d)",
+    /* log_debug("\tnode type: %d", src->type); */
+    log_debug("\t%s[%d] (%d:%d): %s",
               token_name[src->type][0],
               src->type,
-              src->line, src->col);
+              src->line, src->col,
+              src->s);
+
+    if (src->subnodes)
+        log_trace("  src subnode ct: %d",
+                  utarray_len(src->subnodes));
     *dst = *src;
+    if (dst->subnodes)
+        log_trace("  dest subnode ct: %d",
+                  utarray_len(dst->subnodes));
 }
 
 void node_dtor(void *_elt) {

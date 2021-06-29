@@ -26,6 +26,9 @@ UT_string *build_file;
 
 struct obazl_buildfile_s *ast;
 
+int line;
+int col;
+
 /* const char *punctuation[256] = { */
 /* [TK_STARSTAR] = "**", */
 /* [TK_ARROW]     = "->", */
@@ -263,8 +266,10 @@ UT_array *obazl_bazel_parse_file(char *fname)
         log_debug("lexer posn (%d:%d)", lexer->pos.line, lexer->pos.col);
 
         /* log_debug("btok pos: line %d col %d", btok->pos.line, btok->pos.col); */
+        dump_node(btok);
+        log_debug(">>>>>>>>>>>>>>>>call parser for tok %d/%d", tok, btok->type);
         Parse(pParser, tok, btok, &ast); // , &sState);
-
+        log_debug(">>>>>>>>>>>>>>>>/call parser");
         btok = calloc(sizeof(struct node_s), 1);
     }
     Parse(pParser, 0, btok, &ast); // , &sState);
@@ -273,9 +278,6 @@ UT_array *obazl_bazel_parse_file(char *fname)
     free(buffer);
     /* return 0; */
 }
-
-int line;
-int col;
 
 void node2string(struct node_s *node, UT_string *buffer)
 {
