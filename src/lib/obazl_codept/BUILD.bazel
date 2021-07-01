@@ -11,7 +11,7 @@ exports_files([
 
 ##########
 cc_library(
-    name  = "obazl_deps",
+    name  = "obazl_codept",
     # alwayslink = True,
     linkstatic = 1,
     srcs  = [
@@ -35,9 +35,9 @@ cc_library(
         "-std=c11",
         "-g", "-O0",
         "-I", ".",
-        "-I", "$(GENDIR)/src/lib/obazl_deps", # obazl_codept.h
-        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_deps", # obazl_codept.h
-        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_deps", # obazl_codept.h
+        "-I", "$(GENDIR)/src/lib/obazl_codept", # obazl_codept.h
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_codept", # obazl_codept.h
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_codept", # obazl_codept.h
         # "-I", "$(GENDIR)/src/include/obazl_meta",
         # "-I", "src/include/obazl_meta",
         "-I", "external/uthash/include",
@@ -62,10 +62,10 @@ cc_library(
 
 ##########
 cc_binary(
-    name  = "obazl_deps_test",
+    name  = "obazl_codept_test",
     srcs  = [
-        "obazl_deps_test.c",
-        "obazl_deps_test.h",
+        "obazl_codept_test.c",
+        "obazl_codept_test.h",
         "obazl_codept_lua.c",
         "obazl_codept_lua.h",
         # "obazl_codept_parser.c",
@@ -81,9 +81,9 @@ cc_binary(
         "-std=c11",
         "-g", "-O0",
         "-I", ".",
-        "-I", "$(GENDIR)/src/lib/obazl_deps", # obazl_codept.h
-        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_deps", # obazl_codept.h
-        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_deps", # obazl_codept.h
+        "-I", "$(GENDIR)/src/lib/obazl_codept", # obazl_codept.h
+        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_codept", # obazl_codept.h
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_codept", # obazl_codept.h
         # "-I", "$(GENDIR)/src/include/obazl_meta",
         # "-I", "src/include/obazl_meta",
         "-I", "external/uthash/include",
@@ -108,7 +108,7 @@ genrule(
         "obazl_codept.c",
         "obazl_codept_lua.c",
         # "obazl_codept_parser.c",
-        "obazl_deps_test.c",
+        "obazl_codept_test.c",
         "//src/lib/obazl_config:obazl_config.c",
         "//src/lib/obazl_lua:obazl_lua.c",
         "//src/lib/obazl_watch:obazl_watch_config.c",
@@ -119,7 +119,7 @@ genrule(
         "obazl_codept.h",
         "obazl_codept_lua.h",
         # "obazl_codept_parser.h",
-        "obazl_deps_test.h",
+        "obazl_codept_test.h",
     ],
     cmd = "\n".join([
         "SRC1=$(location obazl_codept.c)",
@@ -127,7 +127,7 @@ genrule(
         "$(location @makeheaders//:makeheaders) \\",
         "    $(locations @uthash//:include) \\",
         "    $(location obazl_codept.c) \\",
-        "    $(location obazl_deps_test.c) \\",
+        "    $(location obazl_codept_test.c) \\",
         "    $(location obazl_codept_lua.c) \\",
         # "    $(location obazl_codept_parser.c) \\",
         "    $(location //src/lib/obazl_config:obazl_config.c) \\",

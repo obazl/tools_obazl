@@ -18,7 +18,7 @@
 #include "uthash.h"
 #include "utstring.h"
 
-#include "obazl_deps_test.h"
+#include "obazl_codept_test.h"
 
 int main(int argc, char *argv[])
 {
