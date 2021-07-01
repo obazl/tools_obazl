@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    UT_array *result = obazl_bazel_lex_file(utstring_body(build_file));
+    UT_array *result = obazl_starlark_lex_file(utstring_body(build_file));
 
-    /* UT_array *result = obazl_bazel_lex_string("'hello'\n#cmt1\n"); */
+    /* UT_array *result = obazl_starlark_lex_string("'hello'\n#cmt1\n"); */
 
-    log_debug("main RESULT:");
+    log_debug("main RESULT dump:");
     dump_nodes(result);
 }

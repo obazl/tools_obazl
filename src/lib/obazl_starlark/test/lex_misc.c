@@ -2,7 +2,7 @@
 #include "utstring.h"
 
 #include "unity.h"
-#include "unity_punctuation.h"
+#include "lex_misc.h"
 
 UT_string *buf;
 UT_string *test_s;
@@ -51,9 +51,9 @@ void test_p(void) {
         utstring_printf(test_s, "%s%s",
                         token_name[tk[i]][1],
                         " #cmt1\n    #cmt2\n");
-        result = obazl_bazel_lex_string(utstring_body(test_s));
+        result = obazl_starlark_lex_string(utstring_body(test_s));
         utstring_renew(buf);
-        nodelist2string(result, buf);
+        rootlist2string(result, buf);
         /* printf(utstring_body(buf)); */
         TEST_ASSERT_EQUAL_STRING(utstring_body(test_s), utstring_body(buf));
         utarray_free(result);

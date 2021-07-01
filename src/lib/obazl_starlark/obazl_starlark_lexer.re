@@ -22,7 +22,7 @@
 #include "utarray.h"
 #include "log.h"
 /* #include "tokens.h" */
-#include "obazl_bazel_lexer.h"
+#include "obazl_starlark_lexer.h"
 
 // for mtags:
 static const int ROOT = -1;
@@ -172,6 +172,7 @@ static void comment_push(int type, /* 1: comment, 0: null */
 
     if (type == 0) {
         log_debug("NULL push");
+        scmt = lexer->cursor;
         /* log_debug("lexer->tok: %p :]%s", lexer->tok, lexer->tok); */
         /* log_debug("lexer->marker: %p :]%s", lexer->marker, lexer->marker); */
         /* log_debug("lexer->cursor: %p: :]%s", lexer->cursor, lexer->cursor); */
@@ -195,17 +196,20 @@ static void comment_push(int type, /* 1: comment, 0: null */
                     /* break; */
                 }
             }
-            if ((*mtok)->comments == NULL) {
-                log_debug("    creating new (*mtok)->comments array");
-                utarray_new((*mtok)->comments, &node_icd);
-            }
+            /* if ((*mtok)->comments == NULL) { */
+            /*     log_debug("    creating new (*mtok)->comments array"); */
+            /*     utarray_new((*mtok)->comments, &node_icd); */
+            /* } */
         } else {
             /* if ( (null_ct == 0) && push_ct == 0) { */
             if ( (null_ct == 1) && (push_ct == 0) ) {
                 log_debug("FIRST NULL, second push: 0x%" PRIx64 "\n",
                           *(lexer->cursor));
+                /* if (scmt == lexer->cursor) { */
+                /*     log_debug("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"); */
+                /* } */
                 if (*(lexer->cursor) == '\n') {
-                    /* log_debug("    creating TK_BLANK"); */
+                    log_debug("    NEWLINE");
                     /* (*mtok)->line++; */
                     lexer->extra_lines++;
                     /* struct node_s *n = calloc(sizeof(struct node_s), 1); */
@@ -221,6 +225,11 @@ static void comment_push(int type, /* 1: comment, 0: null */
                     log_debug("TAIL NULL, first push");
                 } else {
                     log_debug("TAIL NULL, second push");
+            if ((*mtok)->comments == NULL) {
+                log_debug("    creating new (*mtok)->comments array");
+                utarray_new((*mtok)->comments, &node_icd);
+            }
+
                     log_debug("    creating TK_BLANK");
                     /* lexer->pos.line++; */
                     line++;
@@ -357,6 +366,7 @@ static void comment_push(int type, /* 1: comment, 0: null */
 
         /* account for newline */
         /* line++; */
+        lexer->extra_lines++;
         /* sol = lexer->sol; // cursor + 1; */
         newlines = 0;  /* why? */
     }
@@ -391,14 +401,14 @@ static void comment_null(int *idx, bf_lexer_s *lexer, struct node_s **mtok)
 
 int get_column(struct bf_lexer_s *lexer)
 {
-    log_debug("get_column");
+    /* log_debug("get_column"); */
     for (lexer->sol = lexer->tok;
          *(lexer->sol) != '\n' && lexer->sol > lexer->sob;
          --(lexer->sol)) {
         ;
     };
     if (*(lexer->sol) == '\n') (lexer->sol)++; /* \n is eol, not start */
-    log_debug("SOL: %s", lexer->sol);
+    /* log_debug("SOL: %s", lexer->sol); */
     return lexer->tok - lexer->sol;
 }
 
@@ -475,15 +485,27 @@ loop:
     /*                      | (#blank1 ws* eol #blank2))* ; */
     /* COMMENTS = (ws* ((#scmt "#"[^\n]+ #ecmt eol) | eol))*; */
     /* COMMENTS = ws* eol? (ws* (#scmt "#"[^\n]+ #ecmt)? eol)*; */
+
     COMMENTS = (ws* (#scmt "#"[^\n]+ #ecmt)? eol)*;
 
       // RULES
 
-    // This runs _after_ mtag handlers and _before_ primary handler
+    // This runs _after_ mtag handlers and _before_ primary handler,
+    // so lexer->tok and lexer->cursor are set. BUT, lexer->cursor
+    // includes any following comments.
       <!init> {
         log_debug("<!init>");
         (*mtok)->line = lexer->pos.line;
-        (*mtok)->col = lexer->pos.col;
+        log_debug("lexer->extra_lines: %d", lexer->extra_lines);
+        if (lexer->extra_lines > 0) {
+            lexer->pos.line += lexer->extra_lines;
+            lexer->extra_lines = 0;
+            lexer->pos.col = 0;
+        }
+
+        /* (*mtok)->col = lexer->pos.col; */
+        (*mtok)->col = get_column(lexer);
+
         /* /\* to find start of line, start at start-of-commment and */
         /*    backup until newline or start-of-buffer *\/ */
         /* /\* log_debug("scmt: %s", scmt); *\/ */
@@ -550,21 +572,22 @@ loop:
       &=   |=   ^=   <<=  >>=
 */
 
-    <init> "**" COMMENTS { return return_token(TK_STARSTAR); }
+    <init> "**" COMMENTS { return return_token(TK_STAR2); }
     <init> "->" COMMENTS { return TK_ARROW; }
     <init> "<=" COMMENTS { return TK_LE; }
     <init> ">=" COMMENTS { return TK_GE; }
 
-    <init> "." { return TK_DOT; }
-    <init, load> "," {
-            return TK_COMMA;
-     }
+    <init> "." COMMENTS { return TK_DOT; }
+    <init> "," COMMENTS { return TK_COMMA; }
     <init> ";" COMMENTS { return TK_SEMI; }
     <init> ":" COMMENTS { return TK_COLON; }
     <init> "!=" COMMENTS { return TK_BANG_EQ; }
     <init> "!"  COMMENTS { return TK_BANG; }
     <init> "+=" COMMENTS { return TK_PLUS_EQ; }
-    <init> "+" COMMENTS { return TK_PLUS; }
+    <init> "+" COMMENTS {
+        log_debug("lex PLUS (%d:%d)", (*mtok)->line, (*mtok)->col);
+        return TK_PLUS;
+    }
     <init> "-=" COMMENTS { return TK_MINUS_EQ; }
     <init> "-" COMMENTS { return TK_MINUS; }
     <init> "*=" COMMENTS { return TK_STAR_EQ; }
@@ -660,34 +683,36 @@ loop:
             log_debug("\tlexer->tok: %p: :]%s[:", lexer->tok, lexer->tok);
             log_debug("\tlexer->cursor (10) %p :]%.10s[:",
                       lexer->cursor, lexer->cursor, lexer->cursor);
-            log_debug("\tlexer->cursor - 4 :]%s[:", (lexer->cursor - 4));
+            /* log_debug("\tlexer->cursor - 4 :]%s[:", (lexer->cursor - 4)); */
 
-            (*mtok)->q = "'";
+            (*mtok)->q = '\'';
 
             /* lexer->cursor pts to one past end (including comments) */
             (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
 
-            if (lexer->extra_lines > 0) {
-                lexer->pos.line += lexer->extra_lines;
-                lexer->extra_lines = 0;
-                lexer->pos.col = 0;
-            } else {
-                lexer->pos.col += strlen((*mtok)->s)
-                    + 2 ;       /* account for quotes */
-            }
+            /* if (lexer->extra_lines > 0) { */
+            /*     lexer->pos.line += lexer->extra_lines; */
+            /*     lexer->extra_lines = 0; */
+            /*     lexer->pos.col = 0; */
+            /* } else { */
+            /*     lexer->pos.col += strlen((*mtok)->s) */
+            /*         + 2 ;       /\* account for quotes *\/ */
+            /* } */
 
             /* (*mtok)->col = s1 - lexer->sol; */
 
             /* if we have a comment, we need to bump lexer->pos.line */
-            if ( utarray_len((*mtok)->comments ) > 0) {
-                struct node_s *n = utarray_back((*mtok)->comments);
-                /* struct node_s *n=NULL; */
-                /* while( (n=(struct node_s*)utarray_next((*mtok)->comments, n))) { */
+            if ((*mtok)->comments) {
+                if ( utarray_len((*mtok)->comments ) > 0) {
+                    struct node_s *n = utarray_back((*mtok)->comments);
+                    /* struct node_s *n=NULL; */
+                    /* while( (n=(struct node_s*)utarray_next((*mtok)->comments, n))) { */
                     lexer->pos.line = n->line + 1;
                     /* lexer->pos.col  = 0; // FIXME */
-                /* } */
-                /* } else { */
-                /*     lexer->pos.col += strlen( (*mtok)->s ); */
+                    /* } */
+                    /* } else { */
+                    /*     lexer->pos.col += strlen( (*mtok)->s ); */
+                }
             }
             (*mtok)->col = get_column(lexer);
             if (strncmp(t1, "br", 2) == 0)  return TK_BRSTRING;
@@ -704,23 +729,25 @@ loop:
             log_debug("matched DOUBLE_QUOTE TK_STRING (%d:%d)",
                       lexer->pos.line, lexer->pos.col);
 
-            (*mtok)->q = "\"";
+            (*mtok)->q = '"';
             (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
 
-            if (lexer->extra_lines > 0) {
-                lexer->pos.line += lexer->extra_lines;
-                lexer->extra_lines = 0;
-                lexer->pos.col = 0;
-            } else {
-                lexer->pos.col += strlen((*mtok)->s)
-                    + 2 ;       /* account for quotes */
-            }
+            /* if (lexer->extra_lines > 0) { */
+            /*     lexer->pos.line += lexer->extra_lines; */
+            /*     lexer->extra_lines = 0; */
+            /*     lexer->pos.col = 0; */
+            /* } else { */
+            /*     lexer->pos.col += strlen((*mtok)->s) */
+            /*         + 2 ;       /\* account for quotes *\/ */
+            /* } */
 
             /* if we have a comment, we need to bump lexer->pos.line */
-            if ( utarray_len((*mtok)->comments) > 0 ) {
+            if ((*mtok)->comments) {
+              if ( utarray_len((*mtok)->comments) > 0 ) {
                 struct node_s *n = utarray_back((*mtok)->comments);
                 log_debug("\tlast COMMENT posn: (%d:%d)", n->line, n->col);
                 lexer->pos.line = n->line + 1;
+              }
             }
             (*mtok)->col = get_column(lexer);
 
@@ -795,11 +822,11 @@ loop:
     <init> "global" COMMENTS { return TK_GLOBAL; }
     <init> "yield" COMMENTS { return TK_YIELD; }
 
-    <init> identifier COMMENTS {
+    <init> @s1 identifier @s2 COMMENTS {
                        log_debug("<init> IDENTIFIER");
             lexer->clean_line = false;
-            (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok);
-            /* (*mtok)->s = strndup(s1, (size_t)(s2 - s1)); */
+            /* (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
+            (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
         return TK_ID;
         }
 

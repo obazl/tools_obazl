@@ -1,19 +1,20 @@
 #include "log.h"
-#include "obazl_bazel_nodes.h"
+#include "obazl_starlark_nodes.h"
 
 #if INTERFACE
 #include "utarray.h"
 
 struct obazl_buildfile_s {
     char *fname;
-    UT_array *nodelist;
+    struct node_s *root;
+    /* UT_array *nodelist; */
 };
 
 struct node_s {
     /* enum node_type_e type; */
     int type;
     int line, col;
-    char *q;
+    char q;
     /* union { */
         char *s;
         UT_array *subnodes;
@@ -29,18 +30,19 @@ void nodelist_copy(UT_array *_dst, UT_array *_src)
 
 void node_copy(void *_dst, const void *_src)
 {
-    log_debug("node_copy: %p <- %p", _dst, _src);
+    log_debug("node_copy"); // : %p <- %p", _dst, _src);
     struct node_s *dst = (struct node_s*)_dst;
     struct node_s *src = (struct node_s*)_src;
     dst->type = src->type;
 
     /* log_debug("node posn: %d:%d", src->line, src->col); */
     /* log_debug("\tnode type: %d", src->type); */
-    log_debug("\t%s[%d] (%d:%d): %s",
+    log_debug("\t%s[%d] %c (%d:%d) %s",
               token_name[src->type][0],
               src->type,
+              src->q? src->q : ' ',
               src->line, src->col,
-              src->s);
+              (src->s == NULL? "" : src->s));
 
     if (src->subnodes)
         log_trace("  src subnode ct: %d",
@@ -52,9 +54,16 @@ void node_copy(void *_dst, const void *_src)
 }
 
 void node_dtor(void *_elt) {
-    log_debug("NODE_DTOR type %d", ((struct node_s*)_elt)->type);
+    /* log_debug("NODE_DTOR: %s (%d)", */
+    /*           token_name[((struct node_s*)_elt)->type][0], */
+    /*           ((struct node_s*)_elt)->type); */
     struct node_s *elt = (struct node_s*)_elt;
-    /* if (elt->s) free(elt->s); */
+    if (elt->s) {
+        /* log_debug("\tfreeing string %s", elt->s); */
+        free(elt->s);
+    }
+    if (elt->comments) utarray_free(elt->comments);
+    if (elt->subnodes) utarray_free(elt->subnodes);
 }
 
 /* nodelist: UT_array of node_s */
@@ -158,12 +167,3 @@ void alias_dtor(void *_alias) {
     struct alias_s *alias = (struct alias_s*)_alias;
     /* if (alias->alias) free(alias->alias); */
 }
-
-void parser_init(char *fname, struct obazl_buildfile_s **ast)
-{
-    log_debug("parser_init");
-    *ast = (struct obazl_buildfile_s*)calloc(sizeof(struct obazl_buildfile_s), 1);
-    (*ast)->fname = strdup(fname);
-    utarray_new( (*ast)->nodelist, &node_icd);
-}
-

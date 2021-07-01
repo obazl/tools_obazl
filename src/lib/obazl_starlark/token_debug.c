@@ -91,7 +91,7 @@ const char *token_name[256][2] =
 [TK_SQ] = { "TK_SQ", "'" },
 /* [TK_SQ3] = { "TK_SQ3", */
 [TK_STAR] = { "TK_STAR", "*" },
-[TK_STARSTAR] = { "TK_STARSTAR", "**" },
+[TK_STAR2] = { "TK_STAR2", "**" },
 [TK_STAR_EQ] = { "TK_STAR_EQ", "*=" },
 [TK_STRING] = { "TK_STRING", ""},
 [TK_BSTRING] = { "TK_BSTRING", ""},    /* byte string */
@@ -115,36 +115,57 @@ const char *token_name[256][2] =
  /* non-terminals */
 [TK_Arg_List] = { "TK_Arg_List", "" },
 [TK_Arg_Named] = { "TK_Arg_Named", "" },
+[TK_Arg_Star] = { "TK_Arg_Star", "" },
+[TK_Arg_Star2] = { "TK_Arg_Star2", "" },
 [TK_Bin_Expr] = { "TK_Bin_Expr", "" },
 [TK_Call_Expr] = { "TK_Call_Expr", "" },
 [TK_Call_Sfx] = { "TK_Call_Sfx", "" },
-[TK_Primary_Expr] = { "TK_Primary_Expr", "" },
- [TK_Unary_Expr] = { "TK_Unary_Expr", "" },
+[TK_Comp_Clause] = { "TK_Comp_Clause", "" },
+[TK_Dict_Comp] = { "TK_Dict_Comp", "" },
+[TK_Dict_Entry] = { "TK_Dict_Entry", "" },
+[TK_Dict_Entry_List] = { "TK_Dict_Entry_List", "" },
+[TK_Dict_Expr] = { "TK_Dict_Expr", "" },
+[TK_Dot_Expr] = { "TK_Dot_Expr", "" },
 [TK_Dot_Sfx] = { "TK_Dot_Sfx", "" },
+[TK_If_Expr] = { "TK_If_Expr", "" },
+[TK_Lambda_Expr] = { "TK_Lambda_Expr", "" },
+[TK_List_Comp] = { "TK_List_Comp", "" },
+[TK_List_Expr] = { "TK_List_Expr", "" },
+[TK_Loop_Vars] = { "TK_Loop_Vars", "" },
+[TK_Param_List] = { "TK_Param_List", "" },
+[TK_Param_Named] = { "TK_Param_Named", "" },
+[TK_Param_Star] = { "TK_Param_Star", "" },
+[TK_Param_Star2] = { "TK_Param_Star2", "" },
+[TK_Paren_Expr] = { "TK_Paren_Expr", "" },
+[TK_Primary_Expr] = { "TK_Primary_Expr", "" },
 [TK_Slice_Sfx] = { "TK_Slice_Sfx", "" },
+[TK_Slice_Expr] = { "TK_Slice_Expr", "" },
+[TK_Unary_Expr] = { "TK_Unary_Expr", "" },
 };
 
-void dump_ast(struct obazl_buildfile_s *ast)
-{
-    log_debug("dump_ast");
-    log_debug("fname: %s", ast->fname);
+/* void dump_ast(struct obazl_buildfile_s *ast) */
+/* { */
+/*     log_debug("dump_ast"); */
+/*     log_debug("fname: %s", ast->fname); */
 
-    struct node_s *p;
-    for(p=(struct node_s*)utarray_front(ast->nodelist);
-        p!=NULL;
-        p=(struct node_s*)utarray_next(ast->nodelist, p)) {
-        log_debug("node type: %d", p->type);
-    }
-}
+/*     struct node_s *p; */
+/*     for(p=(struct node_s*)utarray_front(ast->nodelist); */
+/*         p!=NULL; */
+/*         p=(struct node_s*)utarray_next(ast->nodelist, p)) { */
+/*         log_debug("node type: %d", p->type); */
+/*     } */
+/* } */
 
 void dump_node(struct node_s *node)
 {
-    log_debug("dump_node");
-    log_debug("%s[%d] (%d:%d)",
+    log_debug("dump_node: %p", node);
+    log_debug("%s[%d] %c (%d:%d)",
               token_name[node->type][0],
               node->type,
+              node->type == TK_STRING? node->q: ' ',
               node->line, node->col);
     switch (node->type) {
+    case TK_COMMENT: log_debug("\tstarttok: %s", node->s); break;
     case TK_ID: log_debug("\tstarttok: %s", node->s); break;
     case TK_INT: log_debug("\tstarttok: %s", node->s); break;
     case TK_STRING: log_debug("\tstarttok: %s", node->s); break;
@@ -162,21 +183,23 @@ void dump_node(struct node_s *node)
 
 void dump_nodes(UT_array *nodes)
 {
-    log_debug("dump_nodes: %p", nodes);
+    log_debug("dump_nodes: %p, ct: %d", nodes, utarray_len(nodes));
 
     struct node_s *node=NULL;
     while( (node=(struct node_s*)utarray_next(nodes, node))) {
-        /* log_debug("type: %d", node->type); */
-        log_debug("%s[%d] %s (%d:%d)",
+        /* log_debug("type: %d %s", */
+        /*           node->type, */
+        /*           token_name[node->type][0]); */
+        log_debug("%s[%d] %c (%d:%d)",
                   token_name[node->type][0],
                   node->type,
-                  node->type == TK_STRING? node->q: "",
+                  node->type == TK_STRING? node->q: ' ',
                   node->line, node->col);
         /* if (node->s) log_debug("\tstarttok: :]%s[:", node->s); */
         switch (node->type) {
         case TK_COMMENT: log_debug("\tstarttok: %s", node->s); break;
-        case TK_ID: log_debug("\tstarttok: %s", node->s); break;
-        case TK_INT: log_debug("\tstarttok: %s", node->s); break;
+        case TK_ID: log_debug("\tstarttok: :]%s[:", node->s); break;
+        case TK_INT: log_debug("\tstarttok: :]%s[:", node->s); break;
         case TK_STRING: log_debug("\tstarttok: %s", node->s); break;
         /* case TK_Call_Sfx: log_debug("\tstarttok: %s", node->s); break; */
         case TK_Dot_Sfx: log_debug("\tstarttok: %s", node->s); break;
