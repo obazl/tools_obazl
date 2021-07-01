@@ -150,9 +150,9 @@ cc_binary(
     ],
     deps = [
         ":obazl_dune",
-        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_lua",
+        # "//src/lib/obazl_starlark", # FIXME
         "//src/lib/obazl_watch",
         "//src/lib/obazl_watch:obazl_watch_client",
         "//external/lua/lib:lua",

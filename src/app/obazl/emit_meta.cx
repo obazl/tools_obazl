@@ -10,65 +10,65 @@ static int indent = 2;
 static int delta = 2;
 static char *sp = " ";
 
-void emit_meta(int indent, struct obzl_meta_package *_pkg)
+void emit_meta(int indent, struct obazl_meta_package *_pkg)
 {
     /* log_set_quiet(false); */
-    log_debug("%*sname:      %s", indent, sp, obzl_meta_package_name(_pkg));
-    log_debug("%*sdirectory: %s", indent, sp, obzl_meta_package_dir(_pkg));
-    log_debug("%*smetafile:  %s", indent, sp, obzl_meta_package_src(_pkg));
+    log_debug("%*sname:      %s", indent, sp, obazl_meta_package_name(_pkg));
+    log_debug("%*sdirectory: %s", indent, sp, obazl_meta_package_dir(_pkg));
+    log_debug("%*smetafile:  %s", indent, sp, obazl_meta_package_src(_pkg));
 
-    /* UT_array *entries = obzl_meta_package_entries(_pkg); */
-    obzl_meta_entries *entries = obzl_meta_package_entries(_pkg);
+    /* UT_array *entries = obazl_meta_package_entries(_pkg); */
+    obazl_meta_entries *entries = obazl_meta_package_entries(_pkg);
     log_debug("%*sentries:", indent, sp);
     /* for(e  = utarray_front(entries->entries); */
     /*     e != NULL; */
     /*     e  = utarray_next(entries->entries, e)) { */
-    obzl_meta_entry *e = NULL;
-    for (int i = 1; i <= obzl_meta_entries_count(entries); i++) {
-        e = obzl_meta_entries_nth(entries, i);
+    obazl_meta_entry *e = NULL;
+    for (int i = 1; i <= obazl_meta_entries_count(entries); i++) {
+        e = obazl_meta_entries_nth(entries, i);
 
-        if (obzl_meta_entry_type(e) == OMP_PROPERTY) {
+        if (obazl_meta_entry_type(e) == OMP_PROPERTY) {
             log_debug("%*sproperty:", delta+indent, sp);
 
-            obzl_meta_property *prop = obzl_meta_entry_property(e);
-            /* void *prop = obzl_meta_entry_property(e); */
-            log_debug("%*sname: %s", delta+delta+indent, sp, obzl_meta_property_name(prop));
+            obazl_meta_property *prop = obazl_meta_entry_property(e);
+            /* void *prop = obazl_meta_entry_property(e); */
+            log_debug("%*sname: %s", delta+delta+indent, sp, obazl_meta_property_name(prop));
 
-            obzl_meta_settings *settings = obzl_meta_property_settings(prop);
-            obzl_meta_setting *setting = NULL;
+            obazl_meta_settings *settings = obazl_meta_property_settings(prop);
+            obazl_meta_setting *setting = NULL;
             /* for(setting  = utarray_front(settings); */
             /*     setting != NULL; */
             /*     setting  = utarray_next(settings, setting)) { */
-            for (int i = 0; i < obzl_meta_settings_count(settings); i++) {
-                setting = obzl_meta_settings_nth(settings, i);
+            for (int i = 0; i < obazl_meta_settings_count(settings); i++) {
+                setting = obazl_meta_settings_nth(settings, i);
 
-                obzl_meta_flags *flags = obzl_meta_setting_flags(setting);
+                obazl_meta_flags *flags = obazl_meta_setting_flags(setting);
                 if (flags == NULL) {
                     log_debug("%*sflags: none", 2*delta+indent, sp);
                 } else {
-                    log_debug("%*sflags: %d", 2*delta+indent, sp, obzl_meta_flags_count(flags));
-                    obzl_meta_flag *flag = NULL;
-                    for (int i = 0; i < obzl_meta_flags_count(flags); i++) {
-                        flag = obzl_meta_flags_nth(flags, i);
+                    log_debug("%*sflags: %d", 2*delta+indent, sp, obazl_meta_flags_count(flags));
+                    obazl_meta_flag *flag = NULL;
+                    for (int i = 0; i < obazl_meta_flags_count(flags); i++) {
+                        flag = obazl_meta_flags_nth(flags, i);
                     /* for(flag  = utarray_front(flags); */
                     /*     flag != NULL; */
                     /*     flag  = utarray_next(flags, flag)) { */
 
                         log_debug("%*sflag: %s (%d)", 3*delta+indent, sp,
-                                  obzl_meta_flag_name(flag), obzl_meta_flag_polarity(flag));
+                                  obazl_meta_flag_name(flag), obazl_meta_flag_polarity(flag));
                     }
                 }
 
-                log_debug("%*sopcode: %d", 2*delta+indent, sp, obzl_meta_setting_opcode(setting));
+                log_debug("%*sopcode: %d", 2*delta+indent, sp, obazl_meta_setting_opcode(setting));
 
-                obzl_meta_values *vals = obzl_meta_setting_values(setting);
-                if (obzl_meta_values_count(vals) == 0) {
+                obazl_meta_values *vals = obazl_meta_setting_values(setting);
+                if (obazl_meta_values_count(vals) == 0) {
                     log_debug("%*svalues: none", 2*delta+indent, sp);
                 } else {
                     log_debug("%*svalues:", 2*delta+indent, sp);
-                    obzl_meta_value *val = NULL;
-                    for (int i = 0; i < obzl_meta_values_count(vals); i++) {
-                        val = obzl_meta_values_nth(vals, i);
+                    obazl_meta_value *val = NULL;
+                    for (int i = 0; i < obazl_meta_values_count(vals); i++) {
+                        val = obazl_meta_values_nth(vals, i);
                         log_debug("%*s'%s'", 4*delta+indent, sp, (char*)val);
 
                     /* while ((val=(char **)utarray_next(vals, val))) { */
@@ -79,11 +79,11 @@ void emit_meta(int indent, struct obzl_meta_package *_pkg)
             }
         } else {
             log_debug("%*spackage:", delta+indent, sp);
-            obzl_meta_package *pkg = obzl_meta_entry_package(e);
-            /* void *pkg = obzl_meta_entry_package(e); */
-            /* log_debug("%*spackage name:      %s", delta+delta+indent, sp, obzl_meta_package_name(pkg)); */
-            /* log_debug("%*spackage directory: %s", delta+delta+indent, sp, obzl_meta_package_directory(pkg)); */
-            /* log_debug("%*spackage metafile:  %s", delta+delta+indent, sp, obzl_meta_package_metafile(pkg)); */
+            obazl_meta_package *pkg = obazl_meta_entry_package(e);
+            /* void *pkg = obazl_meta_entry_package(e); */
+            /* log_debug("%*spackage name:      %s", delta+delta+indent, sp, obazl_meta_package_name(pkg)); */
+            /* log_debug("%*spackage directory: %s", delta+delta+indent, sp, obazl_meta_package_directory(pkg)); */
+            /* log_debug("%*spackage metafile:  %s", delta+delta+indent, sp, obazl_meta_package_metafile(pkg)); */
             emit_meta(delta+delta+indent, pkg);
             }
     }

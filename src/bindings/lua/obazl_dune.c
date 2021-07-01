@@ -26,9 +26,9 @@
 static int parse_file (lua_State *L) {
     size_t l;
     const char *fname = luaL_checklstring(L, 1, &l);
-    /* obzl_meta_package *pkg = obzl_meta_parse_file((char*)fname); */
+    /* obazl_meta_package *pkg = obazl_meta_parse_file((char*)fname); */
 
-    struct obzl_dune_package_s *parsed = obzl_dune_parse_file((char*)fname);
+    struct obazl_dune_package_s *parsed = obazl_dune_parse_file((char*)fname);
     if (parsed == NULL) {
         return luaL_error(L, "%s: %s", fname, strerror(errno));
     } else {
@@ -51,7 +51,7 @@ static int parse_file (lua_State *L) {
 }
 
 static int version (lua_State *L) {
-    char *v = obzl_dune_version();
+    char *v = obazl_dune_version();
     lua_pushstring(L, v);
     return 1;
 }

@@ -37,9 +37,9 @@ int errnum;
 
 /* EXPORT struct logging logger; */
 
-/* struct obzl_dune_package *ast; */
+/* struct obazl_dune_package *ast; */
 
-EXPORT char *obzl_dune_version()
+EXPORT char *obazl_dune_version()
 {
     return "0.1.0";
 }
@@ -50,9 +50,9 @@ void obazl_config_dune(void)
     /* obazl_configure(); */
 }
 
-/* EXPORT struct dune_package_s *obzl_dune_parse_file(char *fname) */
+/* EXPORT struct dune_package_s *obazl_dune_parse_file(char *fname) */
 /* { */
-/*     log_info("obzl_dune_parse_file: %s", fname); */
+/*     log_info("obazl_dune_parse_file: %s", fname); */
 
 /*     return parse_dunefile(fname); */
 

@@ -6,45 +6,47 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 exports_files(glob(["*.c"]))
 
 ##########
-cc_library(
-    name  = "obazl_starlark",
-    # alwayslink = True,
-    linkstatic = 1,
-    srcs  = [
-        "emit_build_bazel.c",
-        "emit_build_bazel.h",
-        "//src/include/obazl_meta:obazl_meta.h",
-    ],
-    hdrs = [
-        "@uthash//:include",
-        "//vendored/logc:log.h"
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }),
-    copts = [
-        "-std=c11",
-        "-g", "-O0",
-        "-I", ".",
-        "-I", "$(GENDIR)/src/lib/obazl_starlark", # emit_build_bazel.h
-        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_starlark", # emit_build_bazel.h
-        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_starlark", # emit_build_bazel.h
-        "-I", "$(GENDIR)/src/include/obazl_meta",
-        "-I", "src/include/obazl_meta",
-        "-I", "external/uthash/include",
-        "-I", "vendored/logc",
-        "-I", "external/obazl/vendored/logc",
-        "-I", "external/tools_obazl/vendored/logc"
-    ],
-    deps = [
-        "//src/lib/obazl_meta",
-        "//src/lib/obazl_fs",
-        "//src/lib/obazl_utils",
-        "//vendored/logc"
-    ],
-    visibility = ["//visibility:public"]
-)
+# cc_library(
+#     name  = "obazl_starlark",
+#     # alwayslink = True,
+#     linkstatic = 1,
+#     srcs  = [
+#         "emit_build_bazel.c",
+#         "emit_build_bazel.h",
+#         "//src/include/obazl_meta:obazl_meta.h",
+#     ],
+#     hdrs = [
+#         "@uthash//:include",
+#         "//vendored/logc:log.h"
+#     ],
+#     defines = select({
+#         "//bzl/host:debug": ["DEBUG_TRACE"],
+#         "//conditions:default":   []
+#     }),
+#     copts = [
+#         "-std=c11",
+#         "-g", "-O0",
+#         "-I", ".",
+#         "-I", "$(GENDIR)/src/lib/obazl_starlark", # emit_build_bazel.h
+#         "-I", "$(GENDIR)/external/obazl/src/lib/obazl_starlark", # emit_build_bazel.h
+#         "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_starlark", # emit_build_bazel.h
+
+#         "-I", "src/lib/obazl_meta",
+#         "-I", "src/include/obazl_meta",
+#         "-I", "$(GENDIR)/src/include/obazl_meta",
+#         "-I", "external/uthash/include",
+#         "-I", "vendored/logc",
+#         "-I", "external/obazl/vendored/logc",
+#         "-I", "external/tools_obazl/vendored/logc"
+#     ],
+#     deps = [
+#         "//src/lib/obazl_meta",
+#         "//src/lib/obazl_fs",
+#         "//src/lib/obazl_utils",
+#         "//vendored/logc"
+#     ],
+#     visibility = ["//visibility:public"]
+# )
 
 ##########
 cc_library(

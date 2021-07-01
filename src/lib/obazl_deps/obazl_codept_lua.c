@@ -90,7 +90,7 @@ struct filedeps_s *codept_filedeps = NULL; /* hashmap of filedep specs */
 
 UT_array *dirty_fdeps;          /* filenames with changed deps */
 
-/* struct obzl_codept_package_s { */
+/* struct obazl_codept_package_s { */
 /*     char *path; */
 /*     UT_array *stanzas;          /\* array of struct stanza_s pointer pointers *\/ */
 /*     UT_array *files;            /\* ???? *\/ */
@@ -1056,7 +1056,7 @@ int codept_handle_root_sexp(sexp_t *the_sexp)
 */
 EXPORT struct obazl_deps_s *obazl_deps_parse_file(char *fname)
 {
-    log_debug("obzl_deps_parse_file: %s", fname);
+    log_debug("obazl_deps_parse_file: %s", fname);
 
     /* int fd; */
     char *work_buf;

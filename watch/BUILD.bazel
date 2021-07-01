@@ -39,9 +39,9 @@ cc_binary(
     ],
     deps = [
         "//src/lib/obazl_config",
-        "//src/lib/obazl_starlark",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_meta",
+        # "//src/lib/obazl_starlark", # FIXME
         "//src/lib/obazl_watch",
         "//src/lib/obazl_watch:obazl_watch_client",
         "//vendored/logc"

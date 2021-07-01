@@ -44,7 +44,7 @@ static int dune_pkg_index (lua_State *L) {
     /* metatable: OBazl.dune.pkg */
     log_debug("dune_pkg_index");
 
-    struct obzl_dune_package_s *pkg = *(struct obzl_dune_package_s **)lua_touserdata(L, lua_upvalueindex(1));
+    struct obazl_dune_package_s *pkg = *(struct obazl_dune_package_s **)lua_touserdata(L, lua_upvalueindex(1));
     const char *key = luaL_checkstring(L, 2);
     log_debug("index key: %s", key);
     if (strncmp(key, "path", 4) == 0) {
@@ -79,7 +79,7 @@ static int dune_pkg_enumerator (lua_State *L)
 
     /* now the args */
     /* arg 1: the invariant */
-    struct obzl_dune_package_s *pkg = *(struct obzl_dune_package_s **)lua_touserdata(L, 1);
+    struct obazl_dune_package_s *pkg = *(struct obazl_dune_package_s **)lua_touserdata(L, 1);
     /* log_debug("invariant (pkg): %p", pkg); */
 
     /* arg 2: value of control var */
@@ -126,7 +126,7 @@ static int dune_pkg_enumerator (lua_State *L)
 static int dune_pkg_pairs (lua_State *L) {
     log_debug("dune_pkg_pairs");
 
-    struct obzl_dune_package_s *pkg = *(struct obzl_dune_package_s **)lua_touserdata(L, 1);
+    struct obazl_dune_package_s *pkg = *(struct obazl_dune_package_s **)lua_touserdata(L, 1);
 
     /*  result 1: "generator" closure with upvalues */
     /* char **curritem = NULL;           /\* we use this to keep track of where we are in list *\/ */
@@ -135,7 +135,7 @@ static int dune_pkg_pairs (lua_State *L) {
     lua_pushcclosure(L, dune_pkg_enumerator, 2);
 
     /* result 2: invariant (stanza list) */
-    obzl_dune_package_s **new_pkg = lua_newuserdata(L, sizeof(struct obzl_dune_package_s*));
+    obazl_dune_package_s **new_pkg = lua_newuserdata(L, sizeof(struct obazl_dune_package_s*));
     *new_pkg = pkg;
     luaL_getmetatable(L, "OBazl.dune.pkg");
     lua_setmetatable(L, -2);
@@ -926,9 +926,9 @@ static int dune_wordlist_tostring (lua_State *L)
 static int parse_file (lua_State *L) {
     size_t l;
     const char *fname = luaL_checklstring(L, 1, &l);
-    /* obzl_meta_package *pkg = obzl_meta_parse_file((char*)fname); */
+    /* obazl_meta_package *pkg = obazl_meta_parse_file((char*)fname); */
 
-    struct obzl_dune_package_s *parsed = obzl_dune_parse_file((char*)fname);
+    struct obazl_dune_package_s *parsed = obazl_dune_parse_file((char*)fname);
     if (parsed == NULL) {
         return luaL_error(L, "%s: %s", fname, strerror(errno));
     } else {
@@ -942,17 +942,17 @@ static int parse_file (lua_State *L) {
 
     luaL_newmetatable(L, "OBazl.dune.pkg");
 
-    struct obzl_dune_package_s **pkg0 = lua_newuserdata(L, sizeof(struct obzl_dune_package_s *));
+    struct obazl_dune_package_s **pkg0 = lua_newuserdata(L, sizeof(struct obazl_dune_package_s *));
     *pkg0 = parsed;
     lua_pushcclosure(L, dune_pkg_gc, 1);
     lua_setfield(L, -2, "__gc");
 
-    struct obzl_dune_package_s **pkg1 = lua_newuserdata(L, sizeof(struct obzl_dune_package_s *));
+    struct obazl_dune_package_s **pkg1 = lua_newuserdata(L, sizeof(struct obazl_dune_package_s *));
     *pkg1 = parsed;
     lua_pushcclosure(L, dune_pkg_index, 1);
     lua_setfield(L, -2, "__index");
 
-    struct obzl_dune_package_s **pkg2 = lua_newuserdata(L, sizeof(struct obzl_dune_package_s *));
+    struct obazl_dune_package_s **pkg2 = lua_newuserdata(L, sizeof(struct obazl_dune_package_s *));
     *pkg2 = parsed;
     lua_pushcclosure(L, dune_pkg_pairs, 1);
     lua_setfield(L, -2, "__pairs");
@@ -968,7 +968,7 @@ static int parse_file (lua_State *L) {
 }
 
 static int version (lua_State *L) {
-    char *v = obzl_dune_version();
+    char *v = obazl_dune_version();
     lua_pushstring(L, v);
     return 1;
 }

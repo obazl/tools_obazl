@@ -60,7 +60,7 @@
   }
  */
 
-struct obzl_dune_package_s {
+struct obazl_dune_package_s {
     char *path;
     UT_array *stanzas;          /* array of struct stanza_s pointer pointers */
     UT_array *files;            /* ???? */
@@ -128,7 +128,7 @@ EXPORT int fields_len(struct stanza_field_s *fields)
 }
 
 /* ************************** */
-void handle_library(sexp_t *exp, obzl_dune_package_s *pkg)
+void handle_library(sexp_t *exp, obazl_dune_package_s *pkg)
 {
     log_trace("handle_library");
 
@@ -569,7 +569,7 @@ void dune_handle_field_sexp(sexp_t *exp, stanza_s *stanza)
     return;
 }
 
-void dune_handle_top_sexp(sexp_t *exp, obzl_dune_package_s *pkg) // stanza_s *stanza)
+void dune_handle_top_sexp(sexp_t *exp, obazl_dune_package_s *pkg) // stanza_s *stanza)
 {
     log_trace("dune_handle_top_sexp");
 
@@ -730,11 +730,11 @@ struct module_s *inventory_modules(char *basedir)
 }
 
 /**
-   returns obzl_dune_package_s
+   returns obazl_dune_package_s
 */
-EXPORT struct obzl_dune_package_s *obzl_dune_parse_file(char *fname)
+EXPORT struct obazl_dune_package_s *obazl_dune_parse_file(char *fname)
 {
-    log_debug("obzl_dune_parse_file: %s", fname);
+    log_debug("obazl_dune_parse_file: %s", fname);
 
     /* first inventory modules */
     char *dir = dirname(fname);
@@ -751,7 +751,7 @@ EXPORT struct obzl_dune_package_s *obzl_dune_parse_file(char *fname)
     sexp_iowrap_t *iow;
     int fd;
 
-    struct obzl_dune_package_s *pkg = calloc(sizeof(struct obzl_dune_package_s), 1);
+    struct obazl_dune_package_s *pkg = calloc(sizeof(struct obazl_dune_package_s), 1);
     pkg->path = fname;          /* FIXME: use dirname */
     utarray_new(pkg->stanzas, &stanza_list_icd);
 

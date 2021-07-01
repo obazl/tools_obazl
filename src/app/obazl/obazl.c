@@ -163,9 +163,9 @@ int main(int argc, char *argv[])
     /* exit(EXIT_FAILURE);         /\* debugging *\/ */
 
     if (utstring_len(dune_file) > 0) {
-        log_info("obazl_dune version: %s", obzl_dune_version());
+        log_info("obazl_dune version: %s", obazl_dune_version());
         log_info("parsing dune file %s", utstring_body(dune_file));
-        struct obzl_dune_package_s *dune_ast = obzl_dune_parse_file(utstring_body(dune_file));
+        struct obazl_dune_package_s *dune_ast = obazl_dune_parse_file(utstring_body(dune_file));
         /* log_set_level(LOG_DEBUG); */
         /* dump_dune_pkg(0, dune_ast); */
         /* dune_emit_build_bazel(dune_ast, "@opam", "lib"); */
@@ -173,8 +173,8 @@ int main(int argc, char *argv[])
     }
 
     if (utstring_len(meta_file) > 0) {
-        log_info("obazl_meta version: %s", obzl_dune_version());
-        struct obzl_meta_package *meta_ast = obzl_meta_parse_file(utstring_body(meta_file));
+        log_info("obazl_meta version: %s", obazl_dune_version());
+        struct obazl_meta_package *meta_ast = obazl_meta_parse_file(utstring_body(meta_file));
         log_set_level(LOG_DEBUG);
         dump_pkg(0, meta_ast);
         /* meta_emit_build_bazel(meta_ast, "@opam", "lib"); */

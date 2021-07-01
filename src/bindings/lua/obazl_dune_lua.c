@@ -25,7 +25,7 @@
 #include "obazl_dune_lua.h"
 
 /* **************************************************************** */
-void stanzas_table(lua_State *L, obzl_dune_package_s *pkg)
+void stanzas_table(lua_State *L, obazl_dune_package_s *pkg)
 {
     log_debug(">>>>stanzas_table");
     int len = utarray_len((UT_array*)pkg->stanzas);

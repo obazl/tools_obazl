@@ -32,20 +32,20 @@
 static int parse_file (lua_State *L) {
     size_t l;
     const char *fname = luaL_checklstring(L, 1, &l);
-    obzl_meta_package *pkg = obzl_meta_parse_file((char*)fname);
+    obazl_meta_package *pkg = obazl_meta_parse_file((char*)fname);
     if (pkg == NULL) {
         return luaL_error(L, "%s: %s", fname, strerror(errno));
     } else {
-        printf("pkg name: %s\n", obzl_meta_package_name(pkg));
+        printf("pkg name: %s\n", obazl_meta_package_name(pkg));
     }
     /* push pkg userdata??? */
-    obzl_meta_package **bp = lua_newuserdata(L, sizeof(pkg));
+    obazl_meta_package **bp = lua_newuserdata(L, sizeof(pkg));
     *bp = pkg;
     return 1;
 }
 
 static int version (lua_State *L) {
-    char *v = obzl_meta_version();
+    char *v = obazl_meta_version();
     lua_pushstring(L, v);
     return 1;
 }

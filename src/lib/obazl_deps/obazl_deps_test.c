@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    obzl_deps_parse_file(".obazl.d/codept.deps");
+    obazl_deps_parse_file(".obazl.d/codept.deps");
 
     /* struct module_s *module, *tmp; */
     /* HASH_ITER(hh, codept_modules, module, tmp) { */

@@ -50,13 +50,13 @@ cc_library(
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_fs",
         "//src/lib/obazl_lua",
         "//src/lib/obazl_opam",
+        # "//src/lib/obazl_starlark", # FIXME
         "//external/fswatch",
         "//external/lua/lib:lua",
         "//vendored/logc"
@@ -109,13 +109,13 @@ cc_library(
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_fs",
         "//src/lib/obazl_meta",
         "//src/lib/obazl_opam",
+        # "//src/lib/obazl_starlark", # FIXME
         "//src/lib/obazl_utils",
         "//external/fswatch",
         "//vendored/logc",

@@ -3,7 +3,7 @@
 
 #include "debug.h"
 
-void dump_dune_pkg(struct obzl_dune_package_s *pkg)
+void dump_dune_pkg(struct obazl_dune_package_s *pkg)
 {
     struct stanza_field_s **p=NULL;
     struct stanza_field_s *item, *tmp;
