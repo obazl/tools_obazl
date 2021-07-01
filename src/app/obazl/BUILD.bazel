@@ -33,7 +33,7 @@ cc_binary(
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_starlark",
         "//src/lib/obazl_dune",
         # "//src/lib/obazl_lua:obazl.so",
         "//src/lib/obazl_meta",

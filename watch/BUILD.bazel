@@ -39,7 +39,7 @@ cc_binary(
     ],
     deps = [
         "//src/lib/obazl_config",
-        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_starlark",
         "//src/lib/obazl_dune",
         "//src/lib/obazl_meta",
         "//src/lib/obazl_watch",

@@ -150,7 +150,7 @@ cc_binary(
     ],
     deps = [
         ":obazl_dune",
-        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_lua",
         "//src/lib/obazl_watch",

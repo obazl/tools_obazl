@@ -50,7 +50,7 @@ cc_library(
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",
@@ -109,7 +109,7 @@ cc_library(
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_bazel",
+        "//src/lib/obazl_starlark",
         "//src/lib/obazl_config",
         "//src/lib/obazl_deps",
         "//src/lib/obazl_dune",

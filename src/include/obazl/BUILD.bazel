@@ -2,7 +2,7 @@
 genrule(
     name = "obazl",
     srcs = [
-        "//src/lib/obazl_bazel:emit_build_bazel.c",
+        "//src/lib/obazl_starlark:emit_build_bazel.c",
         "//src/lib/obazl_dune:obazl_dune.c",
         "//src/lib/obazl_dune:dune_parser.c",
         "//src/lib/obazl_dune:dune_constants.c",
@@ -29,7 +29,7 @@ genrule(
         "SRCDIR1=`dirname $$SRC1`",
         "$(location @makeheaders//:makeheaders) -H \\",
         # "    $(locations @uthash//:include) \\",
-        "    $(location //src/lib/obazl_bazel:emit_build_bazel.c) \\",
+        "    $(location //src/lib/obazl_starlark:emit_build_bazel.c) \\",
         "    $(location //src/lib/obazl_dune:obazl_dune.c) \\",
         "    $(location //src/lib/obazl_dune:dune_parser.c) \\",
         "    $(location //src/lib/obazl_dune:dune_constants.c) \\",
