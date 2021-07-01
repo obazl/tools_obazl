@@ -207,70 +207,11 @@ static char *sp = " ";
     free($$);
 }
 
-/* %type nodelist { UT_array* } */
-/* %destructor nodelist { */
-/*     log_trace("freeing nodelist"); */
-/*     /\* utarray_free($$->list); *\/ */
-/* } */
-
 %type load_list { UT_array* }    /* list of struct node_s */
 %destructor load_list {
     log_trace("freeing load_list");
     /* utarray_free($$->list); */
 }
-
-%type cmt_list { UT_array* }    /* list of cmt nodes */
-%destructor cmt_list {
-    log_trace("freeing cmt_list");
-    /* utarray_free($$->list); */
-}
-
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-/* %type def_stmt { struct node_s* } */
-/* %destructor def_stmt { */
-/*     log_trace("freeing def_stmt"); */
-/*     /\* utarray_free($$->list); *\/ */
-/* } */
-
-/* %type load_stmt { struct node_s* } */
-/* %destructor load_stmt { */
-/*     log_trace("freeing load_stmt"); */
-/*     /\* utarray_free($$->list); *\/ */
-/* } */
-
-/* %type primx { struct node_s* } */
-/* %destructor primx { */
-/*     log_trace("freeing primx"); */
-/* } */
-
-/* %type params { struct node_s* } */
-/* %destructor params { */
-/*     log_trace("freeing params"); */
-/* } */
-
-%type params_opt { UT_array* }
-%destructor params_opt {
-    log_trace("freeing params_opt");
-}
-
-%type params_req { UT_array* }
-%destructor params_req {
-    log_trace("freeing params_req");
-}
-
-%type params_star { UT_array* }
-%destructor params_star {
-    log_trace("freeing params_star");
-}
-
-/* suite :: approximately 'body' (of a fn defn, for example) */
-/* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
-/* we rename to 'indent_block' */
-/* %type indent_block { struct node_s* } */
-/* %destructor indent_block { */
-/*     log_trace("freeing indent_block"); */
-/*     /\* utarray_free($$->list); *\/ */
-/* } */
 
 %syntax_error {
     log_trace("**************** Syntax error! ****************");
@@ -339,44 +280,7 @@ buildfile(File) ::= expr(X) . {
     /* utarray_free($$->list); */
 }
 
-/* buildfile(File) ::= string_list(NODES) . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>buildfile(File) ::= string_list ."); */
-/*     log_trace("  rhs string_list (NODES)"); */
-/* #endif */
-/*     log_debug("START dump"); */
-/*     dump_nodes(NODES); */
-/*     log_debug("/START dump"); */
-/* } */
-
-/* string_list(NODES) ::= STRING(S) . { */
-/*     log_trace(">>string_list ::= STRING ."); */
-/*     log_trace("  rhs STRING(S)[%d]: %s", S->type, S->s); */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, S); */
-/* } */
-
-/* string_list(NODES) ::= string_list(PREVNODES) STRING(S) . { */
-/*     log_trace(">>string_list ::= nodelist STRING"); */
-/*     log_trace("  string_list lhs(NODES)"); */
-/*     log_trace("  string_list rhs(PREVNODES)"); */
-/*     log_trace("  STRING (S)"); */
-/*     utarray_push_back(PREVNODES, S); */
-/*     NODES = PREVNODES; */
-/* } */
 %endif
-
-/* %if NODES */
-/* nodes_test ::= nodelist(NODES) . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>nodes_test ::= nodelist ."); */
-/*     log_trace("  rhs nodelist (NODES)"); */
-/* #endif */
-/*     dump_nodes(NODES); */
-/* } */
-/* %endif */
 
 /* **************************************************************** */
 /* load_stmt_test ::= load_stmt(LS) . { */
@@ -560,7 +464,6 @@ param_star2(Param) ::= STAR2(Star2) ID(Id) . {
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 // STATEMENTS
 /* Statement = DefStmt | IfStmt | ForStmt | SimpleStmt . */
-// MB: we use 'indent_block' instead of 'suite'
 /* DefStmt = 'def' identifier '(' [Parameters [',']] ')' ':' Suite . */
 /*IfStmt = 'if' Test ':' Suite {'elif' Test ':' Suite} ['else' ':' Suite].*/
 /* ForStmt = 'for' LoopVariables 'in' Expression ':' Suite . */
@@ -574,6 +477,10 @@ param_star2(Param) ::= STAR2(Star2) ID(Id) . {
 /*           . */
 
 /* AssignStmt   = Expression ('=' | '+=' | '-=' | '*=' | '/=' | '//=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=') Expression . */
+
+// MB: we use 'indent_block' instead of 'suite'
+/* suite :: approximately 'body' (of a fn defn, for example) */
+/* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
 
 statement_list(STMTS) ::= statement(STMT) .
 {
@@ -772,90 +679,6 @@ small_stmt(SmallSTMT) ::= load_stmt(STMT) . {
     log_trace("  lhs small_stmt(SmallSTMT)");
     log_trace("  rhs load_stmt(STMT)");
 }
-
-%endif
-
-%ifdef FOO
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-/* nodelist(NODES) ::= nodelist(PREVNODES) load_stmt(LOAD) . { */
-/*     log_trace(">>nodelist ::= nodelist load_stmt"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  nodelist rhs(PREVNODES)"); */
-/*     log_trace("  load_stmt (LOAD)"); */
-/*     utarray_push_back(PREVNODES, LOAD); */
-/*     NODES = PREVNODES; */
-/* } */
-
-/* nodelist(NODES) ::= load_stmt(LOAD) . { */
-/*     log_trace(">>nodelist ::= load_stmt ."); */
-/*     log_trace("  nodelist lhs load_stmt(LOAD)"); */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, LOAD); */
-/* } */
-
-/* nodelist(NODES) ::= nodelist(PREVNODES) def_stmt(LOAD) . { */
-/*     log_trace(">>nodelist ::= nodelist def_stmt"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  nodelist rhs(PREVNODES)"); */
-/*     log_trace("  def_stmt (LOAD)"); */
-/*     utarray_push_back(PREVNODES, LOAD); */
-/*     NODES = PREVNODES; */
-/* } */
-
-/* nodelist(NODES) ::= def_stmt(DEF) . { */
-/*     log_trace(">>nodelist ::= def_stmt ."); */
-/*     log_trace("  nodelist lhs def_stmt(DEF)"); */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, DEF); */
-/* } */
-
-/* nodelist(NODES) ::= COMMENT(C) . { */
-/*     log_trace(">>nodelist ::= COMMENT ."); */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, C); */
-/* } */
-
-/* nodelist(NODES) ::= nodelist(PREVNODES) COMMENT(C) . { */
-/*     log_trace(">>nodelist ::= nodelist COMMENT"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  nodelist rhs(PREVNODES)"); */
-/*     log_trace("  COMMENT (C)"); */
-/*     utarray_push_back(PREVNODES, C); */
-/*     NODES = PREVNODES; */
-/* } */
-
-/* /\* nodelist(NODES) ::= string_list(S) . { *\/ */
-/* /\*     log_trace(">>nodelist ::= string_list ."); *\/ */
-/* /\*     log_trace("  rhs string_list(S)"); *\/ */
-/* /\*     /\\* utarray_new(NODES, &node_icd); *\\/ *\/ */
-/* /\*     /\\* utarray_push_back(NODES, S); *\\/ *\/ */
-/* /\* } *\/ */
-
-/* nodelist(NODES) ::= nodelist(PREVNODES) string_list(S) . { */
-/*     log_trace(">>nodelist ::= nodelist STRING"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  nodelist rhs(PREVNODES)"); */
-/*     log_trace("  STRING (S)"); */
-/*     /\* utarray_push_back(PREVNODES, S); *\/ */
-/*     NODES = PREVNODES; */
-/* } */
-
-/* nodelist(NODES) ::= primx(OP) . { */
-/*     log_trace(">>nodelist ::= nodelist primx"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  primx (OP)"); */
-/*     utarray_new(NODES, &node_icd); */
-/*     utarray_push_back(NODES, OP); */
-/* } */
-
-/* nodelist(NODES) ::= nodelist(PREVNODES) primx(OP) . { */
-/*     log_trace(">>nodelist ::= nodelist primx"); */
-/*     log_trace("  nodelist lhs(NODES)"); */
-/*     log_trace("  nodelist rhs(PREVNODES)"); */
-/*     log_trace("  primx (OP)"); */
-/*     /\* utarray_push_back(PREVNODES, OP); *\/ */
-/*     NODES = PREVNODES; */
-/* } */
 
 %endif
 
