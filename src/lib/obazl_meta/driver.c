@@ -37,7 +37,7 @@ struct logging {
 /* EXPORT */
 struct logging logger;
 
-struct obzl_meta_package *ast;
+struct obazl_meta_package *ast;
 
 LOCAL char *package_name_from_file_name(char *fname)
 {
@@ -51,11 +51,11 @@ LOCAL char *package_name_from_file_name(char *fname)
     }
 }
 
-EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *fname)
+EXPORT struct obazl_meta_package *obazl_meta_parse_file(char *fname)
 {
     log_set_quiet(false);
 
-    /* log_info("obzl_meta_parse_file: %s", fname); */
+    /* log_info("obazl_meta_parse_file: %s", fname); */
     FILE *f;
 
     f = fopen(fname, "r");
@@ -250,7 +250,7 @@ EXPORT struct obzl_meta_package *obzl_meta_parse_file(char *fname)
     return ast;
 }
 
-EXPORT char *obzl_meta_version()
+EXPORT char *obazl_meta_version()
 {
     return "0.1.0";
 }

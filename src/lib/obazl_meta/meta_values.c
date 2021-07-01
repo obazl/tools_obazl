@@ -11,30 +11,30 @@ static int delta = 2;
 static char *sp = " ";
 
 /* **************************************************************** */
-EXPORT int obzl_meta_values_count(obzl_meta_values *_values)
+EXPORT int obazl_meta_values_count(obazl_meta_values *_values)
 {
     return utarray_len(_values->list);
 }
 
-EXPORT obzl_meta_value *obzl_meta_values_nth(obzl_meta_values *_values, int _i)
+EXPORT obazl_meta_value *obazl_meta_values_nth(obazl_meta_values *_values, int _i)
 {
     return utarray_eltptr(_values->list, _i);
 }
 
 #if INTERFACE
-typedef char *obzl_meta_value;
+typedef char *obazl_meta_value;
 
-struct obzl_meta_values {
+struct obazl_meta_values {
     UT_array *list;             /* list of ptrs to char ptrs  */
 };
 #endif
 
-EXPORT obzl_meta_values *obzl_meta_values_new(char *valstr)
+EXPORT obazl_meta_values *obazl_meta_values_new(char *valstr)
 {
 #if DEBUG_TRACE
-    /* log_trace("obzl_meta_values_new(%s)", valstr); */
+    /* log_trace("obazl_meta_values_new(%s)", valstr); */
 #endif
-    obzl_meta_values *new_values = (obzl_meta_values*)calloc(sizeof(obzl_meta_values),1);
+    obazl_meta_values *new_values = (obazl_meta_values*)calloc(sizeof(obazl_meta_values),1);
     utarray_new(new_values->list, &ut_str_icd);
     if (valstr != NULL)
         utarray_push_back(new_values->list, &valstr);
@@ -42,26 +42,26 @@ EXPORT obzl_meta_values *obzl_meta_values_new(char *valstr)
     return new_values;
 }
 
-EXPORT obzl_meta_values *obzl_meta_values_new_copy(obzl_meta_values *values)
+EXPORT obazl_meta_values *obazl_meta_values_new_copy(obazl_meta_values *values)
 {
 #if DEBUG_TRACE
-    log_trace("obzl_meta_values_new_copy");
+    log_trace("obazl_meta_values_new_copy");
 #endif
-    obzl_meta_values *new_values = (obzl_meta_values*)calloc(sizeof(obzl_meta_values),1);
+    obazl_meta_values *new_values = (obazl_meta_values*)calloc(sizeof(obazl_meta_values),1);
     utarray_new(new_values->list, &ut_str_icd);
     utarray_concat(new_values->list, values->list);
     /* dump_values(0, new_values); */
     return new_values;
 }
 
-/* EXPORT UT_array *obzl_meta_values_new_tokenized(char *valstr) */
-EXPORT obzl_meta_values *obzl_meta_values_new_tokenized(char *valstr)
+/* EXPORT UT_array *obazl_meta_values_new_tokenized(char *valstr) */
+EXPORT obazl_meta_values *obazl_meta_values_new_tokenized(char *valstr)
 {
 #if DEBUG_TRACE
-    log_trace("obzl_meta_values_new_tokenized");
+    log_trace("obazl_meta_values_new_tokenized");
 #endif
     /* UT_array *new_values; */
-    obzl_meta_values *new_values = (obzl_meta_values*)calloc(sizeof(obzl_meta_values), 1);
+    obazl_meta_values *new_values = (obazl_meta_values*)calloc(sizeof(obazl_meta_values), 1);
     utarray_new(new_values->list, &ut_str_icd);
     char *token, *sep = " ,\n";
     token = strtok(valstr, sep);
@@ -77,7 +77,7 @@ EXPORT obzl_meta_values *obzl_meta_values_new_tokenized(char *valstr)
 
 /* **************************************************************** */
 #if DEBUG_TRACE
-EXPORT void dump_values(int indent, obzl_meta_values *values)
+EXPORT void dump_values(int indent, obazl_meta_values *values)
 {
     /* log_trace("dump_values %p", values); */
     indent++;            /* account for width of log label */

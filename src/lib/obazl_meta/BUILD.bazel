@@ -10,7 +10,7 @@ load("@rules_foreign_cc//foreign_cc:defs.bzl",
 # we export these srcs so //src/include/obazl:mkhdrs can generate the export interface obazl.h
 exports_files([
     "api.c",
-    "metaparser_impl.c",
+    "meta_parser_impl.c",
     "meta_entries.c",
     "meta_flags.c",
     "meta_packages.c",
@@ -28,7 +28,7 @@ cc_library(
     linkstatic = 1,
     srcs  = [
         "driver.c",
-        "metaparser_impl.c",
+        "meta_parser_impl.c",
         "api.c",
         "meta_entries.c",
         "meta_flags.c",
@@ -41,7 +41,7 @@ cc_library(
     hdrs = [
         ":api.h",
         ":driver.h",
-        ":metaparser_impl.h",
+        ":meta_parser_impl.h",
         ":meta_entries.h",
         ":meta_flags.h",
         ":meta_packages.h",
@@ -65,8 +65,8 @@ cc_library(
         "-I", "external/tools_obazl/vendored/logc",
     ],
     deps = [
-        ":metaparser",
-        ":metalexer",
+        ":meta_parser",
+        ":meta_lexer",
         "//vendored/logc"
     ],
     visibility = ["//visibility:public"]
@@ -74,10 +74,10 @@ cc_library(
 
 ##########
 cc_library(
-    name  = "metaparser",
+    name  = "meta_parser",
     srcs  = [
-        "metaparser.c",
-        "metaparser.h",
+        "meta_parser.c",
+        "meta_parser.h",
         "@uthash//:include"
     ],
     copts = [
@@ -104,20 +104,20 @@ cc_library(
 
 ########
 genrule(
-    name = "gen_metaparse",
+    name = "gen_meta_parse",
     srcs = [
-        "metaparser.y",
+        "meta_parser.y",
         "//vendored/lemon:lempar.c"
     ],
     tools = ["//vendored/lemon"],
     outs  = [
-        "metaparser.c",
-        # "metaparser.h",
-        "metaparser.out"
+        "meta_parser.c",
+        # "meta_parser.h",
+        "meta_parser.out"
     ],
     cmd   = "\n".join([
         "$(location //vendored/lemon) -m \\",
-        "$(location metaparser.y) \\",
+        "$(location meta_parser.y) \\",
         "-T$(location //vendored/lemon:lempar.c) \\",
         "-d$(RULEDIR)",
     ]),
@@ -128,11 +128,11 @@ genrule(
 
 ##########
 cc_library(
-    name  = "metalexer",
+    name  = "meta_lexer",
     srcs  = [
-        ":metalexer.c",
-        ":metalexer.h",
-        ":metaparser.h",
+        ":meta_lexer.c",
+        ":meta_lexer.h",
+        ":meta_parser.h",
         # ":driver.h",
         "@uthash//:include",
     ],
@@ -149,10 +149,10 @@ cc_library(
 
 ########
 genrule(
-    name = "gen_metalexer",
-    srcs = ["metalexer.re"],
+    name = "gen_meta_lexer",
+    srcs = ["meta_lexer.re"],
     tools = ["//external/re2c"],
-    outs  = ["metalexer.c"],
+    outs  = ["meta_lexer.c"],
     cmd   = "\n".join([
         "for f in $(locations //external/re2c)",
         "do",
@@ -175,9 +175,9 @@ genrule(
     srcs = [
         "api.c",
         # "debug.c",
-        "metalexer.c",
-        "metaparser.c",
-        "metaparser_impl.c",
+        "meta_lexer.c",
+        "meta_parser.c",
+        "meta_parser_impl.c",
         "meta_entries.c",
         "meta_flags.c",
         "meta_packages.c",
@@ -190,9 +190,9 @@ genrule(
     ],
     outs = [
         "api.h",
-        "metalexer.h",
-        "metaparser.h",
-        "metaparser_impl.h",
+        "meta_lexer.h",
+        "meta_parser.h",
+        "meta_parser_impl.h",
         "meta_entries.h",
         "meta_flags.h",
         "meta_packages.h",
@@ -209,9 +209,9 @@ genrule(
         # "    $(locations @uthash//:include)",
         "    $(location //src/lib/obazl_utils:obazl_utils.c) \\",
         "    $(location api.c) \\",
-        "    $(location metalexer.c) \\",
-        "    $(location metaparser.c) \\",
-        "    $(location metaparser_impl.c) \\",
+        "    $(location meta_lexer.c) \\",
+        "    $(location meta_parser.c) \\",
+        "    $(location meta_parser_impl.c) \\",
         "    $(location meta_entries.c) \\",
         "    $(location meta_flags.c) \\",
         "    $(location meta_packages.c) \\",

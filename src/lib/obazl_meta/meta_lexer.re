@@ -14,7 +14,7 @@
 
 #include <sys/errno.h>
 
-#include "metalexer.h"
+#include "meta_lexer.h"
 
 #if EXPORT_INTERFACE
 #define BUFSIZE 1024

@@ -18,7 +18,7 @@ static char *sp = " ";
 #endif
 }
 
-%extra_argument { struct obzl_meta_package **ast}
+%extra_argument { struct obazl_meta_package **ast}
 
 
 %token PACKAGE VERSION DESCRIPTION REQUIRES DIRECTORY VNAME FLAGS WORD WORDS.
@@ -42,53 +42,53 @@ static char *sp = " ";
 /* **************** */
 %token_type { union meta_token* }
 
-/* %type archive { UT_array* } // { struct obzl_meta_property* } */
+/* %type archive { UT_array* } // { struct obazl_meta_property* } */
 /* %destructor archive { */
 /*     log_trace("freeing archive"); */
 /*     /\* FIXME: free components *\/ */
 /*     /\* free($$); *\/ */
 /* } */
 
-/* %type plugin { UT_array* } // { struct obzl_meta_property* } */
+/* %type plugin { UT_array* } // { struct obazl_meta_property* } */
 /* %destructor plugin { */
 /*     log_trace("freeing plugin"); */
 /*     /\* FIXME: free components *\/ */
 /*     /\* free($$); *\/ */
 /* } */
 
-%type property { struct obzl_meta_property* }
+%type property { struct obazl_meta_property* }
 %destructor property {
     log_trace("freeing property");
     /* free($$); */
 }
 
-/* %type simple_prop { struct obzl_meta_property* } */
+/* %type simple_prop { struct obazl_meta_property* } */
 /* %destructor simple_prop { */
 /*     log_trace("freeing simple_prop"); */
 /*     /\* free($$); *\/ */
 /* } */
 
-/* %type requires { UT_array* } // { struct obzl_meta_property* } */
+/* %type requires { UT_array* } // { struct obazl_meta_property* } */
 /* %destructor requires { */
 /*     log_trace("freeing requires"); */
 /*     /\* free($$); *\/ */
 /* } */
 
-%type opcode { enum obzl_meta_opcode_e }
+%type opcode { enum obazl_meta_opcode_e }
 
-%type entry { struct obzl_meta_entry* }
+%type entry { struct obazl_meta_entry* }
 %destructor entry {
     log_trace("freeing entry");
     free($$);
 }
 
-%type entries { obzl_meta_entries* } // UT_array* }
+%type entries { obazl_meta_entries* } // UT_array* }
 %destructor entries {
     log_trace("freeing entries");
     utarray_free($$->list);
 }
 
-%type flag { struct obzl_meta_flag* }
+%type flag { struct obazl_meta_flag* }
 %destructor flag {
     log_trace("freeing flag %s", $$->s);
     free($$);
@@ -100,14 +100,14 @@ static char *sp = " ";
     utarray_free($$);
 }
 
-/* %type properties { struct obzl_meta_property* } */
-%type properties { UT_array* }  /* array of obzl_meta_property */
+/* %type properties { struct obazl_meta_property* } */
+%type properties { UT_array* }  /* array of obazl_meta_property */
 %destructor properties {
     log_trace("freeing properties");
     /* free($$); */
 }
 
-%type package { struct obzl_meta_package* }
+%type package { struct obazl_meta_package* }
 %destructor package {
     log_trace("freeing package");
     /* free($$); */
@@ -120,7 +120,7 @@ static char *sp = " ";
 }
 
 /* %type words { UT_array* } */
-%type words { obzl_meta_values* }
+%type words { obazl_meta_values* }
 %destructor words {
     log_trace("freeing words");
     utarray_free($$->list);
@@ -142,10 +142,10 @@ We have two kinds of properties, simple and compound. Simple: foo =
 
 The lexer passes simple props as a single token; lhs is token type, rhs is token string. So the parser just needs to convert, and we have one rule per simple prop token, e.g. for VERSION (ie 'version = "1.2.1"')
 
-simple_prop(PROPERTY) ::= VERSION(V) . { ...construct struct obzl_meta_property for the version property... }
+simple_prop(PROPERTY) ::= VERSION(V) . { ...construct struct obazl_meta_property for the version property... }
 
 Compound props must be parsed with a more complex rule, e.g.
-property(PROPERTY) ::= REQUIRES(R) opcode(OPCODE) VALTOK(V). {... construct obzl_meta_property for 'requires' prop...}
+property(PROPERTY) ::= REQUIRES(R) opcode(OPCODE) VALTOK(V). {... construct obazl_meta_property for 'requires' prop...}
 
  */
 
@@ -158,7 +158,7 @@ package(PKG) ::= entries(ENTRIES) . {
     log_trace("  entries (ENTRIES)");
     dump_entries(0, ENTRIES);
 #endif
-    PKG = (struct obzl_meta_package*)calloc(sizeof(struct obzl_meta_package), 1);
+    PKG = (struct obazl_meta_package*)calloc(sizeof(struct obazl_meta_package), 1);
     PKG->entries = ENTRIES;
 #if DEBUG_TRACE
     dump_package(0, PKG);
@@ -175,7 +175,7 @@ entries(ENTRIES) ::= entry(ENTRY) . {
     dump_entry(indent, ENTRY);
 #endif
     /* lhs ENTRIES: lemon only allocates the type (a ptr); we must allocate/init the struct */
-    ENTRIES = (obzl_meta_entries*)calloc(sizeof(struct obzl_meta_entries), 1);
+    ENTRIES = (obazl_meta_entries*)calloc(sizeof(struct obazl_meta_entries), 1);
     utarray_new(ENTRIES->list, &entry_icd);
     utarray_push_back(ENTRIES->list, ENTRY);
 #if DEBUG_TRACE
@@ -188,10 +188,10 @@ entries(ENTRIES) ::= entries(PREVENTRIES) entry(ENTRY) . {
 #if DEBUG_TRACE
     log_trace("\n");
     log_trace(">>entries ::= entries entry");
-    log_trace("%*sentries lhs(ENTRIES)", indent, sp); //, obzl_meta_entries_count(ENTRIES));
-    log_trace("%*sentries rhs(PREVENTRIES)", indent, sp); //, obzl_meta_entries_count(PREVENTRIES));
+    log_trace("%*sentries lhs(ENTRIES)", indent, sp); //, obazl_meta_entries_count(ENTRIES));
+    log_trace("%*sentries rhs(PREVENTRIES)", indent, sp); //, obazl_meta_entries_count(PREVENTRIES));
     dump_entries(delta+indent, PREVENTRIES);
-    log_trace("%*sentry (ENTRY)", indent, sp); //, obzl_meta_entries_count(PREVENTRIES));
+    log_trace("%*sentry (ENTRY)", indent, sp); //, obazl_meta_entries_count(PREVENTRIES));
     dump_entry(delta+indent, ENTRY);
 #endif
 
@@ -315,16 +315,16 @@ entry(ENTRY) ::= PACKAGE(PKG) LPAREN entries(ENTRIES) RPAREN. {
     log_trace(">>entry ::= PACKAGE LPAREN entries RPAREN");
     log_trace("  entry lhs(ENTRY): %p", ENTRY);
     log_trace("  entries rhs(ENTRIES)");
-    /* entries: utarray of struct obzl_meta_entry */
+    /* entries: utarray of struct obazl_meta_entry */
     dump_entries(indent, ENTRIES);
 #endif
     /* ENTRY = handle_primitive_prop(PACKAGE, PKG); */
-    struct obzl_meta_package *new_package = (struct obzl_meta_package*)calloc(sizeof(struct obzl_meta_package), 1);
+    struct obazl_meta_package *new_package = (struct obazl_meta_package*)calloc(sizeof(struct obazl_meta_package), 1);
     new_package->name = PKG->s;
     new_package->entries = ENTRIES;
     /* dump_package(indent, new_package); */
 
-    ENTRY = (struct obzl_meta_entry*)calloc(sizeof(struct obzl_meta_entry), 1);
+    ENTRY = (struct obazl_meta_entry*)calloc(sizeof(struct obazl_meta_entry), 1);
     ENTRY->type = OMP_PACKAGE;
     ENTRY->package = new_package;
     /* dump_entry(0, ENTRY); */
@@ -345,19 +345,19 @@ entry(ENTRY) ::= VNAME(VAR) FLAGS(Flags) opcode(OPCODE) words(WS) . {
 #endif
 
     /* new_prop->name = strdup(VAR->s); */
-    struct obzl_meta_property *new_prop= obzl_meta_property_new(strdup(VAR->s));
-    /* struct obzl_meta_property *new_prop= (struct obzl_meta_property*)malloc(sizeof(struct obzl_meta_property)); */
-    /* utarray_new(new_prop->settings->list, &obzl_meta_setting_icd); */
+    struct obazl_meta_property *new_prop= obazl_meta_property_new(strdup(VAR->s));
+    /* struct obazl_meta_property *new_prop= (struct obazl_meta_property*)malloc(sizeof(struct obazl_meta_property)); */
+    /* utarray_new(new_prop->settings->list, &obazl_meta_setting_icd); */
 
-    struct obzl_meta_setting *new_setting = obzl_meta_setting_new(Flags->s, OPCODE, WS);
+    struct obazl_meta_setting *new_setting = obazl_meta_setting_new(Flags->s, OPCODE, WS);
     utarray_push_back(new_prop->settings->list, new_setting);
 
-    /* new_prop->setting = (struct obzl_meta_setting*)malloc(sizeof(struct obzl_meta_setting)); */
-    /* new_prop->setting->flags = obzl_meta_flags_new_tokenized(FLAGS->s); */
+    /* new_prop->setting = (struct obazl_meta_setting*)malloc(sizeof(struct obazl_meta_setting)); */
+    /* new_prop->setting->flags = obazl_meta_flags_new_tokenized(FLAGS->s); */
     /* new_prop->setting->opcode = OPCODE; */
     /* new_prop->setting->values = WS; */
 
-    struct obzl_meta_entry *new_entry= (struct obzl_meta_entry*)malloc(sizeof(struct obzl_meta_entry));
+    struct obazl_meta_entry *new_entry= (struct obazl_meta_entry*)malloc(sizeof(struct obazl_meta_entry));
     new_entry->type = OMP_PROPERTY;
     new_entry->property = new_prop;
 
@@ -384,23 +384,23 @@ entry(ENTRY) ::= REQUIRES(P) opcode(OPCODE) words(WS) . {
     /* validate_requires_args(WS); */
 
     /* /\* ENTRY = handle_primitive_prop(P, OPCODE, WS); *\/ */
-    /* struct obzl_meta_property *new_prop= (struct obzl_meta_property*)malloc(sizeof(struct obzl_meta_property)); */
+    /* struct obazl_meta_property *new_prop= (struct obazl_meta_property*)malloc(sizeof(struct obazl_meta_property)); */
     /* /\* new_prop->name = strdup(token_names[token_type]); // "version"); *\/ */
     /* new_prop->name = strdup("requires"); */
-    /* /\* new_prop->setting = (struct obzl_meta_setting*)malloc(sizeof(struct obzl_meta_setting)); *\/ */
+    /* /\* new_prop->setting = (struct obazl_meta_setting*)malloc(sizeof(struct obazl_meta_setting)); *\/ */
     /* /\* new_prop->setting->flags = NULL; *\/ */
     /* /\* new_prop->setting->opcode = OPCODE; *\/ */
     /* /\* new_prop->setting->values  = WS; *\/ */
-    /* utarray_new(new_prop->settings->list, &obzl_meta_setting_icd); */
-    /* struct obzl_meta_setting *new_setting = obzl_meta_setting_new(NULL, OPCODE, WS); */
+    /* utarray_new(new_prop->settings->list, &obazl_meta_setting_icd); */
+    /* struct obazl_meta_setting *new_setting = obazl_meta_setting_new(NULL, OPCODE, WS); */
     /* utarray_push_back(new_prop->settings->list, new_setting); */
 
-    struct obzl_meta_property *new_prop= obzl_meta_property_new(strdup("requires"));
+    struct obazl_meta_property *new_prop= obazl_meta_property_new(strdup("requires"));
 
-    struct obzl_meta_setting *new_setting = obzl_meta_setting_new(NULL, OPCODE, WS);
+    struct obazl_meta_setting *new_setting = obazl_meta_setting_new(NULL, OPCODE, WS);
     utarray_push_back(new_prop->settings->list, new_setting);
 
-    struct obzl_meta_entry *new_entry= (struct obzl_meta_entry*)malloc(sizeof(struct obzl_meta_entry));
+    struct obazl_meta_entry *new_entry= (struct obazl_meta_entry*)malloc(sizeof(struct obazl_meta_entry));
     new_entry->type = OMP_PROPERTY;
     new_entry->property = new_prop;
 
@@ -423,23 +423,23 @@ entry(ENTRY) ::= REQUIRES FLAGS(FLAGS) opcode(OPCODE) words(WS) . {
 
     /* validate_requires_args(WS); */
 
-    /* struct obzl_meta_property *new_prop= (struct obzl_meta_property*)malloc(sizeof(struct obzl_meta_property)); */
+    /* struct obazl_meta_property *new_prop= (struct obazl_meta_property*)malloc(sizeof(struct obazl_meta_property)); */
     /* new_prop->name = strdup("requires"); */
-    struct obzl_meta_property *new_prop= obzl_meta_property_new(strdup("requires"));
+    struct obazl_meta_property *new_prop= obazl_meta_property_new(strdup("requires"));
 
-    struct obzl_meta_setting *new_setting = obzl_meta_setting_new(FLAGS->s, OPCODE, WS);
+    struct obazl_meta_setting *new_setting = obazl_meta_setting_new(FLAGS->s, OPCODE, WS);
     utarray_push_back(new_prop->settings->list, new_setting);
 
-    /* utarray_new(new_prop->settings->list, &obzl_meta_setting_icd); */
-    /* struct obzl_meta_setting *new_setting = obzl_meta_setting_new(FLAGS->s, OPCODE, WS); */
+    /* utarray_new(new_prop->settings->list, &obazl_meta_setting_icd); */
+    /* struct obazl_meta_setting *new_setting = obazl_meta_setting_new(FLAGS->s, OPCODE, WS); */
     /* utarray_push_back(new_prop->settings->list, new_setting); */
 
-    /* new_prop->setting = (struct obzl_meta_setting*)malloc(sizeof(struct obzl_meta_setting)); */
-    /* new_prop->setting->flags = obzl_meta_flags_new_tokenized(FLAGS->s); */
+    /* new_prop->setting = (struct obazl_meta_setting*)malloc(sizeof(struct obazl_meta_setting)); */
+    /* new_prop->setting->flags = obazl_meta_flags_new_tokenized(FLAGS->s); */
     /* new_prop->setting->opcode = OPCODE; */
     /* new_prop->setting->values = WS; */
 
-    struct obzl_meta_entry *new_entry= (struct obzl_meta_entry*)malloc(sizeof(struct obzl_meta_entry));
+    struct obazl_meta_entry *new_entry= (struct obazl_meta_entry*)malloc(sizeof(struct obazl_meta_entry));
     new_entry->type = OMP_PROPERTY;
     new_entry->property = new_prop;
 
@@ -465,8 +465,8 @@ words(WORDS) ::= WORD(W) . {
     else
         log_trace("\tWORD (W): %s", W->s);
 #endif
-    /* UT_array *new_values = obzl_meta_values_new_copy(W->s); */
-    obzl_meta_values *new_values = obzl_meta_values_new(W->s);
+    /* UT_array *new_values = obazl_meta_values_new_copy(W->s); */
+    obazl_meta_values *new_values = obazl_meta_values_new(W->s);
     /* dump_values(indent, new_values); */
     WORDS = new_values;
 }
@@ -478,7 +478,7 @@ words(A) ::= WORDS(WS) . {
     log_trace("\twords lhs(A)");
     log_trace("\tWORDS (WS): %s", WS->s);
 #endif
-    obzl_meta_values *new_values = obzl_meta_values_new_tokenized(WS->s);
+    obazl_meta_values *new_values = obazl_meta_values_new_tokenized(WS->s);
     /* dump_values(indent, new_values); */
     A = new_values;
     /* utarray_new(new_values, &ut_str_icd); */

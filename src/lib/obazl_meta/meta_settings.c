@@ -12,106 +12,106 @@ static char *sp = " ";
 
 
 /* **************************************************************** */
-EXPORT int obzl_meta_settings_count(obzl_meta_settings *_settings)
+EXPORT int obazl_meta_settings_count(obazl_meta_settings *_settings)
 {
     return utarray_len(_settings->list);
 }
 
-EXPORT obzl_meta_setting *obzl_meta_settings_nth(obzl_meta_settings *_settings, int _i)
+EXPORT obazl_meta_setting *obazl_meta_settings_nth(obazl_meta_settings *_settings, int _i)
 {
     return utarray_eltptr(_settings->list, _i);
 }
 
-EXPORT obzl_meta_flags *obzl_meta_setting_flags(obzl_meta_setting *_setting)
+EXPORT obazl_meta_flags *obazl_meta_setting_flags(obazl_meta_setting *_setting)
 {
     return _setting->flags;
 }
 
-EXPORT enum obzl_meta_opcode_e *obzl_meta_setting_opcode(obzl_meta_setting *_setting)
+EXPORT enum obazl_meta_opcode_e *obazl_meta_setting_opcode(obazl_meta_setting *_setting)
 {
     return _setting->opcode;
 }
 
-EXPORT obzl_meta_values *obzl_meta_setting_values(obzl_meta_setting *_setting)
+EXPORT obazl_meta_values *obazl_meta_setting_values(obazl_meta_setting *_setting)
 {
     return _setting->values;
 }
 
 #if INTERFACE
-enum obzl_meta_opcode_e { OP_SET, OP_UPDATE };
-struct obzl_meta_setting {
-    obzl_meta_flags *flags;
-    /* UT_array *flags;       /\* array of struct obzl_meta_flag *\/ */
-    enum obzl_meta_opcode_e opcode;
-    obzl_meta_values *values;
+enum obazl_meta_opcode_e { OP_SET, OP_UPDATE };
+struct obazl_meta_setting {
+    obazl_meta_flags *flags;
+    /* UT_array *flags;       /\* array of struct obazl_meta_flag *\/ */
+    enum obazl_meta_opcode_e opcode;
+    obazl_meta_values *values;
     /* UT_array *values;            /\* array of strings *\/ */
 };
 
-struct obzl_meta_settings {
-    UT_array *list;             /* list of obzl_meta_setting* */
+struct obazl_meta_settings {
+    UT_array *list;             /* list of obazl_meta_setting* */
 };
 #endif
 
-UT_icd obzl_meta_setting_icd = {
-    sizeof(obzl_meta_setting),
-    NULL, obzl_meta_setting_copy, obzl_meta_setting_dtor
+UT_icd obazl_meta_setting_icd = {
+    sizeof(obazl_meta_setting),
+    NULL, obazl_meta_setting_copy, obazl_meta_setting_dtor
 };
 
-struct obzl_meta_setting *obzl_meta_setting_new(char *flags,
-                                                enum obzl_meta_opcode_e opcode,
-                                                obzl_meta_values *values)
+struct obazl_meta_setting *obazl_meta_setting_new(char *flags,
+                                                enum obazl_meta_opcode_e opcode,
+                                                obazl_meta_values *values)
 {
 #if DEBUG_TRACE
-    /* log_trace("obzl_meta_setting_new()"); //, flags: %s", flags); */
+    /* log_trace("obazl_meta_setting_new()"); //, flags: %s", flags); */
 #endif
-    struct obzl_meta_setting *new_setting = (struct obzl_meta_setting*)malloc(sizeof(struct obzl_meta_setting));
+    struct obazl_meta_setting *new_setting = (struct obazl_meta_setting*)malloc(sizeof(struct obazl_meta_setting));
     if (flags == NULL)
         new_setting->flags  = NULL;
     else
-        new_setting->flags  = obzl_meta_flags_new_tokenized(flags);
+        new_setting->flags  = obazl_meta_flags_new_tokenized(flags);
     new_setting->opcode = opcode;
     new_setting->values = values;
 #if DEBUG_TRACE
-    log_trace("obzl_meta_setting_new done; dumping:");
+    log_trace("obazl_meta_setting_new done; dumping:");
     dump_setting(0, new_setting);
 #endif
     return new_setting;
 }
 
-struct obzl_meta_settings *obzl_meta_settings_new()
+struct obazl_meta_settings *obazl_meta_settings_new()
 {
 #if DEBUG_TRACE
-    /* log_trace("obzl_meta_settings_new()"); */
+    /* log_trace("obazl_meta_settings_new()"); */
 #endif
-    struct obzl_meta_settings *new_settings = (struct obzl_meta_settings*)malloc(sizeof(struct obzl_meta_settings));
-    utarray_new(new_settings->list, &obzl_meta_setting_icd);
+    struct obazl_meta_settings *new_settings = (struct obazl_meta_settings*)malloc(sizeof(struct obazl_meta_settings));
+    utarray_new(new_settings->list, &obazl_meta_setting_icd);
 #if DEBUG_TRACE
     /* dump_settings(0, new_settings); */
-    /* log_trace("obzl_meta_settings_new() done"); */
+    /* log_trace("obazl_meta_settings_new() done"); */
 #endif
     return new_settings;
 }
 
-void obzl_meta_setting_copy(obzl_meta_setting *dst, const obzl_meta_setting *src) {
+void obazl_meta_setting_copy(obazl_meta_setting *dst, const obazl_meta_setting *src) {
 #if DEBUG_TRACE
-    log_trace("obzl_meta_setting_copy(dst=%p,  src=%p)", dst, src);
+    log_trace("obazl_meta_setting_copy(dst=%p,  src=%p)", dst, src);
 #endif
-    /* struct obzl_meta_setting *dst = (struct obzl_meta_setting*)_dst; */
-    /* struct obzl_meta_setting *src = (struct obzl_meta_setting*)_src; */
+    /* struct obazl_meta_setting *dst = (struct obazl_meta_setting*)_dst; */
+    /* struct obazl_meta_setting *src = (struct obazl_meta_setting*)_src; */
 
     /* dump_setting(0, src); */
 
-    /* dst->flags = obzl_meta_flags_new(); */
+    /* dst->flags = obazl_meta_flags_new(); */
     if (src->flags != NULL) {
-        dst->flags  = obzl_meta_flags_new_copy(src->flags);
+        dst->flags  = obazl_meta_flags_new_copy(src->flags);
     } else {
         dst->flags = NULL;
     }
 
-    dst->opcode = (enum obzl_meta_opcode_e)src->opcode;
+    dst->opcode = (enum obazl_meta_opcode_e)src->opcode;
 
     if ( src->values != NULL) {
-        dst->values = obzl_meta_values_new_copy(src->values);
+        dst->values = obazl_meta_values_new_copy(src->values);
     } else {
         dst->values == NULL;
         /* utarray_new(dst->values->list, &ut_str_icd); */
@@ -125,22 +125,22 @@ void obzl_meta_setting_copy(obzl_meta_setting *dst, const obzl_meta_setting *src
     }
 }
 
-void obzl_meta_setting_dtor(void *_elt) {
-    struct obzl_meta_setting *elt = (struct obzl_meta_setting*)_elt;
+void obazl_meta_setting_dtor(void *_elt) {
+    struct obazl_meta_setting *elt = (struct obazl_meta_setting*)_elt;
     flags_dtor(elt->flags);
 }
 
-void obzl_meta_settings_dtor(void *_elt) {
-    struct obzl_meta_settings *elt = (struct obzl_meta_settings*)_elt;
-    obzl_meta_setting *setting = NULL;
-    while ( (setting=(obzl_meta_setting*)utarray_next(elt->list, setting))) {
-        obzl_meta_setting_dtor(setting);
+void obazl_meta_settings_dtor(void *_elt) {
+    struct obazl_meta_settings *elt = (struct obazl_meta_settings*)_elt;
+    obazl_meta_setting *setting = NULL;
+    while ( (setting=(obazl_meta_setting*)utarray_next(elt->list, setting))) {
+        obazl_meta_setting_dtor(setting);
     }
     free(elt);
 }
 
 #if DEBUG_TRACE
-void dump_setting(int indent, struct obzl_meta_setting *setting)
+void dump_setting(int indent, struct obazl_meta_setting *setting)
 {
     log_trace("%*ssetting:", indent, sp);
     dump_flags(2*delta+indent, setting->flags);
@@ -151,10 +151,10 @@ void dump_setting(int indent, struct obzl_meta_setting *setting)
 #endif
 
 #if DEBUG_TRACE
-void dump_settings(int indent, obzl_meta_settings *settings)
+void dump_settings(int indent, obazl_meta_settings *settings)
 {
     log_trace("%*ssettings:", indent, sp);
-    obzl_meta_setting *setting = NULL;
+    obazl_meta_setting *setting = NULL;
     for(setting  = utarray_front(settings->list);
         setting != NULL;
         setting  = utarray_next(settings->list, setting)) {
