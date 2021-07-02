@@ -197,6 +197,7 @@ static char *sp = " ";
 %nonassoc AMP .                 /* bitwise AND binop */
 %nonassoc LLANGLE RRANGLE .     /* bitwise shift binops */
 %right LBRACK LBRACE LPAREN .   /* prevent ambiguities */
+%left RBRACK RBRACE RPAREN .
 %right DEF RETURN BREAK CONTINUE PASS LOAD.
 %right PLUS MINUS .
 %left STAR SLASH SLASH2 PCT .
@@ -544,6 +545,7 @@ expr_list(XList) ::= expr_list(XList_rhs) COMMA(Comma) expr(X) . [PLUS]
     XList->type = TK_Expr_List;
     XList->line  = XList_rhs->line;
     XList->col   = XList_rhs->col;
+    XList->trailing_newline = X->trailing_newline;
     utarray_new(XList->subnodes, &node_icd);
     utarray_push_back(XList->subnodes, XList_rhs);
     utarray_push_back(XList->subnodes, Comma);
@@ -740,6 +742,23 @@ def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) RPAREN(Rpar
     utarray_push_back(Stmt->subnodes, IBlock);
 }
 
+def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) RPAREN(Rparen) COLON(Colon) indent_block(IBlock). [FOR]
+{
+    log_trace(">>def_stmt ::= DEF ID LPAREN RPAREN COLON stmt_list");
+    Stmt = calloc(sizeof(struct node_s), 1);
+    Stmt->type = TK_Def_Stmt;
+    Stmt->line = Def->line;
+    Stmt->col  = Def->col;
+    utarray_new(Stmt->subnodes, &node_icd);
+
+    utarray_push_back(Stmt->subnodes, Def);
+    utarray_push_back(Stmt->subnodes, Id);
+    utarray_push_back(Stmt->subnodes, Lparen);
+    utarray_push_back(Stmt->subnodes, Rparen);
+    utarray_push_back(Stmt->subnodes, Colon);
+    utarray_push_back(Stmt->subnodes, IBlock);
+}
+
 /* optional trailing comma in parm list */
 def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) COMMA(Comma) RPAREN(Rparen) COLON(Colon) indent_block(IBlock). [LAMBDA]
 {
@@ -804,6 +823,7 @@ small_stmt_list(SmallList) ::= small_stmt(SmallStmt) . [FOR]
     SmallList->type = TK_SmallStmt_List;
     SmallList->line  = SmallStmt->line;
     SmallList->col   = SmallStmt->col;
+    SmallList->trailing_newline = SmallStmt->trailing_newline;
     utarray_new(SmallList->subnodes, &node_icd);
     utarray_push_back(SmallList->subnodes, SmallStmt);
 }
@@ -888,6 +908,7 @@ assign_stmt(AssignStmt) ::= expr_list(Xs1) assign_op(AssignOp) expr_list(Xs2) . 
     AssignStmt->type = TK_Assign_Stmt;
     AssignStmt->line  = Xs1->line;
     AssignStmt->col   = Xs1->col;
+    AssignStmt->trailing_newline = Xs2->trailing_newline;
     utarray_new(AssignStmt->subnodes, &node_icd);
     utarray_push_back(AssignStmt->subnodes, Xs1);
     utarray_push_back(AssignStmt->subnodes, AssignOp);
@@ -1108,13 +1129,14 @@ call_suffix(CallSfx) ::= LPAREN(LParen) RPAREN(RParen) . [FOR]
     CallSfx->type  = TK_Arg_List;
     CallSfx->line  = LParen->line;
     CallSfx->col   = LParen->col;
+    CallSfx->trailing_newline = RParen->trailing_newline;
     utarray_new(CallSfx->subnodes, &node_icd);
     utarray_push_back(CallSfx->subnodes, LParen);
     utarray_push_back(CallSfx->subnodes, RParen);
 }
 
 /* optional trailing comma */
-call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) COMMA(Comma) RPAREN(RParen) .
+call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) COMMA(Comma) RPAREN(RParen) . [FOR]
 {
     log_trace(">>call_suffix(CallSfx) ::= LPAREN arg_list(Args) RPAREN");
     CallSfx = calloc(sizeof(struct node_s), 1);
@@ -1128,7 +1150,7 @@ call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) COMMA(Comma) RPAREN(RPare
     utarray_push_back(CallSfx->subnodes, RParen);
 }
 
-call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) RPAREN(RParen) .
+call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) RPAREN(RParen) . [FOR]
 {
     log_trace(">>call_suffix(CallSfx) ::= LPAREN arg_list(Args) RPAREN");
     CallSfx = calloc(sizeof(struct node_s), 1);
@@ -1481,6 +1503,7 @@ list_expr(ListX) ::= LBRACK(LBrack) RBRACK(RBrack) .
     ListX->type = TK_List_Expr;
     ListX->line  = LBrack->line;
     ListX->col   = LBrack->col;
+    ListX->trailing_newline = RBrack->trailing_newline;
     utarray_new(ListX->subnodes, &node_icd);
     utarray_push_back(ListX->subnodes, LBrack);
     utarray_push_back(ListX->subnodes, RBrack);

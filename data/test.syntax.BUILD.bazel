@@ -1,3 +1,9 @@
-print("x")
-return y
-def foo(a,b,): pass
+def f(x):
+  res = []
+  def get_x():
+    res.append(x)
+  get_x()
+  x = 2
+  res = [];
+  get_x()
+  continue;

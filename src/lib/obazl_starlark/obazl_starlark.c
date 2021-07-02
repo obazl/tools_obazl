@@ -283,7 +283,7 @@ struct node_s *obazl_starlark_parse_file(char *fname)
         /* if (btok->s != NULL) { */
         /*     log_debug("token str: %p", btok->s); */
         /* } */
-        log_debug("TOKEN: %s (%d/%d) @ (%d:%d) %p",
+        log_debug("TOKEN: %s[%d/%d] (%d:%d) %p",
                   token_name[tok][0],
                   tok, btok->type,
                   btok->line, btok->col,
