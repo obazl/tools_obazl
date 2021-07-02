@@ -11,6 +11,7 @@ test_suite(
         ":numbers",
         ":punctuation",
         ":slices",
+        ":statements",
         ":strings",
     ])
 
@@ -32,7 +33,7 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -55,7 +56,7 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -78,7 +79,7 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -102,7 +103,7 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -126,56 +127,7 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
-        "//src/lib/obazl_starlark:obazl_starlark_parser",
-        "//vendored/logc",
-        "//vendored/unity"
-    ],
-)
-
-cc_test(
-    name = "expressions",
-    srcs = [
-        "syntax_expressions.c",
-        "syntax_expressions.h",
-        "//src/lib/obazl_starlark:obazl_starlark.c",
-        "//src/lib/obazl_starlark:obazl_starlark.h",
-        "@uthash//:include",
-    ],
-    copts = [
-        "-I$(GENDIR)/src/lib/obazl_starlark",
-        "-I$(GENDIR)/src/lib/obazl_starlark/test",
-        "-Ivendored/logc",
-        "-Ivendored/unity",
-        "-Iexternal/uthash/include",
-    ],
-    deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
-        "//src/lib/obazl_starlark:obazl_starlark_parser",
-        "//vendored/logc",
-        "//vendored/unity"
-    ],
-)
-
-cc_test(
-    name = "slices",
-    srcs = [
-        "syntax_slices.c",
-        "syntax_slices.h",
-        "//src/lib/obazl_starlark:obazl_starlark.c",
-        "//src/lib/obazl_starlark:obazl_starlark.h",
-        "@uthash//:include",
-    ],
-    copts = [
-        "-I$(GENDIR)/src/lib/obazl_starlark",
-        "-I$(GENDIR)/src/lib/obazl_starlark/test",
-        "-Ivendored/logc",
-        "-Ivendored/unity",
-        "-Iexternal/uthash/include",
-    ],
-    deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
-        "//src/lib/obazl_starlark:obazl_starlark_parser",
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -198,8 +150,30 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
-        "//src/lib/obazl_starlark:obazl_starlark_parser",
+        "//src/lib/obazl_starlark",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "expressions",
+    srcs = [
+        "syntax_expressions.c",
+        "syntax_expressions.h",
+        "//src/lib/obazl_starlark:obazl_starlark.c",
+        "//src/lib/obazl_starlark:obazl_starlark.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_starlark",
+        "-I$(GENDIR)/src/lib/obazl_starlark/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -222,8 +196,53 @@ cc_test(
         "-Iexternal/uthash/include",
     ],
     deps = [
-        "//src/lib/obazl_starlark:obazl_starlark_lexer",
-        "//src/lib/obazl_starlark:obazl_starlark_parser",
+        "//src/lib/obazl_starlark",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "slices",
+    srcs = [
+        "syntax_slices.c",
+        "syntax_slices.h",
+        "//src/lib/obazl_starlark:obazl_starlark.c",
+        "//src/lib/obazl_starlark:obazl_starlark.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_starlark",
+        "-I$(GENDIR)/src/lib/obazl_starlark/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_starlark",
+        "//vendored/logc",
+        "//vendored/unity"
+    ],
+)
+
+cc_test(
+    name = "statements",
+    srcs = [
+        "syntax_statements.c",
+        "syntax_statements.h",
+        "//src/lib/obazl_starlark:obazl_starlark.c",
+        "//src/lib/obazl_starlark:obazl_starlark.h",
+        "@uthash//:include",
+    ],
+    copts = [
+        "-I$(GENDIR)/src/lib/obazl_starlark",
+        "-I$(GENDIR)/src/lib/obazl_starlark/test",
+        "-Ivendored/logc",
+        "-Ivendored/unity",
+        "-Iexternal/uthash/include",
+    ],
+    deps = [
+        "//src/lib/obazl_starlark",
         "//vendored/logc",
         "//vendored/unity"
     ],
@@ -241,13 +260,15 @@ genrule(
         "syntax_expressions.c",
         "syntax_lists.c",
         "syntax_slices.c",
-        "//src/lib/obazl_starlark:emit_build_bazel.c",
+        "syntax_statements.c",
+        # "//src/lib/obazl_starlark:emit_build_bazel.c",
         "//src/lib/obazl_starlark:obazl_starlark.c",
         "//src/lib/obazl_starlark:obazl_starlark_lexer.c",
         "//src/lib/obazl_starlark:obazl_starlark_nodes.c",
         "//src/lib/obazl_starlark:obazl_starlark_parser.c",
+        "//src/lib/obazl_starlark:obazl_starlark_serialize.c",
         "//src/lib/obazl_starlark:token_debug.c",
-        "//src/lib/obazl_starlark:test_lex.c",
+        # "//src/lib/obazl_starlark:test_lex.c",
         # "//src/lib/obazl_starlark/test_parse.c",
         "//src/lib/obazl_utils:obazl_utils.c",
     ],
@@ -261,6 +282,7 @@ genrule(
         "syntax_expressions.h",
         "syntax_lists.h",
         "syntax_slices.h",
+        "syntax_statements.h",
     ],
     cmd = "\n".join([
         "SRC1=$(location lex_strings.c)",
@@ -277,14 +299,13 @@ genrule(
         "    $(location syntax_expressions.c) \\",
         "    $(location syntax_lists.c) \\",
         "    $(location syntax_slices.c) \\",
-        "    $(location //src/lib/obazl_starlark:emit_build_bazel.c) \\",
-        "    $(location //src/lib/obazl_starlark:obazl_starlark_lexer.c) \\",
+        "    $(location syntax_statements.c) \\",
         "    $(location //src/lib/obazl_starlark:obazl_starlark.c) \\",
+        "    $(location //src/lib/obazl_starlark:obazl_starlark_lexer.c) \\",
         "    $(location //src/lib/obazl_starlark:obazl_starlark_nodes.c) \\",
-        "    $(location //src/lib/obazl_starlark:token_debug.c) \\",
-        "    $(location //src/lib/obazl_starlark:test_lex.c) \\",
         "    $(location //src/lib/obazl_starlark:obazl_starlark_parser.c) \\",
-        # "    $(location //src/lib/obazl_starlark:test_parse.c)",
+        "    $(location //src/lib/obazl_starlark:obazl_starlark_serialize.c) \\",
+        "    $(location //src/lib/obazl_starlark:token_debug.c) \\",
         "    $(location //src/lib/obazl_utils:obazl_utils.c)",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),

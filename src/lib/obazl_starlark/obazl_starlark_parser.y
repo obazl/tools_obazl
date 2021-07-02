@@ -20,8 +20,8 @@ static char *sp = " ";
 
 }
 
-%extra_argument { struct node_s **root}
-/* %extra_argument { struct obazl_buildfile_s *ast} */
+/* %extra_argument { struct node_s **root} */
+%extra_argument { struct parse_state_s *parse_state}
 
 /* TK_ prefix will be added by lemon */
 %token AMP .
@@ -38,12 +38,11 @@ static char *sp = " ";
 %token CARET_EQ .
 %token CLASS .
 %token COLON .
+%token ICOLON .
 %token COMMA .
 %token COMMENT .
 %token CONTINUE .
 %token DEF .
-%token DEF_PARAMS .
-%token DEF_STMT .
 %token DEL .
 %token SLASH2 .                 /* floored division binop */
 %token SLASH2_EQ .
@@ -135,23 +134,29 @@ static char *sp = " ";
 %token WHILE .
 %token WITH .
 %token YIELD .
+
 /* token constants used to tag non-terminals */
 %token ALIAS .
 %token Arg_List .
 %token Arg_Named .
 %token Arg_Star .
 %token Arg_Star2 .
+%token Assign_Stmt .
 %token Bin_Expr .
 %token Call_Expr .
 %token Call_Sfx .
 %token Comp_Clause .
+%token Def_Stmt .
 %token Dict_Comp .
 %token Dict_Entry .
 %token Dict_Entry_List .
 %token Dict_Expr .
 %token Dot_Expr .
 %token Dot_Sfx .
+%token Expr .
+%token Expr_List .
 %token If_Expr .
+%token Indent_Block .
 %token Lambda_Expr .
 %token List_Comp .
 %token List_Expr .
@@ -160,12 +165,16 @@ static char *sp = " ";
 %token Param_Named .
 %token Param_Star .
 %token Param_Star2 .
+%token Primary_Expr .
 %token Paren_Expr .
+%token Return_Expr .
 %token Slice_Expr .
 %token Slice_Sfx .
-%token Primary_Expr .
+%token SmallStmt_List .
+%token Stmt .
+%token Stmt_List .
 %token Unary_Expr .
-%token SYM .
+/* %token SYM . */
 
 %token_prefix TK_
 
@@ -173,27 +182,37 @@ static char *sp = " ";
 /* https://docs.python.org/3/reference/expressions.html#operator-precedence */
  /* https://www.mathcs.emory.edu/~valerie/courses/fall10/155/resources/op_precedence.html */
 %right LAMBDA .
-%nonassoc COMMA .
-%nonassoc OR .
-%nonassoc AND .
+%left OR .
+%left AND .
 %right NOT .
 /* membership: in, not in */
 /* identity: is, is not */
 /* comparison: <, <=,  >,  >=, !=, == ('<>' not supported)*/
 /* NB: 'not in', 'is not' are non-terminals */
+%left EQ .
+%nonassoc PLUS_EQ MINUS_EQ .
 %nonassoc IN IS LANGLE LE RANGLE GE BANG_EQ EQ2 .
 %nonassoc VBAR .                /* bitwise OR binop */
 %nonassoc CARET .               /* bitwise XOR binop */
 %nonassoc AMP .                 /* bitwise AND binop */
 %nonassoc LLANGLE RRANGLE .     /* bitwise shift binops */
 %right LBRACK LBRACE LPAREN .   /* prevent ambiguities */
-%left PLUS MINUS .
-%nonassoc STAR SLASH SLASH2 PCT .
+%right DEF RETURN BREAK CONTINUE PASS LOAD.
+%right PLUS MINUS .
+%left STAR SLASH SLASH2 PCT .
 /* %right PLUS .                   /\* positive, e.g. +3 *\/ */
 /* %right MINUS .                  /\* negative, e.g. -3 *\/ */
 %right TILDE .                  /* bitwise NOT (unary) */
 %right STAR2 .                  /* exponentiation */
 %nonassoc IF ELSE . /* may go both ways: foo IF bar ELSE baz v. IF foo ELSE bar */
+/* the following prevents conflicts like:
+ FLOAT shift-reduce 49     primx ::= FLOAT
+ FLOAT reduce       32      ** Parsing conflict **
+ {default} reduce       32     return_stmt ::= RETURN
+*/
+%nonassoc FLOAT ID INT STRING BSTRING .
+
+%left COMMA .
 %right FOR .
 /* %right ELSE . */
 /* binops: all nonassoc, mult ops higher precedence than add ops */
@@ -228,20 +247,22 @@ static char *sp = " ";
 
 %start_symbol buildfile
 /* File = {Statement | newline} eof . */
-buildfile(File) ::= statement_list(SS) .
+buildfile ::= stmt_list(SS) .
 {
-    log_trace("\n");
-    log_trace(">>buildfile ::= statement_list .");
-    log_trace("  lhs file(File)");
-    log_trace("  rhs statement_list(SS)");
-    *root = SS;
+    log_trace(">>buildfile ::= stmt_list .");
+    parse_state->root = SS;
 }
 
 %ifdef TEST
-buildfile(File) ::= expr(X) . {
-    log_trace(">>buildfile(File) ::= expr(X) .");
-    *root = X;
-}
+/* buildfile(File) ::= small_stmt_list(S) . { */
+/*     log_trace(">>buildfile(File) ::= small_stmt ."); */
+/*     parse_state->root = S; */
+/* } */
+
+/* buildfile(File) ::= expr(X) . { */
+/*     log_trace(">>buildfile(File) ::= expr(X) ."); */
+/*     parse_state->root = X; */
+/* } */
 
 /* buildfile(File) ::= primary_expr(X) . { */
 /*     log_trace(">>buildfile(File) ::= primary_expr(X) ."); */
@@ -253,7 +274,7 @@ buildfile(File) ::= expr(X) . {
 /*     log_debug("START dump"); */
 /*     dump_node(X); */
 /*     log_debug("/START dump"); */
-/*     *root = X; */
+    /* parse_state->root = X; */
 /* } */
 
 /* buildfile(File) ::= unary_expr(X) . { */
@@ -261,7 +282,7 @@ buildfile(File) ::= expr(X) . {
 /*     log_debug("START dump"); */
 /*     dump_node(X); */
 /*     log_debug("/START dump"); */
-/*     *root = X; */
+    /* parse_state->root = X; */
 /* } */
 
 /* buildfile(File) ::= binary_expr(X) . { */
@@ -269,18 +290,18 @@ buildfile(File) ::= expr(X) . {
 /*     /\* log_debug("START dump"); *\/ */
 /*     /\* dump_node(X); *\/ */
 /*     /\* log_debug("/START dump"); *\/ */
-/*     *root = X; */
+    /* parse_state->root = X; */
 /* } */
 %endif
 
-%ifdef STRINGS || ALL
-%type string_list { UT_array* }
-%destructor string_list {
-    log_trace("freeing string_list");
-    /* utarray_free($$->list); */
-}
+/* %ifdef STRINGS || ALL */
+/* %type string_list { UT_array* } */
+/* %destructor string_list { */
+/*     log_trace("freeing string_list"); */
+/*     /\* utarray_free($$->list); *\/ */
+/* } */
 
-%endif
+/* %endif */
 
 /* **************************************************************** */
 /* load_stmt_test ::= load_stmt(LS) . { */
@@ -301,7 +322,7 @@ buildfile(File) ::= expr(X) . {
     /* dump_nodes(NODES); */
 /* } */
 
-%if LOAD_STMT
+/* %if LOAD_STMT */
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* str_assign is for load stmts */
 str_assign(ALIAS) ::= ID(Id) EQ(Eq) STRING(S). {
@@ -381,13 +402,14 @@ load_list(LOAD_LIST) ::= load_list(LL) COMMA(Comma) . {
 /*     utarray_push_back(COMMENTS, C); */
 /* } */
 
-%endif
+/* %endif */
 
-%if PARAMS || ALL
+/* %if PARAMS || ALL */
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* PARAMETERS */
 
 /* Parameters = Parameter {',' Parameter}. */
+/* NB: trailing comma allowed in 'def' params but not in lambda */
 param_list(Params) ::= param(Param) . {
     log_trace(">>param_list(Params) ::= param(Param)");
     Params = calloc(sizeof(struct node_s), 1);
@@ -458,9 +480,9 @@ param_star2(Param) ::= STAR2(Star2) ID(Id) . {
     utarray_push_back(Param->subnodes, Id);
 }
 
-%endif
+/* %endif */
 
-%if STATEMENTS || ALL
+/* %if STATEMENTS || ALL */
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 // STATEMENTS
 /* Statement = DefStmt | IfStmt | ForStmt | SimpleStmt . */
@@ -481,50 +503,183 @@ param_star2(Param) ::= STAR2(Star2) ID(Id) . {
 // MB: we use 'indent_block' instead of 'suite'
 /* suite :: approximately 'body' (of a fn defn, for example) */
 /* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
-
-statement_list(STMTS) ::= statement(STMT) .
+/* %%%%%%%%%%%%%%%% */
+/* precedence: must be lower than binary_expr */
+expr_list(Xs) ::= expr(X) . [PLUS]
 {
-    log_trace("\n");
-    log_trace(">>statement_list ::= statement");
-    log_trace("  lhs statement_list(STMTS)");
-    log_trace("  rhs statement(STMT)");
+    log_trace(">>expr_list(XList) ::= expr(X");
+    Xs = calloc(sizeof(struct node_s), 1);
+    Xs->type  = TK_Expr_List;
+    Xs->line  = X->line;
+    Xs->col   = X->col;
+    Xs->trailing_newline = X->trailing_newline;
+    utarray_new(Xs->subnodes, &node_icd);
+    utarray_push_back(Xs->subnodes, X);
+    log_debug("expr_list type: %s[%d]",
+              token_name[Xs->type][0], Xs->type);
 }
 
-statement_list(STMTS_lhs) ::= statement_list(STMTS_rhs) statement(STMT) .
-{
-    log_trace("\n");
-    log_trace(">>statement_list ::= statement_list statement");
-    log_trace("  lhs statement_list(STMTS_lhs)");
-    log_trace("  rhs statement_list(STMTS_rhs)");
-    log_trace("  rhs statement(STMT)");
-}
-
-statement(STMT) ::= def_stmt(DefSTMT) .
-{
-    log_trace("\n");
-    log_trace(">>statement ::= def_stmt(DefSTMT)");
-    log_trace("  lhs statement(STMT)");
-    log_trace("  rhs def_stmt(DefSTMT)");
-}
-
-/* statement(STMT) ::= if_stmt(IfSTMT) . */
+/* expr_list_comma(XList) ::= expr_list(XList_rhs) COMMA(Comma) . [FOR] */
 /* { */
-/*     log_trace("\n"); */
-/*     log_trace(">>statement ::= if_stmt(IfSTMT)"); */
-/*     log_trace("  lhs statement(STMT)"); */
-/*     log_trace("  rhs if_stmt(IfSTMT)"); */
+/*     log_trace(">>expr_list_comma(XList) ::= expr_list(XList_rhs) COMMA(Comma)"); */
+/*     if (XList_rhs->type != TK_List_Expr) { */
+/*         struct node_s *Xs = calloc(sizeof(struct node_s), 1); */
+/*         Xs->type = TK_Expr_List; */
+/*         Xs->line  = XList_rhs->line; */
+/*         Xs->col   = XList_rhs->col; */
+/*         utarray_new(Xs->subnodes, &node_icd); */
+/*         utarray_push_back(Xs->subnodes, XList_rhs); */
+/*         utarray_push_back(Xs->subnodes, Comma); */
+/*         XList = Xs; */
+/*     } else { */
+/*         utarray_push_back(XList_rhs->subnodes, Comma); */
+/*         XList = XList_rhs; */
+/*     } */
+/* } */
+
+expr_list(XList) ::= expr_list(XList_rhs) COMMA(Comma) expr(X) . [PLUS]
+{
+    log_trace(">>expr_list(XList) ::= expr_list(XList_rhs) COMMA(Comma) expr(X)");
+    XList = calloc(sizeof(struct node_s), 1);
+    XList->type = TK_Expr_List;
+    XList->line  = XList_rhs->line;
+    XList->col   = XList_rhs->col;
+    utarray_new(XList->subnodes, &node_icd);
+    utarray_push_back(XList->subnodes, XList_rhs);
+    utarray_push_back(XList->subnodes, Comma);
+    utarray_push_back(XList->subnodes, X);
+}
+
+stmt_list(Stmts) ::= statement(Stmt) . [FOR]
+{
+    log_trace("\n");
+    log_trace(">>stmt_list ::= statement");
+    Stmts = calloc(sizeof(struct node_s), 1);
+    Stmts->type = TK_Stmt_List;
+    Stmts->line = Stmt->line;
+    Stmts->col  = Stmt->col;
+    utarray_new(Stmts->subnodes, &node_icd);
+    utarray_push_back(Stmts->subnodes, Stmt);
+}
+
+stmt_list(Stmts) ::= stmt_list(Stmts_rhs) statement(Stmt) . [PLUS]
+{
+    log_trace(">>stmt_list ::= stmt_list statement");
+    /* Stmts = calloc(sizeof(struct node_s), 1); */
+    /* Stmts->type = TK_Def_Stmt; */
+    /* Stmts->line  = LBrack->line; */
+    /* Stmts->col   = LBrack->col; */
+    /* utarray_new(Stmts->subnodes, &node_icd); */
+    utarray_push_back(Stmts_rhs->subnodes, Stmt);
+    Stmts = Stmts_rhs;
+}
+
+/* stmt_list(Stmts) ::= stmt_list(Stmts_rhs) statement(Stmt) . */
+/* { */
+/*     log_trace(">>stmt_list ::= stmt_list statement"); */
+/*     /\* Stmts = calloc(sizeof(struct node_s), 1); *\/ */
+/*     /\* Stmts->type = TK_Def_Stmt; *\/ */
+/*     /\* Stmts->line  = LBrack->line; *\/ */
+/*     /\* Stmts->col   = LBrack->col; *\/ */
+/*     /\* utarray_new(Stmts->subnodes, &node_icd); *\/ */
+/*     utarray_push_back(Stmts_rhs->subnodes, Stmt); */
+/*     Stmts = Stmts_rhs; */
 /* } */
 
 /* Suite = [newline indent {Statement} outdent] | SimpleStmt . */
-indent_block(Block) ::= simple_stmt(SimpleSTMT) . {
-    log_trace(">>indent_block(Block) ::= simple_stmt(SimpleSTMT)"); }
+/* SimpleStmt = SmallStmt {';' SmallStmt} [';'] '\n' . */
+/* # NOTE: '\n' optional at EOF */
+/* SmallStmt = ReturnStmt */
+/*           | BreakStmt | ContinueStmt | PassStmt */
+/*           | AssignStmt */
+/*           | ExprStmt */
+/*           | LoadStmt */
 
-/* indent_block(Block) ::= statement_list(STMTS) . { */
-/*     log_trace(">>indent_block(Block) ::= statement_list(STMTS)"); } */
+/* here: Statement => stmtm_list, SimpleStmt => small_stmt_list */
+indent_block(Block) ::= small_stmt_list(SmallStmts) . [PLUS]
+{
+    log_trace(">>indent_block(Block) ::= simple_stmt(SmallStmts)");
+    Block = calloc(sizeof(struct node_s), 1);
+    Block->type = TK_Indent_Block;
+    Block->line  = SmallStmts->line;
+    Block->col   = SmallStmts->col;
+    utarray_new(Block->subnodes, &node_icd);
+    utarray_push_back(Block->subnodes, SmallStmts);
+}
 
+indent_block(Block) ::= stmt_list(Stmts) . [DEF]
+{
+    log_trace(">>indent_block(Block) ::= stmt_list(Stmts)");
+    Block = calloc(sizeof(struct node_s), 1);
+    Block->type = TK_Indent_Block;
+    Block->line  = Stmts->line;
+    Block->col   = Stmts->col;
+    utarray_new(Block->subnodes, &node_icd);
+    utarray_push_back(Block->subnodes, Stmts);
+}
+
+/* 'def' defines a function */
+statement(Stmt) ::= def_stmt(DefStmt) . [TILDE]
+{
+    log_trace(">>statement ::= def_stmt");
+    Stmt = DefStmt;
+}
+
+/* statement(Stmt) ::= if_stmt(IfStmt) . [TILDE] */
+/* { */
+/*     log_trace("\n"); */
+/*     log_trace(">>statement ::= for_stmt"); */
+/*     log_trace("  lhs statement(Stmt)"); */
+/*     log_trace("  rhs for_stmtm(IfStmt)"); */
+/* } */
+
+statement(Stmt) ::= for_stmt(ForStmt) . [TILDE]
+{
+    log_trace("\n");
+    log_trace(">>statement ::= for_stmt");
+    log_trace("  lhs statement(Stmt)");
+    log_trace("  rhs for_stmtm(ForStmt)");
+    Stmt = ForStmt;
+}
+
+statement(Stmt) ::= small_stmt_list(SmallStmts) . [AMP]
+{
+    /* FIXME: validate required trailing newline */
+    /* if present it will be embedded in the final token */
+    log_trace(">>statement ::= small_stmt_list");
+    struct node_s *n = utarray_back(SmallStmts->subnodes);
+    log_debug("LAST SMALL STMT nl? %d: %d %s: %s",
+              n->trailing_newline,
+              n->type, token_name[n->type][0], n->s);
+    if ( ! n->trailing_newline ) {
+        log_error("Missing newline after SimpleStmt %s", n->s);
+        // FIXME: print entire expr
+        exit(EXIT_FAILURE);
+    }
+    /* utarray_push_back(SmallStmts->subnodes, Newline); */
+    Stmt = SmallStmts;
+}
+
+/* optional trailing semi */
+statement(Stmt) ::= small_stmt_list(SmallStmts) SEMI(Semi) . [AMP]
+{
+    /* FIXME: validate required trailing newline */
+    /* if present it will be embedded in the final token (SEMI in this
+       case) */
+    log_trace(">>statement ::= small_stmt_list");
+    log_trace("SEMI trailing newline? %d", Semi->trailing_newline);
+    if ( ! Semi->trailing_newline ) {
+        log_error("Missing newline after SimpleStmt");
+        exit(EXIT_FAILURE);
+    }
+    /* log_trace("DUMPING SEMI ================"); */
+    /* dump_node(Semi); */
+    utarray_push_back(SmallStmts->subnodes, Semi);
+    /* utarray_push_back(SmallStmts->subnodes, Newline); */
+    Stmt = SmallStmts;
+}
 
 /* IfStmt = 'if' Test ':' Suite {'elif' Test ':' Suite} ['else' ':' Suite] . */
-
 /* if_stmt(IfSTMT) ::= IF expr(Expr1) COLON simple_stmt(SimpleSTMT) . /\* FIXME *\/ */
 /* { */
 /*     log_trace("\n"); */
@@ -534,22 +689,15 @@ indent_block(Block) ::= simple_stmt(SimpleSTMT) . {
 /*     log_trace("  rhs simple_stmt(SimpleSTMT)"); */
 /* } */
 
-statement(STMT) ::= for_stmt(ForSTMT) .
-{
-    log_trace("\n");
-    log_trace(">>statement ::= for_stmt(ForSTMT)");
-    log_trace("  lhs statement(STMT)");
-    log_trace("  rhs for_stmtm(ForSTMT)");
-}
 /* ForStmt = 'for' LoopVariables 'in' Expression ':' Suite . */
-for_stmt(ForSTMT) ::= FOR loop_vars(LoopVars) IN expr(Expr) COLON indent_block(Suite) .
+for_stmt(ForSTMT) ::= FOR loop_vars(LoopVars) IN expr(Expr) COLON indent_block(IBlock) . [FOR]
 {
     log_trace("\n");
-    log_trace(">>for_stmt ::= FOR loop_vars IN expr COLOR indent_block");
+    log_trace(">>for_stmt ::= FOR loop_vars IN expr COLOR stmt_list");
     log_trace("  lhs for_stmt(ForSTMT)");
     log_trace("  rhs loop_vars(LoopVars)");
     log_trace("  rhs expr(Expr)");
-    log_trace("  rhs indent_block(Suite)");
+    log_trace("  rhs stmt_list(IBlock)");
 }
 
 /* LoopVariables = PrimaryExpr {',' PrimaryExpr} . */
@@ -573,42 +721,43 @@ loop_vars(LoopVars) ::= loop_vars(LoopVars_rhs) COMMA(Comma) primary_expr(X) . {
     utarray_push_back(LoopVars->subnodes, X);
 }
 
-statement(STMT) ::= simple_stmt(SimpleSTMT) .
+/* DefStmt = 'def' identifier '(' [Parameters [',']] ')' ':' Suite . */
+def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) RPAREN(Rparen) COLON(Colon) indent_block(IBlock). [LAMBDA]
 {
-    log_trace("\n");
-    log_trace(">>statement ::= simple_stmt(SimpleSTMT)");
-    log_trace("  lhs statement(STMT)");
-    log_trace("  lhs simple_stmt(SimpleSTMT)");
+    log_trace(">>def_stmt ::= DEF ID LPAREN params RPAREN COLON stmt_list");
+    Stmt = calloc(sizeof(struct node_s), 1);
+    Stmt->type = TK_Def_Stmt;
+    Stmt->line = Def->line;
+    Stmt->col  = Def->col;
+    utarray_new(Stmt->subnodes, &node_icd);
+
+    utarray_push_back(Stmt->subnodes, Def);
+    utarray_push_back(Stmt->subnodes, Id);
+    utarray_push_back(Stmt->subnodes, Lparen);
+    utarray_push_back(Stmt->subnodes, Params);
+    utarray_push_back(Stmt->subnodes, Rparen);
+    utarray_push_back(Stmt->subnodes, Colon);
+    utarray_push_back(Stmt->subnodes, IBlock);
 }
 
-/* 'def' defines a function */
-/* DefStmt = 'def' identifier '(' [Parameters [',']] ')' ':' Suite . */
-def_stmt(STMT) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) RPAREN(Rparen) COLON(Colon) indent_block(Block).
+/* optional trailing comma in parm list */
+def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) COMMA(Comma) RPAREN(Rparen) COLON(Colon) indent_block(IBlock). [LAMBDA]
 {
-    log_trace("\n");
-    log_trace(">>def_stmt ::= DEF ID LPAREN params RPAREN COLON indent_block");
-    log_trace("  lhs: def_stmt(STMT)");
-    log_trace("  rhs: DEF(Def)");
-    log_trace("  rhs: ID(Id): %s", Id->s);
-    log_trace("  rhs: LPAREN(Lparen)");
-    log_trace("  rhs: param_list(Params)");
-    log_trace("  rhs: RPAREN(Rparen)");
-    log_trace("  rhs: COLON(Colon)");
-    log_trace("  rhs: indent_block(Block)");
+    log_trace(">>def_stmt ::= DEF ID LPAREN params RPAREN COLON stmt_list");
+    Stmt = calloc(sizeof(struct node_s), 1);
+    Stmt->type = TK_Def_Stmt;
+    Stmt->line = Def->line;
+    Stmt->col  = Def->col;
+    utarray_new(Stmt->subnodes, &node_icd);
 
-    STMT = calloc(sizeof(struct node_s), 1);
-    STMT->type = TK_DEF_STMT;
-    STMT->line = Def->line;
-    STMT->col  = Def->col;
-    utarray_new(STMT->subnodes, &node_icd);
-
-    utarray_push_back(STMT->subnodes, Def);
-    utarray_push_back(STMT->subnodes, Id);
-    utarray_push_back(STMT->subnodes, Lparen);
-    utarray_push_back(STMT->subnodes, Params);
-    /* utarray_push_back(STMT->subnodes, Colon); */
-    utarray_push_back(STMT->subnodes, Rparen);
-    utarray_push_back(STMT->subnodes, Colon);
+    utarray_push_back(Stmt->subnodes, Def);
+    utarray_push_back(Stmt->subnodes, Id);
+    utarray_push_back(Stmt->subnodes, Lparen);
+    utarray_push_back(Stmt->subnodes, Params);
+    utarray_push_back(Stmt->subnodes, Comma);
+    utarray_push_back(Stmt->subnodes, Rparen);
+    utarray_push_back(Stmt->subnodes, Colon);
+    utarray_push_back(Stmt->subnodes, IBlock);
 }
 
 /* LoadStmt = 'load' '(' string {',' [identifier '='] string} [','] ')' . */
@@ -640,83 +789,185 @@ load_stmt(STMT) ::= LOAD(Load) LPAREN(Lparen) STRING(S) COMMA(Comma) load_list(L
 }
 
 /* SimpleStmt = SmallStmt {';' SmallStmt} [';'] '\n' . */
-simple_stmt(SimpSTMT) ::= small_stmt(SmallSTMT) . {
-#if DEBUG_TRACE
-    log_trace("\n");
-    log_trace(">>simple_stmt ::= small_stmt");
-    log_trace("  lhs simple_stmt (SimpSTMT)");
-    log_trace("  rhs small_stmt(SmallSTMT)");
-#endif
-    SmallSTMT = calloc(sizeof(struct node_s), 1);
-    /* SmallSTMT->type = TK_SMALL_STMT; */ // FIXME
-    SmallSTMT->line  = SmallSTMT->line;
-    SmallSTMT->col   = SmallSTMT->col;
-    /* utarray_new(SmallSTMT->subnodes, &node_icd); */
-    /* utarray_concat(SimpSTMT->subnodes, SmallSTMT); */
-}
-
-/* # NOTE: '\n' optional at EOF */
 /* SmallStmt = ReturnStmt */
 /*           | BreakStmt | ContinueStmt | PassStmt */
 /*           | AssignStmt */
 /*           | ExprStmt */
 /*           | LoadStmt */
 /*           . */
-small_stmt(SmallSTMT) ::= RETURN .
-{ log_trace(">>small_stmt(SmallSTMT) ::= RETURN"); }
-
-small_stmt(SmallSTMT) ::= BREAK .
-{ log_trace(">>small_stmt(SmallSTMT) ::= BREAK"); }
-
-small_stmt(SmallSTMT) ::= CONTINUE .
-{ log_trace(">>small_stmt(SmallSTMT) ::= CONTINUE"); }
-
-small_stmt(SmallSTMT) ::= PASS .
-{ log_trace(">>small_stmt(SmallSTMT) ::= PASS"); }
-
-small_stmt(SmallSTMT) ::= load_stmt(STMT) . {
-    log_trace(">>small_stmt ::= load_stmt");
-    log_trace("  lhs small_stmt(SmallSTMT)");
-    log_trace("  rhs load_stmt(STMT)");
+/* # NOTE: '\n' optional at EOF */
+/* FIXME: must end in newline except at EOF */
+small_stmt_list(SmallList) ::= small_stmt(SmallStmt) . [FOR]
+{
+    log_trace(">>small_stmt_list ::= small_stmt");
+    SmallList = calloc(sizeof(struct node_s), 1);
+    SmallList->type = TK_SmallStmt_List;
+    SmallList->line  = SmallStmt->line;
+    SmallList->col   = SmallStmt->col;
+    utarray_new(SmallList->subnodes, &node_icd);
+    utarray_push_back(SmallList->subnodes, SmallStmt);
 }
 
-%endif
+small_stmt_list(SmallStmts) ::= small_stmt_list(SmallStmts_rhs) SEMI(Semi) small_stmt(SmallStmt) . [FOR]
+{
+    log_trace(">>small_stmt_list ::= small_stmt_list small_stmt");
+    utarray_push_back(SmallStmts_rhs->subnodes, Semi);
+    utarray_push_back(SmallStmts_rhs->subnodes, SmallStmt);
+    SmallStmts = SmallStmts_rhs;
+}
 
-%ifdef EXPRESSIONS || ALL
+small_stmt(Stmt) ::= return_stmt(Return) .
+{
+    log_trace(">>small_stmt(Stmt) ::= return_stmt");
+    Stmt = Return;
+}
+
+return_stmt(Stmt) ::= RETURN(Return) . [PLUS]
+{
+    log_trace(">>return_stmt(Stmt) ::= RETURN");
+    Stmt = Return;
+}
+
+return_stmt(Stmt) ::= RETURN(Return) expr_list(Xs) . [STAR]
+{
+    log_trace(">>return_stmt(Stmt) ::= RETURN expr_list");
+    Stmt = calloc(sizeof(struct node_s), 1);
+    Stmt->type = TK_Return_Expr;
+    Stmt->line  = Return->line;
+    Stmt->col   = Return->col;
+    Stmt->trailing_newline = Xs->trailing_newline;
+    utarray_new(Stmt->subnodes, &node_icd);
+    utarray_push_back(Stmt->subnodes, Return);
+    utarray_push_back(Stmt->subnodes, Xs);
+}
+
+small_stmt(Stmt) ::= BREAK(Break) . [PLUS]
+{
+    log_trace(">>small_stmt(Stmt) ::= BREAK");
+    Stmt = Break;
+}
+
+small_stmt(Stmt) ::= CONTINUE(Continue) . [FOR]
+{
+    log_trace(">>small_stmt(Stmt) ::= CONTINUE");
+    Stmt = Continue;
+}
+
+small_stmt(Stmt) ::= PASS(Pass) . [FOR]
+{
+    log_trace(">>small_stmt(Stmt) ::= PASS");
+    Stmt = Pass;
+}
+
+small_stmt(Stmt) ::= assign_stmt(AssignStmt) .
+{
+    log_trace(">>small_stmt(Stmt) ::= assign_stmt(AssignStmt)");
+    Stmt = AssignStmt;
+}
+
+/* ExprStmt     = Expression . */
+/* here, Expression => expr_list */
+small_stmt(Stmt) ::= expr_list(Xs) .
+{
+    log_trace(">>small_stmt(Stmt) ::= expr_list");
+    Stmt = Xs;
+}
+
+small_stmt(Stmt) ::= load_stmt(LoadStmt) .
+{
+    log_trace(">>small_stmt(Stmt) ::= load_stmt(LoadStmt)");
+    Stmt = LoadStmt;
+}
+
+/* AssignStmt   = Expression ('=' | '+=' | '-=' | '*=' | '/=' | '//=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=') Expression . */
+
+assign_stmt(AssignStmt) ::= expr_list(Xs1) assign_op(AssignOp) expr_list(Xs2) . [LAMBDA]
+{
+    log_trace(">>assign_stmt ::= expr_list assign_op expr_list");
+    AssignStmt = calloc(sizeof(struct node_s), 1);
+    AssignStmt->type = TK_Assign_Stmt;
+    AssignStmt->line  = Xs1->line;
+    AssignStmt->col   = Xs1->col;
+    utarray_new(AssignStmt->subnodes, &node_icd);
+    utarray_push_back(AssignStmt->subnodes, Xs1);
+    utarray_push_back(AssignStmt->subnodes, AssignOp);
+    utarray_push_back(AssignStmt->subnodes, Xs2);
+}
+
+assign_op ::= EQ .
+assign_op ::= PLUS_EQ .
+assign_op ::= MINUS_EQ .
+assign_op ::= STAR_EQ .
+assign_op ::= DIV_EQ .
+assign_op ::= SLASH2_EQ .
+assign_op ::= PCT_EQ .
+assign_op ::= AMP_EQ .
+assign_op ::= VBAR_EQ .
+assign_op ::= CARET_EQ .
+assign_op ::= LLANGLE_EQ .
+assign_op ::= RRANGLE_EQ .
+
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* EXPRESSIONS */
 
 /* WARNING: We rename these:  'Test' => expr, 'Expression' => expr_list */
 /* Test = IfExpr | PrimaryExpr | UnaryExpr | BinaryExpr | LambdaExpr . */
 /* Expression = Test {',' Test} . */
-expr(X) ::= if_expr(IfX) . [LAMBDA]
+expr(X) ::= if_expr(X_rhs) . [LAMBDA]
 {
     log_trace(">>expr(Expr) ::= if_expr(IfExpr");
-    X = IfX;
+    X = calloc(sizeof(struct node_s), 1);
+    X->type  = TK_Expr;
+    X->line  = X_rhs->line;
+    X->col   = X_rhs->col;
+    utarray_new(X->subnodes, &node_icd);
+    utarray_push_back(X->subnodes, X_rhs);
 }
-expr(X) ::= primary_expr(PrimX) . [IF]
+
+expr(X) ::= primary_expr(X_rhs) . [LAMBDA]
 {
-    log_trace(">>expr(X) ::= primary_expr(PrimX");
-    /* log_trace("s: %s", X->s); */
-    X = PrimX;
+    log_trace(">>expr(X) ::= primary_expr(X_rhs)");
+    X = calloc(sizeof(struct node_s), 1);
+    X->type  = TK_Expr;
+    X->line  = X_rhs->line;
+    X->col   = X_rhs->col;
+    X->trailing_newline = X_rhs->trailing_newline;
+    utarray_new(X->subnodes, &node_icd);
+    utarray_push_back(X->subnodes, X_rhs);
 }
-expr(X) ::= unary_expr(X_rhs) .
-{
-    log_trace(">>expr(X) ::= unary_expr(X_rhs)");
-    X = X_rhs;
-}
-expr(X) ::= binary_expr(X_rhs) .
+
+expr(X) ::= binary_expr(X_rhs) . [FOR]
 {
     log_trace(">>expr(X) ::= binary_expr(X_rhs)");
-    log_trace("  rhs expr subnode ct: %d", utarray_len(X_rhs->subnodes));
-    X = X_rhs;
+    X = calloc(sizeof(struct node_s), 1);
+    X->type  = TK_Expr;
+    X->line  = X_rhs->line;
+    X->col   = X_rhs->col;
+    utarray_new(X->subnodes, &node_icd);
+    utarray_push_back(X->subnodes, X_rhs);
 }
+
+expr(X) ::= unary_expr(X_rhs) . [LAMBDA]
+{
+    log_trace(">>expr(X) ::= unary_expr(X_rhs)");
+    X = calloc(sizeof(struct node_s), 1);
+    X->type  = TK_Expr;
+    X->line  = X_rhs->line;
+    X->col   = X_rhs->col;
+    utarray_new(X->subnodes, &node_icd);
+    utarray_push_back(X->subnodes, X_rhs);
+}
+
 expr(X) ::= lambda_expr(X_rhs) .
 {
     log_trace(">>expr(X) ::= lambda_expr(X_rhs)");
-    X = X_rhs;
+    X = calloc(sizeof(struct node_s), 1);
+    X->type  = TK_Expr;
+    X->line  = X_rhs->line;
+    X->col   = X_rhs->col;
+    utarray_new(X->subnodes, &node_icd);
+    utarray_push_back(X->subnodes, X_rhs);
 }
-
 
 /* maybe_expr(Expr) ::= expr(Expr_rhs) . */
 /* { log_trace(">>maybe_expr(Expr) ::= expr(Expr_rhs)"); } */
@@ -756,10 +1007,10 @@ if_expr(IfX) ::= expr(X1) IF(If) expr(X2) ELSE(Else) expr(X3) . [LAMBDA]
 /*             | PrimaryExpr SliceSuffix */
 
 /* %%%% Primx (Operand) */
-primary_expr(Primx) ::= primx(Primx_rhs) .
+primary_expr(X) ::= primx(X_rhs) .
 {
-    log_trace(">>primary_expr(Primx) ::= primx(Primx_rhs) .");
-    Primx = Primx_rhs;
+    log_trace(">>primary_expr(X) ::= primx(X_rhs)");
+    X = X_rhs;
 }
 /* Terminology: 'operand' => 'primx' (PRimaryEXPRession) */
 /* Primx = identifier */
@@ -784,7 +1035,7 @@ primx(PrimX) ::= STRING(S) . {       /* includes rawstrings */
     log_trace(">>primx ::= STRING(S) .");
     PrimX = S;
 }
-primx(PrimX) ::= BSTRING(B) . {      /* bytes */
+primx(PrimX) ::= BSTRING(B) . [COMMA] {      /* bytes */
     log_trace(">>primx ::= BSTRING(B) .");
     PrimX = B;
 }
@@ -822,11 +1073,16 @@ primary_expr(PrimX) ::= primary_expr(PrimX_rhs) dot_suffix(DotSfx) .
     utarray_push_back(PrimX->subnodes, DotSfx);
 }
 
-dot_suffix(DotSfx) ::= DOT ID(Id) .
+dot_suffix(DotSfx) ::= DOT(Dot) ID(Id) .
 {
     log_trace(">>dot_suffix(DotSfx) ::= DOT ID(Id)");
-    DotSfx = Id;
-    DotSfx->type = TK_Dot_Sfx;
+    DotSfx = calloc(sizeof(struct node_s), 1);
+    DotSfx->type  = TK_Dot_Sfx;
+    DotSfx->line  = Dot->line;
+    DotSfx->col   = Dot->col;
+    utarray_new(DotSfx->subnodes, &node_icd);
+    utarray_push_back(DotSfx->subnodes, Dot);
+    utarray_push_back(DotSfx->subnodes, Id);
 }
 
 /* %%%% CallSuffix primary expr - type TK_Call_Expr */
@@ -837,65 +1093,62 @@ primary_expr(PrimX) ::= primary_expr(PrimX_rhs) call_suffix(CallSfx) .
     PrimX->type = TK_Call_Expr; // TK_Primary_Expr;
     PrimX->line  = PrimX_rhs->line;
     PrimX->col   = PrimX_rhs->col;
+    PrimX->trailing_newline = CallSfx->trailing_newline;
     utarray_new(PrimX->subnodes, &node_icd);
     utarray_push_back(PrimX->subnodes, PrimX_rhs);
     utarray_push_back(PrimX->subnodes, CallSfx);
 }
 
 /* CallSuffix  = '(' [Arguments [',']] ')' . */
+/* NB: supports optional trailing comma */
+call_suffix(CallSfx) ::= LPAREN(LParen) RPAREN(RParen) . [FOR]
+{
+    log_trace(">>call_suffix(CallSfx) ::= LPAREN RPAREN");
+    CallSfx = calloc(sizeof(struct node_s), 1);
+    CallSfx->type  = TK_Arg_List;
+    CallSfx->line  = LParen->line;
+    CallSfx->col   = LParen->col;
+    utarray_new(CallSfx->subnodes, &node_icd);
+    utarray_push_back(CallSfx->subnodes, LParen);
+    utarray_push_back(CallSfx->subnodes, RParen);
+}
+
+/* optional trailing comma */
+call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) COMMA(Comma) RPAREN(RParen) .
+{
+    log_trace(">>call_suffix(CallSfx) ::= LPAREN arg_list(Args) RPAREN");
+    CallSfx = calloc(sizeof(struct node_s), 1);
+    CallSfx->type = TK_Arg_List;
+    CallSfx->line  = LParen->line;
+    CallSfx->col   = LParen->col;
+    utarray_new(CallSfx->subnodes, &node_icd);
+    utarray_push_back(CallSfx->subnodes, LParen);
+    utarray_push_back(CallSfx->subnodes, Args);
+    utarray_push_back(CallSfx->subnodes, Comma);
+    utarray_push_back(CallSfx->subnodes, RParen);
+}
+
 call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) RPAREN(RParen) .
 {
     log_trace(">>call_suffix(CallSfx) ::= LPAREN arg_list(Args) RPAREN");
-    if (Args->subnodes)
-        log_debug("  arg_list ct: %d", utarray_len(Args->subnodes));
     CallSfx = calloc(sizeof(struct node_s), 1);
     CallSfx->type = TK_Arg_List;
     CallSfx->line  = LParen->line;
     CallSfx->col   = LParen->col;
+    CallSfx->trailing_newline = RParen->trailing_newline;
     utarray_new(CallSfx->subnodes, &node_icd);
-    /* Need to retain parens, for comments and whitespace */
     utarray_push_back(CallSfx->subnodes, LParen);
     utarray_push_back(CallSfx->subnodes, Args);
-    /* if (Args->subnodes) { */
-    /*     log_debug("XXXXXXXXXXXXXXXX"); */
-    /*     utarray_concat(CallSfx->subnodes, Args->subnodes); */
-    /* } */
     utarray_push_back(CallSfx->subnodes, RParen);
-    /* if (Args->subnodes) */
-    /*     utarray_free(Args->subnodes); */
-    /* free(Args); */
-}
-
-call_suffix(CallSfx) ::= LPAREN(LParen) arg_list_comma(Args) RPAREN(RParen) .
-{
-    log_trace(">>call_suffix(CallSfx) ::= LPAREN arg_list(Args) RPAREN");
-    if (Args->subnodes)
-        log_debug("  arg_list ct: %d", utarray_len(Args->subnodes));
-    CallSfx = calloc(sizeof(struct node_s), 1);
-    CallSfx->type = TK_Arg_List;
-    CallSfx->line  = LParen->line;
-    CallSfx->col   = LParen->col;
-    utarray_new(CallSfx->subnodes, &node_icd);
-    /* Need to retain parens, for comments and whitespace */
-    utarray_push_back(CallSfx->subnodes, LParen);
-    utarray_push_back(CallSfx->subnodes, Args);
-    /* if (Args->subnodes) { */
-    /*     log_debug("XXXXXXXXXXXXXXXX"); */
-    /*     utarray_concat(CallSfx->subnodes, Args->subnodes); */
-    /* } */
-    utarray_push_back(CallSfx->subnodes, RParen);
-    /* if (Args->subnodes) */
-    /*     utarray_free(Args->subnodes); */
-    /* free(Args); */
 }
 
 /* Arguments = Argument {',' Argument} . (Optional) */
-arg_list(Args) ::= . {
-    log_trace(">>arg_list(Args) ::= .");
-    Args = calloc(sizeof(struct node_s), 1);
-    Args->type = TK_Arg_List;
-    Args->subnodes = NULL;      /* Or: empty list? */
-}
+/* arg_list(Args) ::= . { */
+/*     log_trace(">>arg_list(Args) ::= ."); */
+/*     Args = calloc(sizeof(struct node_s), 1); */
+/*     Args->type = TK_Arg_List; */
+/*     Args->subnodes = NULL;      /\* Or: empty list? *\/ */
+/* } */
 
 arg_list(Args) ::= arg(Arg) . {
     log_trace(">>arg_list(Args) ::= arg(Arg)");
@@ -907,13 +1160,12 @@ arg_list(Args) ::= arg(Arg) . {
     utarray_push_back(Args->subnodes, Arg);
 }
 
-/* optional trailing comma */
-arg_list_comma(Args) ::= arg_list(Args_rhs) COMMA(Comma) . {
-    log_trace(">>arg_list(Args) ::= arg_list(Args_rhs COMMA arg(Arg)");
-    /* retain the comma, for comments and ws */
-    utarray_push_back(Args_rhs->subnodes, Comma);
-    Args = Args_rhs;
-}
+/* arg_list_comma(Args) ::= arg_list(Args_rhs) COMMA(Comma) . { */
+/*     log_trace(">>arg_list(Args) ::= arg_list(Args_rhs COMMA arg(Arg)"); */
+/*     /\* retain the comma, for comments and ws *\/ */
+/*     utarray_push_back(Args_rhs->subnodes, Comma); */
+/*     Args = Args_rhs; */
+/* } */
 
 arg_list(Args) ::= arg_list(Args_rhs) COMMA(Comma) arg(Arg) . {
     log_trace(">>arg_list(Args) ::= arg_list(Args_rhs COMMA arg(Arg)");
@@ -1217,50 +1469,23 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon1) COLON(Colon2) expr(X) RB
     utarray_push_back(SliceSfx->subnodes, RBrack);
 }
 
-/* %%%%%%%%%%%%%%%% */
-/* precedence: must be higher than PLUS, MINUS, NOT */
-expr_list(XList) ::= expr(X) . [IF]
-{
-    log_trace(">>expr_list(XList) ::= expr(X");
-    XList = X;
-}
-
-expr_list(XList) ::= expr_list(XList_rhs) COMMA(Comma) expr(X) . [IF]
-{
-    log_trace(">>expr_list(XList) ::= expr_list(XList_rhs) COMMA(Comma) expr(X)");
-    XList = calloc(sizeof(struct node_s), 1);
-    XList->type = TK_List_Expr;
-    XList->line  = XList_rhs->line;
-    XList->col   = XList_rhs->col;
-    utarray_new(XList->subnodes, &node_icd);
-    utarray_push_back(XList->subnodes, XList_rhs);
-    utarray_push_back(XList->subnodes, Comma);
-    utarray_push_back(XList->subnodes, X);
-}
-
-expr_list_comma(XList) ::= expr_list(XList_rhs) COMMA(Comma) . [LAMBDA]
-{
-    log_trace(">>expr_list_comma(XList) ::= expr_list(XList_rhs) COMMA(Comma)");
-    if (XList_rhs->type != TK_List_Expr) {
-        struct node_s *Xs = calloc(sizeof(struct node_s), 1);
-        Xs->type = TK_List_Expr;
-        Xs->line  = XList_rhs->line;
-        Xs->col   = XList_rhs->col;
-        utarray_new(Xs->subnodes, &node_icd);
-        utarray_push_back(Xs->subnodes, XList_rhs);
-        utarray_push_back(Xs->subnodes, Comma);
-        XList = Xs;
-    } else {
-        utarray_push_back(XList_rhs->subnodes, Comma);
-        XList = XList_rhs;
-    }
-}
-
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* LIST EXPRESSIONS */
 /* PrimX (Operand) = ... | ListExpr | ListComp | ... */
 /* ListExpr = '[' [Expression [',']] ']' . */
 /* ListComp = '[' Test {CompClause} ']'. */
+list_expr(ListX) ::= LBRACK(LBrack) RBRACK(RBrack) .
+{
+    log_trace(">>list_expr(List) ::= LBRACK RBRACK");
+    ListX = calloc(sizeof(struct node_s), 1);
+    ListX->type = TK_List_Expr;
+    ListX->line  = LBrack->line;
+    ListX->col   = LBrack->col;
+    utarray_new(ListX->subnodes, &node_icd);
+    utarray_push_back(ListX->subnodes, LBrack);
+    utarray_push_back(ListX->subnodes, RBrack);
+}
+
 list_expr(ListX) ::= LBRACK(LBrack) expr_list(Xs) RBRACK(RBrack) .
 {
     log_trace(">>list_expr(List) ::= LBRACK expr_list RBRACK");
@@ -1282,9 +1507,10 @@ list_expr(ListX) ::= LBRACK(LBrack) expr_list(Xs) RBRACK(RBrack) .
     utarray_push_back(ListX->subnodes, RBrack);
 }
 
-list_expr(ListX) ::= LBRACK(LBrack) expr_list_comma(Xs) RBRACK(RBrack) .
+/* optional trailing comma */
+list_expr(ListX) ::= LBRACK(LBrack) expr_list(Xs) COMMA(Comma) RBRACK(RBrack) .
 {
-    log_trace(">>list_expr(List) ::= LBRACK expr_list_comma RBRACK");
+    log_trace(">>list_expr(List) ::= LBRACK expr_list COMMA RBRACK");
     ListX = calloc(sizeof(struct node_s), 1);
     ListX->type = TK_List_Expr;
     ListX->line  = LBrack->line;
@@ -1300,6 +1526,7 @@ list_expr(ListX) ::= LBRACK(LBrack) expr_list_comma(Xs) RBRACK(RBrack) .
     } else {
         utarray_push_back(ListX->subnodes, Xs);
     }
+    utarray_push_back(ListX->subnodes, Comma);
     utarray_push_back(ListX->subnodes, RBrack);
 }
 
@@ -1473,9 +1700,21 @@ dict_comp(DictX) ::= LBRACE(LBrace) entry(Entry) comp_clause(DClause) RBRACE(RBr
 /* PAREN EXPRESSIONS */
 /* Operand (PrimX) = ... | '(' [Expression [',']] ')' */
 
+paren_expr(ParenX) ::= LPAREN(LParen) RPAREN(RParen) .
+{
+    log_trace(">>paren_expr(Paren) ::= LPAREN RPAREN");
+    ParenX = calloc(sizeof(struct node_s), 1);
+    ParenX->type  = TK_Paren_Expr;
+    ParenX->line  = LParen->line;
+    ParenX->col   = LParen->col;
+    utarray_new(ParenX->subnodes, &node_icd);
+    utarray_push_back(ParenX->subnodes, LParen);
+    utarray_push_back(ParenX->subnodes, RParen);
+}
+
 paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) RPAREN(RParen) .
 {
-    log_trace(">>list_expr(Paren) ::= LPAREN expr_list RPAREN");
+    log_trace(">>paren_expr(Paren) ::= LPAREN expr_list RPAREN");
     ParenX = calloc(sizeof(struct node_s), 1);
     ParenX->type  = TK_Paren_Expr;
     ParenX->line  = LParen->line;
@@ -1486,9 +1725,10 @@ paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) RPAREN(RParen) .
     utarray_push_back(ParenX->subnodes, RParen);
 }
 
-paren_expr(ParenX) ::= LPAREN(LParen) expr_list_comma(Xs) RPAREN(RParen) .
+/* optional trailing comma */
+paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) COMMA(Comma) RPAREN(RParen) .
 {
-    log_trace(">>list_expr(Paren) ::= LPAREN expr_list_comma RPAREN");
+    log_trace(">>paren_expr(Paren) ::= LPAREN expr_list COMMA RPAREN");
     ParenX = calloc(sizeof(struct node_s), 1);
     ParenX->type = TK_Paren_Expr;
     ParenX->line  = LParen->line;
@@ -1496,64 +1736,17 @@ paren_expr(ParenX) ::= LPAREN(LParen) expr_list_comma(Xs) RPAREN(RParen) .
     utarray_new(ParenX->subnodes, &node_icd);
     utarray_push_back(ParenX->subnodes, LParen);
     utarray_push_back(ParenX->subnodes, Xs);
+    utarray_push_back(ParenX->subnodes, Comma);
     utarray_push_back(ParenX->subnodes, RParen);
-}
-
-/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-/* UNARY EXPRESSIONS */
-/* UnaryExpr = '+' Test */
-/*           | '-' Test */
-/*           | '~' Test */
-/*           | 'not' Test */
-/*           . */
-unary_expr(X_lhs) ::= PLUS(Op) expr(X_rhs) . {
-    log_trace(">>unary_expr(X_lhs) ::= PLUS expr(X_rhs)");
-    X_lhs = calloc(sizeof(struct node_s), 1);
-    X_lhs->type = TK_Unary_Expr;
-    X_lhs->line  = X_rhs->line;
-    X_lhs->col   = X_rhs->col;
-    utarray_new(X_lhs->subnodes, &node_icd);
-    utarray_push_back(X_lhs->subnodes, Op);
-    utarray_push_back(X_lhs->subnodes, X_rhs);
-}
-unary_expr(X_lhs) ::= MINUS(Op) expr(X_rhs) . {
-    log_trace(">>unary_expr(X_lhs) ::= MINUS expr(X_rhs)");
-    X_lhs = calloc(sizeof(struct node_s), 1);
-    X_lhs->type = TK_Unary_Expr;
-    X_lhs->line  = X_rhs->line;
-    X_lhs->col   = X_rhs->col;
-    utarray_new(X_lhs->subnodes, &node_icd);
-    utarray_push_back(X_lhs->subnodes, Op);
-    utarray_push_back(X_lhs->subnodes, X_rhs);
-}
-unary_expr(X_lhs) ::= TILDE(Op) expr(X_rhs) . {
-    log_trace(">>unary_expr(X_lhs) ::= TILDE expr(X_rhs)");
-    X_lhs = calloc(sizeof(struct node_s), 1);
-    X_lhs->type = TK_Unary_Expr;
-    X_lhs->line  = X_rhs->line;
-    X_lhs->col   = X_rhs->col;
-    utarray_new(X_lhs->subnodes, &node_icd);
-    utarray_push_back(X_lhs->subnodes, Op);
-    utarray_push_back(X_lhs->subnodes, X_rhs);
-}
-unary_expr(X_lhs) ::= NOT(Op) expr(X_rhs) . {
-    log_trace(">>unary_expr(X_lhs) ::= NOT expr(X_rhs)");
-    X_lhs = calloc(sizeof(struct node_s), 1);
-    X_lhs->type = TK_Unary_Expr;
-    X_lhs->line  = X_rhs->line;
-    X_lhs->col   = X_rhs->col;
-    utarray_new(X_lhs->subnodes, &node_icd);
-    utarray_push_back(X_lhs->subnodes, Op);
-    utarray_push_back(X_lhs->subnodes, X_rhs);
 }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* BINARY EXPRESSIONS */
 /* BinaryExpr = Test {Binop Test} . */
-/* WARNING: {} means zero or more, not possible here. */
-/* [PLUS] sets precedence of this rule eq to that of PLUS. This makes
-.g. x + y + z parse as (x + y) + z */
-binary_expr(BinExpr) ::= expr(BinExpr_rhs) binop(BinOp) expr(X_rhs) . [PLUS]
+/* WARNING: {} means zero or more, not possible here? */
+/* precedence must be higher than expr_list */
+/* (FOR is highest precedence) */
+binary_expr(BinExpr) ::= expr(BinExpr_rhs) binop(BinOp) expr(X_rhs) . [FOR]
 {
     log_trace(">>binary_expr ::= binary_expr binop expr");
     log_trace("  lhs binary_expr(BinExpr)");
@@ -1613,6 +1806,58 @@ binop ::= SLASH . { log_trace(">>binop ::= SLASH"); }
 binop ::= SLASH2 . { log_trace(">>binop ::= SLASH2"); }
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* UNARY EXPRESSIONS */
+/* UnaryExpr = '+' Test */
+/*           | '-' Test */
+/*           | '~' Test */
+/*           | 'not' Test */
+/*           . */
+unary_expr(X_lhs) ::= PLUS(Op) expr(X_rhs) . [LAMBDA]
+{
+    log_trace(">>unary_expr(X_lhs) ::= PLUS expr(X_rhs)");
+    X_lhs = calloc(sizeof(struct node_s), 1);
+    X_lhs->type = TK_Unary_Expr;
+    X_lhs->line  = X_rhs->line;
+    X_lhs->col   = X_rhs->col;
+    utarray_new(X_lhs->subnodes, &node_icd);
+    utarray_push_back(X_lhs->subnodes, Op);
+    utarray_push_back(X_lhs->subnodes, X_rhs);
+}
+unary_expr(X_lhs) ::= MINUS(Op) expr(X_rhs) . [LAMBDA]
+{
+    log_trace(">>unary_expr(X_lhs) ::= MINUS expr(X_rhs)");
+    X_lhs = calloc(sizeof(struct node_s), 1);
+    X_lhs->type = TK_Unary_Expr;
+    X_lhs->line  = X_rhs->line;
+    X_lhs->col   = X_rhs->col;
+    utarray_new(X_lhs->subnodes, &node_icd);
+    utarray_push_back(X_lhs->subnodes, Op);
+    utarray_push_back(X_lhs->subnodes, X_rhs);
+}
+unary_expr(X_lhs) ::= TILDE(Op) expr(X_rhs) .  [LAMBDA]
+{
+    log_trace(">>unary_expr(X_lhs) ::= TILDE expr(X_rhs)");
+    X_lhs = calloc(sizeof(struct node_s), 1);
+    X_lhs->type = TK_Unary_Expr;
+    X_lhs->line  = X_rhs->line;
+    X_lhs->col   = X_rhs->col;
+    utarray_new(X_lhs->subnodes, &node_icd);
+    utarray_push_back(X_lhs->subnodes, Op);
+    utarray_push_back(X_lhs->subnodes, X_rhs);
+}
+unary_expr(X_lhs) ::= NOT(Op) expr(X_rhs) .  [LAMBDA]
+{
+    log_trace(">>unary_expr(X_lhs) ::= NOT expr(X_rhs)");
+    X_lhs = calloc(sizeof(struct node_s), 1);
+    X_lhs->type = TK_Unary_Expr;
+    X_lhs->line  = X_rhs->line;
+    X_lhs->col   = X_rhs->col;
+    utarray_new(X_lhs->subnodes, &node_icd);
+    utarray_push_back(X_lhs->subnodes, Op);
+    utarray_push_back(X_lhs->subnodes, X_rhs);
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 /* LAMBDA EXPRESSIONS */
 /* LambdaExpr = 'lambda' [Parameters] ':' Test . */
 
@@ -1643,5 +1888,4 @@ lambda_expr(LambdaX) ::= LAMBDA(Lambda) param_list(Params) COLON(Colon) expr(X) 
     utarray_push_back(LambdaX->subnodes, X);
 }
 
-%endif // EXPRESSIONS
-
+/* %endif // EXPRESSIONS */

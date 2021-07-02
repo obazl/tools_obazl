@@ -34,16 +34,9 @@ static const int ROOT = -1;
 #endif
 #endif
 
-/* const char *deps[MAX_DEPS] = {}; */
 int curr_tag = 0;
 
 /*!types:re2c */
-
-/* struct load_syms_s { */
-/*     int idx; */
-/*     const char *alias; */
-/*     const char *sym; */
-/* }; */
 
 UT_icd loadsyms_icd = {sizeof(char**), NULL, NULL, NULL};
 
@@ -60,12 +53,10 @@ struct bf_lexer_s
     struct position_s pos;  // current input position
     int extra_lines;
 
-    //lineComments   []Comment // accumulated line comments
-    //suffixComments []Comment // accumulated suffix comments
-    int depth;        // nesting of [ ] { } ( )
-    bool clean_line;   // true if the current line only contains whitespace before the current position
-    int indent;       // current line indentation in spaces
-    int indents[12];    //    []int     // stack of indentation levels in spaces
+    /* indent blocks */
+    UT_array *indent_kws;       /* stack of ints for indentation sz */
+    int       indent_colons;     /* counter to track indent blocks */
+    UT_array *indent;     /* stack of indentations for block content */
 
     /* re2c */
     /* On entry, YYCURSOR is assumed to point to the first character
@@ -103,6 +94,8 @@ void lexer_init(struct bf_lexer_s *lexer,
     /* lexer->cursor = lexer->marker = lexer->tok = */
     lexer->limit = sob + strlen(sob);
     lexer->sol = sob;
+
+    utarray_new(lexer->indent_kws, &ut_int_icd);
 }
 
 
@@ -437,7 +430,6 @@ int get_next_token(struct bf_lexer_s *lexer, struct node_s **mtok)
 
     //int c = yycinit;
     /* lexer->mode = yycinit; */
-    int countNL = 0;
     /* const char *YYMARKER; */
 
     // stag def sin bf_lexer_s
@@ -494,10 +486,12 @@ loop:
     // so lexer->tok and lexer->cursor are set. BUT, lexer->cursor
     // includes any following comments.
       <!init> {
-        log_debug("<!init>");
+        /* log_debug("<!init>"); */
+
         (*mtok)->line = lexer->pos.line;
-        log_debug("lexer->extra_lines: %d", lexer->extra_lines);
+        /* log_debug("lexer->extra_lines: %d", lexer->extra_lines); */
         if (lexer->extra_lines > 0) {
+            (*mtok)->trailing_newline = true;
             lexer->pos.line += lexer->extra_lines;
             lexer->extra_lines = 0;
             lexer->pos.col = 0;
@@ -519,26 +513,30 @@ loop:
         /* /\* if (*(lexer->sol) == '\n') lexer->sol++; /\\* \n is end-of-line  *\\/ *\/ */
         /* (*mtok)->col  = lexer->tok - lexer->sol; */
 
-          log_debug("<!init> mtok: %p (%d:%d)",
-              *mtok, (*mtok)->line, (*mtok)->col);
-          log_debug("<!init> lexer->pos: (%d:%d)",
-                    lexer->pos.line, lexer->pos.col);
-          log_debug("<!init> lexer->tok: :]%s[:", lexer->tok);
-          log_debug("<!init> lexer->limit: :]%s[:", lexer->limit);
-          log_debug("<!init> lexer->cursor: :]%s[:", lexer->cursor);
-          if (lexer->marker)
-              log_debug("<!init> lexer->marker[1]: %#x", *(lexer->marker));
-          log_debug("<!init> lexer->marker: :]%s[:", lexer->marker);
-          /* log_debug("<!init> lexer->ctx_marker[1]: %#x", *(lexer->ctx_marker)); */
-          log_debug("<!init> lexer->ctx_marker: :]%s[:", lexer->ctx_marker);
+          /* log_debug("<!init> mtok: %p (%d:%d)", */
+          /*     *mtok, (*mtok)->line, (*mtok)->col); */
+
+          /* log_debug("<!init> lexer->pos: (%d:%d)", */
+          /*           lexer->pos.line, lexer->pos.col); */
+          /* log_debug("<!init> lexer->tok: :]%s[:", lexer->tok); */
+          /* log_debug("<!init> lexer->limit: :]%s[:", lexer->limit); */
+          /* log_debug("<!init> lexer->cursor: :]%s[:", lexer->cursor); */
+          /* if (lexer->marker) */
+          /*     log_debug("<!init> lexer->marker[1]: %#x", *(lexer->marker)); */
+          /* log_debug("<!init> lexer->marker: :]%s[:", lexer->marker); */
+          /* /\* log_debug("<!init> lexer->ctx_marker[1]: %#x", *(lexer->ctx_marker)); *\/ */
+          /* log_debug("<!init> lexer->ctx_marker: :]%s[:", lexer->ctx_marker); */
           // lexer->pos.col = lexer->tok - lexer->sol;
           // productions using tags must explicitly set mtok line and col
       }
 
-      <*> " " { // one at a time, so we can keep track of col.
-          log_debug("<*> ' ': %p; lexer->pos: %p (%d:%d)",
-              lexer, &(lexer->pos), lexer->pos.line, lexer->pos.col);
-          lexer->pos.col += 1;
+    SP = " ";
+    <*> @s1 SP+ @s2 {
+          /* log_debug("<*> ' ': lexer->pos: %p (%d:%d)", */
+          /*           &(lexer->pos), lexer->pos.line, lexer->pos.col); */
+          lexer->pos.col += s2 - s1;
+          /* log_debug("<*> ' ': new lexer->pos: %p (%d:%d)", */
+          /*     &(lexer->pos), lexer->pos.line, lexer->pos.col); */
           goto loop;
       }
 
@@ -548,16 +546,6 @@ loop:
         lexer->sol = lexer->cursor;
         lexer->pos.line++;
         lexer->pos.col = 0;
-        lexer->indent = 0;
-        lexer->clean_line = true;
-        if (lexer->depth == 0) {
-            // Not in a statememt. Tell parser about top-level blank line.
-            /* in.startToken(val); */
-            /* in.readRune(); */
-            /* in.endToken(val); */
-            // return TK_NEWLINE;
-        }
-        countNL++;
         goto loop;
       }
 
@@ -580,7 +568,26 @@ loop:
     <init> "." COMMENTS { return TK_DOT; }
     <init> "," COMMENTS { return TK_COMMA; }
     <init> ";" COMMENTS { return TK_SEMI; }
-    <init> ":" COMMENTS { return TK_COLON; }
+    <init> ":" COMMENTS {
+        int kwstack_height = utarray_len(lexer->indent_kws);
+        log_debug("COLON: indent_kws ct: %d", kwstack_height);
+        log_debug("COLON: indent_colons: %d", lexer->indent_colons);
+        if (kwstack_height > 0) {
+            if (lexer->indent_colons == kwstack_height) {
+                return TK_COLON;
+            } else {
+                if (lexer->indent_colons == kwstack_height - 1) {
+                    lexer->indent_colons++;
+                    return TK_COLON;
+                } else {
+                    log_error("indent kws and colons out of sync!");
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } else {
+            return TK_COLON;
+        }
+    }
     <init> "!=" COMMENTS { return TK_BANG_EQ; }
     <init> "!"  COMMENTS { return TK_BANG; }
     <init> "+=" COMMENTS { return TK_PLUS_EQ; }
@@ -795,7 +802,11 @@ loop:
     <init> "continue" COMMENTS { return TK_CONTINUE; }
     <init> "if" COMMENTS { return TK_IF; }
     <init> "or" COMMENTS { return TK_OR; }
-    <init> "def" COMMENTS { return TK_DEF; }
+    <init> @s1 "def" @s2 COMMENTS {
+         int c = get_column(lexer);
+         utarray_push_back(lexer->indent_kws, &c);
+         return TK_DEF;
+     }
     <init> "in" COMMENTS { return TK_IN; }
     <init> "pass" COMMENTS { return TK_PASS; }
     <init> "elif" COMMENTS { return TK_ELIF; }
@@ -824,37 +835,10 @@ loop:
 
     <init> @s1 identifier @s2 COMMENTS {
                        log_debug("<init> IDENTIFIER");
-            lexer->clean_line = false;
             /* (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
             (*mtok)->s = strndup(s1, (size_t)(s2 - s1));
         return TK_ID;
         }
-
-    // inline_cmt = [^\n]+;
-    // <inline_cmt> inline_cmt => init COMMENTS {
-    //         lexer->clean_line = true;
-    //         /* lexer->indent = 0; */
-    //         /* lexer->pos.col = lexer->tok - lexer->sol; */
-    //         lexer->pos.col = s1 - lexer->sol;
-    //         /* (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-    //         (*mtok)->s = strndup(s1, (size_t)(lexer->cursor - s1));
-    //         return TK_COMMENT;
-    //         /* goto loop;          /\* skip comments *\/ */
-    //     }
-
-    // <init> ws* @s1 "#" @s2 :=> inline_cmt
-    // <init> "#" :=> inline_cmt
-    /* <init> "#" .* eol COMMENTS { //FIXME: excluding newline? */
-    /*         lexer->pos.line++; */
-    /*         lexer->pos.col = 0; */
-    /*         lexer->clean_line = true; */
-    /*         lexer->indent = 0; */
-    /*         (*mtok)->pos.line = lexer->pos.line; */
-    /*         (*mtok)->pos.col += lexer->tok - lexer->sol; */
-    /*         (*mtok)->s = strndup(lexer->tok, lexer->cursor - lexer->tok); */
-    /*         return TK_COMMENT; */
-    /*         /\* goto loop;          /\\* skip comments *\\/ *\/ */
-    /*     } */
 
     <init> end       {
         /* printf("<init> ending\n"); */

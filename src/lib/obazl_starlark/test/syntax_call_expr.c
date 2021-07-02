@@ -11,13 +11,9 @@ struct node_s *root;
 LOCAL const char *call_a[] = {
     "foo()\n",
     "foo(a)\n",
-    "foo(a,)\n",
     "foo(a, b)\n",
-    "foo(a, b,)\n",
     "foo(3)\n",
-    "foo(3,)\n",
     "foo(3.14)\n",
-    "foo(3.14,)\n",
     "foo(1.2e3)\n",
     "foo(1,2,3)\n",
     "foo(1.1, 2.2, 3.3)\n",
@@ -25,10 +21,19 @@ LOCAL const char *call_a[] = {
     "foo( a , 1  ,  b    ,    2    )\n",
     "foo(a, bar(1), baz(1.2))\n",
     "foo(bar[:])\n",
-    /* "foo(bar[f:g()])\n" */
-    "foo[:]\n",
-    "foo[a:]\n",
-    "foo[:b]\n",
+    "foo(bar[f:g()])\n",
+    /* optional trailing comma */
+    "foo(a,)\n",
+    "foo(3,)\n",
+    "foo(3.14,)\n",
+    "foo(1.2e3,)\n",
+    "foo(1,2,3,)\n",
+    "foo(1.1, 2.2, 3.3,)\n",
+    "foo(a,1,b,2,)\n",
+    "foo( a , 1  ,  b    ,    2  ,  )\n",
+    "foo(a, bar(1), baz(1.2) ,)\n",
+    "foo(bar[:],)\n",
+    "foo(bar[f:g()],)\n",
     NULL
 };
 
@@ -58,7 +63,7 @@ void tearDown(void) {
 
 void test_call_a(void) {
     int ct;
-    for (ct=0; call_a[ct] != NULL; ct++); ct--;
+    for (ct=0; call_a[ct] != NULL; ct++);
     for (int i=0; i < ct; i++) {
         /* printf("case %d: :]%s[:\n", i, call_a[i]); */
         test_str = call_a[i];

@@ -1,3 +1,1 @@
-"hello" #cmt1
-    #cmt2
-    'bye' #cmt3
+def foo(x[:]):

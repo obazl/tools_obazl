@@ -14,6 +14,7 @@ struct node_s {
     /* enum node_type_e type; */
     int type;
     int line, col;
+    bool trailing_newline;
     char q;
     /* union { */
         char *s;

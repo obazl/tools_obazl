@@ -29,13 +29,20 @@ UT_string *build_file;
 int line;
 int col;
 
- /* void parser_init(char *fname, struct obazl_buildfile_s **ast) */
- /* { */
- /*     log_debug("parser_init"); */
- /*     *ast = (struct obazl_buildfile_s*)calloc(sizeof(struct obazl_buildfile_s), 1); */
- /*     (*ast)->fname = strdup(fname); */
- /*     utarray_new( (*ast)->nodelist, &node_icd); */
- /* } */
+#if INTERFACE
+struct parse_state_s {
+    struct bf_lexer_s *lexer;
+    struct node_s     *root;
+};
+#endif
+
+struct parse_state_s *parser_init(struct bf_lexer_s *lexer, struct node_s *root)
+{
+    struct parse_state_s *ps = calloc(sizeof(struct parse_state_s), 1);
+    ps->lexer = lexer;
+    ps->root  = root;
+    return ps;
+}
 
 UT_array *obazl_starlark_lex_string(const char *buffer)
 {
@@ -156,8 +163,10 @@ struct node_s *obazl_starlark_parse_string(char *buffer)
     lexer_init(lexer, buffer);
 
     struct node_s *root;
+
     void* pParser = ParseAlloc (malloc);
-    /* parser_init(fname, &ast); */
+    struct parse_state_s *parse_state = parser_init(lexer, root);
+
     /* log_debug("parsing %s", ast->fname); */
     /* ParseTrace(stdout, "trace_"); */
 
@@ -166,6 +175,7 @@ struct node_s *obazl_starlark_parse_string(char *buffer)
     log_info("starting parse");
 
     while ( (tok = get_next_token(lexer, &btok)) != 0 ) {
+        log_debug("btok: %d, tok: %d", tok, btok->type);
         btok->type = tok;
         /* btok->line = lexer->pos.line; */
         /* btok->col  = lexer->pos.col; */
@@ -195,19 +205,19 @@ struct node_s *obazl_starlark_parse_string(char *buffer)
         /* log_debug("btok pos: line %d col %d", btok->pos.line, btok->pos.col); */
         dump_node(btok);
         log_debug(">>>>>>>>>>>>>>>>call parser for tok %d/%d", tok, btok->type);
-        log_debug("root: %p", root);
-        Parse(pParser, tok, btok, &root);
+        log_debug("root: %p", parse_state->root);
+        Parse(pParser, tok, btok, parse_state);
         log_debug(">>>>>>>>>>>>>>>>/call parser");
         btok = calloc(sizeof(struct node_s), 1);
     }
     log_debug(">>>>>>>>>>>>>>>>FINAL call parser");
-    Parse(pParser, 0, btok, &root);
+    Parse(pParser, 0, btok, parse_state);
     log_debug(">>>>>>>>>>>>>>>>/FINAL call parser");
     /* ParseFree(pParser, free ); */
 
     /* fflush(stdout); */
     /* fflush(stderr); */
-    return root;
+    return parse_state->root;
 }
 
 struct node_s *obazl_starlark_parse_file(char *fname)
@@ -251,7 +261,11 @@ struct node_s *obazl_starlark_parse_file(char *fname)
     lexer_init(lexer, buffer);
 
     struct node_s *root;
+
     void* pParser = ParseAlloc (malloc);
+
+    struct parse_state_s *parse_state = parser_init(lexer, root);
+
     /* parser_init(fname, &ast); */
     /* log_debug("parsing %s", ast->fname); */
     /* ParseTrace(stdout, "trace_"); */
@@ -289,117 +303,23 @@ struct node_s *obazl_starlark_parse_file(char *fname)
 
         /* log_debug("btok pos: line %d col %d", btok->pos.line, btok->pos.col); */
         dump_node(btok);
-        log_debug(">>>>>>>>>>>>>>>>call parser for tok %d/%d", tok, btok->type);
-        log_debug("root: %p", root);
-        Parse(pParser, tok, btok, &root);
+        log_debug(">>>>>>>>>>>>>>>>call parser for %s (%d/%d)%s%s%s",
+                  token_name[btok->type][0],
+                  tok, btok->type,
+                  btok->s == NULL? "" : " :]",
+                  btok->s == NULL? "" : btok->s,
+                  btok->s == NULL? "" : "[:");
+        log_debug("root: %p", parse_state->root);
+        Parse(pParser, tok, btok, parse_state);
         log_debug(">>>>>>>>>>>>>>>>/call parser");
         btok = calloc(sizeof(struct node_s), 1);
     }
     log_debug(">>>>>>>>>>>>>>>>FINAL call parser");
-    Parse(pParser, 0, btok, &root);
+    Parse(pParser, 0, btok, parse_state);
     log_debug(">>>>>>>>>>>>>>>>/FINAL call parser");
     ParseFree(pParser, free );
-    /* dump_node(root); */
+    /* dump_node(parse_state->root); */
 
     free(buffer);
-    return root;
-}
-
-void root2string(struct node_s *node, UT_string *buffer)
-{
-    /* log_debug("root2string, line %d", line); */
-    line = col = 0;
-    node2string(node, buffer);
-    /* if (utstring_body(buffer)[utstring_len(buffer)-1] != '\n') { */
-        utstring_printf(buffer, "\n");
-    /* } */
-}
-
-void rootlist2string(UT_array *nodes, UT_string *buffer)
-{
-    /* log_debug("rootlist2string, line %d", line); */
-    line = col = 0;
-    nodelist2string(nodes, buffer);
-    if (utstring_body(buffer)[utstring_len(buffer)-1] != '\n') {
-        utstring_printf(buffer, "\n");
-    }
-}
-
-void node2string(struct node_s *node, UT_string *buffer)
-{
-    /* log_debug("node2string, line %d", line); */
-    int i;
-    /* node->line is absolute; relativize it; */
-    /* int l = node->line - line; */
-    for (i=line; i < node->line; i++) {
-        utstring_printf(buffer, "\n");
-        line++;
-        col = 0;
-    }
-
-    /* if (node->type == TK_BLANK) */
-    /*     utstring_printf(buffer, "\n"); */
-
-    for (i=col; i < node->col; i++) {
-        utstring_printf(buffer, " ");
-        col++;
-    }
-    if (node->s) {
-        /* log_debug("STRINGED TOK: %d %s: :]%s[:", */
-        /*           node->type, token_name[node->type][0], */
-        /*           node->s); */
-        if (node->type == TK_STRING) {
-            utstring_printf(buffer, "%c%s%c",
-                            node->q, node->s, node->q);
-            /* adjust line count for embedded escaped newlines */
-            for (char *p = node->s; *p != 0; p++) {
-                if (*p == '\n') {
-                    line++;
-                }
-            }
-            col += strlen(node->s) + 2; /* allow for quote marks */
-        } else {
-            utstring_printf(buffer, "%s", node->s);
-            col += strlen(node->s);
-        }
-    } else {
-        /* log_debug("TOK[%d] %s: :]%s[: (len: %d)", */
-        /*           node->type, */
-        /*           token_name[node->type][0], */
-        /*           token_name[node->type][1], */
-        /*           strlen(token_name[node->type][1])); */
-        if (strlen(token_name[node->type][1]) > 0) {
-            utstring_printf(buffer, "%s", token_name[node->type][1]);
-            col += strlen(token_name[node->type][1]);
-        }
-    }
-
-    if (node->comments) {
-        if (utarray_len(node->comments) > 0) {
-            comments2string(node->comments, buffer);
-        }
-    }
-    if (node->subnodes) {
-        if (utarray_len(node->subnodes) > 0) {
-            nodelist2string(node->subnodes, buffer);
-        }
-    }
-}
-
-void comments2string(UT_array *nodes, UT_string *buffer)
-{
-    struct node_s *node=NULL;
-    while( (node=(struct node_s*)utarray_next(nodes, node))) {
-        node2string(node, buffer);
-    }
-}
-
-void nodelist2string(UT_array *nodes, UT_string *buffer)
-{
-    /* log_debug("nodelist2string"); */
-    /* line = col = 0; */
-    struct node_s *node=NULL;
-    while( (node=(struct node_s*)utarray_next(nodes, node))) {
-        node2string(node, buffer);
-    }
+    return parse_state->root;
 }
