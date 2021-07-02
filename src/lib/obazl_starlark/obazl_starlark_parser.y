@@ -156,6 +156,7 @@ static char *sp = " ";
 %token Expr_List .
 %token For_Stmt .
 %token If_Expr .
+%token If_Stmt .
 %token Indent_Block .
 %token Lambda_Expr .
 %token List_Comp .
@@ -304,25 +305,6 @@ buildfile ::= stmt_list(SS) .
 /* } */
 
 /* %endif */
-
-/* **************************************************************** */
-/* load_stmt_test ::= load_stmt(LS) . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>load_stmt_test ::= load_stmt ."); */
-/*     log_trace("  rhs load_stmt (LS)"); */
-/* #endif */
-    /* dump_nodes(NODES); */
-/* } */
-
-/* load_list_test ::= load_list(SL) . { */
-/* #if DEBUG_TRACE */
-/*     log_trace("\n"); */
-/*     log_trace(">>load_list_test ::= load_list ."); */
-/*     log_trace("  rhs load_list (SL)"); */
-/* #endif */
-    /* dump_nodes(NODES); */
-/* } */
 
 /* %if LOAD_STMT */
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
@@ -628,13 +610,11 @@ statement(Stmt) ::= def_stmt(DefStmt) . [TILDE]
     Stmt = DefStmt;
 }
 
-/* statement(Stmt) ::= if_stmt(IfStmt) . [TILDE] */
-/* { */
-/*     log_trace("\n"); */
-/*     log_trace(">>statement ::= for_stmt"); */
-/*     log_trace("  lhs statement(Stmt)"); */
-/*     log_trace("  rhs for_stmtm(IfStmt)"); */
-/* } */
+statement(Stmt) ::= if_stmt(IfStmt) . [TILDE]
+{
+    log_trace(">>statement ::= if_stmt");
+    Stmt = IfStmt;
+}
 
 statement(Stmt) ::= for_stmt(ForStmt) . [TILDE]
 {
@@ -681,14 +661,20 @@ statement(Stmt) ::= small_stmt_list(SmallStmts) SEMI(Semi) . [AMP]
 }
 
 /* IfStmt = 'if' Test ':' Suite {'elif' Test ':' Suite} ['else' ':' Suite] . */
-/* if_stmt(IfSTMT) ::= IF expr(Expr1) COLON simple_stmt(SimpleSTMT) . /\* FIXME *\/ */
-/* { */
-/*     log_trace("\n"); */
-/*     log_trace(">>if_stmt ::= IF expr COLON ..."); */
-/*     log_trace("  lhs if_stmt(IfSTMT)"); */
-/*     log_trace("  rhs expr(Expr1)"); */
-/*     log_trace("  rhs simple_stmt(SimpleSTMT)"); */
-/* } */
+if_stmt(IfStmt) ::= IF(If) expr(X) COLON(Colon) indent_block(IBlock) .
+{
+    log_trace(">>if_stmt ::= IF expr COLON indent_block ");
+    IfStmt = calloc(sizeof(struct node_s), 1);
+    IfStmt->type  = TK_If_Stmt;
+    IfStmt->line  = If->line;
+    IfStmt->col   = If->col;
+    IfStmt->trailing_newline = IBlock->trailing_newline;
+    utarray_new(IfStmt->subnodes, &node_icd);
+    utarray_push_back(IfStmt->subnodes, If);
+    utarray_push_back(IfStmt->subnodes, X);
+    utarray_push_back(IfStmt->subnodes, Colon);
+    utarray_push_back(IfStmt->subnodes, IBlock);
+}
 
 /* ForStmt = 'for' LoopVariables 'in' Expression ':' Suite . */
 for_stmt(ForStmt) ::= FOR(For) loop_vars(LoopVars) IN(In) expr(X) COLON(Colon) indent_block(IBlock) . [FOR]
@@ -787,31 +773,20 @@ def_stmt(Stmt) ::= DEF(Def) ID(Id) LPAREN(Lparen) param_list(Params) COMMA(Comma
 }
 
 /* LoadStmt = 'load' '(' string {',' [identifier '='] string} [','] ')' . */
-load_stmt(STMT) ::= LOAD(Load) LPAREN(Lparen) STRING(S) COMMA(Comma) load_list(LL) RPAREN(Rparen) . {
-#if DEBUG_TRACE
-    log_trace("\n");
+load_stmt(Stmt) ::= LOAD(Load) LPAREN(LParen) STRING(S) COMMA(Comma) load_list(LL) RPAREN(RParen) . {
     log_trace(">>load_stmt ::= LOAD LPAREN STRING COMMA load_list RPAREN");
-    log_trace("  load_stmt (STMT)");
-    log_trace("  LOAD (Load)");
-    log_trace("  LPAREN (Lparen)");
-    log_trace("  COMMA (Comma)");
-    log_trace("  STRING (S): %s", S->s);
-    log_trace("  load_list (LL)");
-    log_trace("  RPAREN (Rparen)");
-#endif
-    STMT = calloc(sizeof(struct node_s), 1);
-    STMT->type = TK_Load_Stmt;
-    STMT->line  = STMT->line;
-    STMT->col   = STMT->col;
-    utarray_new(STMT->subnodes, &node_icd);
-
-    /* utarray_push_back(STMT->subnodes, LD); */
-    utarray_push_back(STMT->subnodes, Load);
-    utarray_push_back(STMT->subnodes, Lparen);
-    utarray_push_back(STMT->subnodes, S);
-    utarray_push_back(STMT->subnodes, Comma);
-    utarray_concat(STMT->subnodes, LL);
-    utarray_push_back(STMT->subnodes, Rparen);
+    Stmt = calloc(sizeof(struct node_s), 1);
+    Stmt->type = TK_Load_Stmt;
+    Stmt->line  = Load->line;
+    Stmt->col   = Load->col;
+    Stmt->trailing_newline = RParen->trailing_newline;
+    utarray_new(Stmt->subnodes, &node_icd);
+    utarray_push_back(Stmt->subnodes, Load);
+    utarray_push_back(Stmt->subnodes, LParen);
+    utarray_push_back(Stmt->subnodes, S);
+    utarray_push_back(Stmt->subnodes, Comma);
+    utarray_concat(Stmt->subnodes, LL);
+    utarray_push_back(Stmt->subnodes, RParen);
 }
 
 /* SimpleStmt = SmallStmt {';' SmallStmt} [';'] '\n' . */
@@ -1709,6 +1684,19 @@ entry(Entry) ::= expr(X1) COLON(Colon) expr(X2) . [FOR] //highest prec
     utarray_push_back(Entry->subnodes, X1);
     utarray_push_back(Entry->subnodes, Colon);
     utarray_push_back(Entry->subnodes, X2);
+}
+
+dict_expr(DictX) ::= LBRACE(LBrace) RBRACE(RBrace) .
+{
+    log_trace(">>dict_expr(DictX) ::= LBRACE RBRACE");
+    DictX = calloc(sizeof(struct node_s), 1);
+    DictX->type = TK_Dict_Expr;
+    DictX->line  = LBrace->line;
+    DictX->col   = LBrace->col;
+    DictX->trailing_newline = RBrace->trailing_newline;
+    utarray_new(DictX->subnodes, &node_icd);
+    utarray_push_back(DictX->subnodes, LBrace);
+    utarray_push_back(DictX->subnodes, RBrace);
 }
 
 dict_expr(DictX) ::= LBRACE(LBrace) entry_list(EList) RBRACE(RBrace) .

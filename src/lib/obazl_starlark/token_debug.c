@@ -134,6 +134,7 @@ const char *token_name[256][2] =
 [TK_Expr] = { "TK_Expr", "" },
 [TK_For_Stmt] = { "TK_For_Stmt", "" },
 [TK_If_Expr] = { "TK_If_Expr", "" },
+[TK_If_Stmt] = { "TK_If_Stmt", "" },
 [TK_Indent_Block] = { "TK_Indent_Block", "" },
 [TK_Lambda_Expr] = { "TK_Lambda_Expr", "" },
 [TK_List_Comp] = { "TK_List_Comp", "" },
