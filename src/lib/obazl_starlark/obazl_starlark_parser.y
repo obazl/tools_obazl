@@ -81,7 +81,6 @@ static char *sp = " ";
 %token LLANGLE .
 %token LLANGLE_EQ .
 %token LOAD .
-%token LOAD_STMT .
 %token LPAREN .
 %token MINUS .
 %token MINUS_EQ .
@@ -155,11 +154,13 @@ static char *sp = " ";
 %token Dot_Sfx .
 %token Expr .
 %token Expr_List .
+%token For_Stmt .
 %token If_Expr .
 %token Indent_Block .
 %token Lambda_Expr .
 %token List_Comp .
 %token List_Expr .
+%token Load_Stmt .
 %token Loop_Vars .
 %token Param_List .
 %token Param_Named .
@@ -639,8 +640,6 @@ statement(Stmt) ::= for_stmt(ForStmt) . [TILDE]
 {
     log_trace("\n");
     log_trace(">>statement ::= for_stmt");
-    log_trace("  lhs statement(Stmt)");
-    log_trace("  rhs for_stmtm(ForStmt)");
     Stmt = ForStmt;
 }
 
@@ -692,27 +691,35 @@ statement(Stmt) ::= small_stmt_list(SmallStmts) SEMI(Semi) . [AMP]
 /* } */
 
 /* ForStmt = 'for' LoopVariables 'in' Expression ':' Suite . */
-for_stmt(ForSTMT) ::= FOR loop_vars(LoopVars) IN expr(Expr) COLON indent_block(IBlock) . [FOR]
+for_stmt(ForStmt) ::= FOR(For) loop_vars(LoopVars) IN(In) expr(X) COLON(Colon) indent_block(IBlock) . [FOR]
 {
-    log_trace("\n");
-    log_trace(">>for_stmt ::= FOR loop_vars IN expr COLOR stmt_list");
-    log_trace("  lhs for_stmt(ForSTMT)");
-    log_trace("  rhs loop_vars(LoopVars)");
-    log_trace("  rhs expr(Expr)");
-    log_trace("  rhs stmt_list(IBlock)");
+    log_trace(">>for_stmt ::= FOR loop_vars IN expr COLON stmt_list");
+    ForStmt = calloc(sizeof(struct node_s), 1);
+    ForStmt->type  = TK_For_Stmt;
+    ForStmt->line  = For->line;
+    ForStmt->col   = For->col;
+    utarray_new(ForStmt->subnodes, &node_icd);
+    utarray_push_back(ForStmt->subnodes, For);
+    utarray_push_back(ForStmt->subnodes, LoopVars);
+    utarray_push_back(ForStmt->subnodes, In);
+    utarray_push_back(ForStmt->subnodes, X);
+    utarray_push_back(ForStmt->subnodes, Colon);
+    utarray_push_back(ForStmt->subnodes, IBlock);
 }
 
 /* LoopVariables = PrimaryExpr {',' PrimaryExpr} . */
-loop_vars(LoopVars) ::= primary_expr(Primx) . {
+loop_vars(LoopVars) ::= primary_expr(PrimX) . {
     log_trace(">>loop_vars(LoopVars) ::= primary_expr(Primx)");
-    LoopVars = Primx;
+    LoopVars = calloc(sizeof(struct node_s), 1);
+    LoopVars->type = TK_Loop_Vars;
+    LoopVars->line = PrimX->line;
+    LoopVars->col  = PrimX->col;
+    utarray_new(LoopVars->subnodes, &node_icd);
+    utarray_push_back(LoopVars->subnodes, PrimX);
 }
 
 loop_vars(LoopVars) ::= loop_vars(LoopVars_rhs) COMMA(Comma) primary_expr(X) . {
     log_trace(">>loop_vars ::= loop_vars COMMA primary_expr");
-    log_trace("  lhs loop_vars(LoopVars)");
-    log_trace("  rhs loop_vars(LoopVars_rhs)");
-    log_trace("  rhs primary_expr(Primx)");
     LoopVars = calloc(sizeof(struct node_s), 1);
     LoopVars->type = TK_Loop_Vars;
     LoopVars->line  = LoopVars_rhs->line;
@@ -793,7 +800,7 @@ load_stmt(STMT) ::= LOAD(Load) LPAREN(Lparen) STRING(S) COMMA(Comma) load_list(L
     log_trace("  RPAREN (Rparen)");
 #endif
     STMT = calloc(sizeof(struct node_s), 1);
-    STMT->type = TK_LOAD_STMT;
+    STMT->type = TK_Load_Stmt;
     STMT->line  = STMT->line;
     STMT->col   = STMT->col;
     utarray_new(STMT->subnodes, &node_icd);
@@ -941,6 +948,7 @@ expr(X) ::= if_expr(X_rhs) . [LAMBDA]
     X->type  = TK_Expr;
     X->line  = X_rhs->line;
     X->col   = X_rhs->col;
+    X->trailing_newline = X_rhs->trailing_newline;
     utarray_new(X->subnodes, &node_icd);
     utarray_push_back(X->subnodes, X_rhs);
 }
@@ -964,6 +972,7 @@ expr(X) ::= binary_expr(X_rhs) . [FOR]
     X->type  = TK_Expr;
     X->line  = X_rhs->line;
     X->col   = X_rhs->col;
+    X->trailing_newline = X_rhs->trailing_newline;
     utarray_new(X->subnodes, &node_icd);
     utarray_push_back(X->subnodes, X_rhs);
 }
@@ -986,6 +995,7 @@ expr(X) ::= lambda_expr(X_rhs) .
     X->type  = TK_Expr;
     X->line  = X_rhs->line;
     X->col   = X_rhs->col;
+    X->trailing_newline = X_rhs->trailing_newline;
     utarray_new(X->subnodes, &node_icd);
     utarray_push_back(X->subnodes, X_rhs);
 }
@@ -1008,6 +1018,7 @@ if_expr(IfX) ::= expr(X1) IF(If) expr(X2) ELSE(Else) expr(X3) . [LAMBDA]
     IfX->type = TK_If_Expr;
     IfX->line  = X1->line;
     IfX->col   = X1->col;
+    IfX->trailing_newline = X3->trailing_newline;
     utarray_new(IfX->subnodes, &node_icd);
     utarray_push_back(IfX->subnodes, X1);
     utarray_push_back(IfX->subnodes, If);
@@ -1089,6 +1100,7 @@ primary_expr(PrimX) ::= primary_expr(PrimX_rhs) dot_suffix(DotSfx) .
     PrimX->type = TK_Dot_Expr; // TK_Primary_Expr;
     PrimX->line  = PrimX_rhs->line;
     PrimX->col   = PrimX_rhs->col;
+    PrimX->trailing_newline = DotSfx->trailing_newline;
     utarray_new(PrimX->subnodes, &node_icd);
     utarray_push_back(PrimX->subnodes, PrimX_rhs);
     utarray_push_back(PrimX->subnodes, DotSfx);
@@ -1101,6 +1113,7 @@ dot_suffix(DotSfx) ::= DOT(Dot) ID(Id) .
     DotSfx->type  = TK_Dot_Sfx;
     DotSfx->line  = Dot->line;
     DotSfx->col   = Dot->col;
+    DotSfx->trailing_newline = Id->trailing_newline;
     utarray_new(DotSfx->subnodes, &node_icd);
     utarray_push_back(DotSfx->subnodes, Dot);
     utarray_push_back(DotSfx->subnodes, Id);
@@ -1143,6 +1156,7 @@ call_suffix(CallSfx) ::= LPAREN(LParen) arg_list(Args) COMMA(Comma) RPAREN(RPare
     CallSfx->type = TK_Arg_List;
     CallSfx->line  = LParen->line;
     CallSfx->col   = LParen->col;
+    CallSfx->trailing_newline = RParen->trailing_newline;
     utarray_new(CallSfx->subnodes, &node_icd);
     utarray_push_back(CallSfx->subnodes, LParen);
     utarray_push_back(CallSfx->subnodes, Args);
@@ -1255,13 +1269,11 @@ arg(Arg) ::= STAR2(Star2) expr(X) . {
 primary_expr(PrimX) ::= primary_expr(PrimX_rhs) slice_suffix(SliceSfx) .
 {
     log_trace(">>primary_expr(PrimX) ::= primary_expr slice_suffix");
-    log_trace("  lhs primary_expr(PrimX)");
-    log_trace("  rhs primary_expr(PrimX_rhs)");
-    log_trace("  rhs slice_suffix(SliceSfx)");
     PrimX = calloc(sizeof(struct node_s), 1);
     PrimX->type = TK_Slice_Expr;
     PrimX->line  = PrimX_rhs->line;
     PrimX->col   = PrimX_rhs->col;
+    PrimX->trailing_newline = SliceSfx->trailing_newline;
     utarray_new(PrimX->subnodes, &node_icd);
     utarray_push_back(PrimX->subnodes, PrimX_rhs);
     utarray_push_back(PrimX->subnodes, SliceSfx);
@@ -1288,6 +1300,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) RBRACK(RBrack) .
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, RBrack);
@@ -1300,6 +1313,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon) RBRACK(RBrack) .
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon);
@@ -1313,6 +1327,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon1) COLON(Colon2) RBRACK(RBr
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon1);
@@ -1329,6 +1344,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) RBRACK(RBrack) .
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1342,6 +1358,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon) RBRACK(RBra
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1356,6 +1373,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon1) COLON(Colo
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1371,6 +1389,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon) expr(X) RBR
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1386,6 +1405,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon1) expr(X) CO
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1402,6 +1422,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon1) COLON(Colo
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1418,6 +1439,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) expr_list(Xs) COLON(Colon1) expr(X1) C
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Xs);
@@ -1438,6 +1460,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon) expr(X) RBRACK(RBrack) .
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon);
@@ -1452,6 +1475,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon1) expr(X) COLON(Colon2) RB
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon1);
@@ -1467,6 +1491,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon1) expr(X1) COLON(Colon2) e
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon1);
@@ -1483,6 +1508,7 @@ slice_suffix(SliceSfx) ::= LBRACK(LBrack) COLON(Colon1) COLON(Colon2) expr(X) RB
     SliceSfx->type = TK_Slice_Sfx;
     SliceSfx->line  = LBrack->line;
     SliceSfx->col   = LBrack->col;
+    SliceSfx->trailing_newline = RBrack->trailing_newline;
     utarray_new(SliceSfx->subnodes, &node_icd);
     utarray_push_back(SliceSfx->subnodes, LBrack);
     utarray_push_back(SliceSfx->subnodes, Colon1);
@@ -1516,6 +1542,7 @@ list_expr(ListX) ::= LBRACK(LBrack) expr_list(Xs) RBRACK(RBrack) .
     ListX->type = TK_List_Expr;
     ListX->line  = LBrack->line;
     ListX->col   = LBrack->col;
+    ListX->trailing_newline = RBrack->trailing_newline;
     utarray_new(ListX->subnodes, &node_icd);
     utarray_push_back(ListX->subnodes, LBrack);
     if (Xs->type != TK_List_Expr) {
@@ -1538,6 +1565,7 @@ list_expr(ListX) ::= LBRACK(LBrack) expr_list(Xs) COMMA(Comma) RBRACK(RBrack) .
     ListX->type = TK_List_Expr;
     ListX->line  = LBrack->line;
     ListX->col   = LBrack->col;
+    ListX->trailing_newline = RBrack->trailing_newline;
     utarray_new(ListX->subnodes, &node_icd);
     utarray_push_back(ListX->subnodes, LBrack);
     if (Xs->type != TK_List_Expr) {
@@ -1567,6 +1595,7 @@ list_comp(LComp) ::= LBRACK(LBrack) expr(X) comp_clause(Comp) RBRACK(RBrack) .
     LComp->type = TK_List_Comp;
     LComp->line  = LBrack->line;
     LComp->col   = LBrack->col;
+    LComp->trailing_newline = RBrack->trailing_newline;
     utarray_new(LComp->subnodes, &node_icd);
     utarray_push_back(LComp->subnodes, LBrack);
     utarray_push_back(LComp->subnodes, X);
@@ -1689,6 +1718,7 @@ dict_expr(DictX) ::= LBRACE(LBrace) entry_list(EList) RBRACE(RBrace) .
     DictX->type = TK_Dict_Expr;
     DictX->line  = LBrace->line;
     DictX->col   = LBrace->col;
+    DictX->trailing_newline = RBrace->trailing_newline;
     utarray_new(DictX->subnodes, &node_icd);
     utarray_push_back(DictX->subnodes, LBrace);
     /* abstract singleton entry */
@@ -1712,6 +1742,7 @@ dict_comp(DictX) ::= LBRACE(LBrace) entry(Entry) comp_clause(DClause) RBRACE(RBr
     DictX->type = TK_Dict_Comp;
     DictX->line  = LBrace->line;
     DictX->col   = LBrace->col;
+    DictX->trailing_newline = RBrace->trailing_newline;
     utarray_new(DictX->subnodes, &node_icd);
     utarray_push_back(DictX->subnodes, LBrace);
     utarray_push_back(DictX->subnodes, Entry);
@@ -1730,6 +1761,7 @@ paren_expr(ParenX) ::= LPAREN(LParen) RPAREN(RParen) .
     ParenX->type  = TK_Paren_Expr;
     ParenX->line  = LParen->line;
     ParenX->col   = LParen->col;
+    ParenX->trailing_newline = RParen->trailing_newline;
     utarray_new(ParenX->subnodes, &node_icd);
     utarray_push_back(ParenX->subnodes, LParen);
     utarray_push_back(ParenX->subnodes, RParen);
@@ -1742,6 +1774,7 @@ paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) RPAREN(RParen) .
     ParenX->type  = TK_Paren_Expr;
     ParenX->line  = LParen->line;
     ParenX->col   = LParen->col;
+    ParenX->trailing_newline = RParen->trailing_newline;
     utarray_new(ParenX->subnodes, &node_icd);
     utarray_push_back(ParenX->subnodes, LParen);
     utarray_push_back(ParenX->subnodes, Xs);
@@ -1756,6 +1789,7 @@ paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) COMMA(Comma) RPAREN(RParen) 
     ParenX->type = TK_Paren_Expr;
     ParenX->line  = LParen->line;
     ParenX->col   = LParen->col;
+    ParenX->trailing_newline = RParen->trailing_newline;
     utarray_new(ParenX->subnodes, &node_icd);
     utarray_push_back(ParenX->subnodes, LParen);
     utarray_push_back(ParenX->subnodes, Xs);
@@ -1772,21 +1806,12 @@ paren_expr(ParenX) ::= LPAREN(LParen) expr_list(Xs) COMMA(Comma) RPAREN(RParen) 
 binary_expr(BinExpr) ::= expr(BinExpr_rhs) binop(BinOp) expr(X_rhs) . [FOR]
 {
     log_trace(">>binary_expr ::= binary_expr binop expr");
-    log_trace("  lhs binary_expr(BinExpr)");
-    log_trace("  rhs binary_expr(BinExpr_rhs)");
-    if (BinExpr_rhs->subnodes)
-        log_trace("  rhs binary_expr subnode ct: %d",
-                  utarray_len(BinExpr_rhs->subnodes));
-    log_trace("  rhs binop(BinOp)");
-    log_trace("  rhs expr(X_rhs)");
-    /* log_trace("  rhs expr subnode ct: %d", */
-    /*           utarray_len(X_rhs->subnodes)); */
-
     BinExpr = calloc(sizeof(struct node_s), 1);
     BinExpr->type = TK_Bin_Expr;
     BinExpr->s = NULL;
     BinExpr->line  = BinExpr_rhs->line;
     BinExpr->col   = BinExpr_rhs->col;
+    BinExpr->trailing_newline = X_rhs->trailing_newline;
     utarray_new(BinExpr->subnodes, &node_icd);
     utarray_push_back(BinExpr->subnodes, BinExpr_rhs);
     utarray_push_back(BinExpr->subnodes, BinOp);
@@ -1891,6 +1916,7 @@ lambda_expr(LambdaX) ::= LAMBDA(Lambda) COLON(Colon) expr(X) .
     LambdaX->type = TK_Lambda_Expr;
     LambdaX->line  = Lambda->line;
     LambdaX->col   = Lambda->col;
+    LambdaX->trailing_newline = X->trailing_newline;
     utarray_new(LambdaX->subnodes, &node_icd);
     utarray_push_back(LambdaX->subnodes, Lambda);
     utarray_push_back(LambdaX->subnodes, Colon);
@@ -1904,6 +1930,7 @@ lambda_expr(LambdaX) ::= LAMBDA(Lambda) param_list(Params) COLON(Colon) expr(X) 
     LambdaX->type = TK_Lambda_Expr;
     LambdaX->line  = Lambda->line;
     LambdaX->col   = Lambda->col;
+    LambdaX->trailing_newline = X->trailing_newline;
     utarray_new(LambdaX->subnodes, &node_icd);
     utarray_push_back(LambdaX->subnodes, Lambda);
     utarray_push_back(LambdaX->subnodes, Params);

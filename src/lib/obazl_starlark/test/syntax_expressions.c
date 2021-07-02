@@ -10,6 +10,7 @@ struct node_s *root;
 
 LOCAL const char *if_expr[] = {
     "\"yes\" if enabled else \"no\"\n",
+    "a if enabled else b\n",
     "a if b else (c if d else e)\n",
     "(a if b else c) if d else e\n",
     "lambda: (a if b else c)\n",
@@ -24,6 +25,12 @@ LOCAL const char *paren_expr[] = {
     "a * (b + c)\n",
     "1 + 2 * 3 + 4\n",
     "(1 + 2) * (3 + 4)\n",
+    NULL
+};
+
+LOCAL const char *dot_expr[] = {
+    "a.b\n",
+    "a.b.c\n",
     NULL
 };
 
@@ -90,10 +97,26 @@ void test_paren_expr(void) {
     }
 }
 
+void test_dot_expr(void) {
+    int ct;
+    for (ct=0; dot_expr[ct] != NULL; ct++);
+    for (int i=0; i < ct; i++) {
+        /* printf("case %d: :]%s[:\n", i, dot_expr[i]); */
+        test_str = dot_expr[i];
+        root = obazl_starlark_parse_string(test_str);
+        utstring_renew(buf);
+        root2string(root, buf);
+        /* printf(":]%s[:\n", utstring_body(buf)); */
+        TEST_ASSERT_EQUAL_STRING(test_str, utstring_body(buf));
+        node_dtor(root);
+    }
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_if_expr);
-    /* RUN_TEST(test_lambda); */
-    /* RUN_TEST(test_paren_expr); */
+    RUN_TEST(test_lambda);
+    RUN_TEST(test_paren_expr);
+    RUN_TEST(test_dot_expr);
     return UNITY_END();
 }

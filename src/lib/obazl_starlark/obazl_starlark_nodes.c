@@ -45,13 +45,13 @@ void node_copy(void *_dst, const void *_src)
               src->line, src->col,
               (src->s == NULL? "" : src->s));
 
-    if (src->subnodes)
-        log_trace("  src subnode ct: %d",
-                  utarray_len(src->subnodes));
+    /* if (src->subnodes) */
+    /*     log_trace("  src subnode ct: %d", */
+    /*               utarray_len(src->subnodes)); */
     *dst = *src;
-    if (dst->subnodes)
-        log_trace("  dest subnode ct: %d",
-                  utarray_len(dst->subnodes));
+    /* if (dst->subnodes) */
+    /*     log_trace("  dest subnode ct: %d", */
+    /*               utarray_len(dst->subnodes)); */
 }
 
 void node_dtor(void *_elt) {

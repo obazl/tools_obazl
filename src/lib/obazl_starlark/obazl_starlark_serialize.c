@@ -61,6 +61,7 @@ void node2string(struct node_s *node, UT_string *buffer)
         utstring_printf(buffer, " ");
         col++;
     }
+
     if (node->s) {
         /* log_debug("STRINGED TOK: %d %s: :]%s[:", */
         /*           node->type, token_name[node->type][0], */

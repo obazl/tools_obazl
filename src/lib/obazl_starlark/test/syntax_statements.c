@@ -17,7 +17,7 @@ LOCAL const char *simple[] = {
     NULL
 };
 
-LOCAL const char *def[] = {
+LOCAL const char *def_stmts[] = {
     "def f(): pass\n",
     "def f(a, b, c): pass\n",
     "def f(a, b, c=1): pass\n",
@@ -25,6 +25,12 @@ LOCAL const char *def[] = {
     "def f(a, b, c=1, *args, **kwargs): pass\n",
     "def f(**kwargs): pass\n",
 
+    NULL
+};
+
+LOCAL const char *for_stmts[] = {
+    "for a in [1, 2, 3]: print(a)\n",
+    "for a, i in [[\"a\", 1], [\"b\", 2], [\"c\", 3]]: print(a, i)\n",
     NULL
 };
 
@@ -71,7 +77,7 @@ LOCAL const char *augmented_assignments[] = {
     "a[index()] *= 2\n",
 
     "i = index()\n",
-    "a[i] = a[i] * 2\n",
+    "a[i] = b[j] * 2\n",
 
     NULL
 };
@@ -99,12 +105,27 @@ void test_simple(void) {
     }
 }
 
-void test_def(void) {
+void test_def_stmts(void) {
     int ct;
-    for (ct=0; def[ct] != NULL; ct++);
+    for (ct=0; def_stmts[ct] != NULL; ct++);
     for (int i=0; i < ct; i++) {
-        /* printf("case %d: :]%s[:\n", i, def[i]); */
-        test_str = def[i];
+        /* printf("case %d: :]%s[:\n", i, def_stmts[i]); */
+        test_str = def_stmts[i];
+        root = obazl_starlark_parse_string(test_str);
+        utstring_renew(buf);
+        root2string(root, buf);
+        /* printf(":]%s[:\n", utstring_body(buf)); */
+        TEST_ASSERT_EQUAL_STRING(test_str, utstring_body(buf));
+        node_dtor(root);
+    }
+}
+
+void test_for_stmts(void) {
+    int ct;
+    for (ct=0; for_stmts[ct] != NULL; ct++);
+    for (int i=0; i < ct; i++) {
+        /* printf("case %d: :]%s[:\n", i, for_stmts[i]); */
+        test_str = for_stmts[i];
         root = obazl_starlark_parse_string(test_str);
         utstring_renew(buf);
         root2string(root, buf);
@@ -162,7 +183,8 @@ void test_augmented_assignments(void) {
 main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_simple);
-    RUN_TEST(test_def);
+    RUN_TEST(test_def_stmts);
+    RUN_TEST(test_for_stmts);
     RUN_TEST(test_assignments);
     RUN_TEST(test_multi_assignments);
     RUN_TEST(test_augmented_assignments);

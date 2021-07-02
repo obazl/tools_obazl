@@ -1,9 +1,2 @@
-def f(x):
-  res = []
-  def get_x():
-    res.append(x)
-  get_x()
-  x = 2
-  res = [];
-  get_x()
-  continue;
+for a in [1, 2, 3]: print(a)
+
