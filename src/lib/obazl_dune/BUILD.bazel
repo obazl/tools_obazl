@@ -41,9 +41,10 @@ cc_library(
         "-std=c11",
         "-I", "$(GENDIR)/src/lib/obazl_dune", # mkhdrs output
         "-I", "$(GENDIR)/external/obazl/src/lib/obazl_dune", # mkhdrs output
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune", # mkhdrs output
 
-        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_meta",
         "-I", "$(GENDIR)/external/obazl/src/lib/obazl_meta",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_meta",
 
         "-I", "external/uthash/include",
 

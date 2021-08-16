@@ -1,0 +1,12 @@
+version = "0.11.2"
+description = ""
+requires =
+"base
+ fieldslib
+ ppx_assert.runtime-lib
+ ppx_bench.runtime-lib"
+archive(byte,foo) = "angstrom.cma"
+archive(native,-bar) = "angstrom.cmxa"
+plugin(byte,foo,-bar) = "angstrom.cma"
+plugin(native) = "angstrom.cmxs"
+plugin(-native) = "angstrom.cmxs"

@@ -1,0 +1,12 @@
+(library
+ (name fooname)
+ (modules :standard \ foo_a foo_b foo_c)
+ (public_name public_foox)
+ (libraries foolib_a foolib_b foolib_c)
+ (preprocess (pps ppx_a ppx_b ppx_c)))
+
+(library
+ (name bar)
+ (public_name public_bar)
+ (modules barm1 (:standard \ bar_ma bar_mb bar_mc) barm2)
+ (libraries barlib_a barlib_b barlib_c))

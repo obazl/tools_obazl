@@ -1,0 +1,11 @@
+version = "1.2.1"
+description = ""
+requires = "bar"
+requires = "foobar"
+requires(foo) = "buz biz boz"
+requires(a,b) = "a1, a2"
+## a comment
+ppx = "a b c"
+foo(autolink,bar) = "baz"
+error = "an error msg"
+warning = "watch out!"

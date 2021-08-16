@@ -1,0 +1,253 @@
+version = "0.12.1"
+description = ""
+requires =
+"base
+ base_quickcheck
+ bin_prot
+ core_kernel
+ core_kernel.base_for_tests
+ fieldslib
+ ppx_assert.runtime-lib
+ ppx_bench.runtime-lib
+ ppx_compare.runtime-lib
+ ppx_enumerate.runtime-lib
+ ppx_expect.collector
+ ppx_hash.runtime-lib
+ ppx_inline_test.runtime-lib
+ ppx_module_timer.runtime
+ ppx_sexp_conv.runtime-lib
+ sexplib.unix
+ spawn
+ threads
+ typerep
+ variantslib"
+archive(byte) = "core.cma"
+archive(native) = "core.cmxa"
+plugin(byte) = "core.cma"
+plugin(native) = "core.cmxs"
+package "bigbuffer_blocking" (
+  directory = "bigbuffer_blocking"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "bigbuffer_blocking.cma"
+  archive(native) = "bigbuffer_blocking.cmxa"
+  plugin(byte) = "bigbuffer_blocking.cma"
+  plugin(native) = "bigbuffer_blocking.cmxs"
+)
+package "daemon" (
+  directory = "daemon"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "daemon.cma"
+  archive(native) = "daemon.cmxa"
+  plugin(byte) = "daemon.cma"
+  plugin(native) = "daemon.cmxs"
+)
+package "lock_file_blocking" (
+  directory = "lock_file_blocking"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "lock_file_blocking.cma"
+  archive(native) = "lock_file_blocking.cmxa"
+  plugin(byte) = "lock_file_blocking.cma"
+  plugin(native) = "lock_file_blocking.cmxs"
+)
+package "nano_mutex" (
+  directory = "nano_mutex"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   core_kernel.thread_safe_queue
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "nano_mutex.cma"
+  archive(native) = "nano_mutex.cmxa"
+  plugin(byte) = "nano_mutex.cma"
+  plugin(native) = "nano_mutex.cmxs"
+)
+package "process_env" (
+  directory = "process_env"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "process_env.cma"
+  archive(native) = "process_env.cmxa"
+  plugin(byte) = "process_env.cma"
+  plugin(native) = "process_env.cmxs"
+)
+package "squeue" (
+  directory = "squeue"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "squeue.cma"
+  archive(native) = "squeue.cmxa"
+  plugin(byte) = "squeue.cma"
+  plugin(native) = "squeue.cmxs"
+)
+package "syslog" (
+  directory = "syslog"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   variantslib"
+  archive(byte) = "syslog.cma"
+  archive(native) = "syslog.cmxa"
+  plugin(byte) = "syslog.cma"
+  plugin(native) = "syslog.cmxs"
+)
+package "top" (
+  directory = "top"
+  version = "0.12.1"
+  description = ""
+  requires = "compiler-libs.toplevel core"
+  archive(byte) = "core_top.cma"
+  archive(native) = "core_top.cmxa"
+  plugin(byte) = "core_top.cma"
+  plugin(native) = "core_top.cmxs"
+)
+package "uuid" (
+  directory = "uuid"
+  version = "0.12.1"
+  description = ""
+  requires =
+  "base
+   base_quickcheck
+   bin_prot
+   core_kernel
+   core_kernel.uuid
+   fieldslib
+   ppx_assert.runtime-lib
+   ppx_bench.runtime-lib
+   ppx_compare.runtime-lib
+   ppx_enumerate.runtime-lib
+   ppx_expect.collector
+   ppx_hash.runtime-lib
+   ppx_inline_test.runtime-lib
+   ppx_module_timer.runtime
+   ppx_sexp_conv.runtime-lib
+   typerep
+   unix
+   variantslib"
+  archive(byte) = "uuid_unix.cma"
+  archive(native) = "uuid_unix.cmxa"
+  plugin(byte) = "uuid_unix.cma"
+  plugin(native) = "uuid_unix.cmxs"
+)
+
+package "syntax" (
+ version = "[deprecated]"
+ error = "core.syntax is deprecated, use ppx_jane instead"
+)

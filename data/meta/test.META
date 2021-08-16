@@ -1,0 +1,27 @@
+version = "0.11.2"
+description = ""
+requires =
+"base
+ fieldslib
+ ppx_assert.runtime-lib
+ ppx_bench.runtime-lib"
+archive(byte) = "angstrom.cma"
+archive(native) = "angstrom.cmxa"
+plugin(byte) = "angstrom.cma"
+plugin(native) = "angstrom.cmxs"
+plugin(-native) = "angstrom.cmxs"
+
+package "unix" (
+  requires = "angstrom-unix"
+  description = "Deprecated. Use angstrom-unix directly"
+)
+
+# This is what dune uses to find out the runtime dependencies of
+# a preprocessor
+# ppx_runtime_deps = "bin_prot"
+# This line makes things transparent for people mixing preprocessors
+# and normal dependencies
+requires(-ppx_driver) = "bin_prot"
+# requires(-ppx_driver,-custom_ppx) += "ppx_deriving"
+# ppxopt(-ppx_driver,-custom_ppx) = "ppx_deriving,package:ppx_bin_prot"
+# library_kind = "ppx_deriver"
