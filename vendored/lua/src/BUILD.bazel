@@ -1,0 +1,26 @@
+cc_library(
+    name = "lua",
+    srcs = glob(
+        include = [
+            "*.c",
+            "*.h",
+        ],
+        exclude = [
+            "lauxlib.h",
+            "lua.c",            # standalone interpreter
+            "lua.h",
+            "luac.c",           # compiler
+            "lualib.h",
+        ],
+    ),
+    hdrs = [
+        "lauxlib.h",
+        "lua.h",
+        "lualib.h",
+    ],
+    linkopts = [
+        "-lm",
+        "-ldl",
+    ],
+    visibility = ["//visibility:public"],
+)

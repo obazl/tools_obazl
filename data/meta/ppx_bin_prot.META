@@ -1,0 +1,29 @@
+version = "v0.12.0"
+description = ""
+requires(ppx_driver) = "base
+                        compiler-libs.common
+                        ppx_bin_prot.shape-expander
+                        ppxlib"
+archive(ppx_driver,byte) = "ppx_bin_prot.cma"
+archive(ppx_driver,native) = "ppx_bin_prot.cmxa"
+plugin(ppx_driver,byte) = "ppx_bin_prot.cma"
+plugin(ppx_driver,native) = "ppx_bin_prot.cmxs"
+# This is what dune uses to find out the runtime dependencies of
+# a preprocessor
+ppx_runtime_deps = "bin_prot"
+# This line makes things transparent for people mixing preprocessors
+# and normal dependencies
+requires(-ppx_driver) = "bin_prot"
+requires(-ppx_driver,-custom_ppx) += "ppx_deriving"
+ppxopt(-ppx_driver,-custom_ppx) = "ppx_deriving,package:ppx_bin_prot"
+library_kind = "ppx_deriver"
+package "shape-expander" (
+  directory = "shape-expander"
+  version = "v0.12.0"
+  description = ""
+  requires = "base ppx_here.expander ppxlib"
+  archive(byte) = "bin_shape_expand.cma"
+  archive(native) = "bin_shape_expand.cmxa"
+  plugin(byte) = "bin_shape_expand.cma"
+  plugin(native) = "bin_shape_expand.cmxs"
+)
