@@ -78,7 +78,7 @@ void l_init (void)
 
 /**
    lua search path always contains:
-       <proj_root>/obazl.d/
+       <proj_root>/.obazl.d/
        if run by `bazel run`:
            <exec_root>/<runfiles_dir>/  -- contains default `obazl.lua`
        else:
