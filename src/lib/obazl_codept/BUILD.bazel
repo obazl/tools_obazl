@@ -46,8 +46,8 @@ cc_library(
         "-I", "external/tools_obazl/vendored/logc"
     ],
     linkopts = [
-        "-L/usr/local/lib",     # FIXME
-        "-llua",
+        # "-L/usr/local/lib",     # FIXME
+        # "-llua",
     ],
     deps = [
         "//src/lib/obazl_config",
@@ -93,8 +93,10 @@ cc_binary(
     ],
     deps = [
         # "//src/lib/obazl_meta",
+        ":obazl_codept",
         "//src/lib/obazl_config",
         "//src/lib/obazl_fs",
+        "//src/lib/obazl_lua",
         "//vendored/logc",
         "//external/sfsexp",
     ],

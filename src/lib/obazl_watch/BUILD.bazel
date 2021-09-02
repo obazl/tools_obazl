@@ -30,7 +30,7 @@ cc_library(
         "-pedantic-errors",
 
         "-I", "$(GENDIR)/src/lib/obazl_watch",
-        "-I", "$(GENDIR)/external/obazl/src/lib/obazl_watch",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_watch",
 
         "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
 
@@ -62,8 +62,8 @@ cc_library(
         "//vendored/logc"
     ],
     linkopts = [
-        "-L/usr/local/lib",     # FIXME
-        "-llua",
+        # "-L/usr/local/lib",     # FIXME
+        # "-llua",
     ] + select({
         "//bzl/host:linux": [],
         "//bzl/host:macos": ["-framework", "CoreServices"], # for fswatch
@@ -88,6 +88,7 @@ cc_library(
 
         "-I", "$(GENDIR)/src/lib/obazl_watch",
         "-I", "$(GENDIR)/external/obazl/src/lib/obazl_watch",
+        "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_watch",
 
         "-I", "$(GENDIR)/external/tools_obazl/src/lib/obazl_dune",
 
@@ -123,8 +124,8 @@ cc_library(
         "//external/libinih:inih"
     ],
     linkopts = [
-        "-L/usr/local/lib",
-        "-llua",
+        # "-L/usr/local/lib",
+        # "-llua",
     ] + select({
         "//bzl/host:linux": [],
         "//bzl/host:macos": ["-framework", "CoreServices"],

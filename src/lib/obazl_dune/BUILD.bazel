@@ -160,8 +160,8 @@ cc_binary(
         "//vendored/logc"
     ],
     linkopts = [
-        "-L/usr/local/lib",     # FIXME
-        "-llua",
+        # "-L/usr/local/lib",     # FIXME
+        # "-llua",
     ],
     linkstatic = 1
 )

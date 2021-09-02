@@ -9,6 +9,15 @@ def cc_fetch_repos():
 
     maybe(
         git_repository,
+        name = "libs7",
+        remote = "https://github.com/obazl/libs7",
+        branch = "main"
+        # commit = "bb528f3edac6c00953010e28d51e4a52da7555aa",
+        # shallow_since = "1618495335 -0500"
+    )
+
+    maybe(
+        git_repository,
         name = "rules_cc",
         remote = "https://github.com/bazelbuild/rules_cc",
         commit = "b1c40e1de81913a3c40e5948f78719c28152486d",
@@ -19,9 +28,9 @@ def cc_fetch_repos():
     maybe(
         http_archive,
         name = "rules_foreign_cc",
-        url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.2.0.tar.gz",
-        sha256 = "d54742ffbdc6924f222d2179f0e10e911c5c659c4ae74158e9fe827aad862ac6",
-        strip_prefix = "rules_foreign_cc-0.2.0",
+        sha256 = "33a5690733c5cc2ede39cb62ebf89e751f2448e27f20c8b2fbbc7d136b166804",
+        strip_prefix = "rules_foreign_cc-0.5.1",
+        url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.5.1.tar.gz",
     )
 
     ######
@@ -111,14 +120,27 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
         http_archive,
         name = "fswatch",
         urls = [
-            "https://github.com/emcrisostomo/fswatch/archive/refs/tags/1.15.0.tar.gz",
-            # "https://github.com/emcrisostomo/fswatch/archive/30f8f1b134209f5ff39bf580313ff20c4dcb06e5.tar.gz"
+            "https://github.com/emcrisostomo/fswatch/archive/refs/tags/1.16.0.zip",
+            # "https://github.com/emcrisostomo/fswatch/archive/365624dd6088d79a452c2196b17fb1d6aab8ff91.zip",
         ],
-        strip_prefix = "fswatch-1.15.0",
-        sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
+        strip_prefix = "fswatch-1.16.0",
+        # sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
         build_file_content = all_content,
         workspace_file_content = "workspace( name = \"fswatch\" )"
     )
+
+    # maybe(
+    #     git_repository,
+    #     name = "libstarlark",
+    #     remote = "https://github.com/obazl/libstarlark",
+    #     branch = "main"
+    #     # commit = "bb528f3edac6c00953010e28d51e4a52da7555aa",
+    #     # shallow_since = "1618495335 -0500"
+    #     # http_archive,
+    #     # urls = [
+    #     # ],
+    #     # strip_prefix =
+    # )
 
     # http://www.throwtheswitch.org/unity
     maybe(

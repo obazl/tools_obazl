@@ -64,6 +64,9 @@ cc_library(
         "@lua//:src/lzio.c",
         "@lua//:src/lzio.h",
     ],
+    # defines = [
+    #     LUA_CPATH_DEFAULT="foo"
+    # ],
     strip_include_prefix = "/src",
     hdrs = [
         "@lua//:src/lauxlib.h",

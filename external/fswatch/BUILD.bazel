@@ -14,7 +14,8 @@ configure_make(
         # "$ACLOCAL_FLAGS"
     ],
     configure_in_place = True,
-    configure_env_vars = select({
+    # configure_env_vars = select({
+    env = select({
         "//bzl/host:macos": {
             "AR": "",
         },
