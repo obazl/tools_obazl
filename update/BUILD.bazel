@@ -1,0 +1,46 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# use libstarlark to parse and update BUILD.bazel file
+
+cc_binary(
+    name  = "update",
+    srcs  = [
+        "update.c",
+        "update.h",
+    ],
+    defines = ["DEBUG", "DEBUG_TRACE"],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-I", "vendored/logc",
+        "-I", "$(GENDIR)/update", # update.h
+        "-I", "$(GENDIR)/external/libstarlark/src", # starlark.h
+        "-I", "external/uthash/include",
+    ],
+    deps = [
+        "@libstarlark//src:starlark",
+        "//vendored/logc"
+    ],
+    linkstatic = 1
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "update.c",
+    ],
+    outs = [
+        "update.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location update.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location update.c) \\",
+        "    > $@",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+

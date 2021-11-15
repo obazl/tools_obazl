@@ -1,0 +1,5 @@
+(rule
+ (targets 01.foo)
+ (action
+  (run ./incr.exe x %{targets})))
+
