@@ -256,7 +256,7 @@ UT_array *handle_file_deps(sexp_t *the_deps_list)
 */
 void handle_file_deps_spec(sexp_t *fdeps_spec)
 {
-    /* log_debug("handle_file_deps_spec"); */
+    log_debug("handle_file_deps_spec");
 
     /* log_debug("fdeps_spec type: %d", fdeps_spec->ty); */
     /* log_debug("fdeps_spec->list type: %d", fdeps_spec->list->ty); */
@@ -274,10 +274,10 @@ void handle_file_deps_spec(sexp_t *fdeps_spec)
     char *fname;
     if (file_atom != NULL) {
         memset(testbuf, '\0', testbuf_len);
-        /* size_t write_len = print_sexp(testbuf, testbuf_len, file_atom); */
-        /* log_debug("find 'file' (len: %d)", write_len); */
-        /* log_debug("%s", testbuf); */
-        int write_len = print_sexp(testbuf, testbuf_len, file_atom->next);
+        size_t write_len = print_sexp(testbuf, testbuf_len, file_atom);
+        log_debug("find 'file' (len: %d)", write_len);
+        log_debug("%s", testbuf);
+        write_len = print_sexp(testbuf, testbuf_len, file_atom->next);
         if (write_len < 0) {
             ; // FIXME
         }
@@ -289,7 +289,7 @@ void handle_file_deps_spec(sexp_t *fdeps_spec)
     } else {
         ; // FIXME
     }
-    /* log_debug("fname: %s", fname); */
+    log_debug("fname: %s", fname);
 
     /* search hashmap for key */
     struct filedeps_s *fdeps;
@@ -385,16 +385,19 @@ void handle_dependencies(sexp_t *the_sexp)
 
     sexp_t *the_list = the_sexp->list;
 
-    /* log_debug("list head, (ty =? SEXP_VALUE): %d, val: %s", (SEXP_VALUE == the_list->ty), the_list->val); */
+    log_debug("list head, (ty =? SEXP_VALUE): %d, val: %s", (SEXP_VALUE == the_list->ty), the_list->val);
 
     //  ( ( (file etc/uri_services.mli) (deps ((Uri))) ) ...
     sexp_t *files_list = the_list->next; /* tail: list of lists */
-    /* log_debug("files_list->next (tail) type: %d", files_list->ty); */
+    log_debug("files_list->next (tail) type: %d", files_list->ty);
 
     //  ( (file etc/uri_services.mli) (deps ((Uri))) )
+    printf("xxxxxxxxxxxxxxxx\n");
+    dump_codept_dirty_filedeps();
     utarray_clear(dirty_fdeps);
     sexp_t *file_deps_spec = files_list->list;
     while (file_deps_spec != NULL) {
+        printf("xxxxxxxxxxxxxxxx\n");
         handle_file_deps_spec(file_deps_spec);
         file_deps_spec = file_deps_spec->next;
     }
@@ -671,6 +674,7 @@ int codept_handle_root_sexp(sexp_t *the_sexp)
     sexp_t *next_sexp = the_sexp->list; /* start with list head */
     while (next_sexp != NULL) {
         /* root should have four list children: version, dependencies, local, and lib */
+        printf("next\n");
         if (next_sexp->ty == SEXP_LIST) {
             if (strncmp(next_sexp->list->val, "version", 7) == 0) {
                 /* log_debug("list node head: version"); */
@@ -679,6 +683,7 @@ int codept_handle_root_sexp(sexp_t *the_sexp)
             }
             if (strncmp(next_sexp->list->val, "dependencies", 12) == 0) {
                 handle_dependencies(next_sexp);
+                printf("xxxxxxxxxxxxxxxx\n");
                 goto next;
             }
             if (strncmp(next_sexp->list->val, "local", 5) == 0) {
@@ -716,6 +721,8 @@ int codept_handle_root_sexp(sexp_t *the_sexp)
 EXPORT struct obazl_deps_s *obazl_deps_parse_file(char *fname)
 {
     log_debug("obazl_deps_parse_file: %s", fname);
+
+    utarray_new(dirty_fdeps, &ut_str_icd);   /* obazl_codept_parser.c */
 
     /* int fd; */
     char *work_buf;

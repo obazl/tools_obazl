@@ -1,4 +1,4 @@
-## library for parsing ocamlfind META files
+## library for parsing dune files
 
 load("@rules_cc//cc:defs.bzl",
      "cc_binary",

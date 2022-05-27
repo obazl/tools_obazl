@@ -115,7 +115,7 @@ void run_codept(char *codept_args_file, char *codept_deps_file)
     // FIXME: get absolute path of codept
     // FIXME: restrict environ
 
-    /* char *codept_cmd = "/Users/gar/.opam/4.09.0/bin/codept"; */
+    char *codept_cmd = "/Users/gar/.opam/4.09.0/bin/codept";
     /* log_debug("spawning %s", codept_cmd); */
     rc = posix_spawn(&pid, codept_cmd, &action, NULL, argv, environ);
     if (rc == 0) {
@@ -453,6 +453,7 @@ void dump_codept_filedeps(void)
 
 void dump_codept_dirty_filedeps(void)
 {
+    printf("cccc\n");
   UT_array *strs;
   char *s, **p = NULL;
   while ( (p=(char**)utarray_next(dirty_fdeps, p))) {

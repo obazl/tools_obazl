@@ -1,1 +1,3 @@
-# dummy
+# needed for remote stardoc
+exports_files(["BUILD.bzl"])
+

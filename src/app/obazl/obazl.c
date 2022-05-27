@@ -92,11 +92,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* if ( (utstring_len(dune_file) == 0) */
-    /*      && (utstring_len(meta_file) == 0)){ */
-    /*     log_error("One of -d or -m must be provided.", argv[0]); */
-    /*     exit(EXIT_FAILURE); */
-    /* } */
+    if ( (utstring_len(dune_file) == 0)
+         && (utstring_len(meta_file) == 0)){
+        log_error("One of -d or -m must be provided.", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     switch(logger.lex_verbosity) {
     case 0:
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
     if (utstring_len(meta_file) > 0) {
         log_info("obazl_meta version: %s", obazl_dune_version());
         struct obazl_meta_package *meta_ast = obazl_meta_parse_file(utstring_body(meta_file));
-        log_set_level(LOG_DEBUG);
+        log_set_level(LOG_TRACE);
         dump_pkg(0, meta_ast);
         /* meta_emit_build_bazel(meta_ast, "@opam", "lib"); */
         log_info("meta DONE");

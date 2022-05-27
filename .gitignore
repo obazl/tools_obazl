@@ -1,3 +1,5 @@
+.obazl.d
+.obazlrc
 .bazel
 bazel-*
 user.bazelrc
@@ -6,3 +8,4 @@ user.bazelrc
 obsolete
 tmp
 trace
+*.zip

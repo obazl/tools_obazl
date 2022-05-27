@@ -55,30 +55,30 @@ int main(int argc, char *argv[])
 
     obazl_deps_parse_file(".obazl.d/codept.deps");
 
-    /* struct module_s *module, *tmp; */
-    /* HASH_ITER(hh, codept_modules, module, tmp) { */
-    /*     log_debug(""); */
-    /*     log_debug("module->name: %s", module->name); */
-    /*     log_debug("module->type: %d", module->type); */
-    /*     if (module->type == M_LOCAL) { */
-    /*         log_debug("module->structfile: %s", module->structfile); */
-    /*         log_debug("module->sigfile: %s", module->sigfile); */
-    /*     } else { */
-    /*         log_debug("module->lib: %s", module->lib); */
-    /*     } */
-    /* } */
-
-    struct filedeps_s *fdeps, *tmpfdeps;
-    char **p = NULL;
-    HASH_ITER(hh, codept_filedeps, fdeps, tmpfdeps) {
+    struct module_s *module, *tmp;
+    HASH_ITER(hh, codept_modules, module, tmp) {
         log_debug("");
-        log_debug("fdeps->name: %s", fdeps->name);
-        /* log_debug("fdeps->type: %d", fdeps->type); */
-        log_debug("fdeps->deps:");
-        while ( (p=(char**)utarray_next(fdeps->deps, p))) {
-            log_debug("\t%s",*p);
+        log_debug("module->name: %s", module->name);
+        log_debug("module->type: %d", module->type);
+        if (module->type == M_LOCAL) {
+            log_debug("module->structfile: %s", module->structfile);
+            log_debug("module->sigfile: %s", module->sigfile);
+        } else {
+            log_debug("module->lib: %s", module->lib);
         }
     }
+
+    /* struct filedeps_s *fdeps, *tmpfdeps; */
+    /* char **p = NULL; */
+    /* HASH_ITER(hh, codept_filedeps, fdeps, tmpfdeps) { */
+    /*     log_debug(""); */
+    /*     log_debug("fdeps->name: %s", fdeps->name); */
+    /*     /\* log_debug("fdeps->type: %d", fdeps->type); *\/ */
+    /*     log_debug("fdeps->deps:"); */
+    /*     while ( (p=(char**)utarray_next(fdeps->deps, p))) { */
+    /*         log_debug("\t%s",*p); */
+    /*     } */
+    /* } */
 
     return 0;
 }

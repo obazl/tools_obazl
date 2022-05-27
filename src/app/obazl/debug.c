@@ -14,7 +14,7 @@ static char *sp = " ";
 //FIXME: rename dump_meta_pkg
 void dump_pkg(int indent, struct obazl_meta_package *_pkg)
 {
-    /* log_set_quiet(false); */
+    log_set_quiet(false);
     log_debug("%*sname:      %s", indent, sp, obazl_meta_package_name(_pkg));
     log_debug("%*sdirectory: %s", indent, sp, obazl_meta_package_dir(_pkg));
     log_debug("%*smetafile:  %s", indent, sp, obazl_meta_package_src(_pkg));

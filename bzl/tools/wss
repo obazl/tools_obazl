@@ -20,5 +20,5 @@ then
     LAST=
 fi
 
-ls --color $ARGS `bazel info output_base`/external/$LAST
+ls $ARGS `bazel info output_base`/external/$LAST
 echo OUTPUT_BASE: `bazel info output_base`/external

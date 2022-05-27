@@ -20,5 +20,9 @@ Tools:
   * `load( "@tools_bazel//tools/functions:strings.bzl", "tokenize")`
   * `tokenize("foo   bar") => ["foo", "bar"]`.
   * `tokenize("foo_bar", sep="_") => ["foo", "bar"]`.
+
+* `get_xdg(repo_ctx)` returns multival: home, XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME
+
+
 ```
 
