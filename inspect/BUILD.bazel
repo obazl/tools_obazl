@@ -1,20 +1,34 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:BUILD.bzl", "extract", "inspect")
+load("//tools:INSPECT.bzl", "extract", "inspect")
 
 ## //ocamlobj is a label-typed build setting; its default value is the
 ## null module.  It must be overriden by passing a command-line arg:
 
 ## --@tools_obazl//ocamlobj=//pkg:tgt
 
+inspect(
+    name = "codeps",
+    obj = "//tgt",
+)
 
 inspect(
-    name = "inspect",
+    name = "ppx",
     obj = "//tgt",
 )
 
-## run cmitomli to extract sigfile
-extract(
-    name = "extract",
+inspect(
+    name = "src",
     obj = "//tgt",
 )
+
+inspect(
+    name = "sig",
+    obj = "//tgt",
+)
+
+inspect(
+    name = "struct",
+    obj = "//tgt",
+)
+

@@ -1,12 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_setting")
+
 load("//null:BUILD.bzl", "ocaml_null_module")
 
 ## null module, must be overridden by passing cmd line arg, e.g.:
 ## --@tools_obazl//ocamlobj=//pkg:tgt
 
-
-label_flag( name = "ocamlobj",
-            build_setting_default = ":null")
-
 ocaml_null_module(name="null")
+
+label_flag( name = "tgt", build_setting_default = ":null")
