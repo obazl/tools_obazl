@@ -1,5 +1,6 @@
 load("@rules_ocaml//ocaml:providers.bzl",
      "OcamlArchiveMarker",
+     "OcamlImportMarker",
      "OcamlLibraryMarker",
      "OcamlModuleMarker",
      "OcamlProvider",
@@ -10,6 +11,11 @@ load("@rules_ocaml//ppx:providers.bzl",
      "PpxCodepsProvider",
      "PpxExecutableMarker",
 )
+
+load("@rules_ocaml//ocaml/_rules:impl_ccdeps.bzl",
+     "ccinfo_to_string")
+
+load("@rules_ocaml//ocaml/_debug:utils.bzl", "CCRED", "CCMAG", "CCRESET")
 
 #####################################################
 def _inspect_out_transition_impl(settings, attr):
@@ -75,24 +81,161 @@ def _write_codeps_file(ctx, provider):
     return f
 
 ################
+def _write_providers_file(ctx, tgt):
+    text = ""
+    if OcamlProvider in tgt:
+        provider = tgt[OcamlProvider]
+        text = text + CCMAG + "OcamlProvider:\n"
+        for d in dir(provider):
+            text = text + "  " + CCRED + d + CCRESET
+            val = getattr(provider, d)
+            text = text + "  " + str(val) + "\n"
+    if PpxCodepsProvider in tgt:
+        provider = tgt[PpxCodepsProvider]
+        text = text + CCMAG + "PpxCodepsProvider:\n"
+        for d in dir(provider):
+            text = text + "  " + CCRED + d + CCRESET
+            val = getattr(provider, d)
+            text = text + str(val) + "\n"
+
+    if CcInfo in tgt:
+        text = text + CCMAG + "CcInfo:\n" + CCRESET
+        text = text + ccinfo_to_string(ctx, tgt[CcInfo])
+
+    f = ctx.actions.declare_file("inspect.txt")
+    ctx.actions.write(
+        output  = f,
+        content = text,
+        is_executable = False
+    )
+    return f
+
+################
+def _write_import_providers_file(ctx, tgt):
+    # tc = ctx.toolchains["@rules_ocaml//toolchain:type"]
+
+    provider = tgt[OcamlProvider]
+    text = ""
+    INDENT = "  "
+    text = text + "structs:\n"
+    for struct in provider.structs.to_list():
+        text = text + INDENT + struct.path + "\n"
+
+    text = text + "ofiles:\n"
+    for ofile in provider.ofiles.to_list():
+        text = text + INDENT + ofile.path + "\n"
+
+    text = text + "astructs:\n"
+    for astruct in provider.astructs.to_list():
+        text = text + INDENT + astruct.path + "\n"
+
+    text = text + "sigs:\n"
+    for sig in provider.sigs.to_list():
+        text = text + INDENT + sig.path + "\n"
+
+    text = text + "afiles:\n"
+    for afile in provider.afiles.to_list():
+        text = text + INDENT + afile.path + "\n"
+
+    text = text + "archives:\n"
+    for archive in provider.archives.to_list():
+        text = text + INDENT + archive.path + "\n"
+
+    if CcInfo in tgt:
+        text = text + "ccdeps:\n"
+        # for ccdep in tgt[CcInfo].to_list():
+        text = text + INDENT + ccinfo_to_string(ctx, tgt[CcInfo]) + "\n"
+
+    ################
+    if PpxCodepsProvider in tgt:
+        provider = tgt[PpxCodepsProvider]
+        text = text + "PPX CODEPS\n"
+        text = text + "ppx_codep structs:\n"
+        for struct in provider.structs.to_list():
+            print("XXXXXXXXXXXXXXXX: %s" % struct)
+            text = text + INDENT + struct.path + "\n"
+
+        text = text + "ppx_codep ofiles:\n"
+        for ofile in provider.ofiles.to_list():
+            text = text + INDENT + ofile.path + "\n"
+
+        text = text + "ppx_codep astructs:\n"
+        for astruct in provider.astructs.to_list():
+            text = text + INDENT + astruct.path + "\n"
+
+        text = text + "ppx_codep sigs:\n"
+        for sig in provider.sigs.to_list():
+            text = text + INDENT + sig.path + "\n"
+
+        text = text + "ppx_codep afiles:\n"
+        for afile in provider.afiles.to_list():
+            text = text + INDENT + afile.path + "\n"
+
+        text = text + "ppx_codep archives:\n"
+        for archive in provider.archives.to_list():
+            text = text + INDENT + archive.path + "\n"
+
+        # text = text + "ppx_codep cclibs:\n"
+        # for cclib in provider.cclibs.to_list():
+        #     text = text + INDENT + cclib.path + "\n"
+
+
+    f = ctx.actions.declare_file("inspect.txt")
+    ctx.actions.write(
+        output  = f,
+        content = text,
+        is_executable = False
+    )
+
+    return f
+
+################################
 def _inspect_impl(ctx):
     tool = None
     ppx  = False # hack
+    is_import = False
+    providers = False
 
     if ctx.label.package == "inspect":
-        if ctx.label.name == "ppx":
-            print("DefaultInfo: %s" % ctx.attr.obj[0][DefaultInfo])
-            objs = ctx.attr.obj[0][DefaultInfo].files.to_list()
-            tool = "echo '{f}:'; cat".format(f=objs[0].path)
-            print("TOOL %s" % tool)
+        if ctx.label.name == "import":
+            is_import = True
+            print("ctx.attr.obj: %s" % ctx.attr.obj)
+            tmp = ctx.attr.obj[0]
+            objs = []
+            if OcamlImportMarker in tmp:
+                print("OcamlImportMarker: %s" % tmp)
+                tmpfile = _write_import_providers_file(ctx, tmp)
+                tool = "echo '{f}:'; cat".format(f=tmpfile.path)
+            else:
+                fail("Target is not ocaml_import")
+        if ctx.label.name == "providers":
+            providers = True
+            print("ctx.attr.obj: %s" % ctx.attr.obj)
+            tmp = ctx.attr.obj[0]
+            tmpfile = _write_providers_file(ctx,tmp)
+            tool = "echo '{f}:'; cat".format(f=tmpfile.path)
+
+            # objs = []
+            # if OcamlImportMarker in tmp:
+            #     print("OcamlImportMarker: %s" % tmp)
+            #     tmpfile = _write_import_providers_file(ctx, tmp)
+            #     tool = "echo '{f}:'; cat".format(f=tmpfile.path)
+            # else:
         elif ctx.label.name == "codeps":
             ## get provider, dump to file, show file
             tmp = ctx.attr.obj[0]
             if PpxCodepsProvider in tmp:
                 provider = tmp[PpxCodepsProvider]
-                codeps_file = _write_codeps_file(ctx, provider)
-                tool = "echo '{f}:'; cat".format(f=codeps_file.path)
+                tmpfile = _write_codeps_file(ctx, provider)
+                tool = "echo '{f}:'; cat".format(f=tmpfile.path)
                 ppx = True
+            else:
+                fail("Target does not carry ppx codeps")
+        elif ctx.label.name == "ppx":
+            print("DefaultInfo: %s" % ctx.attr.obj[0][DefaultInfo])
+            objs = ctx.attr.obj[0][DefaultInfo].files.to_list()
+            tool = "echo '{f}:'; cat".format(f=objs[0].path)
+            print("TOOL %s" % tool)
         elif ctx.label.name == "sig":
             tool = ctx.executable._tool.path
             objs = ctx.attr.obj[OutputGroupInfo].cmi.to_list()
@@ -124,14 +267,14 @@ def _inspect_impl(ctx):
         else:
             fail("No struct for sig target")
 
-    if ppx:
+    if ppx or is_import or providers:
         out = ctx.actions.declare_file("inspect.sh")
         runfiles = ctx.runfiles(
-            files = [codeps_file]
+            files = [tmpfile]
         )
         cmd = " ".join([
             "{tool} `pwd`/{obj}".format(
-                tool = tool, obj = codeps_file.short_path),
+                tool = tool, obj = tmpfile.short_path),
         ])
     else:
         out = ctx.actions.declare_file("inspect.sh")
@@ -168,6 +311,7 @@ inspect = rule(
             providers = [
                 [OcamlArchiveMarker],
                 [OcamlLibraryMarker],
+                [OcamlImportMarker],
                 [OcamlModuleMarker],
                 [OcamlNsResolverProvider],
                 [OcamlSignatureProvider],

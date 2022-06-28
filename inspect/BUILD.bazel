@@ -13,6 +13,16 @@ inspect(
 )
 
 inspect(
+    name = "import",
+    obj = "//tgt",
+)
+
+inspect(
+    name = "providers",
+    obj = "//tgt",
+)
+
+inspect(
     name = "ppx",
     obj = "//tgt",
 )
