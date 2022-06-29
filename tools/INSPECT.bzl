@@ -15,7 +15,8 @@ load("@rules_ocaml//ppx:providers.bzl",
 load("@rules_ocaml//ocaml/_rules:impl_ccdeps.bzl",
      "ccinfo_to_string")
 
-load("@rules_ocaml//ocaml/_debug:utils.bzl", "CCRED", "CCMAG", "CCRESET")
+load("@rules_ocaml//ocaml/_debug:utils.bzl",
+     "CCRED", "CCGRN", "CCBLU", "CCMAG", "CCCYAN", "CCRESET")
 
 #####################################################
 def _inspect_out_transition_impl(settings, attr):
@@ -36,9 +37,8 @@ inspect_out_transition = transition(
 )
 
 ################
-def _write_codeps_file(ctx, provider):
+def _write_codeps_file(ctx, provider, text):
     print("Provider: %s" % provider)
-    text = ""
     INDENT = "  "
 
     tc = ctx.toolchains["@rules_ocaml//toolchain:type"]
@@ -81,25 +81,24 @@ def _write_codeps_file(ctx, provider):
     return f
 
 ################
-def _write_providers_file(ctx, tgt):
-    text = ""
+def _write_providers_file(ctx, tgt, text):
     if OcamlProvider in tgt:
         provider = tgt[OcamlProvider]
-        text = text + CCMAG + "OcamlProvider:\n"
+        text = text + CCCYAN + "OcamlProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
             text = text + "  " + str(val) + "\n"
     if PpxCodepsProvider in tgt:
         provider = tgt[PpxCodepsProvider]
-        text = text + CCMAG + "PpxCodepsProvider:\n"
+        text = text + CCCYAN + "PpxCodepsProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
-            text = text + str(val) + "\n"
+            text = text + "  " + str(val) + "\n"
 
     if CcInfo in tgt:
-        text = text + CCMAG + "CcInfo:\n" + CCRESET
+        text = text + CCCYAN + "CcInfo:\n" + CCRESET
         text = text + ccinfo_to_string(ctx, tgt[CcInfo])
 
     f = ctx.actions.declare_file("inspect.txt")
@@ -111,11 +110,10 @@ def _write_providers_file(ctx, tgt):
     return f
 
 ################
-def _write_import_providers_file(ctx, tgt):
+def _write_import_providers_file(ctx, tgt, text):
     # tc = ctx.toolchains["@rules_ocaml//toolchain:type"]
 
     provider = tgt[OcamlProvider]
-    text = ""
     INDENT = "  "
     text = text + "structs:\n"
     for struct in provider.structs.to_list():
@@ -196,6 +194,8 @@ def _inspect_impl(ctx):
     is_import = False
     providers = False
 
+    text = CCGRN + "Providers for " + str(ctx.attr.obj[0].label) + CCRESET + "\n"
+
     if ctx.label.package == "inspect":
         if ctx.label.name == "import":
             is_import = True
@@ -204,7 +204,7 @@ def _inspect_impl(ctx):
             objs = []
             if OcamlImportMarker in tmp:
                 print("OcamlImportMarker: %s" % tmp)
-                tmpfile = _write_import_providers_file(ctx, tmp)
+                tmpfile = _write_import_providers_file(ctx, tmp, text)
                 tool = "echo '{f}:'; cat".format(f=tmpfile.path)
             else:
                 fail("Target is not ocaml_import")
@@ -212,7 +212,7 @@ def _inspect_impl(ctx):
             providers = True
             print("ctx.attr.obj: %s" % ctx.attr.obj)
             tmp = ctx.attr.obj[0]
-            tmpfile = _write_providers_file(ctx,tmp)
+            tmpfile = _write_providers_file(ctx,tmp, text)
             tool = "echo '{f}:'; cat".format(f=tmpfile.path)
 
             # objs = []
@@ -226,7 +226,7 @@ def _inspect_impl(ctx):
             tmp = ctx.attr.obj[0]
             if PpxCodepsProvider in tmp:
                 provider = tmp[PpxCodepsProvider]
-                tmpfile = _write_codeps_file(ctx, provider)
+                tmpfile = _write_codeps_file(ctx, provider, text)
                 tool = "echo '{f}:'; cat".format(f=tmpfile.path)
                 ppx = True
             else:
