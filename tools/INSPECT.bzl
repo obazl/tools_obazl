@@ -13,9 +13,10 @@ load("@rules_ocaml//ppx:providers.bzl",
 )
 
 load("@rules_ocaml//ocaml/_rules:impl_ccdeps.bzl",
+     "dump_compilation_context",
      "ccinfo_to_string")
 
-load("@rules_ocaml//ocaml/_debug:utils.bzl",
+load("@rules_ocaml//ocaml/_debug:colors.bzl",
      "CCRED", "CCGRN", "CCBLU", "CCMAG", "CCCYAN", "CCRESET")
 
 #####################################################
@@ -89,6 +90,7 @@ def _write_providers_file(ctx, tgt, text):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
             text = text + "  " + str(val) + "\n"
+
     if PpxCodepsProvider in tgt:
         provider = tgt[PpxCodepsProvider]
         text = text + CCCYAN + "PpxCodepsProvider:\n"
@@ -98,7 +100,11 @@ def _write_providers_file(ctx, tgt, text):
             text = text + "  " + str(val) + "\n"
 
     if CcInfo in tgt:
-        text = text + CCCYAN + "CcInfo:\n" + CCRESET
+        text = text + "{color}CcInfo in {lbl}{reset}".format(
+            color = CCCYAN, reset = CCRESET, lbl=tgt.label)
+        print("CCINFO: %s" % tgt[CcInfo])
+        print("CCINFO: in rule %s" % tgt.label)
+        dump_compilation_context(tgt[CcInfo])
         text = text + ccinfo_to_string(ctx, tgt[CcInfo])
 
     f = ctx.actions.declare_file("inspect.txt")
@@ -315,7 +321,8 @@ inspect = rule(
                 [OcamlModuleMarker],
                 [OcamlNsResolverProvider],
                 [OcamlSignatureProvider],
-                [PpxExecutableMarker]
+                [PpxExecutableMarker],
+                [CcInfo]
             ],
             ## transition fn: enable ppx_print:text for inspect:ppx
             cfg = inspect_out_transition
