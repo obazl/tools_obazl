@@ -11,9 +11,14 @@ def cc_fetch_repos():
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
-        branch = "main"
-        # commit = "bb528f3edac6c00953010e28d51e4a52da7555aa",
-        # shallow_since = "1618495335 -0500"
+        branch = "dev"
+    )
+
+    maybe(
+        git_repository,
+        name = "mibl",
+        remote = "https://github.com/obazl/mibl",
+        branch = "dev"
     )
 
     maybe(
@@ -103,18 +108,18 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
         workspace_file_content = "workspace( name = \"opam-re2c\" )"
     )
 
-    maybe(
-        http_archive,
-        name = "lua",
-        build_file_content = "exports_files(glob([\"**\"]))",
-        # build_file_content = lua_src,
-        # build_file = "@//external/lua:BUILD.bazel",
-        urls = [
-            "https://www.lua.org/ftp/lua-5.4.3.tar.gz",
-        ],
-        strip_prefix = "lua-5.4.3",
-        sha256 = "f8612276169e3bfcbcfb8f226195bfc6e466fe13042f1076cbde92b7ec96bbfb"
-    )
+    # maybe(
+    #     http_archive,
+    #     name = "lua",
+    #     build_file_content = "exports_files(glob([\"**\"]))",
+    #     # build_file_content = lua_src,
+    #     # build_file = "@//external/lua:BUILD.bazel",
+    #     urls = [
+    #         "https://www.lua.org/ftp/lua-5.4.3.tar.gz",
+    #     ],
+    #     strip_prefix = "lua-5.4.3",
+    #     sha256 = "f8612276169e3bfcbcfb8f226195bfc6e466fe13042f1076cbde92b7ec96bbfb"
+    # )
 
     maybe(
         http_archive,
