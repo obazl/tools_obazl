@@ -1,0 +1,16 @@
+((:ws-path "/Users/gar/obazl/mibl/test")
+ (:pkg-path "dune/stanzas/rule/action/write-file")
+ (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/write-file")
+
+ (dune (rule (targets config.mlh) (action (write-file config.mlh "file content string..."))))
+
+ (:files (:static "dune.mibl") (:dynamic "config.mlh"))
+
+ (:dune (:rule (:targets
+                (:_ ((:pkg "dune/stanzas/rule/action/write-file") (:file "config.mlh"))))
+               (:action (:cmd ((:tool write-file)
+                               (:args (:_ ((:pkg "dune/stanzas/rule/action/write-file")
+                                           (:file "config.mlh")))
+                                      (:content "file content string..."))))))))
+
+

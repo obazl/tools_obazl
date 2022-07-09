@@ -1,0 +1,25 @@
+;; mina/src/lib/crypto_params/dune
+
+(rule
+ (targets group_map_params.ml)
+ (deps
+  (:< gen/gen.exe))
+ (action
+  (run %{<} %{targets})))
+
+;; mina/src/lib/dummy_values/dune
+(library
+ (name dummy_values)
+ (public_name dummy_values)
+ (flags :standard -short-paths)
+ (libraries crypto_params snarky)
+ (ppx_runtime_libraries base)
+ (preprocess
+  (pps ppx_version ppx_jane ppxlib.metaquot)))
+
+(rule
+ (targets dummy_values.ml)
+ (deps
+  (:< gen_values/gen_values.exe))
+ (action
+  (run %{<} %{targets})))

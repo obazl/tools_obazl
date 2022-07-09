@@ -1,0 +1,10 @@
+;; e.g. mina/src/external/ocaml-rocksdb/dune
+
+;; in this case we would replace this rule with a cc_library rule
+;; or rather a 'make' rule using rules_foreign_cc
+(rule
+ (targets librocksdb_stubs.a)
+ (deps (source_tree rocksdb))
+ (action (bash "
+# long gnarly bash script to build rocksdb
+")))

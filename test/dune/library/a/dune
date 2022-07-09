@@ -1,0 +1,6 @@
+(library
+  (name mylib)
+  (public_name mylib)
+  (preprocess (pps ppx_jane))
+  (libraries core_kernel ppx_version
+  ))

@@ -1,0 +1,9 @@
+;; (library
+;;  (name depstest_a)
+;;  (public_name depstest-a))
+
+(rule
+ (targets foo.ml foo.mli g.a g.b g.c)
+ (deps (glob_files *.ml)
+       (glob_files ../relative/*.ml{,i}))
+ (action (progn)))

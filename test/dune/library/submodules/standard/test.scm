@@ -1,0 +1,76 @@
+(define modules-ht (make-hash-table))
+
+(if (equal? '(A D E)
+            (modules-fld->submodules-fld
+             '(modules (:standard \ b))
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test A\n")
+    (error 'failed-test "failed test A"))
+
+(if (equal? '(A D)
+            (modules-fld->submodules-fld
+             '(modules (:standard \ b e))
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test B\n")
+    (error 'failed-test "failed test B"))
+
+(if (equal? '(A D)
+            (modules-fld->submodules-fld
+             '(modules (:standard) \ b e)
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test C\n")
+    (error 'failed-test "failed test C"))
+
+(if (equal? '(A D)
+            (modules-fld->submodules-fld
+             '(modules (:standard) \ (b e))
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test D\n")
+    (error 'failed-test "failed test D"))
+
+(if (equal? '(A B D E)
+            (modules-fld->submodules-fld
+             '(modules (:standard))
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test E\n")
+    (error 'failed-test "failed test E"))
+
+(if (equal? '(A B D E)
+            (modules-fld->submodules-fld
+             '(modules :standard)
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml"))
+                                 (B (:mli "b.mli")))
+                        (:dynamic (D (:ml "d.ml"))
+                                  (E (:ml "e.ml") (:mli "e.mli"))))
+             modules-ht))
+    (format #t "passed test F\n")
+    (error 'failed-test "failed test F"))
+
+(if (equal? '(A D)
+            (modules-fld->submodules-fld
+             '(modules (:standard))
+             '(:modules (:static (A (:mli "a.mli") (:ml "a.ml")))
+                        (:dynamic (D (:ml "d.ml"))))
+             modules-ht))
+    (format #t "passed test G\n")
+    (error 'failed-test "failed test G"))

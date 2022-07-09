@@ -1,0 +1,3 @@
+(rule
+  (deps a.ml)
+  (action (cat a.ml)))

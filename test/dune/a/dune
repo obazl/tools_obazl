@@ -1,0 +1,13 @@
+(library
+ (name test_a)
+ (public_name test-a)
+ (flags (:standard -open Tezos_stdlib
+                   -open Tezos_error_monad
+                   -open Tezos_error_monad.TzLwtreslib
+                   ))
+ (libraries tezos-stdlib
+            lwt
+            re
+            tezos-error-monad
+            tezos-lwt-result-stdlib
+            ))

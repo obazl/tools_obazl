@@ -1,0 +1,24 @@
+;; mina/src/external/graphql_ppx/discover/dune
+
+(executable
+ (name discover)
+ (libraries dune.configurator))
+
+(rule
+ (targets dune.flags)
+ (action (run ./discover.exe)))
+
+;; mina/src/lib/zexe/snarky-bn382/dune
+
+(rule
+ (targets snarky_bn382_generated_stubs.ml snarky_bn382.c)
+ (action
+  (run bindings_gen/snarky_bn382_ctypes_stubs.exe)))
+
+;; snarky_bn382_ctypes_stubs.exe is generated in subdir bindings_gen:
+
+;; mina/src/lib/zexe/snarky-bn382/bindings_gen/dune
+;; (executable
+;;  (name snarky_bn382_ctypes_stubs)
+;;  (libraries snarky_bn382_bindings ctypes ctypes.stubs))
+

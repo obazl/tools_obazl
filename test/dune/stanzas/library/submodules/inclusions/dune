@@ -1,0 +1,14 @@
+(library
+ (name lib_a)
+ (public_name lib-a)
+ (modules a b) ;; include only these
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))
+
+;; (library
+;;  (name lib_b)
+;;  (public_name lib-b)
+;;  (modules c d) ;; include only these
+;;  (libraries foo bar)
+;;  (flags (:standard -open foo -open bar -linkall)))
+

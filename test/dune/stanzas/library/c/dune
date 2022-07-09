@@ -1,0 +1,10 @@
+(library
+ (name tezos_embedded_protocol_005_PsBabyM1)
+ (public_name tezos-embedded-protocol-005-PsBabyM1)
+ (library_flags (:standard -linkall))
+ (libraries tezos-protocol-005-PsBabyM1
+            tezos-protocol-updater
+            tezos-protocol-environment)
+ (flags (:standard -w +a-4-6-7-9-29-32-40..42-44-45-48-60-67
+                   -warn-error +a))
+ (modules Registerer))

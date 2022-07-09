@@ -1,0 +1,6 @@
+
+(rule
+ (targets foo.txt)
+ (deps foo.sh)
+ ;; 'system' action means 'sh' ('cmd' on windows)
+ (action (system "foo.sh")))

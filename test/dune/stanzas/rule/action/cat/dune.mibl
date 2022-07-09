@@ -1,0 +1,11 @@
+((:ws-path "/Users/gar/obazl/mibl/test")
+ (:pkg-path "dune/stanzas/rule/action/cat")
+ (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/cat")
+
+ (dune (rule (deps a.ml) (action (cat a.ml))))
+
+ (:dune (:rule
+         (:targets)
+         (:deps (:_ ((:pkg "dune/stanzas/rule/action/cat") (:file "a.ml"))))
+         (:action (:cmd (:tool cat)
+                        (:args (:_ ((:pkg "dune/stanzas/rule/action/cat") (:file "a.ml")))))))))

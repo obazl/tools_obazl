@@ -1,0 +1,28 @@
+
+(rule
+  (deps a.ml)
+  (action (cat a.ml)))
+
+(rule
+  (deps a.ml b.ml)
+  (action (cmp a.ml b.ml)))
+
+(rule
+  (targets config.mlh)
+  (deps config/config.mlh)
+  (action (copy config/config.mlh config.mlh)))
+
+(rule
+ (targets registerer.ml)
+ (deps a.ml b.ml
+   (:src_dir TEZOS_PROTOCOL))
+ (action
+  (with-stdout-to %{targets}
+                  (chdir %{workspace_root}
+                         (run %{bin:tezos-embedded-protocol-packer}
+                              "%{src_dir}"
+                              "demo_counter")))))
+
+(rule
+  (targets config2.mlh)
+  (action (write-file config2.mlh "file content string...")))

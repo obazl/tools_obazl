@@ -1,0 +1,27 @@
+
+(rule
+ (targets sandbox-parameters.json)
+ (deps gen.exe)
+ (action (run %{deps} --sandbox)))
+
+(rule
+ (targets test-parameters.json)
+ (deps gen.exe)
+ (action (run %{deps} --test)))
+
+(rule
+ (targets mainnet-parameters.json)
+ (deps gen.exe)
+ (action (run %{deps} --mainnet)))
+
+;; starlark:
+;; genrule(
+;;     name = "__mainnet-parameters.json",
+;;     outs  = [
+;;         "mainnet-parameters.json"
+;;     ],
+;;     tools  = [":gen.exe"],
+;;     cmd  = "$(location :gen.exe --mainnet",
+;;     srcs  = [
+;;     ],
+;; )

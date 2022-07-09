@@ -1,0 +1,28 @@
+;; tezos/src/bin_node/dune
+
+(rule
+ (action
+  (progn
+   (write-file void_for_linking-embedded-protocol-genesis.empty "")
+   (write-file void_for_linking-embedded-protocol-genesis-carthagenet.empty "")
+   (write-file void_for_linking-demo-noops.empty "")
+   (write-file void_for_linking-demo-counter.empty "")
+   (write-file void_for_linking-alpha.empty "")
+   (write-file void_for_linking-000-Ps9mPmXa.empty "")
+   (write-file void_for_linking-001-PtCJ7pwo.empty "")
+   (write-file void_for_linking-002-PsYLVpVv.empty "")
+   (write-file void_for_linking-003-PsddFKi3.empty "")
+   (write-file void_for_linking-004-Pt24m4xi.empty "")
+   (write-file void_for_linking-005-PsBABY5H.empty "")
+   (write-file void_for_linking-005-PsBabyM1.empty "")
+   (write-file void_for_linking-006-PsCARTHA.empty "")
+   (write-file void_for_linking-007-PsDELPH1.empty "")
+   (write-file void_for_linking-008-PtEdoTez.empty "")
+   (write-file void_for_linking-008-PtEdo2Zk.empty "")
+   (write-file void_for_linking-009-PsFLoren.empty "")
+   (write-file void_for_linking-010-PtGRANAD.empty "")
+   (write-file void_for_linking-alpha-protocol-plugin-registerer.empty "")
+   (write-file void_for_linking-008-PtEdo2Zk-protocol-plugin-registerer.empty "")
+   (write-file void_for_linking-009-PsFLoren-protocol-plugin-registerer.empty "")
+   (write-file void_for_linking-010-PtGRANAD-protocol-plugin-registerer.empty "")
+)))

@@ -1,0 +1,3 @@
+(rule
+ (alias   runtest_dune_template)
+ (action (diff dune.inc dune.inc.gen)))

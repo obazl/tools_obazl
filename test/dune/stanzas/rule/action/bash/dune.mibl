@@ -1,0 +1,18 @@
+((:ws-path "/Users/gar/obazl/mibl/test")
+ (:pkg-path "dune/stanzas/rule/action/bash")
+ (:realpath "/Users/gar/obazl/mibl/test/dune/stanzas/rule/action/bash")
+
+ (dune (rule
+        (targets foo.txt)
+        (deps a.txt)
+        (action (bash "
+# shell script here...
+    "))))
+
+ (:dune (:rule
+         (:targets (:_ ((:pkg "dune/stanzas/rule/action/bash") (:file "foo.txt"))))
+         (:deps (:_ ((:pkg "dune/stanzas/rule/action/bash") (:file "a.txt"))))
+         (:action (:cmd ((:tool bash) (:args "
+# shell script here...
+    "))))))
+ (:files (:dynamic "foo.txt")))

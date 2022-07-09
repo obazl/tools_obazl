@@ -1,150 +1,170 @@
-#include <errno.h>
-#include <fcntl.h>
-#include <libgen.h>
-
-#if INTERFACE
-#ifdef LINUX                    /* FIXME */
-#include <linux/limits.h>
-#else // FIXME: macos test
-#include <limits.h>
-#endif
-#endif
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
+/* #include "ini.h" */
 #include "log.h"
+
+#include "linenoise.h"
+#include "s7.h"
+
 /* #include "utarray.h" */
 /* #include "utstring.h" */
 
-#include "s7.h"
+/* #include "load_dune.h" */
+/* #include "opam_config.h" */
+/* #include "bazel_config.h" */
+/* #include "s7_config.h" */
 
+#include "mibl.h"
 #include "convert.h"
 
-/*
-  Purpose: pass control to Scheme implementation code in convert.scm
- */
-int main(int argc, char *argv[]) // , char **envp)
-{
-    int opt;
-    /* bazel_s7_cb is determined by data attrib of build rule; used
-       to find bazel_s7dir */
-    char *callback_script_file = "convert.scm"; // rename default_script_file
-    char *callback = "ast_handler"; /* fn in callback_script_file  */
-    char *user_script_dir = ".sunlark.d";
-    char *load_script = NULL;
-    char *build_file = NULL;
-    /* utstring_new(build_file); */
+extern s7_scheme *s7;
 
-    while ((opt = getopt(argc, argv, "f:s:u:hv")) != -1) {
+char *history = ".ocamlark.history.txt";
+
+extern bool debug;
+extern bool trace;
+extern bool verbose;
+extern bool ini_error;
+/* extern UT_string *obazl_ini_path; */
+extern struct configuration_s bazel_config;
+
+/* UT_array *opam_dirs;             /\* string list *\/ */
+/* extern UT_string *codept_args_file; */
+
+void completion(const char *buf, linenoiseCompletions *lc) {
+    if (buf[0] == 'h') {
+        linenoiseAddCompletion(lc,"hello");
+        linenoiseAddCompletion(lc,"hello there");
+    }
+}
+
+char *hints(const char *buf, int *color, int *bold) {
+    if (!strcasecmp(buf,"hello")) {
+        *color = 35;
+        *bold = 0;
+        return " World";
+    }
+    return NULL;
+}
+
+void print_usage(void)
+{
+    printf("Usage: mibl [-m | -k | -v | -h ]\n");
+}
+
+void std_repl()
+{
+    char *line;
+    char response[1024];        /* result of evaluating input */
+
+    /* const char *errmsg = NULL; */
+
+    /* list opam dirs, to parameterize codept */
+    /* opam_dirs = inventory_opam(); */
+    /* log_debug("OPAM dir ct: %d", utarray_len(opam_dirs)); */
+    /* char **dir = NULL; */
+    /* while ( (dir=(char**)utarray_next(opam_dirs,dir))) { */
+    /*     log_debug("%s",*dir); */
+    /* } */
+
+    /* dir = NULL; */
+    /* while ( (dir=(char**)utarray_next(bazel_config.src_dirs,dir))) { */
+    /*     log_debug("src dir: %s",*dir); */
+    /* } */
+
+    /* log_debug("linenoise config"); */
+    linenoiseSetMultiLine(1);   /* always support multiline */
+
+    /* Set the completion callback. This will be called every time the
+     * user uses the <tab> key. */
+    linenoiseSetCompletionCallback(completion);
+    linenoiseSetHintsCallback(hints);
+
+    //FIXME: put history in ~/.obazl.d
+    /* Load history from file. The history file is just a plain text file
+     * where entries are separated by newlines. */
+    linenoiseHistoryLoad(history); /* Load the history at startup */
+
+    /* Now this is the main loop of the typical linenoise-based application.
+     * The call to linenoise() will block as long as the user types something
+     * and presses enter.
+     *
+     * The typed string is returned as a malloc() allocated string by
+     * linenoise, so the user needs to free() it. */
+
+    while((line = linenoise("s7> ")) != NULL) {
+
+        if (line[0] != '\0' && line[0] != '/') {
+            snprintf(response, 1024, "(write %s)", line);
+            s7_eval_c_string(s7, response);
+            printf("%s", "\n");
+
+            linenoiseHistoryAdd(line); /* Add to the history. */
+            linenoiseHistorySave(history); /* Save the history on disk. */
+        } else if (!strncmp(line,"/historylen",11)) {
+            /* The "/historylen" command will change the history len. */
+            int len = atoi(line+11);
+            linenoiseHistorySetMaxLen(len);
+        } else if (!strncmp(line, "/mask", 5)) {
+            linenoiseMaskModeEnable();
+        } else if (!strncmp(line, "/unmask", 7)) {
+            linenoiseMaskModeDisable();
+        } else if (line[0] == '/') {
+            printf("Unreconized command: %s\n", line);
+        }
+        free(line);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    printf("mibl repl v 0.1\n");
+    /* Parse options, with --multiline we enable multi line editing. */
+    int opt;
+    while ((opt = getopt(argc, argv, "edmkhtvV")) != -1) {
         switch (opt) {
-        case 'f':
-            /* BUILD.bazel or BUILD file */
-            /* log_info("build file: %s", optarg); */
-            /* utstring_printf(build_file, "%s", optarg); */
-            build_file = optarg;
+        case 'd':
+            debug = true;
             break;
-        case 's':
-            log_info("scheme script file: %s", optarg);
-            load_script = optarg;
+        case 't':
+            trace = true;
             break;
-        case 'u':
-            user_script_dir = optarg;
+        case 'm':
+            linenoiseSetMultiLine(1);
+            printf("Multi-line mode enabled.\n");
+            break;
+        case 'k':
+            linenoisePrintKeyCodes();
+            exit(0);
             break;
         case 'h':
-            log_info("Help: ");
+            print_usage();
             exit(EXIT_SUCCESS);
+            break;
         case 'v':
-            log_info("verbose option (unimplemented) ");
+            verbose =true;
+            break;
+        case 'V':
+            printf("Version: 1.0\n");
+            break;
         default:
-            log_error("Usage: bazel run moonlark:edit -- [-f buildfile] [-l s7file]");
+            print_usage();
             exit(EXIT_FAILURE);
         }
     }
-    /* if (utstring_len(build_file) == 0) { */
-    if (build_file == NULL) {
-        log_error("Usage: bazel run @obazl//convert -- -f <buildfile>");
-        exit(EXIT_FAILURE);
-    }
 
-    s7_scheme *s7 = s7_init();
+   /* initialize in this order: bazel then s7 */
+    bazel_configure(); // getcwd(NULL, 0));
+    s7_configure();
+    /* chdir(launch_dir); */
+    /* if (debug) */
+    /*     log_debug("Set CWD to launch dir: %s", launch_dir); */
 
-    char *cwd = getcwd(NULL, 0);
-    /* log_debug("cwd: %s", cwd); */
+    /* s7_repl(s7); */
+    xen_repl(argc, argv);
 
-    char *wd = getenv("BUILD_WORKING_DIRECTORY");
-    if (wd) {
-        /* log_debug("launched by `bazel run`: %s", wd); */
-        /* launched by bazel run cmd */
-
-        char *bazel_script_dir = get_bazel_script_dir(callback_script_file);
-        log_debug("bazel script dir: %s", bazel_script_dir);
-        /* sunlark_augment_load_path(s7, bazel_script_dir); */
-        s7_pointer newlp =  s7_add_to_load_path(s7, bazel_script_dir);
-
-        /* user script dir is relative to launch dir; set it after chdir */
-        chdir(wd);
-
-        if( access( user_script_dir, F_OK ) != 0 ) {
-            log_warn("WARNING: user_scriptdir does not exist: %s", user_script_dir);
-        }
-        /* sunlark_augment_load_path(s7, user_script_dir); */
-
-        s7_pointer lp = s7_load_path(s7);
-        log_debug("load path: %s", s7_object_to_c_string(s7, lp));
-
-        /* sunlark_load_script_file(L, load_script); */
-        s7_pointer lf;
-        if (load_script) {
-            /* log_debug("loading user script: %s", load_script); */
-            lf =  s7_load(s7, load_script);
-        } else {
-            log_debug("loading default script: %s", callback_script_file);
-            lf =  s7_load(s7, callback_script_file);
-        }
-        /* log_debug("load result: %s", s7_object_to_c_string(s7, lf)); */
-        fflush(stdout);
-
-        /* s7_pointer s7_call(s7_scheme *sc, s7_pointer func, s7_pointer args); */
-
-
-        /* s7_pointer s7_make_list(s7_scheme *sc, s7_int length, s7_pointer initial_value); */
-        /* s7_pointer args = s7_make_list(s7, */
-        /*                                1, /\* length *\/ */
-        /*                                s7_make_integer(s7, 1)); */
-    } else {
-        log_error("BUILD_WORKING_DIRECTORY not found. This program is designed to be run from the root directory of a Bazel repo.");
-    }
-
-    /* log_debug("ml CWD: %s", getcwd(NULL, 0)); */
-    /* int r = access(build_file, F_OK); */
-    /* log_debug("access %s ? %d", build_file, r); */
-
-    /* now parse the file using libstarlark */
-    /* log_debug("lark_parse_build_file: %s", build_file); */
-
-    /* struct parse_state_s *parse_state = sealark_parse_file(build_file); */
-    /* log_debug("parsed file %s", parse_state->lexer->fname); */
-
-    /* /\* log_debug("converting ast"); *\/ */
-    /* s7_pointer ast = sunlark_ast2scm(s7, parse_state); */
-
-    s7_pointer inport = s7_open_input_file(s7, build_file, "r");
-
-    log_debug("inport type: %s", s7_object_to_c_string(s7,s7_type_of(s7, inport)));
-
-    s7_pointer ast = s7_read(s7, inport);
-
-    log_debug("ast: %s", s7_object_to_c_string(s7, ast));
-
-    s7_pointer args =  s7_list(s7, 1,
-                               s7_make_string(s7,build_file));
-
-    /* log_debug("calling dune _handler"); */
-    s7_pointer result = s7_call(s7,
-                                s7_name_to_value(s7, "obazl-convert"),
-                                args);
-
-    s7_quit(s7);
+    return 0;
 }

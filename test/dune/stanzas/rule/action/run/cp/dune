@@ -1,0 +1,7 @@
+;; mina/lib/snarky/src/dune
+
+(rule
+ (targets x.foo)
+ (deps a/b a/c)
+ (action
+  (run cp %{deps} ./)))

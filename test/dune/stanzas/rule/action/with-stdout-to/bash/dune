@@ -1,0 +1,8 @@
+(rule
+ (targets registerer.ml)
+ (deps (glob_files *.ml{,i}))
+ (action
+  (with-stdout-to %{targets}
+                  (run bash
+                       %{libexec:tezos-stdlib:test-ocp-indent.sh}
+                       %{deps}))))

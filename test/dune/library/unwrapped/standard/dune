@@ -1,0 +1,7 @@
+(library
+ (name lib_a)
+ (public_name lib-a)
+ (wrapped false)
+ (modules :standard) ;; same as omitting, include all
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))

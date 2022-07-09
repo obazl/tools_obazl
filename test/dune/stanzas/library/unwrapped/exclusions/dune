@@ -1,0 +1,8 @@
+(library
+ (name lib_a)
+ (public_name lib-a)
+ (wrapped false)
+ (modules :standard \ b) ;; all but b
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))
+

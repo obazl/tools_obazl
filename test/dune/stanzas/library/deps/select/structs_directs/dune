@@ -1,0 +1,10 @@
+(library
+  (name lib_a)
+  (public_name lib-a)
+  (modules (:standard))
+  (libraries c d
+             (select a.ml from
+                     ;; x and y are extra-pkg deps
+                     (x -> a_x.ml)
+                     (y -> a_y.ml)
+                     (-> a_default.ml))))

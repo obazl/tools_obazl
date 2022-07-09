@@ -1,0 +1,26 @@
+(library
+ (name lib_a)
+ (public_name lib-a)
+ (modules a b) ;; include only these
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))
+
+(library
+ (name lib_b)
+ (public_name lib-b)
+ (modules c d) ;; include only these
+ (libraries foo bar)
+ (flags (:standard -open foo -open bar -linkall)))
+
+(rule
+ (targets foo.h.template bar.h dune.inc.gen)
+ (deps a b)
+ (action
+  (run cp %{deps} ./)))
+
+(rule
+ (targets foo.ml foo.mli bar.json baz.dat)
+ (deps a b)
+ (action
+  (run tool %{deps} ./)))
+

@@ -1,0 +1,12 @@
+;; tezos/src/proto_demo_counter/lib_protocol/dune.inc
+
+(rule
+ (targets registerer.ml)
+ (deps a.ml b.ml
+   (:src_dir TEZOS_PROTOCOL))
+ (action
+  (with-stdout-to %{targets}
+                  (chdir %{workspace_root}
+                         (run %{bin:tezos-embedded-protocol-packer}
+                              "%{src_dir}"
+                              "demo_counter")))))
