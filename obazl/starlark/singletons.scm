@@ -1,190 +1,178 @@
-(define (starlark-emit-file-targets outp fs-path stanzas dune-pkg)
-  ;; (format #t "starlark-emit-file-targets: ~A\n" fs-path)
+(format #t "loading starlark/singletons.scm\n")
+
+;; optimizations: memoize opts and deps
+
+(define (-emit-module outp module stanza)
+  (format #t "-emit-module: ~A\n" stanza)
+  (let* ((modname (car module))
+         (srcs    (cdr module))
+         (sigfile (car (assoc-val :mli srcs)))
+         (structfile (car (assoc-val :ml srcs)))
+         (libname (car (assoc-val :privname (cdr stanza))))
+         (optsvar (string-append (string-upcase (stringify libname))
+                                 "_OPTS")))
+         ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+         ;;               (cdr opts) '())))
+    (format #t "emitting module: ~A: ~A\n" modname srcs)
+    (format #t " optsvar: ~A\n" optsvar)
+
+    (format outp "ocaml_module(\n")
+    (format outp "    name     = \"~A\",\n" modname)
+    (format outp "    struct   = \"~A\",\n" structfile)
+    ;; if direct sigdeps
+    (format outp "    sig      = \"~A\",\n" sigfile)
+    ;; else
+    ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
+    (format outp "    opts      = ~A,\n" optsvar)
+
+  ;; (if ppx-alist
+  ;;     (begin
+  ;;       (format outp
+  ;;               "    ppx      = \":~A\",\n"
+  ;;               (cadr (assoc :name ppx-alist)))
+  ;;       (if (not
+  ;;            (equal? :all (cadr (assoc :scope
+  ;;                                      ppx-alist))))
+  ;;           (format outp
+  ;;                   "    ppx_args = [~{~S, ~}],\n"
+  ;;                   (cadr (assoc :args ppx-alist))))))
+    ))
+
+(define (-emit-modules outp modules)
+  (format #t "-emit-modules: ~A\n" modules)
+  (format outp "#############################\n")
+  (format outp "####  Module Targets  ####\n")
+  (newline outp)
+
+  (for-each
+   (lambda (module)
+     (format #t "module: ~A\n" module)
+     ;; (flush-output-port)
+     (let* ((modname (car module))
+            (aggregator (find-if
+                         (lambda (stanza)
+                           (format #t "checking stanza ~A\n" stanza)
+                           (case (car stanza)
+                             ((:library)
+                              ;; (if (eq? :library (car stanza))
+                              (if-let ((submods
+                                        (assoc-val :submodules
+                                                   (cdr stanza))))
+                                      (begin
+                                        (format #t "submods: ~A\n" submods)
+                                        (if (member modname submods)
+                                            (-emit-module outp module stanza)
+                                            #f))))
+                             (else #f)))
+                         (assoc-val :dune pkg)))
+            )
+       (format #t "aggregator: ~A\n" aggregator)
+       (format outp ")\n\n")))
+   modules))
+
+(define (-emit-sig outp sig stanza)
+  (format #t "-emit-sig: ~A, ~A\n" sig stanza)
+  (let* ((modname (car sig))
+         (srcs    (cdr sig))
+         (sigfile (car (assoc-val :mli srcs)))
+         (libname (car (assoc-val :privname (cdr stanza))))
+         (optsvar (string-append (string-upcase (stringify libname))
+                                 "_OPTS")))
+    (format #t "emitting sig: ~A: ~A\n" modname srcs)
+    (format #t " optsvar: ~A\n" optsvar)
+
+    (format outp "ocaml_signature(\n")
+    (format outp "    name     = \"~A\",\n" modname)
+    (format outp "    sig      = \"~A\",\n" sigfile)
+
+    (format outp "    opts      = ~A,\n" optsvar)
+
+    ;; (let* ((opens (if-let ((opens (assoc-val :opens opts)))
+    ;;                       (apply append (map (lambda (o)
+    ;;                                            (list "-open" (stringify o)))
+    ;;                                          opens))
+    ;;                       '()))
+    ;;        (flags (if-let ((flags (assoc-val :flags opts)))
+    ;;                       (list (apply string-append
+    ;;                                    (map stringify flags)))
+    ;;                       '()))
+    ;;        (options (apply append (list opens flags)))
+    ;;        (_ (format #t "options: ~A\n" options))
+    ;;        (standard (if (assoc :standard opts) #t #f)))
+    ;;   (format outp "    opts      = [~{\"~A\"~^, ~}],\n" options))
+
+
+
+  ;; (if ppx-alist
+  ;;     (begin
+  ;;       (format outp
+  ;;               "    ppx      = \":~A\",\n"
+  ;;               (cadr (assoc :name ppx-alist)))
+  ;;       (if (not
+  ;;            (equal? :all (cadr (assoc :scope
+  ;;                                      ppx-alist))))
+  ;;           (format outp
+  ;;                   "    ppx_args = [~{~S, ~}],\n"
+  ;;                   (cadr (assoc :args ppx-alist))))))
+    ))
+
+(define (-emit-signatures outp sigs)
+  (format #t "-emit-sigs: ~A\n" sigs)
+  (format outp "#############################\n")
+  (format outp "####  Signature Targets  ####\n")
+  (newline outp)
+
+  (for-each
+   (lambda (sig)
+     (format #t "sig: ~A\n" sig)
+     (let* ((modname (car sig))
+            (aggregator (find-if
+                         (lambda (stanza)
+                           (format #t "checking stanza ~A\n" stanza)
+                           (case (car stanza)
+                             ((:library)
+                              ;; (if (eq? :library (car stanza))
+                              (if-let ((subsigs
+                                        (assoc-val :subsigs
+                                                   (cdr stanza))))
+                                      (begin
+                                        (format #t "subsigs: ~A\n" subsigs)
+                                        (if (member modname subsigs)
+                                            (-emit-sig outp sig stanza)
+                                            #f))))
+                             (else #f)))
+                         (assoc-val :dune pkg)))
+            )
+       (format #t "aggregator: ~A\n" aggregator)
+       (format outp ")\n\n")))
+   sigs))
+
+;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
+
+(define (starlark-emit-singleton-targets outp pkg)
+  (format #t "starlark-emit-singleton-targets: ~A\n" pkg)
 
   ;; we emit targets for both static and generated source files; in
   ;; addition, we may have :indirect submodule deps (example:
   ;; src/lib_protocol_environment/sigs)
 
-  (let* ((srcfiles (if-let ((srcs (assoc-in '(:srcfiles :ocaml :generated)
-                                           dune-pkg)))
-                       (cadr srcs)
-                      '()))
-         (srcfiles (if-let ((srcs (assoc-in '(:srcfiles :ocaml :static)
-                                            dune-pkg)))
-                           (sort! (concatenate (cadr srcs) srcfiles) string<?)
-                           srcfiles))
-        )
-    (if srcfiles
-        (begin
-          (format outp "#############################\n")
-          (format outp "####  Singleton Targets  ####\n")
-          (newline outp)))
+  (let* ((modules-static (if-let ((ms (assoc-in '(:modules :static) pkg)))
+                                 (cdr ms) '()))
+         (structs-static (if-let ((structs (assoc-in
+                                            '(:structures :static) pkg)))
+                                 (cdr structs) '()))
+         (modules (apply append modules-static structs-static))
+         (sigs-static    (if-let ((sigs (assoc-in
+                                         '(:signatures :static) pkg)))
+                                 (cdr sigs) #f))
+         (sigs sigs-static))
 
-    (for-each (lambda (srcfile)
-                ;; (format #t "SRCFILE: ~A/~A\n" fs-path srcfile)
-                ;; (format #t ".") (flush-output-port)
-                (let-values (((typ mname)
-                              (if (string-suffix? ".ml" srcfile)
-                                  (values :ml
-                                          ;;(string-drop-right srcfile 3)
-                                          (file-name->module-name srcfile))
-                                  (if (string-suffix? ".mli" srcfile)
-                                      (values :mli
-                                              ;; (string-drop-right srcfile 4)
-                                              (file-name->module-name srcfile)
-                                              )
-                                      (error 'bad-filename
-                                             (string-append
-                                              "extension should be .ml or .mli: "
-                                              srcfile))))))
-                  (let* ((aggregator-stanza
-                          (module-name->aggregator mname stanzas))
-                         ;; (_ (format #t "AGG for ~A:~A: ~A\n"
-                         ;;            fs-path mname aggregator-stanza))
+    (format #t "modules: ~A\n" modules)
+    (format #t "sigs:    ~A\n" sigs)
+    (format #t "structs-static: ~A\n" structs-static)
 
-                         (ppx-alist ;; = ppx alist
-                          (module->ppx-alist fs-path mname stanzas))
-                         (_ (format #t "PPX-ALIST: ~A\n" ppx-alist))
-
-                         (opts
-                          (if aggregator-stanza
-                              (if-let ((opts
-                                        (assoc ':opts aggregator-stanza)))
-                                      (cadr opts)
-                                      #f)))
-
-                         (namespace
-                          (if aggregator-stanza
-                              (if-let ((pub (assoc-in '(:name :public)
-                                                            aggregator-stanza)))
-                                      (cadr pub) #f)))
-
-                         (ns-module
-                          (if aggregator-stanza
-                              (normalize-module-name
-                               (cadr (assoc-in '(:name :private)
-                                              aggregator-stanza)))
-                              #f))
-                         )
-                    (format #t "namespace: ~A\n"
-                            namespace)
-                    (if (string-suffix? ".ml" srcfile)
-                        (begin
-                          (format outp "ocaml_module(\n")
-                          (format outp "    name     = \"~A\",\n" mname)
-                          (format outp "    struct   = \"~A\",\n" srcfile)
-                          (let ((mlisrc (string-append
-                                         ;; fs-path "/"
-                                         srcfile "i")))
-                            ;; (format #t "mlisrc: ~A\n" mlisrc)
-                            ;; (format #t "srcfiles: ~A\n" srcfiles)
-                            (if (member mlisrc srcfiles)
-                                (format outp "    sig      = \":~A\",\n"
-                                        (string-append
-                                         (symbol->string mname) "_cmi"))))
-
-                          (if ppx-alist
-                              (begin
-                                (format outp
-                                        "    ppx      = \":~A\",\n"
-                                        (cadr (assoc :name ppx-alist)))
-                                (if (not
-                                     (equal? :all (cadr (assoc :scope
-                                                               ppx-alist))))
-                                    (format outp
-                                            "    ppx_args = [~{~S, ~}],\n"
-                                            (cadr (assoc :args ppx-alist))))))
-                          )
-
-                        ;;else
-                        (if (string-suffix? ".mli" srcfile)
-                              (begin
-                                (format outp "ocaml_signature(\n")
-                                (format outp "    name     = \"~A_cmi\",\n" mname)
-                                (format outp "    src      = \"~A\",\n" srcfile)
-
-                          (format #t "YYYYYYYYYYYYYYYYy\n")
-                                (if ppx-alist
-                                  (begin
-                                    (format outp
-                                            "    ppx      = \":~A\",\n"
-                                            (cadr (assoc :name ppx-alist)))
-                                    (if (not
-                                         (equal? :all (cadr (assoc :scope
-                                                                   ppx-alist))))
-                                        (format outp
-                                            "    ppx_args = [~{~S, ~}],\n"
-                                            (cadr (assoc :args ppx-alist))))))
-                              )
-                            (error 'bad-filename
-                                   (string-append
-                                    "extension should be .ml or .mli: "
-                                    srcfile))))
-
-                    ;; now opts and deps
-                    ;; (starlark-emit-build-opts outp mname stanzas dune-pkg)
-                    (if namespace
-                        (if opts
-                            (format outp "    opts     = ~A,\n"
-                                    (name->opts-sym namespace))))
-                        ;; (if-let ((exe-deps
-                        ;;           (module->executable-deps stanzas mname)))
-                        ;;         (begin
-                        ;;           (format outp "    opts   = [\n")
-                        ;;           (for-each (lambda (dep)
-                        ;;                       (format outp
-                        ;;                               "        \"~A\",\n" dep))
-                        ;;                     exe-deps)
-                        ;;           (format outp "    ],\n"))
-
-                        ;;         ;; else: neither submodule nor exec dep
-                        ;;         ;; => no opts?
-                        ;;         ))
-
-                    (begin
-                      ;; (format #t "    processing deps\n")
-                      (let* ((deps (if-let ((deps (filedeps-tbl
-                                                   (string-append
-                                                    fs-path "/" srcfile))))
-                                           (cadr (assoc :deps deps))
-                                           #f))
-                             (dep-labels (if deps
-                                             (deps->labels deps
-                                                           namespace
-                                                           ns-module
-                                                           mname stanzas
-                                                           srcfiles)
-                                             '()))
-                             )
-                        (if (equal? mname 'Rand)
-                            (begin
-                              (format #t "RAND:\n")
-                              (format #t "  namespace: ~A\n" namespace)
-                              (format #t "  deps: ~A\n" deps)
-                              (format #t "  dep-labels: ~A\n" dep-labels)
-                              ))
-                        (if namespace
-                            ;; (if deps ;; (not (null? dep-labels))
-                                (format outp "    deps     = ~A + [\n"
-                                        (name->deps-sym namespace))
-                                (format outp "    deps     = [\n"))
-                        ;; )
-
-
-                        (for-each (lambda (dep-label)
-                                    (if (cadr dep-label)
-                                        (format outp "       \"~A\",\n"
-                                                ;; ## ~A\n"
-                                                (cadr dep-label)
-                                                ;; (car dep-label)
-                                                )
-                                        ;; (format outp "       ## ~A\n"
-                                        ;;         (car dep-label))
-                                        ))
-                                  dep-labels))
-                      (format outp "    ]\n"))
-                    (format outp ")\n\n"))))
-              srcfiles)
+    (-emit-modules outp modules)
+    (-emit-signatures outp sigs)
     ))
 
     ;; (let ((lib-stanzas (assoc+ :library stanzas)))
@@ -211,3 +199,5 @@
     ;;                 lib-stanzas))
     ;;   )
     ;; ))
+
+(format #t "loaded starlark/singletons.scm\n")

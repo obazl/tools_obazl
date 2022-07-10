@@ -1,0 +1,29 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+LIB_A_DEPS = ["foo", "bar"]
+
+LIB_A_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
+
+#############################
+####  Module Targets  ####
+
+ocaml_module(
+    name     = "A",
+    struct   = "a.ml",
+    sig      = "a.mli",
+    opts      = LIB_A_OPTS,
+)
+
+#############################
+####  Signature Targets  ####
+
+ocaml_signature(
+    name     = "B",
+    sig      = "b.mli",
+    opts      = LIB_A_OPTS,
+)
+
