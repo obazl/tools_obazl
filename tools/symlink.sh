@@ -29,7 +29,7 @@ ln -sfv $HOME/obazl/tools_obazl/obazl/starlark.scm $HOME/.local/share/mibl
 ln -sfv $HOME/obazl/tools_obazl/obazl/starlark/*scm $HOME/.local/share/mibl/starlark
 
 ## copy the executable and lib (do not symlink from Bazel directories)
-cp -fv `realpath bazel-bin/convert/convert` $HOME/.local/bin/obazl
+cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/obazl
 chmod u+rwx $HOME/.local/bin/obazl
 
 # cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl

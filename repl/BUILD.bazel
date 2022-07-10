@@ -1,0 +1,166 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+cc_binary(
+    name  = "repl",
+    linkstatic = True,
+    srcs  = [
+        "repl.c", "repl.h",
+        "xen_repl.c", "xen_repl.h",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/repl",
+        # "-I$(GENDIR)/external/mibl/repl",
+
+        "-Iexternal/uthash/include",
+        # "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        # "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
+        "-Iexternal/libs7/src",
+        # "-Iexternal/mibl/libs7/src",
+        "-Iexternal/libs7/vendored/linenoise",
+        "-Iexternal/mibl/libs7/vendored/linenoise",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+        # "-lc_s7"
+    ],
+    data = [
+        "//obazl:srcs",
+        "//obazl/starlark:srcs"
+    ],
+    deps = [
+        "@mibl//src:mibl",
+        "@libs7//src:s7",
+        "@libs7//src:c_s7",
+        "@logc//:logc",
+        # "//external/libinih:inih",
+        # "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "repl.c",
+        "xen_repl.c",
+        "deploy.c",
+        "deploy_config.c"
+    ],
+    outs = [
+        "repl.h",
+        "xen_repl.h",
+        "deploy.h",
+        "deploy_config.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location repl.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location repl.c) \\",
+        "    $(location xen_repl.c) \\",
+        "    $(location deploy.c) \\",
+        "    $(location deploy_config.c)",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+cc_binary(
+    name  = "deploy",
+    srcs  = [
+        "deploy.c", "deploy.h",
+        "deploy_config.c", "deploy_config.h",
+        # "//src:mibl_config.h",
+        # "//src:fs.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        # "LD_LIBRARY_PATH=external/libs7/src"
+    ],
+    copts = select({
+        # strdup is non-standard, not supported on linux in strict c11 mode
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        # "-pedantic-errors",
+        "-Wall",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/repl",
+
+        "-I$(GENDIR)/external/mibl/src",
+
+        # "-I$(GENDIR)/deploy",
+        # "-I$(GENDIR)/external/mibl/deploy",
+
+        "-Iexternal/uthash/include",
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        "-Iexternal/libs7/src",
+        "-Iexternal/mibl/libs7/src",
+    ],
+    data = [
+        "@mibl//src:mibl",  # libmibl.so
+        # "//repl", # so we can find it in MANIFEST
+        "@mibl//mibl:srcs",
+        "@mibl//mibl/dune:srcs",
+        "@mibl//mibl/meta:srcs",
+        "@mibl//mibl/opam:srcs",
+
+        "//obazl:srcs",
+        "//obazl/starlark:srcs"
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+    ],
+    deps = [
+        # "//repl",
+        "@mibl//src:mibl", # since we depend on its config files
+        "//external/libinih:inih",
+        # "@logc//:logc",
+        # "@libs7//src:s7",
+        # "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+
