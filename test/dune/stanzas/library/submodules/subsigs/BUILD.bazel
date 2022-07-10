@@ -16,6 +16,7 @@ ocaml_module(
     struct   = "a.ml",
     sig      = "a.mli",
     opts      = LIB_A_OPTS,
+    deps      = LIB_A_DEPS,
 )
 
 #############################
@@ -25,5 +26,6 @@ ocaml_signature(
     name     = "B",
     sig      = "b.mli",
     opts      = LIB_A_OPTS,
+    deps      = LIB_A_DEPS,
 )
 

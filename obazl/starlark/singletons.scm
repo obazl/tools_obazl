@@ -8,13 +8,13 @@
          (srcs    (cdr module))
          (sigfile (car (assoc-val :mli srcs)))
          (structfile (car (assoc-val :ml srcs)))
-         (libname (car (assoc-val :privname (cdr stanza))))
-         (optsvar (string-append (string-upcase (stringify libname))
-                                 "_OPTS")))
+         (libname (string-append
+                   (string-upcase
+                    (stringify
+                     (car (assoc-val :privname (cdr stanza))))))))
          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
          ;;               (cdr opts) '())))
     (format #t "emitting module: ~A: ~A\n" modname srcs)
-    (format #t " optsvar: ~A\n" optsvar)
 
     (format outp "ocaml_module(\n")
     (format outp "    name     = \"~A\",\n" modname)
@@ -23,7 +23,8 @@
     (format outp "    sig      = \"~A\",\n" sigfile)
     ;; else
     ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-    (format outp "    opts      = ~A,\n" optsvar)
+    (format outp "    opts      = ~A_OPTS,\n" libname)
+    (format outp "    deps      = ~A_DEPS,\n" libname)
 
   ;; (if ppx-alist
   ;;     (begin
@@ -75,17 +76,20 @@
   (let* ((modname (car sig))
          (srcs    (cdr sig))
          (sigfile (car (assoc-val :mli srcs)))
-         (libname (car (assoc-val :privname (cdr stanza))))
-         (optsvar (string-append (string-upcase (stringify libname))
-                                 "_OPTS")))
+         (libname (string-append
+                   (string-upcase
+                    (stringify
+                     (car (assoc-val :privname (cdr stanza))))))))
+         ;; (optsvar (string-append (string-upcase (stringify libname))
+         ;;                         "_OPTS")))
     (format #t "emitting sig: ~A: ~A\n" modname srcs)
-    (format #t " optsvar: ~A\n" optsvar)
 
     (format outp "ocaml_signature(\n")
     (format outp "    name     = \"~A\",\n" modname)
     (format outp "    sig      = \"~A\",\n" sigfile)
 
-    (format outp "    opts      = ~A,\n" optsvar)
+    (format outp "    opts      = ~A_OPTS,\n" libname)
+    (format outp "    deps      = ~A_DEPS,\n" libname)
 
     ;; (let* ((opens (if-let ((opens (assoc-val :opens opts)))
     ;;                       (apply append (map (lambda (o)
