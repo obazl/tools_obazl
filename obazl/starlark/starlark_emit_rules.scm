@@ -271,7 +271,7 @@
   ;; (format #t "starlark-emit-rule-targets")
 
   ;; same code as starlark-emit-aggregate-targets, but we want to put
-  ;; aggregats and rules in different locations.
+  ;; aggregates and rules in different locations.
   (let ((flag #t))
     (for-each (lambda (stanza)
                 (case (car stanza)

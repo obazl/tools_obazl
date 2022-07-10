@@ -1,7 +1,7 @@
 (format #t "loading starlark/templates.scm\n")
 
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
-  (format #t "starlark-emit-buildfile-hdr\n")
+  (format #t "starlark-emit-buildfile-hdr: ~A\n" obazl-rules)
 
   ;; if write_file, copy_file, etc, emit:
   ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.

@@ -1,0 +1,11 @@
+;; null lib with no modules
+
+;; i.e. no src files in dir, otherwise they would implicitly count in
+;; (modules :standard) default
+
+;; used with 'install' stanza
+;; e.g. tezos/src/tooling:
+
+(library
+ (name tezos_tooling)
+ (public_name tezos-tooling))

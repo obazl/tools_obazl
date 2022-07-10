@@ -1,0 +1,251 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-stdlib-unix ########
+TEZOS_STDLIB_UNIX_OPTS = [
+    "-open", "Data_encoding",
+    "-open", "Tezos_error_monad",
+    "-open", "Tezos_error_monad.TzLwtreslib",
+    "-open", "Tezos_event_logging",
+    "-open", "Tezos_stdlib",
+]
+
+TEZOS_STDLIB_UNIX_DEPS = [
+    "//src/lib_error_monad:tezos-error-monad",
+    "//src/lib_event_logging:tezos-event-logging",
+    "//src/lib_lwt_result_stdlib:tezos-lwt-result-stdlib",
+    "//src/lib_stdlib:tezos-stdlib",
+    "@data-encoding//:data-encoding",
+    "@ipaddr//unix",
+    "@lwt//unix",
+    "@lwt_log//:lwt_log",
+    "@mtime//:mtime",
+    "@mtime//clock/os",
+    "@ptime//:ptime",
+    "@ptime//clock/os",
+    "@re//:re",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-stdlib-unix",
+    ns         = "Tezos_stdlib_unix",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Animation",
+        ":File_descriptor_sink",
+        ":File_event_sink",
+        ":Internal_event_unix",
+        ":Lwt_lock_file",
+        ":Lwt_log_sink_unix",
+        ":Lwt_utils_unix",
+        ":Moving_average",
+        ":Sys_info",
+        ":Systime_os",
+        ":Utils",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Animation",
+    struct   = "animation.ml",
+    sig      = ":Animation_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Animation_cmi",
+    src      = "animation.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "File_descriptor_sink",
+    struct   = "file_descriptor_sink.ml",
+    sig      = ":File_descriptor_sink_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+       ":Lwt_utils_unix",
+    ]
+)
+
+ocaml_signature(
+    name     = "File_descriptor_sink_cmi",
+    src      = "file_descriptor_sink.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "File_event_sink",
+    struct   = "file_event_sink.ml",
+    sig      = ":File_event_sink_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+       ":Lwt_utils_unix",
+    ]
+)
+
+ocaml_signature(
+    name     = "File_event_sink_cmi",
+    src      = "file_event_sink.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Internal_event_unix",
+    struct   = "internal_event_unix.ml",
+    sig      = ":Internal_event_unix_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+       ":Lwt_utils_unix",
+       ":Lwt_log_sink_unix",
+       ":File_event_sink",
+       ":File_descriptor_sink",
+    ]
+)
+
+ocaml_signature(
+    name     = "Internal_event_unix_cmi",
+    src      = "internal_event_unix.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+       ":Lwt_log_sink_unix",
+    ]
+)
+
+ocaml_module(
+    name     = "Lwt_lock_file",
+    struct   = "lwt_lock_file.ml",
+    sig      = ":Lwt_lock_file_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Lwt_lock_file_cmi",
+    src      = "lwt_lock_file.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Lwt_log_sink_unix",
+    struct   = "lwt_log_sink_unix.ml",
+    sig      = ":Lwt_log_sink_unix_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Lwt_log_sink_unix_cmi",
+    src      = "lwt_log_sink_unix.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Lwt_utils_unix",
+    struct   = "lwt_utils_unix.ml",
+    sig      = ":Lwt_utils_unix_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Lwt_utils_unix_cmi",
+    src      = "lwt_utils_unix.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Moving_average",
+    struct   = "moving_average.ml",
+    sig      = ":Moving_average_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Moving_average_cmi",
+    src      = "moving_average.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Sys_info",
+    struct   = "sys_info.ml",
+    sig      = ":Sys_info_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Sys_info_cmi",
+    src      = "sys_info.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Systime_os",
+    struct   = "systime_os.ml",
+    sig      = ":Systime_os_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Systime_os_cmi",
+    src      = "systime_os.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Utils",
+    struct   = "utils.ml",
+    sig      = ":Utils_cmi",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Utils_cmi",
+    src      = "utils.mli",
+    opts     = TEZOS_STDLIB_UNIX_OPTS,
+    deps     = TEZOS_STDLIB_UNIX_DEPS + [
+    ]
+)
+

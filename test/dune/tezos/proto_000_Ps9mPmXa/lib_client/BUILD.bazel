@@ -1,0 +1,68 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-client-000-Ps9mPmXa ########
+TEZOS_CLIENT_000_PS9MPMXA_OPTS = [
+    "-open", "Tezos_base__TzPervasives",
+    "-open", "Tezos_client_base",
+    "-open", "Tezos_client_commands",
+    "-open", "Tezos_protocol_000_Ps9mPmXa",
+    "-open", "Tezos_shell_services",
+]
+
+TEZOS_CLIENT_000_PS9MPMXA_DEPS = [
+    "//src/lib_base:tezos-base",
+    "//src/lib_client_base:tezos-client-base",
+    "//src/lib_client_commands:tezos-client-commands",
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/lib_shell_services:tezos-shell-services",
+    "//src/lib_stdlib_unix:tezos-stdlib-unix",
+    "//src/proto_000_Ps9mPmXa/lib_protocol:tezos-protocol-000-Ps9mPmXa",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-client-000-Ps9mPmXa",
+    ns         = "Tezos_client_000_Ps9mPmXa",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Client_proto_main",
+        ":Protocol_client_context",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Client_proto_main",
+    struct   = "client_proto_main.ml",
+    sig      = ":Client_proto_main_cmi",
+    opts     = TEZOS_CLIENT_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_CLIENT_000_PS9MPMXA_DEPS + [
+       ":Protocol_client_context",
+    ]
+)
+
+ocaml_signature(
+    name     = "Client_proto_main_cmi",
+    src      = "client_proto_main.mli",
+    opts     = TEZOS_CLIENT_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_CLIENT_000_PS9MPMXA_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Protocol_client_context",
+    struct   = "protocol_client_context.ml",
+    opts     = TEZOS_CLIENT_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_CLIENT_000_PS9MPMXA_DEPS + [
+    ]
+)
+

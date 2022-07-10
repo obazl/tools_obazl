@@ -1,0 +1,54 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-clic.unix ########
+TEZOS_CLIC_UNIX_OPTS = [
+    "-open", "Tezos_clic",
+    "-open", "Tezos_error_monad",
+    "-open", "Tezos_error_monad.TzLwtreslib",
+    "-open", "Tezos_stdlib",
+]
+
+TEZOS_CLIC_UNIX_DEPS = [
+    "//src/lib_clic:tezos-clic",
+    "//src/lib_error_monad:tezos-error-monad",
+    "//src/lib_lwt_result_stdlib:tezos-lwt-result-stdlib",
+    "//src/lib_stdlib_unix:tezos-stdlib-unix",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-clic.unix",
+    ns         = "Tezos_clic_unix",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Scriptable",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Scriptable",
+    struct   = "scriptable.ml",
+    sig      = ":Scriptable_cmi",
+    opts     = TEZOS_CLIC_UNIX_OPTS,
+    deps     = TEZOS_CLIC_UNIX_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Scriptable_cmi",
+    src      = "scriptable.mli",
+    opts     = TEZOS_CLIC_UNIX_OPTS,
+    deps     = TEZOS_CLIC_UNIX_DEPS + [
+    ]
+)
+

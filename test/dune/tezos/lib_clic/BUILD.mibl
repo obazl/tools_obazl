@@ -1,0 +1,14 @@
+((:ws-path "/Users/gar/obazl/mibl") (:pkg-path "test/dune/tezos/lib_clic")
+  (:realpath "/Users/gar/obazl/mibl/test/dune/tezos/lib_clic")
+  (:files (:static "BUILD.bazel" "BUILD.mibl" "dune.mibl"))
+  (:modules (:static (Clic (:ml "clic.ml") (:mli "clic.mli"))))
+  (dune (library (name tezos_clic) (public_name tezos-clic)
+                 (flags (:standard -open Tezos_stdlib -open Tezos_error_monad -open
+                                   Tezos_error_monad.TzLwtreslib))
+                 (libraries tezos-stdlib lwt re tezos-error-monad tezos-lwt-result-stdlib)))
+  (dune-project (lang dune 2.0) (formatting (enabled_for ocaml)) (name tezos-clic))
+  (:dune (:library (:privname tezos_clic) (:pubname tezos-clic)
+                   (:module-opts ((:standard) (:opens Tezos_stdlib Tezos_error_monad
+                                                      Tezos_error_monad.TzLwtreslib)))
+                   (:submodules Clic)
+                   (:deps (:fixed tezos-lwt-result-stdlib tezos-error-monad re lwt tezos-stdlib)))))

@@ -1,0 +1,51 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-test-helpers ########
+TEZOS_TEST_HELPERS_OPTS = [
+    "-linkall",
+]
+
+TEZOS_TEST_HELPERS_DEPS = [
+    "@alcotest-lwt//:alcotest-lwt",
+    "@alcotest//:alcotest",
+    "@qcheck-alcotest//:qcheck-alcotest",
+    "@uri//:uri",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-test-helpers",
+    ns         = "Lib_test",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Qcheck_helpers",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Qcheck_helpers",
+    struct   = "qcheck_helpers.ml",
+    sig      = ":Qcheck_helpers_cmi",
+    opts     = TEZOS_TEST_HELPERS_OPTS,
+    deps     = TEZOS_TEST_HELPERS_DEPS + [
+    ]
+)
+
+ocaml_signature(
+    name     = "Qcheck_helpers_cmi",
+    src      = "qcheck_helpers.mli",
+    opts     = TEZOS_TEST_HELPERS_OPTS,
+    deps     = TEZOS_TEST_HELPERS_DEPS + [
+    ]
+)
+

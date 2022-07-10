@@ -1,0 +1,295 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-protocol-000-Ps9mPmXa.environment ########
+TEZOS_PROTOCOL_000_PS9MPMXA_ENVIRONMENT_DEPS = [
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-protocol-000-Ps9mPmXa.environment",
+    ns         = "Tezos_protocol_environment_000_Ps9mPmXa",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Environment",
+    ],
+)
+
+######## tezos-protocol-000-Ps9mPmXa.raw ########
+TEZOS_PROTOCOL_000_PS9MPMXA_RAW_OPTS = [
+    "-nopervasives",
+    "-nostdlib",
+    "-w",
+    "+a-4-6-7-9-29-32-40..42-44-45-48-60-67",
+    "-warn-error",
+    "+a",
+    "-open", "Error_monad",
+    "-open", "Pervasives",
+    "-open", "Tezos_protocol_environment_000_Ps9mPmXa__Environment",
+]
+
+TEZOS_PROTOCOL_000_PS9MPMXA_RAW_DEPS = [
+    "//src/proto_000_Ps9mPmXa/lib_protocol:tezos-protocol-000-Ps9mPmXa.environment",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-protocol-000-Ps9mPmXa.raw",
+    ns         = "Tezos_raw_protocol_000_Ps9mPmXa",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Data",
+        ":Main",
+        ":Services",
+    ],
+)
+
+######## tezos-protocol-000-Ps9mPmXa ########
+TEZOS_PROTOCOL_000_PS9MPMXA_OPTS = [
+    "-w",
+    "+a-4-6-7-9-29-40..42-44-45-48-60-67",
+    "-warn-error",
+    "+a",
+    "-nopervasives",
+]
+
+TEZOS_PROTOCOL_000_PS9MPMXA_DEPS = [
+    "//src/lib_protocol_environment/sigs:tezos-protocol-environment-sigs",
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/proto_000_Ps9mPmXa/lib_protocol:tezos-protocol-000-Ps9mPmXa.raw",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-protocol-000-Ps9mPmXa",
+    ns         = "Tezos_protocol_000_Ps9mPmXa",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Protocol",
+    ],
+)
+
+######## tezos-protocol-functor-000-Ps9mPmXa ########
+TEZOS_PROTOCOL_FUNCTOR_000_PS9MPMXA_OPTS = [
+    "-w",
+    "+a-4-6-7-9-29-40..42-44-45-48-60-67",
+    "-warn-error",
+    "+a",
+    "-nopervasives",
+]
+
+TEZOS_PROTOCOL_FUNCTOR_000_PS9MPMXA_DEPS = [
+    "//src/lib_protocol_environment/sigs:tezos-protocol-environment-sigs",
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/proto_000_Ps9mPmXa/lib_protocol:tezos-protocol-000-Ps9mPmXa.raw",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-protocol-functor-000-Ps9mPmXa",
+    ns         = "Tezos_protocol_000_Ps9mPmXa_functor",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Functor",
+    ],
+)
+
+######## tezos-embedded-protocol-000-Ps9mPmXa ########
+TEZOS_EMBEDDED_PROTOCOL_000_PS9MPMXA_OPTS = [
+    "-w",
+    "+a-4-6-7-9-29-32-40..42-44-45-48-60-67",
+    "-warn-error",
+    "+a",
+]
+
+TEZOS_EMBEDDED_PROTOCOL_000_PS9MPMXA_DEPS = [
+    "//src/lib_protocol_environment:tezos-protocol-environment",
+    "//src/lib_protocol_updater:tezos-protocol-updater",
+    "//src/proto_000_Ps9mPmXa/lib_protocol:tezos-protocol-000-Ps9mPmXa",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-embedded-protocol-000-Ps9mPmXa",
+    ns         = "Tezos_embedded_protocol_000_Ps9mPmXa",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Registerer",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Data",
+    struct   = "data.ml",
+    opts     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_OPTS,
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Environment",
+    struct   = "environment.ml",
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_ENVIRONMENT_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Functor",
+    struct   = "functor.ml",
+    opts     = TEZOS_PROTOCOL_FUNCTOR_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_PROTOCOL_FUNCTOR_000_PS9MPMXA_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Main",
+    struct   = "main.ml",
+    sig      = ":Main_cmi",
+    opts     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_OPTS,
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_DEPS + [
+       ":Services",
+       ":Data",
+    ]
+)
+
+ocaml_signature(
+    name     = "Main_cmi",
+    src      = "main.mli",
+    opts     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_OPTS,
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_DEPS + [
+       ":Data",
+    ]
+)
+
+ocaml_module(
+    name     = "Protocol",
+    struct   = "protocol.ml",
+    opts     = TEZOS_PROTOCOL_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Registerer",
+    struct   = "registerer.ml",
+    opts     = TEZOS_EMBEDDED_PROTOCOL_000_PS9MPMXA_OPTS,
+    deps     = TEZOS_EMBEDDED_PROTOCOL_000_PS9MPMXA_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Services",
+    struct   = "services.ml",
+    opts     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_OPTS,
+    deps     = TEZOS_PROTOCOL_000_PS9MPMXA_RAW_DEPS + [
+       ":Data",
+    ]
+)
+
+########################
+####  Rule Targets  ####
+
+###########
+write_file(
+    name     = "write_environment.ml",
+    out      = "environment.ml",
+    content  = """
+module Name = struct let name = "000-Ps9mPmXa" end
+include Tezos_protocol_environment.MakeV0(Name)()
+module CamlinternalFormatBasics = struct include CamlinternalFormatBasics end
+""")
+
+######## with-stdout-to ########
+genrule(
+    name = "__registerer.ml",
+    outs  = [
+        "registerer.ml"
+    ],
+    tools  = ["//src/lib_protocol_compiler:tezos-embedded-protocol-packer.exe"],
+    cmd  = " ".join([
+        "$(execpath //src/lib_protocol_compiler:tezos-embedded-protocol-packer.exe) ",
+        "$(location //src/proto_000_Ps9mPmXa/lib_protocol:TEZOS_PROTOCOL)",
+        "000_Ps9mPmXa",
+        "> $@"
+        ]),
+    srcs  = [
+        "//src/proto_000_Ps9mPmXa/lib_protocol:data.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:services.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:main.mli",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:main.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:TEZOS_PROTOCOL",
+    ],
+)
+######## with-stdout-to ########
+genrule(
+    name = "__functor.ml",
+    outs  = [
+        "functor.ml"
+    ],
+    tools  = ["//src/lib_protocol_compiler:tezos-protocol-compiler.tezos-protocol-packer.exe"],
+    cmd  = " ".join([
+        "$(execpath //src/lib_protocol_compiler:tezos-protocol-compiler.tezos-protocol-packer.exe) ",
+        "$(location //src/proto_000_Ps9mPmXa/lib_protocol:TEZOS_PROTOCOL)",
+        "> $@"
+        ]),
+    srcs  = [
+        "//src/proto_000_Ps9mPmXa/lib_protocol:data.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:services.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:main.mli",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:main.ml",
+        "//src/proto_000_Ps9mPmXa/lib_protocol:TEZOS_PROTOCOL",
+    ],
+)
+###########
+write_file(
+    name     = "write_protocol.ml",
+    out      = "protocol.ml",
+    content  = """
+module Environment = Tezos_protocol_environment_000_Ps9mPmXa.Environment
+let hash = Tezos_crypto.Protocol_hash.of_b58check_exn "Ps9mPmXaRzmzk35gbAYNCAw6UXdE2qoABTHbN2oEEc1qM7CwT9P"
+let name = Environment.Name.name
+include Tezos_raw_protocol_000_Ps9mPmXa
+include Tezos_raw_protocol_000_Ps9mPmXa.Main
+""")
+
+################  rule  ################
+## (
+##   (alias runtest_sandbox)
+##   (deps .tezos_protocol_000_Ps9mPmXa.objs/native/tezos_protocol_000_Ps9mPmXa.cmx)
+##   (action (progn))
+## )
+################  rule  ################
+## (
+##   (alias runtest)
+##   (package tezos-protocol-000-Ps9mPmXa)
+##   (deps (alias runtest_sandbox))
+##   (action (progn))
+## )
+######## run cmd ########
+genrule(
+    name = "__dune.inc.gen",
+    outs  = [
+        "dune.inc.gen"
+    ],
+    tools  = ["////src/lib_protocol_compiler:replace.exe"],
+    cmd  = (),
+    srcs  = [
+    ],
+)
+## (
+##   (:out "dune.inc.gen")
+##   (:cmd ((:tool %{libexec:tezos-protocol-compiler:replace}) (:deps ((:_static "src/proto_000_Ps9mPmXa/lib_protocol" "TEZOS_PROTOCOL") (:_static "src/proto_000_Ps9mPmXa/lib_protocol" "data.ml") (:_static "src/proto_000_Ps9mPmXa/lib_protocol" "main.ml") (:_static "src/proto_000_Ps9mPmXa/lib_protocol" "services.ml") (:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "protocol.ml") (:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "functor.ml") (:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "registerer.ml") (:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "environment.ml") (:_static "src/proto_000_Ps9mPmXa/lib_protocol" "main.mli"))) (:args ((:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "%{libexec:tezos-protocol-compiler:dune_protocol.template}") "dune.inc.gen" (:_generated "src/proto_000_Ps9mPmXa/lib_protocol" "%{libexec:tezos-protocol-compiler:final_protocol_versions}"))) (:foo #t) (:raw ((run %{libexec:tezos-protocol-compiler:replace} %{libexec:tezos-protocol-compiler:dune_protocol.template} "dune.inc.gen" %{libexec:tezos-protocol-compiler:final_protocol_versions})))))
+##   (:vars ())
+##   (:raw (rule (targets "dune.inc.gen") (deps TEZOS_PROTOCOL (glob_files *.ml) (glob_files *.mli)) (action (run %{libexec:tezos-protocol-compiler:replace} %{libexec:tezos-protocol-compiler:dune_protocol.template} "dune.inc.gen" %{libexec:tezos-protocol-compiler:final_protocol_versions}))))
+## )
+################  rule  ################
+## (
+##   (alias runtest_dune_template)
+##   (action (diff dune.inc dune.inc.gen))
+## )

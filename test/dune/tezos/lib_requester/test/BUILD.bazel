@@ -1,0 +1,54 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_executable",
+    "ocaml_module",
+)
+
+##############################
+####  Executable Targets  ####
+TEST_REQUESTER_OPTS = [
+    "-open", "Tezos_base__TzPervasives",
+    "-open", "Tezos_requester",
+    "-open", "Tezos_stdlib",
+    "-open", "Tezos_test_services",
+]
+
+TEST_REQUESTER_DEPS = [
+    "//src/lib_base/unix:tezos-base.unix",
+    "//src/lib_base:tezos-base",
+    "//src/lib_requester:tezos-requester",
+    "//src/lib_stdlib_unix:tezos-stdlib-unix",
+    "//src/lib_test_services:tezos-test-services",
+    "@alcotest-lwt//:alcotest-lwt",
+]
+
+#################
+ocaml_executable(
+    name    = "test_requester.exe",
+    visibility = ["//visibility:public"],
+    exe     = "test_requester",
+    main    = ":Test_requester",
+    deps = TEST_REQUESTER_DEPS + [
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Test_requester",
+    struct   = "test_requester.ml",
+    opts     = TEST_REQUESTER_OPTS,
+    deps     = TEST_REQUESTER_DEPS + [
+    ]
+)
+
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+## (
+##   (alias runtest)
+##   (package tezos-requester)
+##   (deps (alias runtest_requester))
+##   (action (progn))
+## )

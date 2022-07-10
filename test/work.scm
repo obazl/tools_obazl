@@ -12,7 +12,7 @@
         ;; "test/dune/stanzas/library/submodules/exclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
-        "test/dune/stanzas/library/submodules/subsigs"
+        ;; "test/dune/stanzas/library/submodules/subsigs"
 
         ;;;; unwrapped:
         ;; "test/dune/stanzas/library/unwrapped/default"
@@ -22,7 +22,7 @@
 
         ;;;; 'select' libdeps
         ;; ;; w/o directs deps:
-        ;; "test/dune/stanzas/library/deps/select/sigs"
+        "test/dune/stanzas/library/deps/select/sigs"
         ;; "test/dune/stanzas/library/deps/select/structs"
         ;; ;; w/directs deps:
         ;; "test/dune/stanzas/library/deps/select/sigs_directs"

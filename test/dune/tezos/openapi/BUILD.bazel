@@ -1,0 +1,71 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_executable",
+    "ocaml_module",
+    "ocaml_signature",
+)
+
+##############################
+####  Executable Targets  ####
+RPC_OPENAPI_DEPS = [
+    "@ezjsonm//:ezjsonm",
+    "@json-data-encoding//:json-data-encoding",
+]
+
+#################
+ocaml_executable(
+    name    = "rpc_openapi.exe",
+    visibility = ["//visibility:public"],
+    exe     = "rpc_openapi",
+    main    = ":Rpc_openapi",
+    deps = RPC_OPENAPI_DEPS + [
+        ":Api",
+        ":Json",
+        ":Openapi",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Api",
+    struct   = "api.ml",
+    deps     = RPC_OPENAPI_DEPS + [
+       ":Json",
+    ]
+)
+
+ocaml_module(
+    name     = "Json",
+    struct   = "json.ml",
+    deps     = RPC_OPENAPI_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Openapi",
+    struct   = "openapi.ml",
+    sig      = ":Openapi_cmi",
+    deps     = RPC_OPENAPI_DEPS + [
+       ":Json",
+    ]
+)
+
+ocaml_signature(
+    name     = "Openapi_cmi",
+    src      = "openapi.mli",
+    deps     = RPC_OPENAPI_DEPS + [
+       ":Json",
+    ]
+)
+
+ocaml_module(
+    name     = "Rpc_openapi",
+    struct   = "rpc_openapi.ml",
+    deps     = RPC_OPENAPI_DEPS + [
+       ":Openapi",
+       ":Json",
+       ":Api",
+    ]
+)
+

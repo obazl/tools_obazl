@@ -1,0 +1,30 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+TEZOS_CLIC_DEPS = ["tezos-stdlib", "lwt", "re", "tezos-error-monad", "tezos-lwt-result-stdlib"]
+
+TEZOS_CLIC_OPTS = ["-open", "Tezos_stdlib", "-open", "Tezos_error_monad", "-open", "Tezos_error_monad.TzLwtreslib"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "tezos-clic",
+    submodules = ["Clic"],
+    opts       = [],
+)
+
+#############################
+####  Module Targets  ####
+
+ocaml_module(
+    name     = "Clic",
+    struct   = "clic.ml",
+    sig      = "clic.mli",
+    opts      = TEZOS_CLIC_OPTS,
+    deps      = TEZOS_CLIC_DEPS,
+)
+

@@ -1,0 +1,61 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_module",
+    "ocaml_ns_archive",
+    "ocaml_signature",
+)
+
+###############################################
+########### Archive/Library Targets ###########
+
+######## tezos-requester ########
+TEZOS_REQUESTER_OPTS = [
+    "-open", "Tezos_base__TzPervasives",
+    "-open", "Tezos_stdlib_unix",
+]
+
+TEZOS_REQUESTER_DEPS = [
+    "//src/lib_base:tezos-base",
+    "//src/lib_stdlib_unix:tezos-stdlib-unix",
+    "@lwt-watcher//:lwt-watcher",
+]
+
+ocaml_ns_archive(
+    name       = "tezos-requester",
+    ns         = "Tezos_requester",
+    visibility = ["//visibility:public"],
+    submodules = [
+        ":Requester",
+        ":Requester_event",
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Requester",
+    struct   = "requester.ml",
+    sig      = ":Requester_cmi",
+    opts     = TEZOS_REQUESTER_OPTS,
+    deps     = TEZOS_REQUESTER_DEPS + [
+       ":Requester_event",
+    ]
+)
+
+ocaml_signature(
+    name     = "Requester_cmi",
+    src      = "requester.mli",
+    opts     = TEZOS_REQUESTER_OPTS,
+    deps     = TEZOS_REQUESTER_DEPS + [
+    ]
+)
+
+ocaml_module(
+    name     = "Requester_event",
+    struct   = "requester_event.ml",
+    opts     = TEZOS_REQUESTER_OPTS,
+    deps     = TEZOS_REQUESTER_DEPS + [
+    ]
+)
+

@@ -1,0 +1,54 @@
+load("@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_executable",
+    "ocaml_module",
+)
+
+##############################
+####  Executable Targets  ####
+TEST_CLIC_OPTS = [
+    "-open", "Tezos_clic",
+    "-open", "Tezos_stdlib",
+]
+
+TEST_CLIC_DEPS = [
+    "//src/lib_clic:tezos-clic",
+    "@alcotest-lwt//:alcotest-lwt",
+]
+
+#################
+ocaml_executable(
+    name    = "test_clic.exe",
+    visibility = ["//visibility:public"],
+    exe     = "test_clic",
+    main    = ":Test_clic",
+    deps = TEST_CLIC_DEPS + [
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name     = "Test_clic",
+    struct   = "test_clic.ml",
+    opts     = TEST_CLIC_OPTS,
+    deps     = TEST_CLIC_DEPS + [
+    ]
+)
+
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+## (
+##   (alias buildtest)
+##   (deps test_clic.exe)
+##   (action (progn))
+## )
+################  rule  ################
+## (
+##   (alias runtest)
+##   (package tezos-clic)
+##   (deps (alias runtest_clic))
+##   (action (progn))
+## )

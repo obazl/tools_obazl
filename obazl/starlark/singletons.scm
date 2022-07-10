@@ -3,7 +3,7 @@
 ;; optimizations: memoize opts and deps
 
 (define (-emit-module outp module stanza)
-  (format #t "-emit-module: ~A\n" stanza)
+  (format #t "~A: ~A\n" (blue "-emit-module") stanza)
   (let* ((modname (car module))
          (srcs    (cdr module))
          (sigfile (car (assoc-val :mli srcs)))
@@ -42,7 +42,7 @@
 (define (-emit-modules outp modules)
   (format #t "-emit-modules: ~A\n" modules)
   (format outp "#############################\n")
-  (format outp "####  Module Targets  ####\n")
+  (format outp "####  Singleton Targets  ####\n")
   (newline outp)
 
   (for-each
@@ -54,7 +54,7 @@
                          (lambda (stanza)
                            (format #t "checking stanza ~A\n" stanza)
                            (case (car stanza)
-                             ((:library)
+                             ((:archive :library)
                               ;; (if (eq? :library (car stanza))
                               (if-let ((submods
                                         (assoc-val :submodules
@@ -72,7 +72,7 @@
    modules))
 
 (define (-emit-sig outp sig stanza)
-  (format #t "-emit-sig: ~A, ~A\n" sig stanza)
+  (format #t "~A: ~A, ~A\n" (blue "-emit-sig") sig stanza)
   (let* ((modname (car sig))
          (srcs    (cdr sig))
          (sigfile (car (assoc-val :mli srcs)))
@@ -121,7 +121,7 @@
     ))
 
 (define (-emit-signatures outp sigs)
-  (format #t "-emit-sigs: ~A\n" sigs)
+  (format #t "-emit-signatures: ~A\n" sigs)
   (format outp "#############################\n")
   (format outp "####  Signature Targets  ####\n")
   (newline outp)
@@ -154,7 +154,7 @@
 ;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
 (define (starlark-emit-singleton-targets outp pkg)
-  (format #t "starlark-emit-singleton-targets: ~A\n" pkg)
+  (format #t "~A: ~A\n" (blue "STARLARK-EMIT-singleton-targets") pkg)
 
   ;; we emit targets for both static and generated source files; in
   ;; addition, we may have :indirect submodule deps (example:
@@ -175,8 +175,8 @@
     (format #t "sigs:    ~A\n" sigs)
     (format #t "structs-static: ~A\n" structs-static)
 
-    (-emit-modules outp modules)
-    (-emit-signatures outp sigs)
+    (if modules (-emit-modules outp modules))
+    (if sigs (-emit-signatures outp sigs))
     ))
 
     ;; (let ((lib-stanzas (assoc+ :library stanzas)))
