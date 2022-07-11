@@ -22,13 +22,13 @@
 
         ;;;; 'select' libdeps
         ;; ;; w/o directs deps:
-        "test/dune/stanzas/library/deps/select/sigs"
+        ;; "test/dune/stanzas/library/deps/select/sigs"
         ;; "test/dune/stanzas/library/deps/select/structs"
         ;; ;; w/directs deps:
         ;; "test/dune/stanzas/library/deps/select/sigs_directs"
         ;; "test/dune/stanzas/library/deps/select/structs_directs"
         ;; ;; mixed
-        ;; "test/dune/stanzas/library/deps/select/mixed"
+        "test/dune/stanzas/library/deps/select/mixed"
         ;; "test/dune/stanzas/library/deps/select/tezos"
 
         ;; tezos

@@ -1,46 +1,145 @@
 (format #t "loading starlark/singletons.scm\n")
 
-;; optimizations: memoize opts and deps
+;; FIXME FIXME FIXME FIXME FIXME
+;; lookup label for this sym
+(define (-make-select-condition sym)
+  (format #f "//foo/bar:~A" sym))
 
+(define (make-selector module stanza)
+  (format #t "make-selector: ~A, ~A\n" module stanza)
+  (let* ((module-name (car module))
+         (filename (let ((pairs (cdr module)))
+                     (if-let ((pr (assoc-val :ml_ pairs)))
+                             pr
+                             (if-let ((pr (assoc-val :mli_ pairs)))
+                                     pr
+                                     (error 'bad-module
+                                            "no generated file")))))
+
+         (_ (format #t "filename: ~A\n" filename))
+         (conditionals (assoc-in '(:deps :conditionals) (cdr stanza))))
+    (format #t "conditionals: ~A\n" conditionals)
+    (let ((the-conditional (find-if (lambda (c)
+                                      (format #t "c: ~A\n" c)
+                                      (eq? filename
+                                           (car (assoc-val :target c))))
+                                    (cadr conditionals))))
+      (format #t "the-conditional: ~A\n" the-conditional)
+      (if the-conditional
+          (let ((selectors (assoc-val :selectors the-conditional)))
+            (format #t "selectors: ~A\n" selectors)
+            (map (lambda (s) (list
+                              (-make-select-condition (car s))
+                              (cdr s)))
+                 selectors))))))
+
+;; WARNING: :modules have form (A (:ml a.ml)(:mli a.mli))
+;; but :structures have form (A . a.ml)
 (define (-emit-module outp module stanza)
-  (format #t "~A: ~A\n" (blue "-emit-module") stanza)
-  (let* ((modname (car module))
-         (srcs    (cdr module))
-         (sigfile (car (assoc-val :mli srcs)))
-         (structfile (car (assoc-val :ml srcs)))
-         (libname (string-append
-                   (string-upcase
-                    (stringify
-                     (car (assoc-val :privname (cdr stanza))))))))
-         ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-         ;;               (cdr opts) '())))
-    (format #t "emitting module: ~A: ~A\n" modname srcs)
+  (format #t "~A: ~A [~A]\n" (blue "-emit-module") module stanza)
 
-    (format outp "ocaml_module(\n")
-    (format outp "    name     = \"~A\",\n" modname)
-    (format outp "    struct   = \"~A\",\n" structfile)
-    ;; if direct sigdeps
-    (format outp "    sig      = \"~A\",\n" sigfile)
-    ;; else
-    ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-    (format outp "    opts      = ~A_OPTS,\n" libname)
-    (format outp "    deps      = ~A_DEPS,\n" libname)
+  (let ((libname (string-append
+                       (string-upcase
+                        (stringify
+                         (car (assoc-val :privname (cdr stanza))))))))
 
-  ;; (if ppx-alist
-  ;;     (begin
-  ;;       (format outp
-  ;;               "    ppx      = \":~A\",\n"
-  ;;               (cadr (assoc :name ppx-alist)))
-  ;;       (if (not
-  ;;            (equal? :all (cadr (assoc :scope
-  ;;                                      ppx-alist))))
-  ;;           (format outp
-  ;;                   "    ppx_args = [~{~S, ~}],\n"
-  ;;                   (cadr (assoc :args ppx-alist))))))
-    ))
+    (if (proper-list? module) ;; (A (:ml a.ml)(:mli a.mli)), from :modules
+        (let* ((modname (car module))
+               (srcs    (cdr module))
+               (select-sigfile (assoc-val :mli_ srcs))
+               (sigfile (if select-sigfile
+                            (make-selector module stanza)
+                            (assoc-val :mli srcs)))
+
+               (select-structfile (assoc-val :ml_ srcs))
+               (structfile (if select-structfile
+                            (make-selector module stanza)
+                            (assoc-val :ml srcs))))
+
+          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+          ;;               (cdr opts) '())))
+          (format #t "emitting module: ~A: ~A\n" modname srcs)
+
+          (format outp "ocaml_module(\n")
+          (format outp "    name     = \"~A\",\n" modname)
+
+          (if (or select-structfile select-sigfile)
+              (format outp "    module   = \"~A\",\n" modname))
+
+          (if select-structfile
+              (begin
+                (format outp "    struct   = select(~%")
+                (format outp "        {~%")
+                (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
+                (format outp "        },~%")
+                (format outp "        no_match_error=\"no file selected\"),\n")
+                )
+              (begin
+                (format outp "    struct   = \"~A\",\n" structfile)
+                ))
+
+          (if select-sigfile
+              (begin
+                (format outp "    sig      = select(~%")
+                (format outp "        {~%")
+                (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
+                (format outp "        },~%")
+                (format outp "        no_match_error=\"no file selected\"),\n")
+                )
+              ;; else
+              (begin
+                (format outp "    sig      = \"~A\",\n" sigfile)
+                ))
+
+          ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
+          (format outp "    opts      = ~A_OPTS,\n" libname)
+          (format outp "    deps      = ~A_DEPS,\n" libname)
+
+          ;; (if ppx-alist
+          ;;     (begin
+          ;;       (format outp
+          ;;               "    ppx      = \":~A\",\n"
+          ;;               (cadr (assoc :name ppx-alist)))
+          ;;       (if (not
+          ;;            (equal? :all (cadr (assoc :scope
+          ;;                                      ppx-alist))))
+          ;;           (format outp
+          ;;                   "    ppx_args = [~{~S, ~}],\n"
+          ;;                   (cadr (assoc :args ppx-alist))))))
+
+          )
+        ;; else (M . ml) from :structures
+        (let* ((modname (car module))
+               (structfile (cdr module)))
+
+               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+               ;;               (cdr opts) '())))
+               (format #t "emitting module: ~A\n" modname)
+
+               (format outp "ocaml_module(\n")
+               (format outp "    name     = \"~A\",\n" modname)
+               (format outp "    struct   = \"~A\",\n" structfile)
+               (format outp "    opts      = ~A_OPTS,\n" libname)
+               (format outp "    deps      = ~A_DEPS,\n" libname)
+
+               ;; (if ppx-alist
+               ;;     (begin
+               ;;       (format outp
+               ;;               "    ppx      = \":~A\",\n"
+               ;;               (cadr (assoc :name ppx-alist)))
+               ;;       (if (not
+               ;;            (equal? :all (cadr (assoc :scope
+               ;;                                      ppx-alist))))
+               ;;           (format outp
+               ;;                   "    ppx_args = [~{~S, ~}],\n"
+               ;;                   (cadr (assoc :args ppx-alist))))))
+
+               ) ;; let*
+        ))
+  stanza)
 
 (define (-emit-modules outp modules)
-  (format #t "-emit-modules: ~A\n" modules)
+  (format #t "~A: ~A\n" (blue "-emit-modules") modules)
   (format outp "#############################\n")
   (format outp "####  Singleton Targets  ####\n")
   (newline outp)
@@ -73,52 +172,35 @@
 
 (define (-emit-sig outp sig stanza)
   (format #t "~A: ~A, ~A\n" (blue "-emit-sig") sig stanza)
-  (let* ((modname (car sig))
-         (srcs    (cdr sig))
-         (sigfile (car (assoc-val :mli srcs)))
-         (libname (string-append
-                   (string-upcase
-                    (stringify
-                     (car (assoc-val :privname (cdr stanza))))))))
-         ;; (optsvar (string-append (string-upcase (stringify libname))
-         ;;                         "_OPTS")))
-    (format #t "emitting sig: ~A: ~A\n" modname srcs)
+  (let ((libname (string-append
+                  (string-upcase
+                   (stringify
+                    (car (assoc-val :privname (cdr stanza))))))))
 
-    (format outp "ocaml_signature(\n")
-    (format outp "    name     = \"~A\",\n" modname)
-    (format outp "    sig      = \"~A\",\n" sigfile)
+    (let* ((modname (car sig))
+           (sigfile (cdr sig)))
 
-    (format outp "    opts      = ~A_OPTS,\n" libname)
-    (format outp "    deps      = ~A_DEPS,\n" libname)
+      (format #t "emitting signature: ~A\n" modname)
 
-    ;; (let* ((opens (if-let ((opens (assoc-val :opens opts)))
-    ;;                       (apply append (map (lambda (o)
-    ;;                                            (list "-open" (stringify o)))
-    ;;                                          opens))
-    ;;                       '()))
-    ;;        (flags (if-let ((flags (assoc-val :flags opts)))
-    ;;                       (list (apply string-append
-    ;;                                    (map stringify flags)))
-    ;;                       '()))
-    ;;        (options (apply append (list opens flags)))
-    ;;        (_ (format #t "options: ~A\n" options))
-    ;;        (standard (if (assoc :standard opts) #t #f)))
-    ;;   (format outp "    opts      = [~{\"~A\"~^, ~}],\n" options))
+      (format outp "ocaml_signature(\n")
+      (format outp "    name     = \"~A\",\n" modname)
+      (format outp "    sig      = \"~A\",\n" sigfile)
+      (format outp "    opts     = ~A_OPTS,\n" libname)
+      (format outp "    deps     = ~A_DEPS,\n" libname)
 
+      ;; (if ppx-alist
+      ;;     (begin
+      ;;       (format outp
+      ;;               "    ppx      = \":~A\",\n"
+      ;;               (cadr (assoc :name ppx-alist)))
+      ;;       (if (not
+      ;;            (equal? :all (cadr (assoc :scope
+      ;;                                      ppx-alist))))
+      ;;           (format outp
+      ;;                   "    ppx_args = [~{~S, ~}],\n"
+      ;;                   (cadr (assoc :args ppx-alist))))))
 
-
-  ;; (if ppx-alist
-  ;;     (begin
-  ;;       (format outp
-  ;;               "    ppx      = \":~A\",\n"
-  ;;               (cadr (assoc :name ppx-alist)))
-  ;;       (if (not
-  ;;            (equal? :all (cadr (assoc :scope
-  ;;                                      ppx-alist))))
-  ;;           (format outp
-  ;;                   "    ppx_args = [~{~S, ~}],\n"
-  ;;                   (cadr (assoc :args ppx-alist))))))
-    ))
+      )))
 
 (define (-emit-signatures outp sigs)
   (format #t "-emit-signatures: ~A\n" sigs)
@@ -134,7 +216,7 @@
                          (lambda (stanza)
                            (format #t "checking stanza ~A\n" stanza)
                            (case (car stanza)
-                             ((:library)
+                             ((:archive :library)
                               ;; (if (eq? :library (car stanza))
                               (if-let ((subsigs
                                         (assoc-val :subsigs
@@ -165,7 +247,7 @@
          (structs-static (if-let ((structs (assoc-in
                                             '(:structures :static) pkg)))
                                  (cdr structs) '()))
-         (modules (apply append modules-static structs-static))
+         (modules (concatenate modules-static structs-static))
          (sigs-static    (if-let ((sigs (assoc-in
                                          '(:signatures :static) pkg)))
                                  (cdr sigs) #f))
