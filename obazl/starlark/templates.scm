@@ -8,13 +8,23 @@
 
   (format outp "load(\"@rules_ocaml//build:rules.bzl\",\n")
 
+  (if (member :executable obazl-rules)
+      (format outp "     \"ocaml_binary\",\n"))
+
   ;; 'library' with wrapped false:
   (if (member :archive obazl-rules)
-          (format outp "     \"ocaml_archive\",\n"))
+      (format outp "     \"ocaml_archive\",\n"))
+  (if (member :library obazl-rules)
+      (format outp "     \"ocaml_library\",\n"))
 
   ;; 'library' with wrapped true:
   (if (member :ns-archive obazl-rules)
-          (format outp "     \"ocaml_ns_archive\",\n"))
+      (format outp "     \"ocaml_ns_archive\",\n"))
+  (if (member :ns-library obazl-rules)
+      (format outp "     \"ocaml_ns_library\",\n"))
+
+  (if (not *ns-topdown*)
+      (format outp "     \"ocaml_ns_resolver\",\n"))
 
 
   ;; obazl-style libraries not supported by dune; 'library' stanza

@@ -17,13 +17,13 @@
                                             "no generated file")))))
 
          (_ (format #t "filename: ~A\n" filename))
-         (conditionals (assoc-in '(:deps :conditionals) (cdr stanza))))
+         (conditionals (assoc-in '(:compile :deps :conditionals) (cdr stanza))))
     (format #t "conditionals: ~A\n" conditionals)
     (let ((the-conditional (find-if (lambda (c)
                                       (format #t "c: ~A\n" c)
                                       (eq? filename
                                            (car (assoc-val :target c))))
-                                    (cadr conditionals))))
+                                    (cdr conditionals))))
       (format #t "the-conditional: ~A\n" the-conditional)
       (if the-conditional
           (let ((selectors (assoc-val :selectors the-conditional)))
@@ -41,7 +41,10 @@
   (let ((libname (string-append
                        (string-upcase
                         (stringify
-                         (car (assoc-val :privname (cdr stanza))))))))
+                         (assoc-val :privname (cdr stanza))))))
+        (ns (assoc-val :ns (cdr stanza))))
+    (format #t "module libname: ~A~%" libname)
+    (format #t "module ns: ~A~%" ns)
 
     (if (proper-list? module) ;; (A (:ml a.ml)(:mli a.mli)), from :modules
         (let* ((modname (car module))
@@ -61,26 +64,28 @@
           (format #t "emitting module: ~A: ~A\n" modname srcs)
 
           (format outp "ocaml_module(\n")
-          (format outp "    name     = \"~A\",\n" modname)
+          (format outp "    name        = \"~A\",\n" modname)
+          (if (and ns (not *ns-topdown*))
+              (format outp "    ns_resolver = \":ns.~A\",\n" ns))
 
           (if (or select-structfile select-sigfile)
-              (format outp "    module   = \"~A\",\n" modname))
+          (format outp "    module      = \"~A\",\n" modname))
 
           (if select-structfile
               (begin
-                (format outp "    struct   = select(~%")
+                (format outp "    struct      = select(~%")
                 (format outp "        {~%")
                 (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
                 (format outp "        },~%")
                 (format outp "        no_match_error=\"no file selected\"),\n")
                 )
               (begin
-                (format outp "    struct   = \"~A\",\n" structfile)
+                (format outp "    struct      = \"~A\",\n" structfile)
                 ))
 
           (if select-sigfile
               (begin
-                (format outp "    sig      = select(~%")
+                (format outp "    sig         = select(~%")
                 (format outp "        {~%")
                 (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
                 (format outp "        },~%")
@@ -88,12 +93,12 @@
                 )
               ;; else
               (begin
-                (format outp "    sig      = \"~A\",\n" sigfile)
+                (format outp "    sig         = \"~A\",\n" sigfile)
                 ))
 
           ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-          (format outp "    opts      = ~A_OPTS,\n" libname)
-          (format outp "    deps      = ~A_DEPS,\n" libname)
+          (format outp "    opts        = ~A_OPTS,\n" libname)
+          (format outp "    deps        = ~A_DEPS,\n" libname)
 
           ;; (if ppx-alist
           ;;     (begin
@@ -117,10 +122,12 @@
                (format #t "emitting module: ~A\n" modname)
 
                (format outp "ocaml_module(\n")
-               (format outp "    name     = \"~A\",\n" modname)
-               (format outp "    struct   = \"~A\",\n" structfile)
-               (format outp "    opts      = ~A_OPTS,\n" libname)
-               (format outp "    deps      = ~A_DEPS,\n" libname)
+               (format outp "    name          = \"~A\",\n" modname)
+               (if (and ns (not *ns-topdown*))
+                   (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+               (format outp "    struct        = \"~A\",\n" structfile)
+               (format outp "    opts          = ~A_OPTS,\n" libname)
+               (format outp "    deps          = ~A_DEPS,\n" libname)
 
                ;; (if ppx-alist
                ;;     (begin
@@ -140,9 +147,6 @@
 
 (define (-emit-modules outp modules)
   (format #t "~A: ~A\n" (blue "-emit-modules") modules)
-  (format outp "#############################\n")
-  (format outp "####  Singleton Targets  ####\n")
-  (newline outp)
 
   (for-each
    (lambda (module)
@@ -153,11 +157,28 @@
                          (lambda (stanza)
                            (format #t "checking stanza ~A\n" stanza)
                            (case (car stanza)
-                             ((:archive :library)
-                              ;; (if (eq? :library (car stanza))
+                             ((:ns-archive :ns-library)
                               (if-let ((submods
-                                        (assoc-val :submodules
-                                                   (cdr stanza))))
+                                        (cdr (assoc-in '(:manifest :modules)
+                                                  (cdr stanza)))))
+                                      (begin
+                                        (format #t "submods: ~A\n" submods)
+                                        (if (member modname submods)
+                                            (-emit-module outp module stanza)
+                                            #f))))
+                             ((:archive :library)
+                              (if-let ((submods
+                                        (cdr (assoc-in '(:manifest :modules)
+                                                  (cdr stanza)))))
+                                      (begin
+                                        (format #t "submods: ~A\n" submods)
+                                        (if (member modname submods)
+                                            (-emit-module outp module stanza)
+                                            #f))))
+                             ((:executable)
+                              (if-let ((submods
+                                        (cdr (assoc-in '(:compile :manifest :modules)
+                                                  (cdr stanza)))))
                                       (begin
                                         (format #t "submods: ~A\n" submods)
                                         (if (member modname submods)
@@ -175,7 +196,8 @@
   (let ((libname (string-append
                   (string-upcase
                    (stringify
-                    (car (assoc-val :privname (cdr stanza))))))))
+                    (car (assoc-val :privname (cdr stanza)))))))
+        (ns (assoc-val :ns (cdr stanza))))
 
     (let* ((modname (car sig))
            (sigfile (cdr sig)))
@@ -183,10 +205,12 @@
       (format #t "emitting signature: ~A\n" modname)
 
       (format outp "ocaml_signature(\n")
-      (format outp "    name     = \"~A\",\n" modname)
-      (format outp "    sig      = \"~A\",\n" sigfile)
-      (format outp "    opts     = ~A_OPTS,\n" libname)
-      (format outp "    deps     = ~A_DEPS,\n" libname)
+      (format outp "    name          = \"~A\",\n" modname)
+      (if (and ns (not *ns-topdown*))
+          (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+      (format outp "    sig           = \"~A\",\n" sigfile)
+      (format outp "    opts          = ~A_OPTS,\n" libname)
+      (format outp "    deps          = ~A_DEPS,\n" libname)
 
       ;; (if ppx-alist
       ;;     (begin
@@ -256,6 +280,12 @@
     (format #t "modules: ~A\n" modules)
     (format #t "sigs:    ~A\n" sigs)
     (format #t "structs-static: ~A\n" structs-static)
+
+    (if (or modules sigs)
+        (begin
+          (format outp "#############################\n")
+          (format outp "####  Singleton Targets  ####\n")
+          (newline outp)))
 
     (if modules (-emit-modules outp modules))
     (if sigs (-emit-signatures outp sigs))

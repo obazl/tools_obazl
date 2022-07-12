@@ -1,5 +1,8 @@
 (format #t "loading starlark/aggregates.scm\n")
 
+;;FIXME: get this from cmdline or ini file
+(define *ns-topdown* #t)
+
 (define (aggregate-stanza? stanza)
   ;; (format #t "aggregate-stanza? ~A\n" (car stanza))
   ;; dune treats executables as aggregators, since they have a 'modules'
@@ -20,17 +23,61 @@
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
 
+(define (-emit-topdown-aggregate outp kind pubname submodules flags)
+  (begin
+    (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
+    (format outp "#################\n")
+    (if (eq? kind :ns-archive)
+        (format outp "ocaml_ns_archive(\n")
+        (format outp "ocaml_ns_library(\n"))
+    (format outp "    name       = \"~A\",\n" pubname)
+    (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
+
+    (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
+    ;; (format outp "    opts       = ~A_OPTS,\n" libname)
+
+    ;; (format outp "    submodules = [\n")
+    ;;       (for-each (lambda (submod)
+    ;;                   (format outp "        \":~A\",\n"
+    ;;                           (symbol->string
+    ;;                            (normalize-module-name submod))
+    ;;                           ))
+    ;;                 submods)
+    ;;       (format outp "    ],\n")
+    (format outp ")\n\n")))
+
+(define (-emit-bottomup-aggregate outp kind ns pubname submodules flags)
+  (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind)
+  (format outp "#################\n")
+  (if (eq? kind :ns-archive)
+      (format outp "ocaml_archive(\n")
+      (format outp "ocaml_library(\n"))
+  (format outp "    name       = \"~A\",\n" pubname)
+  (format outp "    manifest   = [~{\"~A\"~^, ~}],\n" submodules)
+  (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
+  ;; (format outp "    opts       = ~A_OPTS,\n" libname)
+  (format outp ")\n\n")
+
+  (format outp "#################\n")
+  (format outp "ocaml_ns_resolver(\n")
+  (format outp "    name       = \"ns.~A\",\n" pubname)
+  (format outp "    ns         = \"~A\",\n" ns)
+  (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
+  (format outp ")\n\n")
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-target outp stanza) ;; typ fs-path stanza)
   (format #t "~A: ~A\n" (blue "STARLARK-EMIT-AGGREGATE-TARGET") stanza)
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
-         (privname (car (assoc-val :privname stanza-alist)))
+         (privname (assoc-val :privname stanza-alist))
          (modname (normalize-module-name privname))
          (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
-                          (car pubname)
+                          pubname
                           privname))
          (_ (format #t "name: ~A, modname: ~A\n" pubname modname))
+         (ns (assoc-val :ns (cdr stanza)))
          (libname (string-upcase (stringify privname)))
 
          (opts (if-let ((opts (assoc :opts (cdr stanza))))
@@ -43,41 +90,32 @@
          ;; skip :standard, handled by hidden attributes
          ;; (standard-opts? (if (assoc :standard opts) #t #f))
 
-         (submodules (if-let ((submods (assoc :submodules stanza-alist)))
+         (submodules (if-let ((submods (assoc-in '(:manifest :modules)
+                                                 stanza-alist)))
                              (cdr submods) '()))
          (deps (assoc :deps stanza-alist)))
 
     (begin
+      (format #t "kind: ~A\n" kind)
       (format #t "DEPS: ~A\n" deps)
       (format #t "SUBMs: ~A\n" submodules))
 
     ;; (format outp "######## ~A ########\n" pubname)
 
     (case kind
-      ((:archive)
+      ((:ns-archive :ns-library)
+       (if *ns-topdown*
+           (-emit-topdown-aggregate outp kind pubname submodules flags)
+           ;; aggregated bottomup, needs archive or lib w/o ns
+           (-emit-bottomup-aggregate outp kind ns pubname submodules flags)))
+
+      ((:archive :library)
        (begin
-         (format outp "#################\n")
-         (format outp "ocaml_ns_archive(\n")
-         (format outp "    name       = \"~A\",\n" pubname)
-         (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
-
-         (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
-         ;; (format outp "    opts       = ~A_OPTS,\n" libname)
-
-         ;; (format outp "    submodules = [\n")
-         ;;       (for-each (lambda (submod)
-         ;;                   (format outp "        \":~A\",\n"
-         ;;                           (symbol->string
-         ;;                            (normalize-module-name submod))
-         ;;                           ))
-         ;;                 submods)
-         ;;       (format outp "    ],\n")
-         (format outp ")\n\n")))
-
-      ((:library)
-       (begin
+         (format #t "EMITTING NON-NS AGGREGATE: ~A\n" kind)
          (format outp "##############\n")
-         (format outp "ocaml_library(\n")
+         (if (eq? kind :library)
+             (format outp "ocaml_library(\n")
+             (format outp "ocaml_archive(\n"))
          (format outp "    name    = \"~A\",\n" pubname)
          (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
          (format outp ")\n\n")))
@@ -140,28 +178,27 @@
   (let* ((stanzas (assoc-val :dune pkg))
          ;; FIXME: exclude null libs, e.g. tezos:src/tooling
          (aggs (filter (lambda (stanza)
-                         (case (car stanza)
-                           ((:archive) #t)
-                           ((:library) #t)
-                           (else #f)))
+                         (member
+                          (car stanza)
+                          '(:archive :library :ns-archive :ns-library)))
                        stanzas)))
     (format #t "AGGREGATES: ~A\n" aggs)
-    (if aggs
+    (if (not (null? aggs))
         (begin
           (format outp "#############################\n")
           (format outp "####  Aggregate Targets  ####\n")
-          (format outp "\n")
+          (format outp "\n")))
 
-          (for-each (lambda (stanza)
-                      (format #t "stanza: ~A\n" stanza)
-                      (case (car stanza)
-                        ((:archive) ;; implies dune library, wrapped
-                           (starlark-emit-aggregate-target outp stanza))
-                        ((:library) ;; implies dune library, unwrapped
-                           (starlark-emit-aggregate-target outp stanza))
-                        (else (format outp "UNCAUGHT stanza: ~A\n"
-                                      stanza))))
-                    aggs)))))
+    (for-each (lambda (stanza)
+                (format #t "stanza: ~A\n" stanza)
+                (case (car stanza)
+                  ((:ns-archive :ns-library) ;; dune library, wrapped
+                   (starlark-emit-aggregate-target outp stanza))
+                  ((:archive :library) ;; dune library, unwrapped
+                   (starlark-emit-aggregate-target outp stanza))
+                  (else (format outp "UNCAUGHT stanza: ~A\n"
+                                stanza))))
+              aggs)))
 
                           ;; outp
                           ;; (if (library-namespaced? stanza) :ns-archive :archive)

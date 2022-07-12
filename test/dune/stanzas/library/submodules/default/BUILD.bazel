@@ -1,0 +1,53 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_ns_resolver",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+LIB_B_DEPS = ["foo", "bar"]
+
+LIB_B_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_archive(
+    name       = "lib-b",
+    manifest   = ["A", "B"],
+    opts       = ["-linkall"],
+)
+
+#################
+ocaml_ns_resolver(
+    name       = "ns.lib-b",
+    ns         = "lib-b",
+    submodules = ["A", "B"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name        = "A",
+    ns_resolver = ":ns.lib-b",
+    struct      = "a.ml",
+    sig         = "a.mli",
+    opts        = LIB_B_OPTS,
+    deps        = LIB_B_DEPS,
+)
+
+ocaml_module(
+    name          = "B",
+    ns_resolver   = ":ns.lib-b",
+    struct        = "b.ml",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
+#############################
+####  Signature Targets  ####
+
+)
+

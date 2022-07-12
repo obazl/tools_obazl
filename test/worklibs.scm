@@ -22,14 +22,14 @@
 
         ;;;; 'select' libdeps
         ;; ;; w/o directs deps:
-        ;; "test/dune/stanzas/library/deps/select/sigs"
-        ;; "test/dune/stanzas/library/deps/select/structs"
+        ;; "test/dune/stanzas/library/select/sigs"
+        "test/dune/stanzas/library/select/structs"
         ;; ;; w/directs deps:
-        ;; "test/dune/stanzas/library/deps/select/sigs_directs"
-        ;; "test/dune/stanzas/library/deps/select/structs_directs"
+        ;; "test/dune/stanzas/library/select/sigs_directs"
+        ;; "test/dune/stanzas/library/select/structs_directs"
         ;; ;; mixed
-        "test/dune/stanzas/library/deps/select/mixed"
-        ;; "test/dune/stanzas/library/deps/select/tezos"
+        ;; "test/dune/stanzas/library/select/mixed"
+        ;; "test/dune/stanzas/library/select/tezos"
 
         ;; tezos
         ;; "test/dune/tezos/lib_clic"
@@ -46,7 +46,6 @@
 (let* ((_   (load "starlark.scm")))
   (mibl-pkg->starlark pkg)
   )
-
 
        ;; (pkg-path (car (assoc-val :pkg-path pkg)))
        ;; (build.mibl (string-append pkg-path "/BUILD.mibl"))

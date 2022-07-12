@@ -273,7 +273,7 @@ void xen_repl(int argc, char **argv)
   int size = 512;
   bool expr_ok = true;
   char *buffer;
-  char *repl_prompt = xen_strdup("mibl> ");
+  char *repl_prompt = xen_strdup("obazl> ");
   /* s7_pointer evalres; */
   buffer = (char *)calloc(size, sizeof(char));
 

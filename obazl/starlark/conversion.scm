@@ -2,49 +2,96 @@
 
 (load "starlark/templates.scm")
 
+;; GLOBAL CONFIGS:
+;; *ns-topdown* - default  #t
+;; *ns-archives* - default #t, otherwise emit ocaml_ns_library
+;; *agg-library* - emit ocaml_library for unwrapped 'library' stanzas
+;; *split-compilation* (#f) - true: emit ocaml_signature for dyads
+
 (define (starlark-emit-global-vars outp pkg)
   (format #t "starlark-emit-global-vars: ~A\n" pkg)
   (for-each
    (lambda (stanza)
-     (let* ((libname (string-upcase
-                      (stringify (car (assoc-val :privname (cdr stanza))))))
-            (opts (if-let ((opts (assoc :opts (cdr stanza))))
-                          (cdr opts) '()))
-            (opens (if-let ((opens (assoc-val :opens opts)))
-                           (apply append (map (lambda (o)
-                                                (list "-open" (stringify o)))
-                                              opens))
-                           '()))
-            (flags (if-let ((flags (assoc-val :flags opts)))
-                           (list (apply string-append
-                                        (map stringify flags)))
-                           '()))
-            (options (apply append (list opens flags)))
-            (_ (format #t "options: ~A\n" options))
-            (standard (if (assoc :standard opts) #t #f))
+     (format #t "stanza: ~A~%" stanza)
+     (case (car stanza)
+       ((:archive :library :ns-archive ns-library)
+        (let* ((libname (string-upcase
+                         ;; privname or pubname?
+                         (stringify (assoc-val :privname (cdr stanza)))))
+               (opts (if-let ((opts (assoc :opts (cdr stanza))))
+                             (cdr opts) '()))
+               (opens (if-let ((opens (assoc-val :opens opts)))
+                              (apply append (map (lambda (o)
+                                                   (list "-open" (stringify o)))
+                                                 opens))
+                              '()))
+               (flags (if-let ((flags (assoc-val :flags opts)))
+                              (list (apply string-append
+                                           (map stringify flags)))
+                              '()))
+               (options (apply append (list opens flags)))
+               (_ (format #t "agg options: ~A\n" options))
+               (standard (if (assoc :standard opts) #t #f))
 
-            (deps-fixed (cdr (assoc-in '(:deps :fixed) (cdr stanza)))))
+               (deps-fixed (if-let ((df
+                                     (assoc-in '(:deps :fixed) (cdr stanza))))
+                                   (cdr df) #f)))
 
-       (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n" libname deps-fixed)
-       (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n" libname options)))
+          (if deps-fixed
+              (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n" libname deps-fixed))
+          (if (not (null? options))
+              (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n" libname options))))
+       ((:executable)
+        (format #t "exec globals\n")
+        (let* ((libname (string-upcase
+                         ;; privname or pubname?
+                         (stringify (assoc-val :privname (cdr stanza)))))
+               (opts (if-let ((opts (assoc-in '(:compile :opts)
+                                              (cdr stanza))))
+                             (cdr opts) '()))
+               ;; (_ (format #t "opts: ~A~%" opts))
+               (opens (if-let ((opens (assoc-val :opens opts)))
+                              (apply append (map (lambda (o)
+                                                   (list "-open" (stringify o)))
+                                                 opens))
+                              '()))
+               ;; (_ (format #t "opens: ~A~%" opens))
+               (flags (if-let ((flags (assoc-val :flags opts)))
+                              (list (apply string-append
+                                           (map stringify flags)))
+                              '()))
+               (options (apply append (list opens flags)))
+               (_ (format #t "exe options: ~A\n" options))
+               (standard (if (assoc :standard opts) #t #f))
 
+               (deps-fixed (if-let ((df
+                                     (assoc-in '(:compile :deps :fixed)
+                                               (cdr stanza))))
+                                   (cdr df) #f)))
+
+          (if deps-fixed
+              (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n" libname deps-fixed))
+          (if (not (null? options))
+              (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n" libname options))))
+       ))
    (assoc-val :dune pkg)))
 
 (define (-pkg->obazl-rules pkg)
-  (format #t "-pkg->obazl-rules\n")
+  (format #t "~A~%" (blue "-pkg->obazl-rules"))
   (let* ((stanzas (assoc-val :dune pkg))
          (_ (format #t "stanzas: ~A\n" stanzas))
          (-rules (fold (lambda (s accum)
                         (format #t "stanza: ~A\n" s)
                         (let* ((s-alist (cdr s))
-                               (rule (case (car s)
-                                       ((:archive)
-                                        (if (assoc :namespaced s-alist)
-                                            :ns-archive :archive))
-                                       ((:library)
-                                        (if (assoc :namespaced s-alist)
-                                            :ns-library :library))
-                                       (else :unknown)))
+                               (rule (car s))
+                               ;; (rule (case (car s)
+                               ;;         ((:ns-archive)
+                               ;;          (if (assoc :namespaced s-alist)
+                               ;;              :ns-archive :archive))
+                               ;;         ((:library)
+                               ;;          (if (assoc :namespaced s-alist)
+                               ;;              :ns-library :library))
+                               ;;         (else :unknown)))
                                (accum (if rule (cons rule accum) accum))
                                ;; (accum (if (assoc :namespaced s-alist)
                                ;;            (cons :namespaced accum)
@@ -81,8 +128,8 @@
 
             (starlark-emit-global-vars outp pkg)
 
-            ;; (format #t "emitting executables\n")
-            ;; (starlark-emit-executable-targets outp fs-path stanzas)
+            (format #t "emitting executables\n")
+            (starlark-emit-executable-targets outp pkg)
 
             (format #t "emitting aggregate targets (archive, library)\n")
             (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)

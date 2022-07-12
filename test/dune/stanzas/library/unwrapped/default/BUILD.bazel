@@ -1,0 +1,37 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_library",
+     "ocaml_ns_resolver",
+     "ocaml_module",
+)
+
+LIB_B_DEPS = ["foo", "bar"]
+
+LIB_B_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
+
+#############################
+####  Aggregate Targets  ####
+
+##############
+ocaml_library(
+    name    = "lib-b",
+    submodules = ["A", "Gen"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name        = "A",
+    struct      = "a.ml",
+    sig         = "a.mli",
+    opts        = LIB_B_OPTS,
+    deps        = LIB_B_DEPS,
+)
+
+ocaml_module(
+    name          = "Gen",
+    struct        = "gen.ml",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
