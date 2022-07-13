@@ -6,14 +6,6 @@
        ;; which may not be the same.
        (arg
 
-        ;;;; submodules ('modules' field)
-        ;; "test/dune/stanzas/library/submodules/default"
-        ;; "test/dune/stanzas/library/submodules/standard"
-        ;; "test/dune/stanzas/library/submodules/exclusions"
-        ;; "test/dune/stanzas/library/submodules/inclusions"
-        ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
-        ;; "test/dune/stanzas/library/submodules/subsigs"
-
         ;;;; unwrapped:
         ;; "test/dune/stanzas/library/unwrapped/default"
         ;; "test/dune/stanzas/library/unwrapped/standard"
@@ -23,7 +15,7 @@
         ;;;; 'select' libdeps
         ;; ;; w/o directs deps:
         ;; "test/dune/stanzas/library/select/sigs"
-        "test/dune/stanzas/library/select/structs"
+        ;; "test/dune/stanzas/library/select/structs"
         ;; ;; w/directs deps:
         ;; "test/dune/stanzas/library/select/sigs_directs"
         ;; "test/dune/stanzas/library/select/structs_directs"
@@ -36,6 +28,14 @@
         ;; "test/dune/tezos/lib_requester"
         ;; "test/dune/tezos/lib_stblib_unix"
         ;; "test/a"
+
+        ;;;; submodules ('modules' field)
+        ;; "test/dune/stanzas/library/submodules/default"
+        ;; "test/dune/stanzas/library/submodules/standard"
+        "test/dune/stanzas/library/submodules/exclusions"
+        ;; "test/dune/stanzas/library/submodules/inclusions"
+        ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
+        ;; "test/dune/stanzas/library/submodules/subsigs"
         )
        (wss (load-dune arg)) (pkgs (cadr (assoc-in '(@ pkgs) wss)))
        (pkg (hash-table-ref pkgs arg))

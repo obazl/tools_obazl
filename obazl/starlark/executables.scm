@@ -16,9 +16,11 @@
 
          ;; (deps (assoc-in '(:compile :deps)))
          ;; (_ (format #t "compile deps: ~A~%" deps))
-         (manifest (if-let ((mani
-                             (assoc-in '(:manifest :modules) stanza-alist)))
-                           (cdr mani) '()))
+         (manifest (sort! (if-let ((mani
+                             (assoc-in '(:link :manifest :modules)
+                                       stanza-alist)))
+                                 (cdr mani) '())
+                         sym<?))
          )
     (let-values (((link-std link-opts)
                   (link-flags->mibl stanza)))

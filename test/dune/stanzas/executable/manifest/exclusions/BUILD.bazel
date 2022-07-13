@@ -1,0 +1,56 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_module",
+)
+
+MAIN_DEPS = ["X", "Y"]
+
+MAIN_OPTS = ["-open", "X", "-open", "Y", "-linkall"]
+
+MAIN_OCAMLC_OPTS = ["-foo"]
+
+MAIN_OCAMLOPT_OPTS = ["-bar"]
+
+##############################
+####  Executable Targets  ####
+#############
+ocaml_binary(
+    name    = "main",
+    visibility = ["//visibility:public"],
+    exe     = "main",
+    manifest = [":A", ":C", ":E"]
+
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    sig           = "a.mli",
+    opts          = MAIN_OPTS,
+    opts_ocamlc   = MAIN_OCAMLC_OPTS,
+    opts_ocamlopt = MAIN_OCAMLOPT_OPTS,
+    deps          = MAIN_DEPS,
+)
+
+ocaml_module(
+    name          = "C",
+    struct        = "c.ml",
+    opts          = MAIN_OPTS,
+    opts_ocamlc   = MAIN_OCAMLC_OPTS,
+    opts_ocamlopt = MAIN_OCAMLC_OPTS,
+    deps          = MAIN_DEPS,
+)
+
+ocaml_module(
+    name          = "E",
+    struct        = "e.ml",
+    sig           = "e.mli",
+    opts          = MAIN_OPTS,
+    opts_ocamlc   = MAIN_OCAMLC_OPTS,
+    opts_ocamlopt = MAIN_OCAMLOPT_OPTS,
+    deps          = MAIN_DEPS,
+)
+

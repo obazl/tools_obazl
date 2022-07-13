@@ -1,0 +1,51 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+LIB_A_DEPS = ["foo", "bar"]
+
+LIB_A_OPTS = ["-open", "Foo", "-open", "Bar", "-linkall"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "lib-a",
+    submodules = ["E", "A", "C"],
+    opts       = ["-linkall"],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name        = "A",
+    struct      = "a.ml",
+    sig         = "a.mli",
+    opts        = LIB_A_OPTS,
+    opts_ocamlc = LIB_A_OCAMLC_OPTS,
+    deps        = LIB_A_DEPS,
+)
+
+)
+
+ocaml_module(
+    name        = "E",
+    struct      = "e.ml",
+    sig         = "e.mli",
+    opts        = LIB_A_OPTS,
+    opts_ocamlc = LIB_A_OCAMLC_OPTS,
+    deps        = LIB_A_DEPS,
+)
+
+)
+
+ocaml_module(
+    name          = "C",
+    struct        = "c.ml",
+    opts          = LIB_A_OPTS,
+    deps          = LIB_A_DEPS,
+)
+

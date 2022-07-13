@@ -1,0 +1,30 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_binary",
+     "ocaml_module",
+)
+
+MAIN_DEPS = ["A", "B"]
+
+MAIN_OPTS = ["-open", "A", "-open", "B", "-linkall"]
+
+##############################
+####  Executable Targets  ####
+#############
+ocaml_binary(
+    name    = "main",
+    visibility = ["//visibility:public"],
+    exe     = "main",
+    manifest = [":Main"]
+
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "Main",
+    struct        = "main.ml",
+    opts          = MAIN_OPTS,
+    deps          = MAIN_DEPS,
+)
+

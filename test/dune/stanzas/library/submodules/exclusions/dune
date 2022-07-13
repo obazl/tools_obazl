@@ -1,7 +1,7 @@
 (library
  (name lib_a)
  (public_name lib-a)
- (modules :standard \ b) ;; all but b
+ (modules :standard \ b d) ;; all but b & d
  (libraries foo bar)
- (flags (:standard -open foo -open bar -linkall)))
+ (flags (:standard -open Foo -open Bar -linkall)))
 

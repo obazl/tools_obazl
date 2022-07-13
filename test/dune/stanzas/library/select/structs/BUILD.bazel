@@ -1,0 +1,53 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "lib-a",
+    submodules = ["A", "P", "R"],
+    opts       = [],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name        = "P",
+    struct      = "p.ml",
+    sig         = "p.mli",
+    opts        = LIB_A_OPTS,
+    deps        = LIB_A_DEPS,
+)
+
+ocaml_module(
+    name        = "A",
+    module      = "A",
+    struct      = select(
+        {
+       "//foo/bar:x": "a_x.ml",
+       "//foo/bar:y": "a_y.ml",
+        },
+        no_match_error="no file selected"),
+    sig         = "a.mli",
+    opts        = LIB_A_OPTS,
+    deps        = LIB_A_DEPS,
+)
+
+ocaml_module(
+    name          = "R",
+    struct        = "r.ml",
+    opts          = LIB_A_OPTS,
+    deps          = LIB_A_DEPS,
+)
+
+#############################
+####  Signature Targets  ####
+
+)
+

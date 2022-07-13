@@ -60,6 +60,19 @@
                               (list (apply string-append
                                            (map stringify flags)))
                               '()))
+
+               (ocamlc_opts (if-let ((flags (assoc-val :ocamlc opts)))
+                              (list (apply string-append
+                                           (map stringify flags)))
+                              '()))
+               (_ (format #t "ocamlc_opts: ~A\n" ocamlc_opts))
+
+               (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
+                              (list (apply string-append
+                                           (map stringify flags)))
+                              '()))
+               (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
+
                (options (apply append (list opens flags)))
                (_ (format #t "exe options: ~A\n" options))
                (standard (if (assoc :standard opts) #t #f))
@@ -70,9 +83,17 @@
                                    (cdr df) #f)))
 
           (if deps-fixed
-              (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n" libname deps-fixed))
+              (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                      libname deps-fixed))
           (if (not (null? options))
-              (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n" libname options))))
+              (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                      libname options))
+          (if (not (null? ocamlc_opts))
+              (format outp "~A_OCAMLC_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                      libname ocamlc_opts))
+          (if (not (null? ocamlopt_opts))
+              (format outp "~A_OCAMLOPT_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                      libname ocamlopt_opts))))
        ))
    (assoc-val :dune pkg)))
 

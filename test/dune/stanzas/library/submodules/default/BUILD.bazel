@@ -1,8 +1,6 @@
 load("@rules_ocaml//build:rules.bzl",
      "ocaml_ns_archive",
-     "ocaml_ns_resolver",
      "ocaml_module",
-     "ocaml_signature",
 )
 
 LIB_B_DEPS = ["foo", "bar"]
@@ -13,17 +11,10 @@ LIB_B_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
 ####  Aggregate Targets  ####
 
 #################
-ocaml_archive(
+ocaml_ns_archive(
     name       = "lib-b",
-    manifest   = ["A", "B"],
+    submodules = ["E", "B", "A", "D", "C"],
     opts       = ["-linkall"],
-)
-
-#################
-ocaml_ns_resolver(
-    name       = "ns.lib-b",
-    ns         = "lib-b",
-    submodules = ["A", "B"],
 )
 
 #############################
@@ -31,7 +22,6 @@ ocaml_ns_resolver(
 
 ocaml_module(
     name        = "A",
-    ns_resolver = ":ns.lib-b",
     struct      = "a.ml",
     sig         = "a.mli",
     opts        = LIB_B_OPTS,
@@ -39,15 +29,32 @@ ocaml_module(
 )
 
 ocaml_module(
-    name          = "B",
-    ns_resolver   = ":ns.lib-b",
-    struct        = "b.ml",
+    name        = "B",
+    struct      = "b.ml",
+    sig         = "b.mli",
+    opts        = LIB_B_OPTS,
+    deps        = LIB_B_DEPS,
+)
+
+ocaml_module(
+    name        = "E",
+    struct      = "e.ml",
+    sig         = "e.mli",
+    opts        = LIB_B_OPTS,
+    deps        = LIB_B_DEPS,
+)
+
+ocaml_module(
+    name          = "C",
+    struct        = "c.ml",
     opts          = LIB_B_OPTS,
     deps          = LIB_B_DEPS,
 )
 
-#############################
-####  Signature Targets  ####
-
+ocaml_module(
+    name          = "D",
+    struct        = "d.ml",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
 )
 

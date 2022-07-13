@@ -38,11 +38,35 @@
 (define (-emit-module outp module stanza)
   (format #t "~A: ~A [~A]\n" (blue "-emit-module") module stanza)
 
-  (let ((libname (string-append
-                       (string-upcase
-                        (stringify
-                         (assoc-val :privname (cdr stanza))))))
-        (ns (assoc-val :ns (cdr stanza))))
+  (let* ((stanza-alist (cdr stanza))
+         (_ (format #t "~A: ~A\n" "stanza-alist" stanza-alist))
+         (libname (string-append
+                   (string-upcase
+                    (stringify
+                     (assoc-val :privname stanza-alist)))))
+
+         (ns (assoc-val :ns stanza-alist))
+
+         (opts (if-let ((opts (assoc-val :opts stanza-alist)))
+                       ;; aggregate
+                       opts
+                       ;; else executable
+                       (if-let ((opts (assoc-in '(:compile :opts)
+                                                stanza-alist)))
+                               opts
+                               '())))
+
+         (_ (format #t "OPTS: ~A\n" opts))
+
+         (ocamlc_opts (if-let ((x (assoc-val :ocamlc (cdr opts))))
+                              (list (apply string-append
+                                            (map stringify x)))
+                               '()))
+         (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt (cdr opts))))
+                                (list (apply string-append
+                                             (map stringify flags)))
+                                '()))
+         )
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
 
@@ -60,32 +84,32 @@
                             (assoc-val :ml srcs))))
 
           ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-          ;;               (cdr opts) '())))
+  ;;         ;;               (cdr opts) '())))
           (format #t "emitting module: ~A: ~A\n" modname srcs)
 
           (format outp "ocaml_module(\n")
-          (format outp "    name        = \"~A\",\n" modname)
+          (format outp "    name          = \"~A\",\n" modname)
           (if (and ns (not *ns-topdown*))
-              (format outp "    ns_resolver = \":ns.~A\",\n" ns))
+              (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
 
           (if (or select-structfile select-sigfile)
-          (format outp "    module      = \"~A\",\n" modname))
+          (format outp "    module        = \"~A\",\n" modname))
 
           (if select-structfile
               (begin
-                (format outp "    struct      = select(~%")
+                (format outp "    struct        = select(~%")
                 (format outp "        {~%")
                 (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
                 (format outp "        },~%")
                 (format outp "        no_match_error=\"no file selected\"),\n")
                 )
               (begin
-                (format outp "    struct      = \"~A\",\n" structfile)
+                (format outp "    struct        = \"~A\",\n" structfile)
                 ))
 
           (if select-sigfile
               (begin
-                (format outp "    sig         = select(~%")
+                (format outp "    sig           = select(~%")
                 (format outp "        {~%")
                 (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
                 (format outp "        },~%")
@@ -93,24 +117,31 @@
                 )
               ;; else
               (begin
-                (format outp "    sig         = \"~A\",\n" sigfile)
+                (format outp "    sig           = \"~A\",\n" sigfile)
                 ))
 
           ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-          (format outp "    opts        = ~A_OPTS,\n" libname)
-          (format outp "    deps        = ~A_DEPS,\n" libname)
+          (format outp "    opts          = ~A_OPTS,\n" libname)
+          (if ocamlc_opts
+          (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+                      libname))
+          (if ocamlopt_opts
+          (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
+                      libname))
+          (format outp "    deps          = ~A_DEPS,\n" libname)
 
-          ;; (if ppx-alist
-          ;;     (begin
-          ;;       (format outp
-          ;;               "    ppx      = \":~A\",\n"
-          ;;               (cadr (assoc :name ppx-alist)))
-          ;;       (if (not
-          ;;            (equal? :all (cadr (assoc :scope
-          ;;                                      ppx-alist))))
-          ;;           (format outp
-          ;;                   "    ppx_args = [~{~S, ~}],\n"
-          ;;                   (cadr (assoc :args ppx-alist))))))
+  ;;         ;; (if ppx-alist
+  ;;         ;;     (begin
+  ;;         ;;       (format outp
+  ;;         ;;               "    ppx      = \":~A\",\n"
+  ;;         ;;               (cadr (assoc :name ppx-alist)))
+  ;;         ;;       (if (not
+  ;;         ;;            (equal? :all (cadr (assoc :scope
+  ;;         ;;                                      ppx-alist))))
+  ;;         ;;           (format outp
+  ;;         ;;                   "    ppx_args = [~{~S, ~}],\n"
+  ;;         ;;                   (cadr (assoc :args ppx-alist))))))
+          (format outp ")\n")
 
           )
         ;; else (M . ml) from :structures
@@ -127,6 +158,12 @@
                    (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
                (format outp "    struct        = \"~A\",\n" structfile)
                (format outp "    opts          = ~A_OPTS,\n" libname)
+               (if ocamlc_opts
+                   (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+                           libname))
+               (if ocamlopt_opts
+                   (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
+                           libname))
                (format outp "    deps          = ~A_DEPS,\n" libname)
 
                ;; (if ppx-alist
@@ -140,7 +177,7 @@
                ;;           (format outp
                ;;                   "    ppx_args = [~{~S, ~}],\n"
                ;;                   (cadr (assoc :args ppx-alist))))))
-
+               (format outp ")\n")
                ) ;; let*
         ))
   stanza)
@@ -164,8 +201,8 @@
                                       (begin
                                         (format #t "submods: ~A\n" submods)
                                         (if (member modname submods)
-                                            (-emit-module outp module stanza)
-                                            #f))))
+                                            ;;(-emit-module outp module stanza)
+                                            #t #f))))
                              ((:archive :library)
                               (if-let ((submods
                                         (cdr (assoc-in '(:manifest :modules)
@@ -173,23 +210,28 @@
                                       (begin
                                         (format #t "submods: ~A\n" submods)
                                         (if (member modname submods)
-                                            (-emit-module outp module stanza)
-                                            #f))))
+                                            ;;(-emit-module outp module stanza)
+                                            #t #f))))
                              ((:executable)
                               (if-let ((submods
-                                        (cdr (assoc-in '(:compile :manifest :modules)
-                                                  (cdr stanza)))))
+                                        (cdr (assoc-in '(:compile :manifest :modules) (cdr stanza)))))
                                       (begin
                                         (format #t "submods: ~A\n" submods)
                                         (if (member modname submods)
-                                            (-emit-module outp module stanza)
-                                            #f))))
+                                            #t #f))))
                              (else #f)))
                          (assoc-val :dune pkg)))
             )
-       (format #t "aggregator: ~A\n" aggregator)
-       (format outp ")\n\n")))
-   modules))
+       (if aggregator
+           (begin
+             (format #t "Found containing aggregator for ~A: ~A\n"
+                     modname aggregator)
+             (-emit-module outp module aggregator)
+             (format outp "\n"))
+           (begin
+             (format #t "No aggregator found for ~A\n" modname)))
+       ))
+   (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
 
 (define (-emit-sig outp sig stanza)
   (format #t "~A: ~A, ~A\n" (blue "-emit-sig") sig stanza)

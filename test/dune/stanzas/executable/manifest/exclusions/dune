@@ -1,0 +1,12 @@
+(executable
+ (name main)
+ (public_name main)
+ (flags (:standard -open X
+                   -open Y
+                   -linkall))
+ (link_flags -link_flag_a)
+ (libraries X Y)
+ (ocamlc_flags -foo)
+ (ocamlopt_flags -bar)
+ (modules :standard \ b d)
+ )
