@@ -46,10 +46,11 @@
         (let* ((libname (string-upcase
                          ;; privname or pubname?
                          (stringify (assoc-val :privname (cdr stanza)))))
+               (_ (format #t "libname: ~A~%" libname))
                (opts (if-let ((opts (assoc-in '(:compile :opts)
                                               (cdr stanza))))
                              (cdr opts) '()))
-               ;; (_ (format #t "opts: ~A~%" opts))
+               (_ (format #t "opts: ~A~%" opts))
                (opens (if-let ((opens (assoc-val :opens opts)))
                               (apply append (map (lambda (o)
                                                    (list "-open" (stringify o)))
@@ -65,13 +66,13 @@
                               (list (apply string-append
                                            (map stringify flags)))
                               '()))
-               (_ (format #t "ocamlc_opts: ~A\n" ocamlc_opts))
+               (_ (format #t "g ocamlc_opts: ~A\n" ocamlc_opts))
 
                (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
                               (list (apply string-append
                                            (map stringify flags)))
                               '()))
-               (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
+               (_ (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts))
 
                (options (apply append (list opens flags)))
                (_ (format #t "exe options: ~A\n" options))

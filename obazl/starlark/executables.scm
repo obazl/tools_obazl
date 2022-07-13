@@ -14,6 +14,8 @@
          (tgtname (format #f "~A" pubname))
          (exename privname)
 
+         (main (assoc-in '(:link :main) stanza-alist))
+
          ;; (deps (assoc-in '(:compile :deps)))
          ;; (_ (format #t "compile deps: ~A~%" deps))
          (manifest (sort! (if-let ((mani
@@ -78,6 +80,12 @@
         ;; not a dependency
         (format outp "    exe     = \"~A\",\n" exename)
         ;; (format outp "    main    = \":~A\",\n" mainname)
+
+        (if (not (null? link-opts))
+            (format outp "    opts          = [~{\"~A\"~^, ~}],\n" link-opts))
+
+        (if main
+            (format outp "    main          = [\"~A\"],\n" main))
 
         (if (not (null? manifest))
             (format outp "    manifest = [~{\":~A\"~^, ~}]\n\n" manifest))

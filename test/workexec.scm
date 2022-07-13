@@ -10,14 +10,20 @@
         ;; "test/dune/stanzas/executable/main_nodeps"
         ;; "test/dune/stanzas/executable/main_singleton"
 
+        "test/dune/stanzas/executable/flags"
+
+        ;; "test/dune/stanzas/executable/mwe"
+
         ;; "test/dune/stanzas/executable/manifest/default"
         ;; "test/dune/stanzas/executable/manifest/standard"
         ;; "test/dune/stanzas/executable/manifest/exclusions"
-        "test/dune/stanzas/executable/manifest/inclusions"
+        ;; "test/dune/stanzas/executable/manifest/inclusions"
 
         ;; "test/dune/stanzas/executable/select"
 
         ;; "test/dune/stanzas/executable/s_packer"
+
+        ;; "bin"
         )
        (wss (load-dune arg))
        (pkgs (cadr (assoc-in '(@ pkgs) wss)))

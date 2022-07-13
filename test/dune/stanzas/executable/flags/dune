@@ -4,5 +4,8 @@
  (flags (:standard -open A
                    -open B
                    -linkall))
+ (link_flags -link_flag_a)
  (libraries A B)
+ (ocamlc_flags -foo)
+ (ocamlopt_flags -bar)
  (modules Main))

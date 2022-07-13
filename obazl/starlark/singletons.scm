@@ -44,8 +44,10 @@
                    (string-upcase
                     (stringify
                      (assoc-val :privname stanza-alist)))))
+         (_ (format #t "em libname: ~A~%" libname))
 
          (ns (assoc-val :ns stanza-alist))
+         (_ (format #t "em ns: ~A~%" ns))
 
          (opts (if-let ((opts (assoc-val :opts stanza-alist)))
                        ;; aggregate
@@ -58,14 +60,19 @@
 
          (_ (format #t "OPTS: ~A\n" opts))
 
-         (ocamlc_opts (if-let ((x (assoc-val :ocamlc (cdr opts))))
-                              (list (apply string-append
-                                            (map stringify x)))
-                               '()))
-         (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt (cdr opts))))
-                                (list (apply string-append
-                                             (map stringify flags)))
-                                '()))
+         (ocamlc_opts (if (null? opts) '()
+                          (if-let ((x (assoc-val :ocamlc (cdr opts))))
+                                  (list (apply string-append
+                                               (map stringify x)))
+                                  '())))
+         (_ (format #t "ocamlc_opts: ~A\n" ocamlc_opts))
+
+         (ocamlopt_opts (if (null? opts) '()
+                            (if-let ((flags (assoc-val :ocamlopt (cdr opts))))
+                                    (list (apply string-append
+                                                 (map stringify flags)))
+                                    '())))
+         (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
          )
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
@@ -121,13 +128,17 @@
                 ))
 
           ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-          (format outp "    opts          = ~A_OPTS,\n" libname)
-          (if ocamlc_opts
-          (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+          (if (not (null? opts))
+              (format outp "    opts          = ~A_OPTS,\n" libname))
+
+          (if (not (null? ocamlc_opts))
+              (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
                       libname))
-          (if ocamlopt_opts
-          (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
+
+          (if (not (null? ocamlopt_opts))
+              (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
                       libname))
+
           (format outp "    deps          = ~A_DEPS,\n" libname)
 
   ;;         ;; (if ppx-alist
@@ -157,13 +168,18 @@
                (if (and ns (not *ns-topdown*))
                    (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
                (format outp "    struct        = \"~A\",\n" structfile)
-               (format outp "    opts          = ~A_OPTS,\n" libname)
-               (if ocamlc_opts
+
+               (if (not (null? opts))
+                   (format outp "    opts          = ~A_OPTS,\n" libname))
+
+               (if (not (null? ocamlc_opts))
                    (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
                            libname))
-               (if ocamlopt_opts
+
+               (if (not (null? ocamlopt_opts))
                    (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                            libname))
+
                (format outp "    deps          = ~A_DEPS,\n" libname)
 
                ;; (if ppx-alist
@@ -229,7 +245,7 @@
              (-emit-module outp module aggregator)
              (format outp "\n"))
            (begin
-             (format #t "No aggregator found for ~A\n" modname)))
+             (format #t "No aggregator found for ~A; excluding\n" modname)))
        ))
    (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
 

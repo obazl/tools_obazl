@@ -32,10 +32,12 @@
         ;;;; submodules ('modules' field)
         ;; "test/dune/stanzas/library/submodules/default"
         ;; "test/dune/stanzas/library/submodules/standard"
-        "test/dune/stanzas/library/submodules/exclusions"
+        ;; "test/dune/stanzas/library/submodules/exclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions"
         ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
         ;; "test/dune/stanzas/library/submodules/subsigs"
+
+        ;; "lib"
         )
        (wss (load-dune arg)) (pkgs (cadr (assoc-in '(@ pkgs) wss)))
        (pkg (hash-table-ref pkgs arg))
