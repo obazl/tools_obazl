@@ -176,7 +176,7 @@
             (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
 
             (format #t "emitting rules\n")
-            (starlark-emit-rule-targets outp fs-path stanzas)
+            (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
             (close-output-port outp)
 

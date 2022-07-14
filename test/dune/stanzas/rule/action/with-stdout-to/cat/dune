@@ -1,0 +1,5 @@
+(rule
+ (targets output.ml)
+ (deps a.ml (:foo b.ml))
+ (action
+  (with-stdout-to %{targets} (cat a.ml %{foo}))))

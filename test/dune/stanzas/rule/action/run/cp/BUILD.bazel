@@ -1,0 +1,16 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_module",
+)
+
+#############################
+####  Singleton Targets  ####
+
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+## (
+##   (:deps ((:_ ((:pkg "test/dune/stanzas/rule/action/run/cp/a") (:file "b")) ((:pkg "test/dune/stanzas/rule/action/run/cp/a") (:file "c")))))
+##   (:targets (:_ ((:pkg "test/dune/stanzas/rule/action/run/cp") (:file "x.foo"))))
+##   (:action (:run (:tool . "cp") (:args ((:_ ((:pkg "test/dune/stanzas/rule/action/run/cp/a") (:file "b")) ((:pkg "test/dune/stanzas/rule/action/run/cp/a") (:file "c")))) "./")))
+## )

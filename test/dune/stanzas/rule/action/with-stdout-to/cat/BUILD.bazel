@@ -1,0 +1,30 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_module",
+)
+
+########################
+####  Rule Targets  ####
+
+################  rule  ################
+## (
+##   (:deps (::foo ((:pkg "test/dune/stanzas/rule/action/with-stdout-to/cat") (:file "b.ml"))) (:_ ((:pkg "test/dune/stanzas/rule/action/with-stdout-to/cat") (:file "a.ml"))))
+##   (:targets (:_ ((:pkg "test/dune/stanzas/rule/action/with-stdout-to/cat") (:file "output.ml"))))
+##   (:action (:cmd (:tool cat) (:args (:_ ((:pkg "test/dune/stanzas/rule/action/with-stdout-to/cat") (:file "a.ml")) ((:pkg "test/dune/stanzas/rule/action/with-stdout-to/cat") (:file "%{foo}"))))) (:stdout %{targets}))
+## )
+genrule(
+    name  = "foo",
+    srcs  = [
+        ":b.ml",
+        ":a.ml"
+    ],
+    outs  = [
+        "output.ml"
+    ],
+    cmd   = " ".join([
+        "cat",
+        "$(location test/dune/stanzas/rule/action/with-stdout-to/cat/a.ml)",
+        "$(location test/dune/stanzas/rule/action/with-stdout-to/cat/%{foo})",
+        "> $@"
+    ]),
+    tools = [""],
+)

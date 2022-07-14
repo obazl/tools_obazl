@@ -1,0 +1,9 @@
+;; mina/src/lib/zexe/snarky-bn382/dune
+
+(rule
+ (targets foo.a)
+ (deps a b)
+ (action
+  (progn
+   (run env CARGO_NET_GIT_FETCH_WITH_CLI=true cargo build --release)
+   (run cp ../target/foo_stubs.a ./))))

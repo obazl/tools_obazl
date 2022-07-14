@@ -1,8 +1,4 @@
 (rule
  (alias runtest_compile_protocol)
- (deps
-   misc.mli misc.ml
-   storage_description.mli storage_description.ml
-   main.mli main.ml
-  (:src_dir TEZOS_PROTOCOL))
+ (deps misc.mli misc.ml (:src_dir TEZOS_PROTOCOL))
  (action (run %{bin:tezos-protocol-compiler}  ./)))

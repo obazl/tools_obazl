@@ -8,22 +8,22 @@
 
 ;; (load "stuff.scm") ;; concatenate
 
-(define (starlark-emit-rule-target outp stanza)
-  (format #t "starlark-emit-rule-target: ~A\n" stanza)
-  ;; (let ((libname (cdadr (assoc :name stanza)))
-  ;;       (opts (stanza-opts stanza))
-  ;;       (deps '("test-dep1" "test-dep2"))
-  ;;       (modules '("test-mod1" "test-mod2"))
-  ;;       (submodules (stanza-submodules typ stanza)))
+;; (define (starlark-emit-rule-target outp stanza)
+;;   (format #t "starlark-emit-rule-target: ~A\n" stanza)
+;;   ;; (let ((libname (cdadr (assoc :name stanza)))
+;;   ;;       (opts (stanza-opts stanza))
+;;   ;;       (deps '("test-dep1" "test-dep2"))
+;;   ;;       (modules '("test-mod1" "test-mod2"))
+;;   ;;       (submodules (stanza-submodules typ stanza)))
 
-    (format outp "################  rule  ################\n")
-    (if (list? stanza)
-        (begin
-          (format outp "## (\n")
-          (for-each (lambda (sexp)
-                      (format outp "##   ~A\n" sexp))
-                    stanza)
-          (format outp "## )\n"))))
+;;     (format outp "################  rule  ################\n")
+;;     (if (list? stanza)
+;;         (begin
+;;           (format outp "## (\n")
+;;           (for-each (lambda (sexp)
+;;                       (format outp "##   ~A\n" sexp))
+;;                     stanza)
+;;           (format outp "## )\n"))))
 
     ;; (format outp "genrule(\n")
     ;; (format outp "    name    = \"~A\",\n" "rulename")
@@ -267,39 +267,39 @@
   ;;       (format outp "## )\n")))
   )
 
-(define (starlark-emit-rule-targets outp fs-path stanzas)
-  ;; (format #t "starlark-emit-rule-targets")
+;; (define (starlark-emit-rule-targets outp fs-path stanzas)
+;;   ;; (format #t "starlark-emit-rule-targets")
 
-  ;; same code as starlark-emit-aggregate-targets, but we want to put
-  ;; aggregates and rules in different locations.
-  (let ((flag #t))
-    (for-each (lambda (stanza)
-                (case (car stanza)
-                  ((rule :genrule :with-stdout-to :write-file)
-                   (if flag
-                       (begin
-                         (format outp "########################\n")
-                         (format outp "####  Rule Targets  ####\n")
-                         (newline outp)
-                         (set! flag #f)))))
+;;   ;; same code as starlark-emit-aggregate-targets, but we want to put
+;;   ;; aggregates and rules in different locations.
+;;   (let ((flag #t))
+;;     (for-each (lambda (stanza)
+;;                 (case (car stanza)
+;;                   ((rule :genrule :with-stdout-to :write-file)
+;;                    (if flag
+;;                        (begin
+;;                          (format outp "########################\n")
+;;                          (format outp "####  Rule Targets  ####\n")
+;;                          (newline outp)
+;;                          (set! flag #f)))))
 
-                (case (car stanza)
-                  ((rule)
-                   (starlark-emit-rule-target outp (cdr stanza)))
-                  ((:run-cmd)
-                   (starlark-emit-run-cmd-target outp fs-path (cdr stanza)))
-                  ((:with-stdout-to)
-                   (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
-                       (starlark-emit-with-stdout-to-target outp fs-path
-                                                            (cdr stanza))
-                       ;; else FIXME: deal with universe stuff
-                       ))
-                  ((:write-file)
-                   (starlark-emit-write-file-target outp (cdr stanza)))
-                  (else
-                   ;; skip
-                   )))
-              stanzas)))
+;;                 (case (car stanza)
+;;                   ((rule)
+;;                    (starlark-emit-rule-target outp (cdr stanza)))
+;;                   ((:run-cmd)
+;;                    (starlark-emit-run-cmd-target outp fs-path (cdr stanza)))
+;;                   ((:with-stdout-to)
+;;                    (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
+;;                        (starlark-emit-with-stdout-to-target outp fs-path
+;;                                                             (cdr stanza))
+;;                        ;; else FIXME: deal with universe stuff
+;;                        ))
+;;                   ((:write-file)
+;;                    (starlark-emit-write-file-target outp (cdr stanza)))
+;;                   (else
+;;                    ;; skip
+;;                    )))
+;;               stanzas)))
 
 ;; install targets - ignore
   ;; (if (assoc-in '(:stanzas install) (cdr dune-pkg-tbl))
