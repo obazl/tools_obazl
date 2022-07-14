@@ -1,5 +1,5 @@
 ;; library stanzas
-(define pkg
+(define _pkg
   (let* ((_   (load "dune.scm"))
        ;; WARNING: arg to load-dune is relative to cwd,
        ;; but arg to hash-table-ref below is relative to ws root,
@@ -37,7 +37,16 @@
         ;; "test/dune/stanzas/library/submodules/inclusions_sigs"
         ;; "test/dune/stanzas/library/submodules/subsigs"
 
-        ;; "lib"
+        ;; "test/dune/ppx/long"
+        ;; "test/dune/ppx/mwe/exe"
+        ;; "test/dune/ppx/mwe/lib/singleton"
+        ;; "test/dune/ppx/mwe/lib/dyad"
+        ;; "test/dune/ppx/pp_deps/exe"
+        "test/dune/ppx/ppx_args"
+        ;; "test/dune/ppx/ppx_data/single"
+        ;; "test/dune/ppx/ppx_data/multiple"
+        ;; "test/dune/ppx/pp_deps/lib/mwe"
+
         )
        (wss (load-dune arg)) (pkgs (cadr (assoc-in '(@ pkgs) wss)))
        (pkg (hash-table-ref pkgs arg))
@@ -46,7 +55,7 @@
     nzs))
 
 (let* ((_   (load "starlark.scm")))
-  (mibl-pkg->starlark pkg)
+  (mibl-pkg->starlark _pkg)
   )
 
        ;; (pkg-path (car (assoc-val :pkg-path pkg)))

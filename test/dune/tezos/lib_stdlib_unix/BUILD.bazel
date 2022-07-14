@@ -1,42 +1,43 @@
-load("@obazl_rules_ocaml//ocaml:rules.bzl",
-    "ocaml_archive",
-    "ocaml_module",
-    "ocaml_ns_archive",
-    "ocaml_signature",
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
 )
 
-###############################################
-########### Archive/Library Targets ###########
-
-######## tezos-stdlib-unix ########
-TEZOS_STDLIB_UNIX_OPTS = [
-    "-open", "Data_encoding",
-    "-open", "Tezos_error_monad",
-    "-open", "Tezos_error_monad.TzLwtreslib",
-    "-open", "Tezos_event_logging",
-    "-open", "Tezos_stdlib",
-]
-
 TEZOS_STDLIB_UNIX_DEPS = [
-    "//src/lib_error_monad:tezos-error-monad",
-    "//src/lib_event_logging:tezos-event-logging",
-    "//src/lib_lwt_result_stdlib:tezos-lwt-result-stdlib",
-    "//src/lib_stdlib:tezos-stdlib",
-    "@data-encoding//:data-encoding",
-    "@ipaddr//unix",
-    "@lwt//unix",
-    "@lwt_log//:lwt_log",
-    "@mtime//:mtime",
-    "@mtime//clock/os",
-    "@ptime//:ptime",
-    "@ptime//clock/os",
-    "@re//:re",
+        "data-encoding",
+        "tezos-error-monad",
+        "tezos-lwt-result-stdlib",
+        "tezos-event-logging",
+        "tezos-stdlib",
+        "lwt.unix",
+        "ipaddr.unix",
+        "re",
+        "ptime",
+        "ptime.clock.os",
+        "mtime",
+        "mtime.clock.os",
+        "lwt_log"
 ]
 
+TEZOS_STDLIB_UNIX_OPTS = [
+        "-open",
+        "Tezos_error_monad",
+        "-open",
+        "Tezos_error_monad.TzLwtreslib",
+        "-open",
+        "Tezos_event_logging",
+        "-open",
+        "Tezos_stdlib",
+        "-open",
+        "Data_encoding"
+]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
 ocaml_ns_archive(
     name       = "tezos-stdlib-unix",
-    ns         = "Tezos_stdlib_unix",
-    visibility = ["//visibility:public"],
     submodules = [
         ":Animation",
         ":File_descriptor_sink",
@@ -48,204 +49,179 @@ ocaml_ns_archive(
         ":Moving_average",
         ":Sys_info",
         ":Systime_os",
-        ":Utils",
+        ":Utils"
     ],
+    opts       = [],
 )
 
 #############################
 ####  Singleton Targets  ####
 
 ocaml_module(
-    name     = "Animation",
-    struct   = "animation.ml",
-    sig      = ":Animation_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Animation_cmi",
-    src      = "animation.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Animation",
+    struct        = "animation.ml",
+    sig           = ":Animation.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "File_descriptor_sink",
-    struct   = "file_descriptor_sink.ml",
-    sig      = ":File_descriptor_sink_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-       ":Lwt_utils_unix",
-    ]
-)
-
-ocaml_signature(
-    name     = "File_descriptor_sink_cmi",
-    src      = "file_descriptor_sink.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "File_descriptor_sink",
+    struct        = "file_descriptor_sink.ml",
+    sig           = ":File_descriptor_sink.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "File_event_sink",
-    struct   = "file_event_sink.ml",
-    sig      = ":File_event_sink_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-       ":Lwt_utils_unix",
-    ]
-)
-
-ocaml_signature(
-    name     = "File_event_sink_cmi",
-    src      = "file_event_sink.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "File_event_sink",
+    struct        = "file_event_sink.ml",
+    sig           = ":File_event_sink.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Internal_event_unix",
-    struct   = "internal_event_unix.ml",
-    sig      = ":Internal_event_unix_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-       ":Lwt_utils_unix",
-       ":Lwt_log_sink_unix",
-       ":File_event_sink",
-       ":File_descriptor_sink",
-    ]
-)
-
-ocaml_signature(
-    name     = "Internal_event_unix_cmi",
-    src      = "internal_event_unix.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-       ":Lwt_log_sink_unix",
-    ]
+    name          = "Internal_event_unix",
+    struct        = "internal_event_unix.ml",
+    sig           = ":Internal_event_unix.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Lwt_lock_file",
-    struct   = "lwt_lock_file.ml",
-    sig      = ":Lwt_lock_file_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Lwt_lock_file_cmi",
-    src      = "lwt_lock_file.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Lwt_lock_file",
+    struct        = "lwt_lock_file.ml",
+    sig           = ":Lwt_lock_file.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Lwt_log_sink_unix",
-    struct   = "lwt_log_sink_unix.ml",
-    sig      = ":Lwt_log_sink_unix_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Lwt_log_sink_unix_cmi",
-    src      = "lwt_log_sink_unix.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Lwt_log_sink_unix",
+    struct        = "lwt_log_sink_unix.ml",
+    sig           = ":Lwt_log_sink_unix.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Lwt_utils_unix",
-    struct   = "lwt_utils_unix.ml",
-    sig      = ":Lwt_utils_unix_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Lwt_utils_unix_cmi",
-    src      = "lwt_utils_unix.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Lwt_utils_unix",
+    struct        = "lwt_utils_unix.ml",
+    sig           = ":Lwt_utils_unix.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Moving_average",
-    struct   = "moving_average.ml",
-    sig      = ":Moving_average_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Moving_average_cmi",
-    src      = "moving_average.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Moving_average",
+    struct        = "moving_average.ml",
+    sig           = ":Moving_average.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Sys_info",
-    struct   = "sys_info.ml",
-    sig      = ":Sys_info_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Sys_info_cmi",
-    src      = "sys_info.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Sys_info",
+    struct        = "sys_info.ml",
+    sig           = ":Sys_info.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Systime_os",
-    struct   = "systime_os.ml",
-    sig      = ":Systime_os_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
-)
-
-ocaml_signature(
-    name     = "Systime_os_cmi",
-    src      = "systime_os.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Systime_os",
+    struct        = "systime_os.ml",
+    sig           = ":Systime_os.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_module(
-    name     = "Utils",
-    struct   = "utils.ml",
-    sig      = ":Utils_cmi",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "Utils",
+    struct        = "utils.ml",
+    sig           = ":Utils.cmi",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+#############################
+####  Signature Targets  ####
+
+ocaml_signature(
+    name          = "Animation.cmi",
+    sig           = "animation.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 
 ocaml_signature(
-    name     = "Utils_cmi",
-    src      = "utils.mli",
-    opts     = TEZOS_STDLIB_UNIX_OPTS,
-    deps     = TEZOS_STDLIB_UNIX_DEPS + [
-    ]
+    name          = "File_descriptor_sink.cmi",
+    sig           = "file_descriptor_sink.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "File_event_sink.cmi",
+    sig           = "file_event_sink.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Internal_event_unix.cmi",
+    sig           = "internal_event_unix.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Lwt_lock_file.cmi",
+    sig           = "lwt_lock_file.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Lwt_log_sink_unix.cmi",
+    sig           = "lwt_log_sink_unix.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Lwt_utils_unix.cmi",
+    sig           = "lwt_utils_unix.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Moving_average.cmi",
+    sig           = "moving_average.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Sys_info.cmi",
+    sig           = "sys_info.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Systime_os.cmi",
+    sig           = "systime_os.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
+)
+
+ocaml_signature(
+    name          = "Utils.cmi",
+    sig           = "utils.mli",
+    opts          = TEZOS_STDLIB_UNIX_OPTS,
+    deps          = TEZOS_STDLIB_UNIX_DEPS,
 )
 

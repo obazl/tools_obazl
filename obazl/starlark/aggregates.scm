@@ -31,7 +31,9 @@
         (format outp "ocaml_ns_archive(\n")
         (format outp "ocaml_ns_library(\n"))
     (format outp "    name       = \"~A\",\n" pubname)
-    (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
+    (format outp "    submodules = [\n")
+    (format outp "~{        \":~A\"~^,\n~}\n" submodules)
+    (format outp "    ],\n")
 
     (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
     ;; (format outp "    opts       = ~A_OPTS,\n" libname)
@@ -53,7 +55,7 @@
       (format outp "ocaml_archive(\n")
       (format outp "ocaml_library(\n"))
   (format outp "    name       = \"~A\",\n" pubname)
-  (format outp "    manifest   = [~{\"~A\"~^, ~}],\n" submodules)
+  (format outp "    manifest   = [~{\":~A\"~^, ~}],\n" submodules)
   (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
   ;; (format outp "    opts       = ~A_OPTS,\n" libname)
   (format outp ")\n\n")
@@ -93,6 +95,7 @@
          (submodules (if-let ((submods (assoc-in '(:manifest :modules)
                                                  stanza-alist)))
                              (cdr submods) '()))
+         (submodules (sort! submodules sym<?))
          (deps (assoc :deps stanza-alist)))
 
     (begin
@@ -116,8 +119,8 @@
          (if (eq? kind :library)
              (format outp "ocaml_library(\n")
              (format outp "ocaml_archive(\n"))
-         (format outp "    name    = \"~A\",\n" pubname)
-         (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
+         (format outp "    name     = \"~A\",\n" pubname)
+         (format outp "    manifest = [~{\":~A\"~^, ~}],\n" submodules)
          (format outp ")\n\n")))
 
       ;; ((:archive)

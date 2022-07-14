@@ -323,24 +323,24 @@
     (sort! deps string<?)))
 
 ;; same as stanza-deps->labels, but for :ppx-deps
-(define (stanza->ppx-deps-labels fs-path ppx-alist)
-  (let ((deps
-         (if-let ((deps (assoc :deps ppx-alist)))
-                 (map (lambda (dep)
-                          (if-let ((namerec (names-tbl dep)))
-                                  (cadr (assoc :label namerec))
-                                  (if-let ((namerec (names-tbl dep)))
-                                          (cadr (assoc :label namerec))
-                                          (if-let ((opam (resolve-opam dep)))
-                                                  opam
-                                                  ;; no opam
-                                                  (if-let ((stdlib (resolve-stdlib dep)))
-                                                          stdlib
-                                                          (format #t "#UNRESOLVED 4: ~A: ~A\n"
-                                                                  namerec dep))))))
-                      (cadr deps))
-                 '())))
-    (sort! deps string<?)))
+;; (define (stanza->ppx-deps-labels fs-path ppx-alist)
+;;   (let ((deps
+;;          (if-let ((deps (assoc :deps ppx-alist)))
+;;                  (map (lambda (dep)
+;;                           (if-let ((namerec (names-tbl dep)))
+;;                                   (cadr (assoc :label namerec))
+;;                                   (if-let ((namerec (names-tbl dep)))
+;;                                           (cadr (assoc :label namerec))
+;;                                           (if-let ((opam (resolve-opam dep)))
+;;                                                   opam
+;;                                                   ;; no opam
+;;                                                   (if-let ((stdlib (resolve-stdlib dep)))
+;;                                                           stdlib
+;;                                                           (format #t "#UNRESOLVED 4: ~A: ~A\n"
+;;                                                                   namerec dep))))))
+;;                       (cadr deps))
+;;                  '())))
+;;     (sort! deps string<?)))
 
 (define (stanza-opts stanza-alist)
   ;; (format #t "STANZA-OPTS: ~A\n" stanza-alist)
@@ -660,133 +660,133 @@
               stanzas)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-ppx-target outp fs-path ppx-alist stanza-alist)
-  ;; (begin
-  ;;   (format #t "starlark-emit-ppx-target ~A :: ~A\n"
-  ;;           fs-path (cadr (assoc :name stanza-alist)))
-  ;;   ;; (format #t "ppx stanza-alist: ~A\n" stanza-alist)
-  ;;   ;; (format #t "ppx alist: ~A\n" ppx-alist)
-  ;;   (flush-output-port))
+;; (define (starlark-emit-ppx-target outp fs-path ppx-alist stanza-alist)
+;;   ;; (begin
+;;   ;;   (format #t "starlark-emit-ppx-target ~A :: ~A\n"
+;;   ;;           fs-path (cadr (assoc :name stanza-alist)))
+;;   ;;   ;; (format #t "ppx stanza-alist: ~A\n" stanza-alist)
+;;   ;;   ;; (format #t "ppx alist: ~A\n" ppx-alist)
+;;   ;;   (flush-output-port))
 
-  (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
-         (args (if-let ((args (assoc :args ppx-alist)))
-                       (cadr args) #f))
-         (deps (stanza->ppx-deps-labels fs-path ppx-alist))
-         )
+;;   (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
+;;          (args (if-let ((args (assoc :args ppx-alist)))
+;;                        (cadr args) #f))
+;;          (deps (stanza->ppx-deps-labels fs-path ppx-alist))
+;;          )
 
-    ;; (begin
-    ;;   (format #t "MODULES: ~A\n" modules)
-    ;;   (format #t "SUBMs: ~A\n" submodules))
-    ;; (format #t "TARGET: ~A\n" tgtname)
-    ;; (format #t "MAIN: ~A\n" mainname)
-    ;; (format #t "DEPS: ~A\n" deps)
+;;     ;; (begin
+;;     ;;   (format #t "MODULES: ~A\n" modules)
+;;     ;;   (format #t "SUBMs: ~A\n" submodules))
+;;     ;; (format #t "TARGET: ~A\n" tgtname)
+;;     ;; (format #t "MAIN: ~A\n" mainname)
+;;     ;; (format #t "DEPS: ~A\n" deps)
 
-    ;; (let-values (((flags opens) (stanza-opts stanza-alist)))
-    ;;   (if (or flags opens
-    ;;           (assoc-in '(:opts :raw) stanza-alist))
-    ;;       (begin
-    ;;         ;; (format #t "FLAGS: ~A\n" flags)
-    ;;         ;; (format #t "OPENS: ~A\n" opens)
+;;     ;; (let-values (((flags opens) (stanza-opts stanza-alist)))
+;;     ;;   (if (or flags opens
+;;     ;;           (assoc-in '(:opts :raw) stanza-alist))
+;;     ;;       (begin
+;;     ;;         ;; (format #t "FLAGS: ~A\n" flags)
+;;     ;;         ;; (format #t "OPENS: ~A\n" opens)
 
-    ;;         (format outp "~A = [\n" (name->opts-sym pubname))
-    ;;         (if flags
-    ;;             (for-each (lambda (flag)
-    ;;                         (format outp "    \"~A\",\n" flag))
-    ;;                       (cadr flags)))
-    ;;         (if opens
-    ;;             (for-each (lambda (open)
-    ;;                         (format outp "    \"-open\", \"~A\",\n" open))
-    ;;                       (cadr opens)))
+;;     ;;         (format outp "~A = [\n" (name->opts-sym pubname))
+;;     ;;         (if flags
+;;     ;;             (for-each (lambda (flag)
+;;     ;;                         (format outp "    \"~A\",\n" flag))
+;;     ;;                       (cadr flags)))
+;;     ;;         (if opens
+;;     ;;             (for-each (lambda (open)
+;;     ;;                         (format outp "    \"-open\", \"~A\",\n" open))
+;;     ;;                       (cadr opens)))
 
-    ;;         (if (assoc-in '(:opts :raw :standard) stanza-alist)
-    ;;             (format outp "    ##FIXME: dune (:standard)\n"))
+;;     ;;         (if (assoc-in '(:opts :raw :standard) stanza-alist)
+;;     ;;             (format outp "    ##FIXME: dune (:standard)\n"))
 
-    ;;         (format outp "]\n")
-    ;;         (newline outp))))
+;;     ;;         (format outp "]\n")
+;;     ;;         (newline outp))))
 
-    ;;;;
-    ;; (if deps
-    ;;     (begin
-    ;;       (format outp "~A = [\n" (name->deps-sym pubname))
-    ;;       (for-each (lambda (dep)
-    ;;                   (format outp "    \"~A\",\n" dep)
-    ;;                   )
-    ;;                 deps)
-    ;;       (format outp "]\n")
-    ;;       (newline outp)))
+;;     ;;;;
+;;     ;; (if deps
+;;     ;;     (begin
+;;     ;;       (format outp "~A = [\n" (name->deps-sym pubname))
+;;     ;;       (for-each (lambda (dep)
+;;     ;;                   (format outp "    \"~A\",\n" dep)
+;;     ;;                   )
+;;     ;;                 deps)
+;;     ;;       (format outp "]\n")
+;;     ;;       (newline outp)))
 
-      (begin
-        (newline outp)
-        (format outp "###############\n")
-        (format outp "ppx_executable(\n")
-        (format outp "    name    = \"ppx_~A\",\n" privname)
-        (format outp "    main    = \"@ppx//driver\",\n")
+;;       (begin
+;;         (newline outp)
+;;         (format outp "###############\n")
+;;         (format outp "ppx_executable(\n")
+;;         (format outp "    name    = \"ppx_~A\",\n" privname)
+;;         (format outp "    main    = \"@ppx//driver\",\n")
 
-        (if args
-            (begin
-              (format outp "    args    = [\n")
-              (for-each (lambda (arg)
-                          (format outp "        \"~A\",\n" arg))
-                        args)
-              (format outp "    ],\n")))
+;;         (if args
+;;             (begin
+;;               (format outp "    args    = [\n")
+;;               (for-each (lambda (arg)
+;;                           (format outp "        \"~A\",\n" arg))
+;;                         args)
+;;               (format outp "    ],\n")))
 
-        ;; (if (not (null? deps))
-        (if deps
-            (begin
-              ;; (format #t "MODDEPS: ~A\n" deps)
-              (format outp "    deps = [\n")
-              ;; (let ((mods (sort! (hash-table-keys
-              ;;                     ;; (remove-if list
-              ;;                     ;;  (lambda (entry)
-              ;;                     ;;    ;; (format #t "ENTRY ~A\n" entry)
-              ;;                     ;;    (equal? (cdr entry) :main))
-              ;;                     ;;  deps)
-              ;;                     deps)
-              ;;                    sym<?)))
-                (for-each (lambda (mod) ;; mod:: (modsym . type)
-                            ;; (format #t "mod: ~A\n" mod)
-                            ;; (if (not (equal? (cdr mod) :main))
-                                (format outp "        \"~A\",\n"
-                                        (symbol->string
-                                         (normalize-module-name mod))
-                                        )
-                                ;; )
-                            )
-                          deps)
-                ;)
-              ;; (for-each (lambda (mod)
-              ;;             (format outp "        \"~A\",\n" mod))
-              ;;           deps)
-              (format outp "    ],\n")))
+;;         ;; (if (not (null? deps))
+;;         (if deps
+;;             (begin
+;;               ;; (format #t "MODDEPS: ~A\n" deps)
+;;               (format outp "    deps = [\n")
+;;               ;; (let ((mods (sort! (hash-table-keys
+;;               ;;                     ;; (remove-if list
+;;               ;;                     ;;  (lambda (entry)
+;;               ;;                     ;;    ;; (format #t "ENTRY ~A\n" entry)
+;;               ;;                     ;;    (equal? (cdr entry) :main))
+;;               ;;                     ;;  deps)
+;;               ;;                     deps)
+;;               ;;                    sym<?)))
+;;                 (for-each (lambda (mod) ;; mod:: (modsym . type)
+;;                             ;; (format #t "mod: ~A\n" mod)
+;;                             ;; (if (not (equal? (cdr mod) :main))
+;;                                 (format outp "        \"~A\",\n"
+;;                                         (symbol->string
+;;                                          (normalize-module-name mod))
+;;                                         )
+;;                                 ;; )
+;;                             )
+;;                           deps)
+;;                 ;)
+;;               ;; (for-each (lambda (mod)
+;;               ;;             (format outp "        \"~A\",\n" mod))
+;;               ;;           deps)
+;;               (format outp "    ],\n")))
 
-        (format outp ")\n")
-        ))
-  )
+;;         (format outp ")\n")
+;;         ))
+;;   )
 
-(define (starlark-emit-ppxes outp fs-path stanzas)
-  ;; (format #t "starlark-emit-ppxes ~A\n" fs-path)
-  ;; (format #t "stanzas: ~A\n" stanzas)
-  (let ((flag #t))
-    (for-each (lambda (stanza)
-                ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
-                (case (car stanza)
-                  ((:library)
-                   (if-let ((ppxes (assoc :ppx (cadr stanza))))
-                       (for-each (lambda (ppx)
-                                   (if flag
-                                       (begin
-                                         (format outp "###########################\n")
-                                         (format outp "####  PPX Executables  ####\n")
-                                         (format outp
-                                                 "load(\"@obazl_rules_ocaml//ocaml:rules.bzl\", \"ppx_executable\")\n")
+;; (define (starlark-emit-ppxes outp fs-path stanzas)
+;;   ;; (format #t "starlark-emit-ppxes ~A\n" fs-path)
+;;   ;; (format #t "stanzas: ~A\n" stanzas)
+;;   (let ((flag #t))
+;;     (for-each (lambda (stanza)
+;;                 ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
+;;                 (case (car stanza)
+;;                   ((:library)
+;;                    (if-let ((ppxes (assoc :ppx (cadr stanza))))
+;;                        (for-each (lambda (ppx)
+;;                                    (if flag
+;;                                        (begin
+;;                                          (format outp "###########################\n")
+;;                                          (format outp "####  PPX Executables  ####\n")
+;;                                          (format outp
+;;                                                  "load(\"@obazl_rules_ocaml//ocaml:rules.bzl\", \"ppx_executable\")\n")
 
-                                         (set! flag #f)))
-                                   (starlark-emit-ppx-target
-                                    outp fs-path ppx (cadr stanza)))
-                                 (cadr ppxes))))
-                  (else) ;; ignore others
-                   ))
-              stanzas)))
+;;                                          (set! flag #f)))
+;;                                    (starlark-emit-ppx-target
+;;                                     outp fs-path ppx (cadr stanza)))
+;;                                  (cadr ppxes))))
+;;                   (else) ;; ignore others
+;;                    ))
+;;               stanzas)))
 
 ;; (define (starlark-emit-stanza-deps-and-flags outp typ stanza)
 ;;   (format #t "starlark-emit-stanza-deps-and-flags\n")
@@ -1051,48 +1051,48 @@
                              (symbol->string (normalize-module-name module)))
               (in-srcfiles? module (cdr srcfiles)))))))
 
-(define (ppx-args->string-list ppx-args)
-  (map (lambda (arg)
-         (if (symbol? arg)
-             (symbol->string arg)
-             (if (number? arg)
-                 (number->string arg)
-                 arg)))
-       ppx-args))
+;; (define (ppx-args->string-list ppx-args)
+;;   (map (lambda (arg)
+;;          (if (symbol? arg)
+;;              (symbol->string arg)
+;;              (if (number? arg)
+;;                  (number->string arg)
+;;                  arg)))
+;;        ppx-args))
 
-;; find stanza with ppx whose scope includes module
-;; return (ppx-name string . ppx-args list)
-(define (module->ppx-alist pkg-path module stanzas)
-  (format #t "module->ppx-alist ~A: ~A\n" pkg-path module)
-  ;; (format #t "stanzas ct: ~A\n" (length stanzas))
-  ;; iterate over stanzas searching for ppx whose scope includes module
-  (let recur ((stanzas stanzas))
-    (if (null? stanzas)
-        #f
-        (if (equal :library (caar stanzas))
-            (if-let ((ppxes (assoc :ppx (cadr (car stanzas)))))
-                    ;; ppxes is list of ppx-alists
-                    (begin
-                      (format #t "PPXes: ~A\n" ppxes)
-                      (let recur2 ((ppxes (cadr ppxes)))
-                        (if (null? ppxes)
-                            #f
-                            (begin
-                              (format #t "PPX: ~A\n" (car ppxes))
-                              (let* ((ppx-alist (car ppxes))
-                                     (scope (cadr (assoc :scope ppx-alist))))
-                                (format #t "SCOPE: ~A\n" scope)
-                                (if (equal? :all scope)
-                                    (car stanzas) ;; ppx-alist
-                                    (if (member module scope)
-                                        (car stanzas)
-                                        (recur2 (cdr ppxes)))))))))
-                    ;; else no ppxes
-                    #f)
-            ;; not a lib, so recur
-            (begin
-              ;; (format #t "skipping non-lib: ~A\n" (caar stanzas))
-              (recur (cdr stanzas)))))))
+;; ;; find stanza with ppx whose scope includes module
+;; ;; return (ppx-name string . ppx-args list)
+;; (define (module->ppx-alist pkg-path module stanzas)
+;;   (format #t "module->ppx-alist ~A: ~A\n" pkg-path module)
+;;   ;; (format #t "stanzas ct: ~A\n" (length stanzas))
+;;   ;; iterate over stanzas searching for ppx whose scope includes module
+;;   (let recur ((stanzas stanzas))
+;;     (if (null? stanzas)
+;;         #f
+;;         (if (equal :library (caar stanzas))
+;;             (if-let ((ppxes (assoc :ppx (cadr (car stanzas)))))
+;;                     ;; ppxes is list of ppx-alists
+;;                     (begin
+;;                       (format #t "PPXes: ~A\n" ppxes)
+;;                       (let recur2 ((ppxes (cadr ppxes)))
+;;                         (if (null? ppxes)
+;;                             #f
+;;                             (begin
+;;                               (format #t "PPX: ~A\n" (car ppxes))
+;;                               (let* ((ppx-alist (car ppxes))
+;;                                      (scope (cadr (assoc :scope ppx-alist))))
+;;                                 (format #t "SCOPE: ~A\n" scope)
+;;                                 (if (equal? :all scope)
+;;                                     (car stanzas) ;; ppx-alist
+;;                                     (if (member module scope)
+;;                                         (car stanzas)
+;;                                         (recur2 (cdr ppxes)))))))))
+;;                     ;; else no ppxes
+;;                     #f)
+;;             ;; not a lib, so recur
+;;             (begin
+;;               ;; (format #t "skipping non-lib: ~A\n" (caar stanzas))
+;;               (recur (cdr stanzas)))))))
 
 (define (starlark-emit-file-targets outp fs-path stanzas dune-pkg)
   ;; (format #t "starlark-emit-file-targets: ~A\n" fs-path)

@@ -13,7 +13,7 @@ LIB_B_OPTS = ["-open", "foo", "-open", "bar", "-linkall"]
 #################
 ocaml_ns_archive(
     name       = "lib-b",
-    submodules = ["E", "B", "A", "D", "C"],
+    submodules = [":A", ":B", ":C", ":D", ":E"],
     opts       = ["-linkall"],
 )
 
@@ -21,27 +21,19 @@ ocaml_ns_archive(
 ####  Singleton Targets  ####
 
 ocaml_module(
-    name        = "A",
-    struct      = "a.ml",
-    sig         = "a.mli",
-    opts        = LIB_B_OPTS,
-    deps        = LIB_B_DEPS,
+    name          = "A",
+    struct        = "a.ml",
+    sig           = ":A.cmi",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
 )
 
 ocaml_module(
-    name        = "B",
-    struct      = "b.ml",
-    sig         = "b.mli",
-    opts        = LIB_B_OPTS,
-    deps        = LIB_B_DEPS,
-)
-
-ocaml_module(
-    name        = "E",
-    struct      = "e.ml",
-    sig         = "e.mli",
-    opts        = LIB_B_OPTS,
-    deps        = LIB_B_DEPS,
+    name          = "B",
+    struct        = "b.ml",
+    sig           = ":B.cmi",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
 )
 
 ocaml_module(
@@ -54,6 +46,38 @@ ocaml_module(
 ocaml_module(
     name          = "D",
     struct        = "d.ml",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
+ocaml_module(
+    name          = "E",
+    struct        = "e.ml",
+    sig           = ":E.cmi",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
+#############################
+####  Signature Targets  ####
+
+ocaml_signature(
+    name          = "A.cmi",
+    sig           = "a.mli",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
+ocaml_signature(
+    name          = "B.cmi",
+    sig           = "b.mli",
+    opts          = LIB_B_OPTS,
+    deps          = LIB_B_DEPS,
+)
+
+ocaml_signature(
+    name          = "E.cmi",
+    sig           = "e.mli",
     opts          = LIB_B_OPTS,
     deps          = LIB_B_DEPS,
 )

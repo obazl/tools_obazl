@@ -1,7 +1,9 @@
 (library
  (name lib_a)
  (public_name lib-a)
- (modules a c) ;; include only these; c is sig only
+ ;; include only these; c is sig only
+ ;; FIXME: modules_without_implementation?
+ (modules a c)
  (libraries foo bar)
  (flags (:standard -open foo -open bar -linkall)))
 

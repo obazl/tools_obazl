@@ -73,7 +73,16 @@
                                                  (map stringify flags)))
                                     '())))
          (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
+
+         (ppx-alist (if-let ((ppx (assoc :ppx stanza-alist)))
+                            (cdr ppx) #f))
+          ;; (module->ppx-alist fs-path mname stanzas))
+         (_ (format #t "ppx-alist: ~A\n" ppx-alist))
+
+         (ppx-name (if ppx-alist (format #f "~A.ppx" libname)))
+
          )
+
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
 
@@ -114,18 +123,21 @@
                 (format outp "    struct        = \"~A\",\n" structfile)
                 ))
 
-          (if select-sigfile
-              (begin
-                (format outp "    sig           = select(~%")
-                (format outp "        {~%")
-                (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
-                (format outp "        },~%")
-                (format outp "        no_match_error=\"no file selected\"),\n")
-                )
+          (if *build-dyads*
+              (format outp "    sig           = \":~A.cmi\",\n" modname)
               ;; else
-              (begin
-                (format outp "    sig           = \"~A\",\n" sigfile)
-                ))
+              (if select-sigfile
+                  (begin
+                    (format outp "    sig           = select(~%")
+                    (format outp "        {~%")
+                    (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
+                    (format outp "        },~%")
+                    (format outp "        no_match_error=\"no file selected\"),\n")
+                    )
+                  ;; else
+                  (begin
+                    (format outp "    sig           = \"~A\",\n" sigfile)
+                    )))
 
           ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
           (if (not (null? opts))
@@ -141,17 +153,17 @@
 
           (format outp "    deps          = ~A_DEPS,\n" libname)
 
-  ;;         ;; (if ppx-alist
-  ;;         ;;     (begin
-  ;;         ;;       (format outp
-  ;;         ;;               "    ppx      = \":~A\",\n"
-  ;;         ;;               (cadr (assoc :name ppx-alist)))
-  ;;         ;;       (if (not
-  ;;         ;;            (equal? :all (cadr (assoc :scope
-  ;;         ;;                                      ppx-alist))))
-  ;;         ;;           (format outp
-  ;;         ;;                   "    ppx_args = [~{~S, ~}],\n"
-  ;;         ;;                   (cadr (assoc :args ppx-alist))))))
+          (if ppx-alist
+              (begin
+                (format outp
+                       "    ppx           = \":~A\",\n" ppx-name)
+                        ;; (cadr (assoc :name ppx-alist)))
+                (if (not
+                     (equal? :all (cadr (assoc :scope
+                                               ppx-alist))))
+                    (format outp
+                            "    ppx_args = [~{~S, ~}],\n"
+                            (cadr (assoc :args ppx-alist))))))
           (format outp ")\n")
 
           )
@@ -161,7 +173,7 @@
 
                ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
                ;;               (cdr opts) '())))
-               (format #t "emitting module: ~A\n" modname)
+               (format #t "Emitting module: ~A\n" modname)
 
                (format outp "ocaml_module(\n")
                (format outp "    name          = \"~A\",\n" modname)
@@ -182,23 +194,23 @@
 
                (format outp "    deps          = ~A_DEPS,\n" libname)
 
-               ;; (if ppx-alist
-               ;;     (begin
-               ;;       (format outp
-               ;;               "    ppx      = \":~A\",\n"
-               ;;               (cadr (assoc :name ppx-alist)))
-               ;;       (if (not
-               ;;            (equal? :all (cadr (assoc :scope
-               ;;                                      ppx-alist))))
-               ;;           (format outp
-               ;;                   "    ppx_args = [~{~S, ~}],\n"
-               ;;                   (cadr (assoc :args ppx-alist))))))
+               (if ppx-alist
+                   (begin
+                     (format outp
+                            "    ppx           = \":~A\",\n" ppx-name)
+                     (if (not
+                          (equal? :all (cadr (assoc :scope
+                                                    ppx-alist))))
+                         (format outp
+                                 "    ppx_args = [~{~S, ~}],\n"
+                                 (cadr (assoc :args ppx-alist))))))
+
                (format outp ")\n")
                ) ;; let*
         ))
   stanza)
 
-(define (-emit-modules outp modules)
+(define (-emit-modules outp pkg modules)
   (format #t "~A: ~A\n" (blue "-emit-modules") modules)
 
   (for-each
@@ -249,71 +261,157 @@
        ))
    (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
 
+(define (-module-record->sigfile module)
+  (format #t "-module-record->sigfile ~A\n" module)
+  ;; module form: ((:mli a.mli) (:ml a.ml))
+  ;; where either :mli or :ml may have trailing _
+  (if-let ((sig (assoc-val :mli module)))
+          sig
+          (if-let ((sig (assoc-val :mli_ module)))
+                  sig
+                  (error 'missing-mli "module record missing :mli, :mli_"))))
+
 (define (-emit-sig outp sig stanza)
   (format #t "~A: ~A, ~A\n" (blue "-emit-sig") sig stanza)
-  (let ((libname (string-append
-                  (string-upcase
-                   (stringify
-                    (car (assoc-val :privname (cdr stanza)))))))
-        (ns (assoc-val :ns (cdr stanza))))
+  (let* ((libname (string-append
+                   (string-upcase
+                    (stringify
+                     (assoc-val :privname (cdr stanza))))))
+         (ns (assoc-val :ns (cdr stanza)))
+
+         (ppx-alist (if-let ((ppx (assoc-val :ppx (cdr stanza))))
+                            ppx #f))
+         ;; (module->ppx-alist fs-path mname stanzas))
+         (_ (format #t "ppx-alist: ~A\n" ppx-alist))
+
+         (ppx-name (if ppx-alist (format #f "~A.ppx" libname)))
+
+         )
 
     (let* ((modname (car sig))
-           (sigfile (cdr sig)))
+           (sigfile (if (proper-list? sig)
+                        (-module-record->sigfile (cdr sig))
+                        (cdr sig))))
 
       (format #t "emitting signature: ~A\n" modname)
 
       (format outp "ocaml_signature(\n")
-      (format outp "    name          = \"~A\",\n" modname)
+      (format outp "    name          = \"~A.cmi\",\n" modname)
       (if (and ns (not *ns-topdown*))
           (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
       (format outp "    sig           = \"~A\",\n" sigfile)
       (format outp "    opts          = ~A_OPTS,\n" libname)
       (format outp "    deps          = ~A_DEPS,\n" libname)
 
-      ;; (if ppx-alist
-      ;;     (begin
-      ;;       (format outp
-      ;;               "    ppx      = \":~A\",\n"
-      ;;               (cadr (assoc :name ppx-alist)))
-      ;;       (if (not
-      ;;            (equal? :all (cadr (assoc :scope
-      ;;                                      ppx-alist))))
-      ;;           (format outp
-      ;;                   "    ppx_args = [~{~S, ~}],\n"
-      ;;                   (cadr (assoc :args ppx-alist))))))
-
+      (if ppx-alist
+          (begin
+            (format outp
+                   "    ppx           = \":~A\",\n" ppx-name)
+                    ;; (cadr (assoc :name ppx-alist)))
+            (if (not
+                 (equal? :all (cadr (assoc :scope
+                                           ppx-alist))))
+                (format outp
+                        "    ppx_args = [~{~S, ~}],\n"
+                        (cadr (assoc :args ppx-alist))))))
+      (format outp ")\n\n")
       )))
 
-(define (-emit-signatures outp sigs)
-  (format #t "-emit-signatures: ~A\n" sigs)
-  (format outp "#############################\n")
-  (format outp "####  Signature Targets  ####\n")
-  (newline outp)
+(define (-emit-sigs-hdr outp sigs pkg-modules)
+  (format #t "-emit-sigs-hdr, sigs: ~A, pkg-modules: ~A\n" sigs pkg-modules)
+  (if *build-dyads*
+      (if (or (not (null? sigs))
+              (find-if (lambda (m)
+                         (if (proper-list? m)
+                             (or (assoc :mli (cdr m)) (assoc :mli_ (cdr m)))
+                             (eq? 0 (fnmatch "*.mli"
+                                             (format #f "~A" (cdr m)) 0))))
+                       pkg-modules))
+          (begin
+            (format outp "#############################\n")
+            (format outp "####  Signature Targets  ####\n")
+            (newline outp)))
+      (if (not (null? sigs))
+          (begin
+            (format outp "#############################\n")
+            (format outp "####  Signature Targets  ####\n")
+            (newline outp)))))
 
-  (for-each
-   (lambda (sig)
-     (format #t "sig: ~A\n" sig)
-     (let* ((modname (car sig))
-            (aggregator (find-if
-                         (lambda (stanza)
-                           (format #t "checking stanza ~A\n" stanza)
-                           (case (car stanza)
-                             ((:archive :library)
-                              ;; (if (eq? :library (car stanza))
-                              (if-let ((subsigs
-                                        (assoc-val :subsigs
-                                                   (cdr stanza))))
-                                      (begin
-                                        (format #t "subsigs: ~A\n" subsigs)
-                                        (if (member modname subsigs)
-                                            (-emit-sig outp sig stanza)
-                                            #f))))
-                             (else #f)))
-                         (assoc-val :dune pkg)))
-            )
-       (format #t "aggregator: ~A\n" aggregator)
-       (format outp ")\n\n")))
-   sigs))
+(define (-emit-signatures outp pkg sigs pkg-modules)
+  (format #t "-emit-signatures: ~A\n" sigs)
+  (format #t "*build-dyads*: ~A\n" *build-dyads*)
+  (format #t "pkg: ~A\n" pkg)
+
+  (-emit-sigs-hdr outp sigs pkg-modules)
+
+  (if *build-dyads*
+      ;; WARNING: pkg-modules includes pkg-structs. Forms:
+      ;; pkg-module: (A (:mli a.mli)(:ml a.ml))
+      ;; pkg-struct: (A . a.ml)
+      (for-each
+       (lambda (module)
+         (format #t "dyad: : ~A\n" module)
+         (if (proper-list? module)
+             (let ((modname (car module))
+                   ;; (mli (if-let ((mli (assoc-val :mli (cdr module))))
+                   ;;              mli
+                   ;;              (if-let ((mli (assoc-val :mli_ (cdr module))))
+                   ;;                      mli
+                   ;;                      #f)))
+                   )
+               (format #t "sig for: ~A\n" modname)
+               (let* ((aggregator
+                       (find-if
+                        (lambda (stanza)
+                          (format #t "checking stanza for msig ~A\n" stanza)
+                          (case (car stanza)
+                            ((:archive :library :ns-archive :ns-library)
+                             ;; (if (eq? :library (car stanza))
+                             (if-let ((submods
+                                       (assoc-in '(:manifest :modules)
+                                                  (cdr stanza))))
+                                     (begin
+                                       (format #t "submods: ~A\n" submods)
+                                       (if (member modname (cdr submods))
+                                           #t
+                                           #f))))
+                            (else #f)))
+                        (assoc-val :dune pkg)))
+                      )
+                 (if aggregator
+                     (-emit-sig outp module aggregator)))
+                 ;; (format #t "aggregator: ~A\n" aggregator)
+               ;; (-emit-sig outp mli stanza)
+               )
+             ;; else improper list - ignore for *build-dyads*
+             ))
+       pkg-modules))
+
+  (if sigs
+      (for-each
+       (lambda (sig)
+         (format #t "sig: ~A\n" sig)
+         (let* ((modname (car sig))
+                (aggregator (find-if
+                             (lambda (stanza)
+                               (format #t "checking stanza ~A\n" stanza)
+                               (case (car stanza)
+                                 ((:archive :library)
+                                  ;; (if (eq? :library (car stanza))
+                                  (if-let ((subsigs
+                                            (assoc-val :subsigs
+                                                       (cdr stanza))))
+                                          (begin
+                                            (format #t "subsigs: ~A\n" subsigs)
+                                            (if (member modname subsigs)
+                                                (-emit-sig outp sig stanza)
+                                                #f))))
+                                 (else #f)))
+                             (assoc-val :dune pkg)))
+                )
+           (format #t "aggregator: ~A\n" aggregator)
+           (format outp ")\n\n")))
+       sigs)))
 
 ;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
@@ -329,24 +427,26 @@
          (structs-static (if-let ((structs (assoc-in
                                             '(:structures :static) pkg)))
                                  (cdr structs) '()))
-         (modules (concatenate modules-static structs-static))
-         (sigs-static    (if-let ((sigs (assoc-in
-                                         '(:signatures :static) pkg)))
-                                 (cdr sigs) #f))
+         (pkg-modules (concatenate modules-static structs-static))
+         (sigs-static (if-let ((sigs (assoc-in
+                                      '(:signatures :static) pkg)))
+                              (cdr sigs) '()))
          (sigs sigs-static))
 
-    (format #t "modules: ~A\n" modules)
+    (format #t "pkg-modules: ~A\n" pkg-modules)
     (format #t "sigs:    ~A\n" sigs)
     (format #t "structs-static: ~A\n" structs-static)
 
-    (if (or modules sigs)
+    (if (or (not (null? pkg-modules))
+            (not (null? sigs)))
         (begin
           (format outp "#############################\n")
           (format outp "####  Singleton Targets  ####\n")
           (newline outp)))
 
-    (if modules (-emit-modules outp modules))
-    (if sigs (-emit-signatures outp sigs))
+    (if pkg-modules (-emit-modules outp pkg pkg-modules))
+    (if (or sigs *build-dyads*)
+        (-emit-signatures outp pkg sigs pkg-modules))
     ))
 
     ;; (let ((lib-stanzas (assoc+ :library stanzas)))

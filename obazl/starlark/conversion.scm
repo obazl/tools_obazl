@@ -2,12 +2,6 @@
 
 (load "starlark/templates.scm")
 
-;; GLOBAL CONFIGS:
-;; *ns-topdown* - default  #t
-;; *ns-archives* - default #t, otherwise emit ocaml_ns_library
-;; *agg-library* - emit ocaml_library for unwrapped 'library' stanzas
-;; *split-compilation* (#f) - true: emit ocaml_signature for dyads
-
 (define (starlark-emit-global-vars outp pkg)
   (format #t "starlark-emit-global-vars: ~A\n" pkg)
   (for-each
@@ -38,9 +32,22 @@
                                    (cdr df) #f)))
 
           (if deps-fixed
-              (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n" libname deps-fixed))
+              (begin
+                (format outp "~A_DEPS = [\n" libname)
+                (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
+                (format outp "]\n")
+                (format outp "\n")
+              ))
+
           (if (not (null? options))
-              (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n" libname options))))
+              (begin
+                (format outp "~A_OPTS = [\n" libname)
+                (format outp "~{        \"~A\"~^,\n~}\n" options)
+                (format outp "]\n")
+                (format outp "\n")
+                )
+
+              )))
        ((:executable)
         (format #t "exec globals\n")
         (let* ((libname (string-upcase
@@ -165,11 +172,11 @@
             ;; ocamllex, ocamlyacc, etc.
             ;; (starlark-emit-file-generators outp fs-path stanzas)
 
-            ;; (format #t "emitting ppxes\n")
-            ;; (starlark-emit-ppxes outp fs-path stanzas)
+            (format #t "emitting ppxes\n")
+            (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
 
-            ;; (format #t "emitting rules\n")
-            ;; (starlark-emit-rule-targets outp fs-path stanzas)
+            (format #t "emitting rules\n")
+            (starlark-emit-rule-targets outp fs-path stanzas)
 
             (close-output-port outp)
 
