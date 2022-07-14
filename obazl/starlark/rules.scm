@@ -1,4 +1,4 @@
-(define (-derive-cmd action deps targets)
+(define (-derive-cmd pkg-path action deps targets)
   (format #t "~A: ~A~%" (blue "-derive-cmd") action)
   (format #t "targets: ~A~%" targets)
   (format #t "deps: ~A~%" deps)
@@ -20,30 +20,43 @@
                  (format #t "Arg: ~A~%" arg)
                  (cond
                   ((symbol? arg) ;; dune 'vars', e.g. ::foo, ::<
-                   (let ((arg-pair (assoc-val arg deps)))
-                     (format #f "~A:~A"
-                             (car (assoc-val :pkg arg-pair))
-                             (car (assoc-val :file arg-pair)))))
+                   (format #t "SYM\n")
+
+                   ;; FIXME: lookup sym in deps list
+
+                   (let* ((fname (format #f "~A" arg))
+                          (dname (dirname fname))
+                          (bname (basename fname)))
+                     (format #f "$(location ~A)"
+                             (if (equal dname pkg-path)
+                                 bname fname))))
 
                   ((string? arg) ;; e.g. a file literal
-                   arg
-                   )
+                   (format #t "string\n")
+                   ;; how do we know which strings need $(location)?
+                   (let* ((dname (dirname arg))
+                          (bname (basename arg)))
+                     (format #f "$(location ~A)"
+                             (if (equal dname pkg-path)
+                                 bname arg))))
 
-                  ((proper-list? arg) ;; ((:pkg :bin) (:tgt :mycmd))
-                   "FIXME")
+                  ((proper-list? arg) ;; (:_ a.x b.y...)
+                   ;; e.g. from %{deps} or a custom var
+                   (map (lambda (a)
+                          (let* ((dirname (dirname a))
+                                 (basename (basename a)))
+                            (format #f "$(location ~A)"
+                                    (if (equal dirname pkg-path)
+                                        basename a))))
+                        (cdr arg)))
 
-                 ;; (map (lambda (subarg)
-                 ;;              (format #t "~A: ~A~%"
-                 ;;                      (magenta "subarg") subarg)
-                 ;;              (format #t ":: ~A/~A~%"
-                 ;;                      (cadar subarg)
-                 ;;                      (cadadr subarg))
-                 ;;              (format #f "$(location ~A/~A)"
-                 ;;                      (cadar subarg)
-                 ;;                      (car (cdadr subarg))))
-                 ;;      (cdr arg))
-                  (else "FIXME2")))
+                  (else (format #f "FIXME2_~A" arg))))
                args))
+         ;; args may mix strings and lists of strings
+         (args (fold (lambda (src accum)
+                       (if (string? src) (append accum (list src))
+                           (append accum src)))
+                     '() args))
          (args (if (assoc-val :stdout action)
                    (append args (list "> $@")) args))
          (_ (format #t "args: ~A~%" args))
@@ -51,36 +64,42 @@
          )
     (values tool args)))
 
-(define (-deps->srcs pkg-path deps)
-  (format #t "~A: ~A\n" (blue "-deps->srcs") deps)
-  ;; deps is a list of alists; key :maps to list of (:pkg :file) pairs
-  ;; key :_ (anonymous) may map to multiple pairs
-  ;; other keys are dune 'variables', each mapping to one (:pkg :file) pair
-  (let* ((srcs (map (lambda (src-assoc)
-                     (format #t "src-assoc: ~A~%" src-assoc)
-                     (if (equal? :_ (car src-assoc))
-                         (map (lambda (src-alist)
-                                (format #t "src-alist: ~A~%" src-alist)
-                                (let ((-pkg-path (car (assoc-val
-                                                       :pkg src-alist))))
-                                  (format #f "~A:~A"
-                                          (if (equal pkg-path -pkg-path)
-                                              ""
-                                              -pkg-path)
-                                          (car (assoc-val :file src-alist)))))
-                              (cdr src-assoc))
-                         ;; else
-                         (format #f "~A:~A"
-                                 (car (assoc-val :pkg (cdr src-assoc)))
-                                 (car (assoc-val :file (cdr src-assoc))))))
-                    deps))
-         ;; srcs list may contain mix of strings and sublists
-         (srcs (fold (lambda (src accum)
+(define (-targets->outs pkg-path targets)
+  (format #t "~A: ~A\n" (blue "-targets->outs") targets)
+  (let* ((outs (map (lambda (src)
+                      (format #t "src: ~A\n" src)
+                      (if (equal? :_ (car src))
+                          ;; (:_ "foo.txt" "bar.txt" ...)
+                          (map (lambda (srcfile)
+                                 (format #t "srcfile: ~A~%" srcfile)
+                                 (let ((dname (dirname srcfile))
+                                       (bname (basename srcfile)))
+                                   ;; (-pkg-path
+                                   ;;      (car (assoc-val :pkg src-alist))))
+                                   (format #f "~A"
+                                           (if (equal dname pkg-path)
+                                               bname srcfile))))
+                               ;; (car
+                               ;;  (assoc-val :file srcfile)))))
+                               (cdr src))
+                          ;; else tagged (:foo . "foo.txt")
+                          (format #f "~A"
+                                  (let* ((srcfile (cdr src))
+                                         (dname (dirname srcfile))
+                                         (bname (basename srcfile)))
+                                    (if (equal dname pkg-path)
+                                        bname srcfile)))))
+                    targets))
+         (outs (fold (lambda (src accum)
                        (if (string? src) (append accum (list src))
                            (append accum src)))
-                     '() srcs)))
-    (format #t "SRCES: ~A\n" srcs)
-    srcs))
+                     '() outs)))
+    (format #t "OUTS: ~A\n" outs)
+    outs))
+
+(define (tool-dep? t)
+  ;; is tool t something that needs to go in tools = []?
+  #f)
 
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
@@ -96,19 +115,16 @@
          ;; else if we have (:stdout ...), ...
          (targets (assoc-val :targets stanza))
          (_ (format #t "targets: ~A~%" targets))
-         (outs (map (lambda (src)
-                      (let ((-pkg-path (car (assoc-val :pkg (cadr src)))))
-                      (format #f "~A~A"
-                              (if (equal pkg-path -pkg-path)
-                                  ""
-                                  (string-append -pkg-path "/"))
-                              (car (assoc-val :file (cadr src))))))
-                    targets)))
+         (outs (-targets->outs pkg-path targets))
+
+         (name (format #f "__~A__"
+                       (outs 0))))
 
     (let-values (((tool args)
-                  (-derive-cmd action deps targets)))
+                  (-derive-cmd pkg-path action deps targets)))
       (format #t "tool: ~A~%" tool)
       (format #t "args: ~A~%" args)
+      (format #t "outs: ~A~%" outs)
 
       (format outp "################  rule  ################\n")
       (if (list? stanza)
@@ -121,7 +137,7 @@
             ;; (format outp "## )\n")
 
             (format outp "genrule(\n")
-            (format outp "    name  = \"foo\",\n")
+            (format outp "    name  = \"~A\",\n" name)
 
             (format outp "    srcs  = [\n")
             (format outp "~{        \"~A\"~^,\n~}\n" srcs)
@@ -129,14 +145,17 @@
 
             (format outp "    outs  = [\n")
             (format outp "~{        \"~A\"~^,\n~}\n" outs)
+            ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
             (format outp "    ],\n")
 
             (format outp "    cmd   = \" \".join([\n")
             (format outp "        \"~A\",\n" tool)
             (format outp "~{        \"~A\"~^,\n~}\n" args)
             (format outp "    ]),\n")
-            ;; tools only needed if tool is listed as a dep?
-            (format outp "    tools = [\"\"],\n")
+
+            (if (tool-dep? tool)
+                (format outp "    tools = [\"\"],\n"))
+
             (format outp ")\n")
             )))))
 
