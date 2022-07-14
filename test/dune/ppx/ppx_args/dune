@@ -1,0 +1,6 @@
+(library
+ (name mylib)
+ (public_name mylib)
+ (libraries base core)
+ (preprocessor_deps ../foo.json)
+ (preprocess (pps ppx_base ppx_foo -- -bar ../foo.json)))

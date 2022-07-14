@@ -1,0 +1,4 @@
+(library
+ (name hello_world)
+ (libraries core)
+ (preprocess (pps a b c d)))

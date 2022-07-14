@@ -1,0 +1,41 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+MYLIB_DEPS = ["base", "core"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "mylib",
+    submodules = [":A"],
+    opts       = [],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    deps          = MYLIB_DEPS,
+    ppx           = ":MYLIB.ppx",
+)
+
+
+###############
+ppx_executable(
+    name    = "MYLIB.ppx",
+    main    = "//ppx:driver",
+    args    = [
+        "-bar",
+        "../foo.json",
+    ],
+    manifest = [
+        "ppx_base",
+        "ppx_foo"
+    ],
+)

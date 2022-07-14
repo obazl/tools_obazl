@@ -1,0 +1,21 @@
+(library
+ (name tezos_stdlib)
+ (public_name tezos-stdlib)
+ (libraries hex
+            zarith
+            lwt)
+ (inline_tests)
+ (preprocess (pps ppx_inline_test))
+ ;; (preprocess (pps ppx1 -foo ppx2 -- -bar 42))
+             ;; (per_module
+             ;;  ((pps ppx1 -foo1 ppx2 -- -bar1 42) mod1 mod2)
+             ;;  ((pps ppx3 -foo3 ppx4 -- -bar4 43) mod3 mod4)))
+             ;; (per_module
+             ;;  ((action (run ./pp.sh X=1 %{input-file})) foo2 bar2)
+             ;;  ((action (run ./pp.sh X=2 %{input-file})) baz2))
+             ;; (per_module
+             ;;  (((action (run ./pp.sh X=1 %{input-file})) foo bar))
+             ;;  (((action (run ./pp.sh X=2 %{input-file})) baz)))
+             ;; (staged_pps ppx1 -foo ppx2 -- -bar 42))
+             ;; (action "foo"))
+ (flags :standard))

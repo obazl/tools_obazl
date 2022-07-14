@@ -1,0 +1,46 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+GRAPHQL_QUERY_DEPS = ["base", "core", "yojson", "core_kernel", "graphql_lib", "block_time", "currency", "signature_lib", "mina_base", "mina_numbers"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "graphql_query",
+    submodules = [":A"],
+    opts       = [],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    deps          = GRAPHQL_QUERY_DEPS,
+    ppx           = ":GRAPHQL_QUERY.ppx",
+)
+
+#############################
+####  Signature Targets  ####
+
+
+###############
+ppx_executable(
+    name    = "GRAPHQL_QUERY.ppx",
+    main    = "//ppx:driver",
+    args    = [
+        "-schema",
+        "src/app/archive/archive_graphql_schema.json",
+    ],
+    manifest = [
+        "ppx_base",
+        "ppx_let",
+        "ppx_version",
+        "graphql_ppx"
+    ],
+)

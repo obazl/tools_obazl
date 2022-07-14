@@ -1,0 +1,6 @@
+(library
+ (name mylib)
+ (public_name mylib)
+ (libraries x y)
+ (preprocessor_deps foo.json bar.json)
+ (preprocess (pps a b c -- -foo foo.json -bar bar.json)))

@@ -1,0 +1,36 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+)
+
+HELLO_WORLD_DEPS = ["core"]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "hello_world",
+    submodules = [":Hello_world"],
+    opts       = [],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "Hello_world",
+    struct        = "hello_world.ml",
+    deps          = HELLO_WORLD_DEPS,
+    ppx           = ":HELLO_WORLD.ppx",
+)
+
+
+###############
+ppx_executable(
+    name    = "HELLO_WORLD.ppx",
+    main    = "//ppx:driver",
+    manifest = [
+        "ppx_jane"
+    ],
+)
