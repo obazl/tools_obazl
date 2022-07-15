@@ -26,6 +26,7 @@
 (define (-emit-topdown-aggregate outp kind pubname submodules flags)
   (begin
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
+    (format #t " flags: ~A\n" flags)
     (format outp "#################\n")
     (if (eq? kind :ns-archive)
         (format outp "ocaml_ns_archive(\n")
@@ -35,7 +36,8 @@
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],\n")
 
-    (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
+    (if (not (null? flags))
+        (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags))
     ;; (format outp "    opts       = ~A_OPTS,\n" libname)
 
     ;; (format outp "    submodules = [\n")

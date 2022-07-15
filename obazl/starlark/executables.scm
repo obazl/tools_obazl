@@ -14,7 +14,9 @@
          (tgtname (format #f "~A" pubname))
          (exename privname)
 
-         (main (assoc-in '(:link :main) stanza-alist))
+         ;; 'name', i.e. main, is required by dune so we always have it
+         (main (cadr (assoc-in '(:link :main) stanza-alist)))
+         (_ (format #t "main: ~A~%" main))
 
          ;; (deps (assoc-in '(:compile :deps)))
          ;; (_ (format #t "compile deps: ~A~%" deps))
@@ -22,7 +24,10 @@
                              (assoc-in '(:link :manifest :modules)
                                        stanza-alist)))
                                  (cdr mani) '())
-                         sym<?))
+                          sym<?))
+         (_ (format #t "manifest: ~A~%" manifest))
+         (manifest (remove main manifest))
+         (_ (format #t "manifest: ~A~%" manifest))
          )
     (let-values (((link-std link-opts)
                   (link-flags->mibl stanza)))
@@ -74,18 +79,17 @@
       (begin
         (format outp "#############\n")
         (format outp "ocaml_binary(\n")
-        (format outp "    name    = \"~A\",\n" tgtname)
-        (format outp "    visibility = [\"//visibility:public\"],\n")
+        (format outp "    name     = \"~A\",\n" tgtname)
         ;; attr 'exe': string name of outfile excluding extension,
         ;; not a dependency
-        (format outp "    exe     = \"~A\",\n" exename)
+        (format outp "    exe      = \"~A\",\n" exename)
         ;; (format outp "    main    = \":~A\",\n" mainname)
 
         (if (not (null? link-opts))
-            (format outp "    opts          = [~{\"~A\"~^, ~}],\n" link-opts))
+            (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
 
         (if main
-            (format outp "    main          = [\"~A\"],\n" main))
+            (format outp "    main     = \"~A\",\n" main))
 
         (if (not (null? manifest))
             (format outp "    manifest = [~{\":~A\"~^, ~}]\n\n" manifest))
@@ -115,6 +119,7 @@
             ;;   ;;           modules)
             ;;   (format outp "    ],\n")))
 
+        (format outp "    visibility = [\"//visibility:public\"],\n")
         (format outp ")\n")
         (newline outp)
         ;;(format outp "#############################\n")

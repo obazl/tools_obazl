@@ -49,6 +49,9 @@
          (ns (assoc-val :ns stanza-alist))
          (_ (format #t "em ns: ~A~%" ns))
 
+         (deps (assoc-val :deps stanza-alist))
+         (_ (format #t "deps: ~A~%" deps))
+
          (opts (if-let ((opts (assoc-val :opts stanza-alist)))
                        ;; aggregate
                        opts
@@ -151,7 +154,8 @@
               (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
                       libname))
 
-          (format outp "    deps          = ~A_DEPS,\n" libname)
+          (if (not (null? deps))
+              (format outp "    deps          = ~A_DEPS,\n" libname))
 
           (if ppx-alist
               (begin
@@ -192,7 +196,8 @@
                    (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                            libname))
 
-               (format outp "    deps          = ~A_DEPS,\n" libname)
+               (if (not (null? deps))
+                   (format outp "    deps          = ~A_DEPS,\n" libname))
 
                (if ppx-alist
                    (begin

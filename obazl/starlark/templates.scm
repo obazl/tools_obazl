@@ -9,6 +9,7 @@
                                          :executable)))
                obazl-rules)
       (begin
+        (format #t "writing buildfile header\n")
         ;; if write_file, copy_file, etc, emit:
         ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
 
@@ -66,6 +67,11 @@
         (format outp ")\n")
 
         (newline outp)
+
+        (format outp "package(default_visibility = [\"//visibility:public\"])\n")
+
+        (newline outp)
+
         ;; (format outp "#############################\n")
         )))
 

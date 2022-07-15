@@ -19,17 +19,19 @@
           (map (lambda (arg)
                  (format #t "Arg: ~A~%" arg)
                  (cond
-                  ((symbol? arg) ;; dune 'vars', e.g. ::foo, ::<
-                   (format #t "SYM\n")
-
-                   ;; FIXME: lookup sym in deps list
-
-                   (let* ((fname (format #f "~A" arg))
-                          (dname (dirname fname))
-                          (bname (basename fname)))
-                     (format #f "$(location ~A)"
-                             (if (equal dname pkg-path)
-                                 bname fname))))
+                  ((symbol? arg) ;; dune 'vars', e.g. (::foo "x" "y"...)
+                   (format #t "SYM: ~A\n" arg)
+                   (if-let ((x (assoc arg deps)))
+                           (map (lambda (a)
+                                  (format #t "in: ~A\n" a)
+                                  (let* ((fname (format #f "~A" a))
+                                         (dname (dirname fname))
+                                         (bname (basename fname)))
+                                    (format #f "$(location ~A)"
+                                            (if (equal dname pkg-path)
+                                                bname fname))))
+                                (cdr x))
+                           (error 'unmapped-var "unmapped var in cmd")))
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "string\n")
