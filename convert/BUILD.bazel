@@ -26,10 +26,10 @@ cc_binary(
         "-Wno-unused-function",
 
         "-I$(GENDIR)/convert",
-        # "-I$(GENDIR)/external/mibl/repl",
+        "-I$(GENDIR)/external/obazl/convert",
 
         "-Iexternal/uthash/include",
-        # "-Iexternal/libinih",
+        "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
         # "-Iexternal/mibl/src",
@@ -53,10 +53,10 @@ cc_binary(
     ],
     deps = [
         "@mibl//src:mibl",
-        "@libs7//src:s7",
-        "@libs7//src:c_s7",
+        # "@libs7//src:s7",
+        # "@libs7//src:c_s7",
         "@logc//:logc",
-        # "//external/libinih:inih",
+        "@mibl//external/libinih:inih",
         # "@libs7//vendored/linenoise",
     ],
     visibility = ["//visibility:public"]
