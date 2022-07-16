@@ -1,3 +1,7 @@
+
+(define shell-tools
+  '(cat cp)) ;; etc
+
 (define (-derive-cmd pkg-path action deps targets)
   (format #t "~A: ~A~%" (blue "-derive-cmd") action)
   (format #t "targets: ~A~%" targets)
@@ -7,8 +11,24 @@
   ;; ((:cmd (:run (:tool (:pkg :bin) (:tgt ...
   ;; ((:cmd (:tool cat) (:args ...
 
-  (let* ((tool (cadr (assoc-in '(:cmd :tool) action)))
+  ;; tool: two forms, one for builtin cmds, one for run
+  ;; builtin: (:cmd (:tool cat) ...)
+ ;; run: (:cmd (:tool (:pkg :bin) (:tgt foo)) ...)
+
+  (let* ((tool (assoc-in '(:cmd :tool) action))
          (_ (format #t "tool: ~A~%" tool))
+         ;; (_ (format #t "tool: ~A~%" (cdr tool)))
+         (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
+         (tool (if (alist? tool)
+                   "FIXME"
+                   (cadr tool)))
+         ;; (tool (if (member tool shell-tools) ;;FIXME: find better method
+         ;;           tool
+         ;;           (format #f "~A" tool)))
+         (_ (format #t "RESOLVED TOOL: ~A~%" tool))
+         (tool-dep? (if (member tool shell-tools) ;;FIXME: find better method
+                       #f #t))
+
         ;; FIXME: shell cmds v. targets that go in tools attr
 
          ;; FIXME: map dune builtins like 'copy' to shell cmds
@@ -36,11 +56,14 @@
                   ((string? arg) ;; e.g. a file literal
                    (format #t "string\n")
                    ;; how do we know which strings need $(location)?
-                   (let* ((dname (dirname arg))
-                          (bname (basename arg)))
-                     (format #f "$(location ~A)"
-                             (if (equal dname pkg-path)
-                                 bname arg))))
+                  ;; assumption: files must be listed in deps, so any
+                  ;; strings we see are just string args
+                   ;; (let* ((dname (dirname arg))
+                   ;;        (bname (basename arg)))
+                   ;;   (format #f "$(location ~A)"
+                   ;;           (if (equal dname pkg-path)
+                   ;;               bname arg)))
+                   arg)
 
                   ((proper-list? arg) ;; (:_ a.x b.y...)
                    ;; e.g. from %{deps} or a custom var
@@ -64,7 +87,7 @@
          (_ (format #t "args: ~A~%" args))
          ;; (args (format #f "~A" args))
          )
-    (values tool args)))
+    (values tool-dep? tool args)))
 
 (define (-targets->outs pkg-path targets)
   (format #t "~A: ~A\n" (blue "-targets->outs") targets)
@@ -99,10 +122,6 @@
     (format #t "OUTS: ~A\n" outs)
     outs))
 
-(define (tool-dep? t)
-  ;; is tool t something that needs to go in tools = []?
-  #f)
-
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
   (let* ((action (assoc-val :action stanza))
@@ -122,11 +141,12 @@
          (name (format #f "__~A__"
                        (outs 0))))
 
-    (let-values (((tool args)
+    (let-values (((tool-dep? tool args)
                   (-derive-cmd pkg-path action deps targets)))
-      (format #t "tool: ~A~%" tool)
-      (format #t "args: ~A~%" args)
-      (format #t "outs: ~A~%" outs)
+      (format #t "~A:\n" (red "derived cmd"))
+      (format #t "  tool: ~A~%" tool)
+      (format #t "  args: ~A~%" args)
+      (format #t "  outs: ~A~%" outs)
 
       (format outp "################  rule  ################\n")
       (if (list? stanza)
@@ -151,12 +171,18 @@
             (format outp "    ],\n")
 
             (format outp "    cmd   = \" \".join([\n")
-            (format outp "        \"~A\",\n" tool)
+            (if tool-dep?
+                (format outp "        \"$(location ~A)\",\n" tool)
+                (format outp "        \"~A\",\n" tool))
             (format outp "~{        \"~A\"~^,\n~}\n" args)
             (format outp "    ]),\n")
 
-            (if (tool-dep? tool)
-                (format outp "    tools = [\"\"],\n"))
+            (if tool-dep?
+                (begin
+                  (format outp "    tools = [\n")
+                  (format outp "~{        \"~A\"~^,\n~}\n"
+                          (list tool)) ;;FIXME: support multiple tools
+                  (format outp "    ]\n")))
 
             (format outp ")\n")
             )))))
