@@ -2,6 +2,57 @@
 (define shell-tools
   '(cat cp)) ;; etc
 
+(define (-deps-kw->cmd-args deps)
+  (format #t "~A: ~A~%" (blue "-deps-kw->cmd-args") deps)
+  (let ((args (map (lambda (dep)
+                     (format #t "dep: ~A\n" dep)
+                     (case (car dep)
+                       ((::) ;; local files, :foo.txt
+                        (map (lambda (d)
+                               (format #f "$(location ~A)" d))
+                             (cdr dep)))
+
+                       ((:_) ;; //pkg:tgt files
+                        (map (lambda (d)
+                               (format #f "$(location //~A)" d))
+                             (cdr dep)))
+
+                       (else ;; custom tag
+                        (map (lambda (d)
+                               ;; FIXME: could contain either :: or :_ files
+                               ;; e.g. (:css file_glob(*.css)) => (::css (:: "foo.css"...
+                               (format #f "$(location //~A)" d))
+                             (cdr dep)))))
+                   deps)))
+    (apply append args)))
+
+(define (-arg->dep arg deps)
+  (format #t "~A: ~A in ~A~%" (blue "-arg->dep") arg deps)
+  ;; e.g. deps:
+  ;; ((:_ "rules/copy/config/config.mlh" "rules/copy/foo/bar.x") (:: "baz.y"))
+  (let* ((dlist (find-if (lambda (deplist)
+                           (format #t "deplist: ~A~%" deplist)
+                           (case (car deplist)
+                             ((::)
+                              (find-if (lambda (d) (string-suffix? arg d))
+                                       (cdr deplist)))
+
+                             ((:_)
+                              (find-if (lambda (d) (string-suffix? arg d))
+                                       (cdr deplist)))
+                             (else
+                              (find-if (lambda (d) (string-suffix? arg d))
+                                       (cdr deplist)))
+                             ))
+                         deps))
+         (_ (format #t "found dlist: ~A~%" dlist))
+         (dep (find-if (lambda (d)
+                         (format #t "finding?: ~A~%" d)
+                         (string-suffix? arg d))
+                       (cdr dlist))))
+    (format #t "dep: ~A~%" dep)
+    dep))
+
 (define (-derive-cmd pkg-path action deps targets)
   (format #t "~A: ~A~%" (blue "-derive-cmd") action)
   (format #t "targets: ~A~%" targets)
@@ -41,6 +92,7 @@
                  (cond
                   ((symbol? arg) ;; dune 'vars', e.g. (::foo "x" "y"...)
                    (format #t "SYM: ~A\n" arg)
+                   ;; find args in deplist
                    (if-let ((x (assoc arg deps)))
                            (map (lambda (a)
                                   (format #t "in: ~A\n" a)
@@ -51,19 +103,29 @@
                                             (if (equal dname pkg-path)
                                                 bname fname))))
                                 (cdr x))
-                           (error 'unmapped-var "unmapped var in cmd")))
+                           (if (equal? arg ::deps)
+                               (-deps-kw->cmd-args deps)
+                               (error 'unmapped-var "unmapped var in cmd"))))
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "string\n")
                    ;; how do we know which strings need $(location)?
-                  ;; assumption: files must be listed in deps, so any
-                  ;; strings we see are just string args
-                   ;; (let* ((dname (dirname arg))
-                   ;;        (bname (basename arg)))
-                   ;;   (format #f "$(location ~A)"
-                   ;;           (if (equal dname pkg-path)
-                   ;;               bname arg)))
-                   arg)
+                   ;; assumption: files must be listed in deps, so any
+                   ;; strings we see are just string args
+                   (if-let ((x (-arg->dep arg deps)))
+                             ;; (assoc arg deps)))
+                           (begin
+                                  (format #t "arg ~A in deps\n" x)
+                                  (let* ((fname (format #f "~A" x))
+                                         (dname (dirname fname))
+                                         (bname (basename fname)))
+                                    (format #f "$(location ~A)"
+                                            (if (equal dname pkg-path)
+                                                bname fname))))
+
+                           (begin
+                             (format #t "arg not in deps: ~A~%" arg)
+                             arg)))
 
                   ((proper-list? arg) ;; (:_ a.x b.y...)
                    ;; e.g. from %{deps} or a custom var
@@ -93,27 +155,45 @@
   (format #t "~A: ~A\n" (blue "-targets->outs") targets)
   (let* ((outs (map (lambda (src)
                       (format #t "src: ~A\n" src)
-                      (if (equal? :_ (car src))
-                          ;; (:_ "foo.txt" "bar.txt" ...)
-                          (map (lambda (srcfile)
-                                 (format #t "srcfile: ~A~%" srcfile)
-                                 (let ((dname (dirname srcfile))
-                                       (bname (basename srcfile)))
-                                   ;; (-pkg-path
-                                   ;;      (car (assoc-val :pkg src-alist))))
-                                   (format #f "~A"
-                                           (if (equal dname pkg-path)
-                                               bname srcfile))))
-                               ;; (car
-                               ;;  (assoc-val :file srcfile)))))
-                               (cdr src))
-                          ;; else tagged (:foo . "foo.txt")
+                      (case (car src)
+
+                        ((::) ;; pkg-local files
+                         (map (lambda (srcfile)
+                                (format #t "srcfile: ~A~%" srcfile)
+                                (let ((dname (dirname srcfile))
+                                      (bname (basename srcfile)))
+                                  ;; (-pkg-path
+                                  ;;      (car (assoc-val :pkg src-alist))))
+                                  (format #f "~A"
+                                          (if (equal dname pkg-path)
+                                              bname srcfile))))
+                              ;; (car
+                              ;;  (assoc-val :file srcfile)))))
+                              (cdr src)))
+
+                        ((:_) ;; non-local, not-tagged
+                         ;; e.g. (:_ "foo/bar/a.txt" "foo/bar/b.txt" ...)
+                         (map (lambda (srcfile)
+                                (format #t "srcfile: ~A~%" srcfile)
+                                (let ((dname (dirname srcfile))
+                                      (bname (basename srcfile)))
+                                  ;; (-pkg-path
+                                  ;;      (car (assoc-val :pkg src-alist))))
+                                  (format #f "~A"
+                                          (if (equal dname pkg-path)
+                                              bname srcfile))))
+                              ;; (car
+                              ;;  (assoc-val :file srcfile)))))
+                              (cdr src)))
+
+                         ;; else tagged (:foo . "foo.txt")
+                         (else
                           (format #f "~A"
                                   (let* ((srcfile (cdr src))
                                          (dname (dirname srcfile))
                                          (bname (basename srcfile)))
                                     (if (equal dname pkg-path)
-                                        bname srcfile)))))
+                                        bname srcfile))))))
                     targets))
          (outs (fold (lambda (src accum)
                        (if (string? src) (append accum (list src))
@@ -122,13 +202,33 @@
     (format #t "OUTS: ~A\n" outs)
     outs))
 
-(define (starlark-emit-rule-target outp pkg-path stanza)
-  (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
+(define (starlark-emit-skylib-target outp stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-skylib-target") stanza)
+  (let* ((outfile (cadar (assoc-val :targets stanza)))
+         (_ (format #t "outfile: ~A~%" outfile))
+
+         (content (assoc-in '(:action :cmd :args :content) stanza))
+         (_ (format #t "~A: ~A~%" (green "content") content)))
+
+      (format outp "###########\n")
+      (format outp "write_file(\n")
+      (format outp "    name    = \"__~A__\",\n" outfile)
+      (format outp "    out     = \"~A\"\n" outfile)
+      (format outp "    content = [\"~A\"]\n" (cadr content))
+      (format outp ")\n")))
+
+;; FIXME: account for :ctx, which is derived from (chdir ...) in dune
+;; the target should be written to the :ctx dir?
+;; but then what if multiple rules chdir to same dir? e.g. %{workspace_root}
+;; possible resolution: handle all :ctx rules in a separate pass?
+;; for now just emit a comment
+(define (starlark-emit-genrule outp pkg-path stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-genrule") stanza)
   (let* ((action (assoc-val :action stanza))
          (_ (format #t "action: ~A~%" action))
          (deps (assoc-val :deps stanza))
          (_ (format #t "~A: ~A~%" (cyan "deps") deps))
-         (srcs (-deps->srcs pkg-path deps))
+         (srcs (-deps->srcs-attr pkg-path deps))
          (_ (format #t "~A: ~A~%" (cyan "srcs") srcs))
 
          ;; FIXME: derive from :args, :stdout, etc.
@@ -141,51 +241,67 @@
          (name (format #f "__~A__"
                        (outs 0))))
 
-    (let-values (((tool-dep? tool args)
-                  (-derive-cmd pkg-path action deps targets)))
-      (format #t "~A:\n" (red "derived cmd"))
-      (format #t "  tool: ~A~%" tool)
-      (format #t "  args: ~A~%" args)
-      (format #t "  outs: ~A~%" outs)
+    (if-let ((ctx (assoc-in '(:action :ctx) stanza)))
+            (begin
+              (format outp "## omitted:\n")
+              (format outp "## (chdir ~A (run ~A ...))\n\n"
+                    (cadr ctx)
+                    (cadr (assoc-in '(:action :cmd :tool) stanza))))
 
-      (format outp "################  rule  ################\n")
-      (if (list? stanza)
-          (begin
-            ;; (format outp "## ~A\n" (assoc-val 'dune (stanza)))
-            ;; (format outp "## (\n")
-            ;; (for-each (lambda (sexp)
-            ;;             (format outp "##   ~A\n" sexp))
-            ;;           stanza)
-            ;; (format outp "## )\n")
+            (let-values (((tool-dep? tool args)
+                          (-derive-cmd pkg-path action deps targets)))
+              (format #t "~A:\n" (red "derived cmd"))
+              (format #t "  tool: ~A~%" tool)
+              (format #t "  args: ~A~%" args)
+              (format #t "  outs: ~A~%" outs)
 
-            (format outp "genrule(\n")
-            (format outp "    name  = \"~A\",\n" name)
+              (format outp "################  rule  ################\n")
+              (if (list? stanza)
+                  (begin
+                    ;; (format outp "## ~A\n" (assoc-val 'dune (stanza)))
+                    ;; (format outp "## (\n")
+                    ;; (for-each (lambda (sexp)
+                    ;;             (format outp "##   ~A\n" sexp))
+                    ;;           stanza)
+                    ;; (format outp "## )\n")
 
-            (format outp "    srcs  = [\n")
-            (format outp "~{        \"~A\"~^,\n~}\n" srcs)
-            (format outp "    ],\n")
+                    (format outp "genrule(\n")
+                    (format outp "    name  = \"~A\",\n" name)
 
-            (format outp "    outs  = [\n")
-            (format outp "~{        \"~A\"~^,\n~}\n" outs)
-            ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
-            (format outp "    ],\n")
+                    (format outp "    srcs  = [\n")
+                    (format outp "~{        \"~A\"~^,\n~}\n" srcs)
+                    (format outp "    ],\n")
 
-            (format outp "    cmd   = \" \".join([\n")
-            (if tool-dep?
-                (format outp "        \"$(location ~A)\",\n" tool)
-                (format outp "        \"~A\",\n" tool))
-            (format outp "~{        \"~A\"~^,\n~}\n" args)
-            (format outp "    ]),\n")
+                    (format outp "    outs  = [\n")
+                    (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                    ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                    (format outp "    ],\n")
 
-            (if tool-dep?
-                (begin
-                  (format outp "    tools = [\n")
-                  (format outp "~{        \"~A\"~^,\n~}\n"
-                          (list tool)) ;;FIXME: support multiple tools
-                  (format outp "    ]\n")))
+                    (format outp "    cmd   = \" \".join([\n")
+                    (if tool-dep?
+                        (format outp "        \"$(location ~A)\",\n" tool)
+                        (format outp "        \"~A\",\n" tool))
+                    (format outp "~{        \"~A\"~^,\n~}\n" args)
+                    (format outp "    ]),\n")
 
-            (format outp ")\n")
-            )))))
+                    (if tool-dep?
+                        (begin
+                          (format outp "    tools = [\n")
+                          (format outp "~{        \"~A\"~^,\n~}\n"
+                                  (list tool)) ;;FIXME: support multiple tools
+                          (format outp "    ]\n")))
+
+                    (format outp ")\n")
+                    ))))))
+
+(define (starlark-emit-rule-target outp pkg-path stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
+  (let* ((tool (assoc-in '(:action :cmd :tool) stanza))
+         (_ (format #t "tool: ~A~%" tool)))
+    (case (cadr tool)
+      ((:skylib-write-file) (starlark-emit-skylib-target outp stanza))
+      (else
+       (starlark-emit-genrule outp pkg-path stanza)))))
 
 (define (starlark-emit-rule-targets outp pkg) ;;fs-path stanzas)
   (format #t "~A: ~A~%" (blue "starlark-emit-rule-targets") pkg)

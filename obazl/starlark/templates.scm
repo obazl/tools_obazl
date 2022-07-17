@@ -3,10 +3,17 @@
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
   (format #t "starlark-emit-buildfile-hdr: ~A\n" obazl-rules)
 
+  (if (member :skylib-write-file obazl-rules)
+      (begin
+        (format outp "load(\"@bazel_skylib//rules:write_file.bzl\", \"write_file\")\n")
+        (format outp "\n")))
+
   (if (find-if (lambda (rule)
-                 (member rule '(:archive :library
-                                         :ns-archive :ns-library
-                                         :executable)))
+                 (member rule '(:archive
+                                :library
+                                :ns-archive
+                                :ns-library
+                                :executable)))
                obazl-rules)
       (begin
         (format #t "writing buildfile header\n")
