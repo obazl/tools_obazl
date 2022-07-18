@@ -35,7 +35,6 @@ cc_binary(
         # "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
         "-Iexternal/libs7/src",
-        # "-Iexternal/mibl/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
         "-Iexternal/mibl/libs7/vendored/linenoise",
     ],

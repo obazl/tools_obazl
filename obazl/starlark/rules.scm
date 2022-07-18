@@ -45,19 +45,21 @@
                                        (cdr deplist)))
                              ))
                          deps))
-         (_ (format #t "found dlist: ~A~%" dlist))
-         (dep (find-if (lambda (d)
-                         (format #t "finding?: ~A~%" d)
-                         (string-suffix? arg d))
-                       (cdr dlist))))
+         (dep (if dlist
+                  (begin
+                    (format #t "found dlist: ~A~%" dlist)
+                    (find-if (lambda (d)
+                               (format #t "finding?: ~A~%" d)
+                               (string-suffix? arg d))
+                             (cdr dlist))))))
     (format #t "dep: ~A~%" dep)
     dep))
 
-(define (-derive-cmd pkg-path action deps targets)
-  (format #t "~A: ~A~%" (blue "-derive-cmd") action)
+(define (-derive-cmd pkg-path cmds deps targets)
+  (format #t "~A: ~A~%" (blue "-derive-cmd") cmds)
   (format #t "targets: ~A~%" targets)
   (format #t "deps: ~A~%" deps)
-  (format #t "stdout: ~A~%" (assoc-val :stdout action))
+  (format #t "stdout: ~A~%" (assoc-val :stdout cmds))
 
   ;; ((:cmd (:run (:tool (:pkg :bin) (:tgt ...
   ;; ((:cmd (:tool cat) (:args ...
@@ -66,25 +68,42 @@
   ;; builtin: (:cmd (:tool cat) ...)
  ;; run: (:cmd (:tool (:pkg :bin) (:tgt foo)) ...)
 
-  (let* ((tool (assoc-in '(:cmd :tool) action))
+
+  (let* ((tool (assoc-in '(:cmd :tool) cmds))
          (_ (format #t "tool: ~A~%" tool))
          ;; (_ (format #t "tool: ~A~%" (cdr tool)))
          (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
-         (tool (if (alist? tool)
-                   "FIXME"
+         (tool (if (alist? (cdr tool))
+                   (case (caadr tool)
+                     ((::)
+                      )
+                     ((:_)
+                      (let* ((tlist (cdr tool))
+                             ;; (_ (format #t "tlist ~A~%" tlist))
+                             (tlist (car tlist))
+                             ;; (_ (format #t "tlist ~A~%" tlist))
+                             (t (format #f "~A" (cadr tlist)))
+                             ;; (_ (format #t "t ~A~%" t))
+                             (dname (dirname t))
+                             (bname (basename t)))
+                        ;; (format #t "bname ~A~%" bname)
+                        (format #f "//~A:~A" dname bname)))
+                     (else
+                      ))
                    (cadr tool)))
          ;; (tool (if (member tool shell-tools) ;;FIXME: find better method
          ;;           tool
          ;;           (format #f "~A" tool)))
          (_ (format #t "RESOLVED TOOL: ~A~%" tool))
          (tool-dep? (if (member tool shell-tools) ;;FIXME: find better method
-                       #f #t))
+                       '() #t))
+         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
 
         ;; FIXME: shell cmds v. targets that go in tools attr
 
          ;; FIXME: map dune builtins like 'copy' to shell cmds
 
-         (args (cdr (assoc-in '(:cmd :args ) action)))
+         (args (cdr (assoc-in '(:cmd :args ) cmds)))
          (_ (format #t "args: ~A~%" args))
          (args
           (map (lambda (arg)
@@ -144,7 +163,7 @@
                        (if (string? src) (append accum (list src))
                            (append accum src)))
                      '() args))
-         (args (if (assoc-val :stdout action)
+         (args (if (assoc-val :stdout cmds)
                    (append args (list "> $@")) args))
          (_ (format #t "args: ~A~%" args))
          ;; (args (format #f "~A" args))
@@ -241,18 +260,20 @@
          (name (format #f "__~A__"
                        (outs 0))))
 
+    ;; progn: list of actions.
+    (for-each
+     (lambda (cmd)
+       (format #t "ACTION: ~A~%" cmd))
+     action)
+
     (if-let ((ctx (assoc-in '(:action :ctx) stanza)))
             (begin
               (format outp "## omitted:\n")
               (format outp "## (chdir ~A (run ~A ...))\n\n"
                     (cadr ctx)
                     (cadr (assoc-in '(:action :cmd :tool) stanza))))
-
-            (let-values (((tool-dep? tool args)
-                          (-derive-cmd pkg-path action deps targets)))
-              (format #t "~A:\n" (red "derived cmd"))
-              (format #t "  tool: ~A~%" tool)
-              (format #t "  args: ~A~%" args)
+            ;; else
+            (begin
               (format #t "  outs: ~A~%" outs)
 
               (format outp "################  rule  ################\n")
@@ -278,21 +299,43 @@
                     (format outp "    ],\n")
 
                     (format outp "    cmd   = \" \".join([\n")
-                    (if tool-dep?
-                        (format outp "        \"$(location ~A)\",\n" tool)
-                        (format outp "        \"~A\",\n" tool))
-                    (format outp "~{        \"~A\"~^,\n~}\n" args)
+                    (for-each
+                     (lambda (cmd)
+                       (format #t "processing cmd: ~A~%" cmd)
+                       (let-values
+                           (((tool-dep? tool args)
+                             (-derive-cmd pkg-path `(,cmd) deps targets)))
+                         ;; (format #t "~A:\n" (red "derived cmd"))
+                         (format #t "  tool-dep?: ~A~%" tool-dep?)
+                         (format #t "  tool: ~A~%" tool)
+                         (format #t "  args: ~A~%" args)
+
+                         (if (not (null? tool-dep?))
+                             (format outp "        \"$(location ~A)\",\n" tool)
+                             (format outp "        \"~A\",\n" tool))
+                         (format outp "~{        \"~A\"~^,\n~}\n" args)))
+                     ;; if :stdout, add "> $@"
+                     action)
                     (format outp "    ]),\n")
 
-                    (if tool-dep?
-                        (begin
-                          (format outp "    tools = [\n")
-                          (format outp "~{        \"~A\"~^,\n~}\n"
-                                  (list tool)) ;;FIXME: support multiple tools
-                          (format outp "    ]\n")))
+                    (format outp "    tools = [\n")
+                    (for-each ;; fixme: don't iterate this twice
+                     (lambda (cmd)
+                       (format #t "processing cmd: ~A~%" cmd)
+                       (let-values
+                           (((tool-dep? tool args)
+                             (-derive-cmd pkg-path `(,cmd) deps targets)))
+                         (if (not (null? tool-dep?))
+                             (begin
+                               (format outp "~{        \"~A\"~^,\n~}\n"
+                                       (list tool)) ;;FIXME: support multiple tools
+                               ))))
+                     action)
+                    (format outp "    ]\n")))
 
                     (format outp ")\n")
-                    ))))))
+                    )
+            )))
 
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)

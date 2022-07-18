@@ -33,11 +33,21 @@ s7_pointer _load_load_dune(s7_scheme *s7)
     return _load_dune;
 }
 
+void _print_usage()
+{
+    printf("Usage: msg...\n");
+}
+
 int main(int argc, char *argv[])
 {
-    char *opts = "hdtv";
+    char *opts = "p:hdtvx";
     int opt;
+    char *pkgarg = NULL;
+
+    bool exit_on_error = false;
+
     while ((opt = getopt(argc, argv, opts)) != -1) {
+        /* printf("optind: %d\n", optind); */
         switch (opt) {
         case '?':
             fprintf(stderr, "uknown opt: %c", optopt);
@@ -51,22 +61,46 @@ int main(int argc, char *argv[])
             debug = true;
             break;
         case 'h':
-            /* _print_usage(); */
-            printf("help msg ...\n");
+            _print_usage();
             exit(EXIT_SUCCESS);
+            break;
+        case 'p':
+            printf("package: %s\n", optarg);
+            pkgarg = strdup(optarg);
             break;
         case 't':
             trace = true;
             break;
         case 'v':
             verbose = true;
+            break;
+        case 'x':
+            exit_on_error = true;
         default:
             ;
         }
     }
-    /* config in this order: bazel then s7 */
+
+    if (argc > optind) {
+        printf(RED "ERROR:" CRESET "extra argument passed\n");
+        _print_usage();
+        exit(EXIT_SUCCESS);
+    }
+
+    /* config in this order: first bazel, then mibl, then s7 */
     bazel_configure(); // getcwd(NULL, 0));
+    mibl_configure();
     s7_scheme *s7 = s7_configure();
+
+    if (exit_on_error) {
+        printf("exit on error\n");
+        s7_define_variable(s7, "*exit-on-error*", s7_t(s7));
+    } else {
+        printf("no exit on error\n");
+        s7_define_variable(s7, "*exit-on-error*", s7_f(s7));
+    }
+    printf("*exit-on-error*? %d\n",
+           (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*")));
 
     s7_load(s7, "starlark.scm");
 
@@ -78,8 +112,15 @@ int main(int argc, char *argv[])
 
     s7_pointer _s7_load_dune = _load_load_dune(s7);
     printf("load-dune: %s\n", TO_STR(_s7_load_dune));
-
-    s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)");
+    s7_pointer _wss;
+    if (pkgarg) {
+        _wss = s7_call(s7, _s7_load_dune,
+                                  s7_list(s7, 1, s7_make_string(s7, pkgarg)));
+    } else {
+        _wss = s7_call(s7, _s7_load_dune, s7_nil(s7));
+                                  /* s7_list(s7, 1, s7_make_string(s7, pkgarg))); */
+        /* s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)"); */
+    }
     /* printf("_wss: %s\n", TO_STR(_wss)); */
 
     /*
@@ -87,6 +128,10 @@ int main(int argc, char *argv[])
       2. get :pkgs from :@
       2. for-each pkg in :pkgs ...
      */
+
+        /* close_error_config(); */
+        /* init_error_handling(); */
+        /* error_config(); */
 
     s7_pointer root_ws =
         s7_eval_c_string(s7, "(assoc-val :@ -mibl-ws-table)");
@@ -117,7 +162,9 @@ int main(int argc, char *argv[])
     s7_pointer exports = s7_eval_c_string(s7, sexp);
     printf("exports: %s\n", TO_STR(exports));
 
-    printf("*load-path*: %s\n", TO_STR(s7_load_path(s7)));
+    /* printf("*load-path*: %s\n", TO_STR(s7_load_path(s7))); */
+
+    /* printf("npkgs: %s\n", TO_STR(npkgs)); */
 
     /* to starlark */
     sexp =
@@ -127,6 +174,7 @@ int main(int argc, char *argv[])
     s7_eval_c_string_with_environment(s7, sexp,
                                       s7_inlet(s7, s7_list(s7, 1,
                                                            s7_cons(s7, s7_make_symbol(s7, "npkgs"), npkgs))));
+
 
     if (verbose) {
         printf("ews: %s\n", ews_root);
