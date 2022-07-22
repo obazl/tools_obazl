@@ -121,7 +121,9 @@ int main(int argc, char *argv[])
                                   /* s7_list(s7, 1, s7_make_string(s7, pkgarg))); */
         /* s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)"); */
     }
+
     /* printf("_wss: %s\n", TO_STR(_wss)); */
+    /* return 0; */
 
     /*
       1. get :@ ws
@@ -141,7 +143,9 @@ int main(int argc, char *argv[])
         s7_eval_c_string_with_environment(s7,  "(car (assoc-val :pkgs @ws))",
                                           s7_inlet(s7, s7_list(s7, 1,
                                                                s7_cons(s7, s7_make_symbol(s7, "@ws"), root_ws))));
+
     /* printf("pkgs: %s\n", TO_STR(pkgs)); */
+    /* return 0; */
 
     char *sexp =
         "(map (lambda (kv) "
@@ -153,20 +157,34 @@ int main(int argc, char *argv[])
         s7_eval_c_string_with_environment(s7, sexp,
                                           s7_inlet(s7, s7_list(s7, 1,
                                                                s7_cons(s7, s7_make_symbol(s7, "pkgs"), pkgs))));
+
     /* printf("npkgs: %s\n", TO_STR(npkgs)); */
+    /* return 0; */
+
+    /* sexp = "(mibl->starlark :@ -mibl-ws-table)"; */
+    /* s7_pointer spkgs = */
+    /*     s7_eval_c_string_with_environment(s7, sexp, */
+    /*                                       s7_inlet(s7, s7_list(s7, 1, */
+    /*                                                            s7_cons(s7, s7_make_symbol(s7, "npkgs"), pkgs)))); */
+
+    /* printf("spkgs: %s\n", TO_STR(spkgs)); */
 
     sexp = "(resolve-labels (assoc-val :@ -mibl-ws-table))";
     s7_eval_c_string(s7, sexp);
 
     sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))";
     s7_pointer exports = s7_eval_c_string(s7, sexp);
+
     printf("exports: %s\n", TO_STR(exports));
+    /* return 0; */
 
     /* printf("*load-path*: %s\n", TO_STR(s7_load_path(s7))); */
 
     /* printf("npkgs: %s\n", TO_STR(npkgs)); */
 
     /* to starlark */
+    /* s7_load(s7, "starlark.scm"); */
+
     sexp =
         "(for-each (lambda (kv)"
         "              (mibl-pkg->starlark (cdr kv)))"

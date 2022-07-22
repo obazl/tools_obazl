@@ -1,6 +1,7 @@
 (format #t "loading starlark/conversions.scm\n")
 
 (load "starlark/templates.scm")
+(load "starlark/rules.scm")
 
 (define (starlark-emit-global-vars outp pkg)
   (format #t "starlark-emit-global-vars: ~A\n" pkg)
@@ -119,7 +120,7 @@
                                           (if (assoc :progn stanza-alist)
                                               (-progn->obazl-rules stanza-alist)
                                               (let ((tool (cadr (assoc-in
-                                                                 '(:action :cmd :tool)
+                                                                 '(:actions :cmd :tool)
                                                                  stanza-alist))))
                                                 (format #t "TOOL: ~A~%" tool)
                                                 (if (equal? tool :skylib-write-file)
@@ -137,6 +138,7 @@
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules)))
     rules)))
 
+;; FIXME: rename emit-starlark
 (define (mibl-pkg->starlark pkg)
   (format #t "mibl-pkg->starlark: ~A\n" pkg)
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
@@ -176,8 +178,8 @@
             ;; ocamllex, ocamlyacc, etc.
             ;; (starlark-emit-file-generators outp fs-path stanzas)
 
-            (format #t "emitting ppxes\n")
-            (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
+            ;; (format #t "emitting ppxes\n")
+            ;; (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
 
             (format #t "emitting rules\n")
             (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
