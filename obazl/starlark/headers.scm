@@ -1,9 +1,9 @@
-(format #t "loading starlark/templates.scm\n")
+(format #t "loading starlark/headers.scm\n")
 
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
   (format #t "starlark-emit-buildfile-hdr: ~A\n" obazl-rules)
 
-  (if (member :skylib-write-file obazl-rules)
+  (if (member :write-file obazl-rules)
       (begin
         (format outp "load(\"@bazel_skylib//rules:write_file.bzl\", \"write_file\")\n")
         (format outp "\n")))
@@ -80,6 +80,8 @@
         (newline outp)
 
         ;; (format outp "#############################\n")
-        )))
+        ))
 
-(format #t "loaded starlark/templates.scm\n")
+  (format outp "package(default_visibility = [\"//visibility:public\"])\n")
+  (newline outp)
+  )

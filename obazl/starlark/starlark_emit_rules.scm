@@ -233,40 +233,6 @@
     ;;       (format outp "## )\n")))
     ))
 
-(define (starlark-emit-write-file-target outp stanza)
-  ;; (format #t "starlark-emit-write-file-target: ~A\n" stanza)
-  ;; (let ((libname (cdadr (assoc :name stanza)))
-  ;;       (opts (stanza-opts stanza))
-  ;;       (deps '("test-dep1" "test-dep2"))
-  ;;       (modules '("test-mod1" "test-mod2"))
-  ;;       (submodules (stanza-submodules typ stanza)))
-
-  (format outp "###########\n")
-  (format outp "write_file(\n")
-  (format outp "    name     = \"~A\",\n"
-          (string-append "write_"
-                         (symbol->string (cadr (assoc :out stanza)))))
-  (format outp "    out      = \"~A\",\n"
-          (cadr (assoc :out stanza)))
-  (format outp "    content  = \"\"\"\n")
-  (format outp "~A" (cadr (assoc :str stanza)))
-  (if (not (string-suffix? "\n" (cadr (assoc :str stanza))))
-      (newline outp))
-  (format outp "\"\"\"")
-  (format outp ")")
-  (newline outp)
-  (newline outp)
-
-  ;; debugging
-  ;; (if (list? stanza)
-  ;;     (begin
-  ;;       (format outp "## (\n")
-  ;;       (for-each (lambda (sexp)
-  ;;                   (format outp "##   ~A\n" sexp))
-  ;;                 stanza)
-  ;;       (format outp "## )\n")))
-  )
-
 ;; (define (starlark-emit-rule-targets outp fs-path stanzas)
 ;;   ;; (format #t "starlark-emit-rule-targets")
 

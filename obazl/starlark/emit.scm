@@ -1,6 +1,6 @@
 (format #t "loading starlark/conversions.scm\n")
 
-(load "starlark/templates.scm")
+(load "starlark/headers.scm")
 (load "starlark/rules.scm")
 
 (define (starlark-emit-global-vars outp pkg)
@@ -136,90 +136,90 @@
     (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
            (rules (if (assoc :structures pkg) (cons :module rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules)))
-    rules)))
+      (format #t "~A: ~A~%" (red "obazlrules") rules)
+      rules)))
 
 ;; FIXME: rename emit-starlark
-(define (mibl-pkg->starlark pkg)
-  (format #t "mibl-pkg->starlark: ~A\n" pkg)
+(define (mibl-pkg->build-bazel pkg)
+  (format #t "mibl-pkg->build-bazel: ~A\n" pkg)
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :dune pkg)))
-      (if dunefile
-          (let* ((stanzas (cadr dunefile))
-                 (obazl-rules (-pkg->obazl-rules pkg))
-                 (_ (format #t "obazl rules: ~A\n" obazl-rules))
-                 (build-file (string-append pkg-path "/BUILD.bazel"))
+    (if dunefile
+        (let* ((stanzas (cadr dunefile))
+               (obazl-rules (-pkg->obazl-rules pkg))
+               (_ (format #t "obazl rules: ~A\n" obazl-rules))
+               (build-file (string-append pkg-path "/BUILD.bazel"))
 
-                 (outp
-                  (catch #t
-                         (lambda ()
-                           (open-output-file build-file))
-                         (lambda args
-                           (format #t "OPEN ERROR"))
-                         )))
-            (format #t "\nEmitting ~A, port ~A\n" build-file outp)
+               (outp
+                (catch #t
+                       (lambda ()
+                         (open-output-file build-file))
+                       (lambda args
+                         (format #t "OPEN ERROR"))
+                       )))
+          (format #t "\nEmitting ~A, port ~A\n" build-file outp)
 
-            (starlark-emit-buildfile-hdr outp obazl-rules)
-            ;; (newline outp)
+          (starlark-emit-buildfile-hdr outp obazl-rules)
+          ;; (newline outp)
 
-            (starlark-emit-global-vars outp pkg)
+          (starlark-emit-global-vars outp pkg)
 
-            (format #t "emitting executables\n")
-            (starlark-emit-executable-targets outp pkg)
+          (format #t "emitting executables\n")
+          (starlark-emit-executable-targets outp pkg)
 
-            (format #t "emitting aggregate targets (archive, library)\n")
-            (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
+          (format #t "emitting aggregate targets (archive, library)\n")
+          (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
 
-            (format #t "emitting singleton targets\n")
-            (starlark-emit-singleton-targets outp pkg)
-            ;; (starlark-emit-singleton-targets outp pkg-path stanzas
-            ;;                                  (cdr pkg-kv))
+          (format #t "emitting singleton targets\n")
+          (starlark-emit-singleton-targets outp pkg)
+          ;; (starlark-emit-singleton-targets outp pkg-path stanzas
+          ;;                                  (cdr pkg-kv))
 
-            ;; (format #t "emitting file generators\n")
-            ;; ocamllex, ocamlyacc, etc.
-            ;; (starlark-emit-file-generators outp fs-path stanzas)
+          ;; (format #t "emitting file generators\n")
+          ;; ocamllex, ocamlyacc, etc.
+          ;; (starlark-emit-file-generators outp fs-path stanzas)
 
-            ;; (format #t "emitting ppxes\n")
-            ;; (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
+          ;; (format #t "emitting ppxes\n")
+          ;; (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
 
-            (format #t "emitting rules\n")
-            (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
+          (format #t "emitting rules\n")
+          (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
-            (close-output-port outp)
+          (format #t "emitting filegroups\n")
+          (starlark-emit-filegroups outp pkg)
 
-            ;; (let ((stanzas (cdr (assoc :stanzas (cdr path_pkg))))
-            ;;       (srcfiles (if-let ((srcs (assoc :srcfiles (cdr path_pkg))))
-            ;;                         (cadr srcs)
-            ;;                         '())))
-            ;;   )
+          (close-output-port outp)
 
-            ;; (let ((lib-stanzas (filter-stanzas :library stanzas)))
-            ;;   (if (not (null? lib-stanzas))
-            ;;       (emit-library-args fs-path lib-stanzas srcfiles out-port)))
+          ;; (let ((stanzas (cdr (assoc :stanzas (cdr path_pkg))))
+          ;;       (srcfiles (if-let ((srcs (assoc :srcfiles (cdr path_pkg))))
+          ;;                         (cadr srcs)
+          ;;                         '())))
+          ;;   )
 
-            ;; (let ((exec-stanzas (filter-stanzas 'executable stanzas)))
-            ;;   (if (not (null? exec-stanzas))
-            ;;       (begin
-            ;;         (emit-executable-args fs-path exec-stanzas srcfiles out-port))))
+          ;; (let ((lib-stanzas (filter-stanzas :library stanzas)))
+          ;;   (if (not (null? lib-stanzas))
+          ;;       (emit-library-args fs-path lib-stanzas srcfiles out-port)))
 
-            ;; (let ((execs-stanzas (filter-stanzas 'executables stanzas)))
-            ;;   (if (not (null? execs-stanzas))
-            ;;       (emit-executables-args fs-path execs-stanzas srcfiles out-port)
-            ;;         ))
+          ;; (let ((exec-stanzas (filter-stanzas 'executable stanzas)))
+          ;;   (if (not (null? exec-stanzas))
+          ;;       (begin
+          ;;         (emit-executable-args fs-path exec-stanzas srcfiles out-port))))
 
-            )
-          ;; else null :stanzas
-          ;; (begin
-          ;;   (format #t "NULL stanzas: ~A\n" fs-path)
-          ;;   (let* ((build-file (string-append fs-path "/BUILD.bazel"))
-          ;;          (outp
-          ;;           (catch #t
-          ;;                  (lambda ()
-          ;;                    (open-output-file build-file))
-          ;;                  (lambda args
-          ;;                    (apply format #t (cadr args)))
-          ;;                  )))
-          ;;     (starlark-emit-null-stanzas outp fs-path pkg-kv)
-          ;;     (close-output-port outp)))
-          )))
+          ;; (let ((execs-stanzas (filter-stanzas 'executables stanzas)))
+          ;;   (if (not (null? execs-stanzas))
+          ;;       (emit-executables-args fs-path execs-stanzas srcfiles out-port)
+          ;;         ))
 
-(format #t "loaded starlark/conversions.scm\n")
+          )
+        ;; no :dune, emit filegroups
+        (let* ((build-file (string-append pkg-path "/BUILD.bazel"))
+               (outp
+                (catch #t
+                       (lambda ()
+                         (open-output-file build-file))
+                       (lambda args
+                         (format #t "OPEN ERROR"))
+                       )))
+          (format #t "emitting filegroups\n")
+          (starlark-emit-filegroups outp pkg)
+          (close-output-port outp)))))

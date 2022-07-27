@@ -9,19 +9,19 @@
                      (case (car dep)
                        ((::) ;; local files, :foo.txt
                         (map (lambda (d)
-                               (format #f "$(location ~A)" d))
+                               (format #f "$(Location ~A)" d))
                              (cdr dep)))
 
                        ((:_) ;; //pkg:tgt files
                         (map (lambda (d)
-                               (format #f "$(location //~A)" d))
+                               (format #f "$(Location //~A)" d))
                              (cdr dep)))
 
                        (else ;; custom tag
                         (map (lambda (d)
                                ;; FIXME: could contain either :: or :_ files
                                ;; e.g. (:css file_glob(*.css)) => (::css (:: "foo.css"...
-                               (format #f "$(location //~A)" d))
+                               (format #f "$(Location //~A)" d))
                              (cdr dep)))))
                    deps)))
     (apply append args)))
@@ -55,97 +55,71 @@
     (format #t "dep: ~A~%" dep)
     dep))
 
-(define (-derive-cmd pkg-path cmd deps targets)
-  (format #t "~A: ~A~%" (blue "-derive-cmd") cmd)
-  (format #t "targets: ~A~%" targets)
-  (format #t "deps: ~A~%" deps)
-  ;; (format #t "stdout: ~A~%" (assoc-val :stdout cmd))
-
-  ;; ((:cmd (:run (:tool (:pkg :bin) (:tgt ...
-  ;; ((:cmd (:tool cat) (:args ...
-
-  ;; tool: two forms, one for builtin cmd, one for run
-  ;; builtin: (:cmd (:tool cat) ...)
- ;; run: (:cmd (:tool (:pkg :bin) (:tgt foo)) ...)
-
-  (let* ((cmd-alist (cdr cmd))
-         (tool (assoc-val :tool cmd-alist))
-         (_ (format #t "tool: ~A~%" tool))
-         ;; (_ (format #t "tool: ~A~%" (cdr tool)))
-         (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
-         (tool (if (list? (car tool))
-                   ;; (:tool (:pkg x) (:tgt y))
-                   (if (alist? (cdr tool))
-                       (case (caadr tool)
-                         ((::)
-                          )
-                         ((:_)
-                          (let* ((tlist (cdr tool))
-                                 ;; (_ (format #t "tlist ~A~%" tlist))
-                                 (tlist (car tlist))
-                                 ;; (_ (format #t "tlist ~A~%" tlist))
-                                 (t (format #f "~A" (cadr tlist)))
-                                 ;; (_ (format #t "t ~A~%" t))
-                                 (dname (dirname t))
-                                 (bname (basename t)))
-                            ;; (format #t "bname ~A~%" bname)
-                            (format #f "//~A:~A" dname bname)))
-                         (else
-                          ))
-                       (cadr tool))
-                   ;; else (:tool <t>)
-                   (car tool)))
-         ;; (tool (if (member tool shell-tools) ;;FIXME: find better method
-         ;;           tool
-         ;;           (format #f "~A" tool)))
-         (_ (format #t "RESOLVED TOOL: ~A~%" tool))
-         (tool-dep? (if (member tool shell-tools) ;;FIXME: find better method
-                       '() #t))
-         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
-
-        ;; FIXME: shell cmds v. targets that go in tools attr
-
-         ;; FIXME: map dune builtins like 'copy' to shell cmds
-
-         (args (cdr (assoc-val :args (cdr cmd))))
-         (_ (format #t "args: ~A~%" args))
+(define (-resolve-args cmd pkg-path deps outputs)
+  (format #t "~A: ~A~%" (blue "-resolve-args") cmd)
+  (format #t "~A: ~A~%" (yellow "deps") deps)
+  (format #t "~A: ~A~%" (yellow "outputs") outputs)
+  (let* ((-args (assoc-val :args (cdr cmd)))
+         (_ (format #t "args: ~A~%" -args))
          (args
           (map (lambda (arg)
                  (format #t "Arg: ~A~%" arg)
                  (cond
-                  ((symbol? arg) ;; dune 'vars', e.g. (::foo "x" "y"...)
-                   (format #t "SYM: ~A\n" arg)
+
+                  ((equal? arg ::targets) ;; or :targets ??
+                   (format #t "~A: ~A~%" (red "Arg is ::targets") arg)
+                   (let ((outs (-outputs->outs-attr pkg-path outputs)))
+                     (map (lambda (out)
+                            (format #f "$(location ~A)" out))
+                          outs)))
+
+                  ((equal? arg ::deps)
+                   (format #t "~A: ~A~%" (red "Arg is ::deps") arg)
+                   (error 'fixme "unhandled %{deps} arg"))
+
+                  ((keyword? arg)
+                   (format #t "KW: ~A\n" arg)
                    ;; find args in deplist
-                   (if-let ((x (assoc arg deps)))
-                           (map (lambda (a)
-                                  (format #t "in: ~A\n" a)
-                                  (let* ((fname (format #f "~A" a))
-                                         (dname (dirname fname))
-                                         (bname (basename fname)))
-                                    (format #f "$(location ~A)"
-                                            (if (equal dname pkg-path)
-                                                bname fname))))
-                                (cdr x))
-                           (if (equal? arg ::deps)
-                               (-deps-kw->cmd-args deps)
-                               (error 'unmapped-var "unmapped var in cmd"))))
+                   (let ((found
+                          (find-if (lambda (dep)
+                                     (format #t "dep: ~A\n" dep)
+                                     (equal? arg (car dep)))
+                                   deps)))
+                     (if found
+                         (begin
+                           (format #t "~A: ~A~%" (red "FOUND") found)
+                           (let* ((label (cdr found))
+                                  (pkg (assoc-val :pkg label))
+                                  (tgt-tag (caadr label))
+                                  (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
+                                  (tgt (assoc-val tgt-tag label)))
+                             (if (equal? pkg pkg-path)
+                                 (if (eq? tgt-tag :tgts)
+                                     (format #f "$(locations ~A)" tgt)
+                                     (format #f "$(location ~A)" tgt))
+                                 (if (eq? tgt-tag :tgts)
+                                     (format #f "$(locations //~A~A)"
+                                              pkg tgt)
+                                     (format #f "$(location //~A~A)"
+                                             pkg tgt)))))
+                         (error 'fixme "kw arg unresolved"))))
 
                   ((string? arg) ;; e.g. a file literal
-                   (format #t "string\n")
+                   (format #t "arg: string literal\n")
                    ;; how do we know which strings need $(location)?
                    ;; assumption: files must be listed in deps, so any
                    ;; strings we see are just string args
                    (if-let ((x (-arg->dep arg deps)))
-                             ;; (assoc arg deps)))
+                           ;; (assoc arg deps)))
                            (begin
-                                  (format #t "found arg ~A in deps\n" x)
-                                  (let* ((fname (format #f "~A" x))
-                                         (dname (dirname fname))
-                                         (bname (basename fname)))
-                                    (let ((tmp (format #f "$(location ~A)"
-                                            (if (equal dname pkg-path)
-                                                bname fname))))
-                                      tmp)))
+                             (format #t "found arg ~A in deps\n" x)
+                             (let* ((fname (format #f "~A" x))
+                                    (dname (dirname fname))
+                                    (bname (basename fname)))
+                               (let ((tmp (format #f "$(location ~A)"
+                                                  (if (equal dname pkg-path)
+                                                      bname fname))))
+                                 tmp)))
 
                            (begin
                              (format #t "arg not in deps: ~A~%" arg)
@@ -161,9 +135,65 @@
                                         basename a))))
                         (cdr arg)))
 
-                  (else (format #f "FIXME2_~A" arg))))
-               args))
-         (_ (format #t "ARGS: ~A\n" args))
+                  (else
+                   (error 'fixme "unhandled arg"))
+                        ))
+               -args)))
+    (format #t "~A: ~A~%" (red "Args") args)
+    args))
+
+(define (-derive-cmd pkg-path cmd deps targets)
+  (format #t "~A: ~A~%" (blue "-derive-cmd") cmd)
+  (format #t "targets: ~A~%" targets)
+  (format #t "deps: ~A~%" deps)
+  ;; (format #t "stdout: ~A~%" (assoc-val :stdout cmd))
+
+  ;; ((:cmd (:run (:tool (:pkg :bin) (:tgt ...
+  ;; ((:cmd (:tool cat) (:args ...
+
+  ;; tool: two forms, one for builtin cmd, one for run
+  ;; builtin: (:cmd (:tool cat) ...)
+ ;; run: (:cmd (:tool (:pkg :bin) (:tgt foo)) ...)
+
+  (let* ((cmd-alist (cdr cmd))
+         (tool (car (assoc-val :tool cmd-alist)))
+         (_ (format #t "tool: ~A~%" tool))
+         ;; (_ (format #t "tool: ~A~%" (cdr tool)))
+         ;; (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
+         (tool (if (keyword? tool)
+                   (let* ((tool-tlbl (assoc tool deps))
+                          (tool-label (cdr tool-tlbl))
+                          (tool-pkg (assoc-val :pkg tool-label))
+                          (tool-tag (caadr tool-label))
+                          (_ (format #t "~A: ~A~%" (cyan "tool-tag") tool-tag))
+                          (tool-tgt (case tool-tag
+                                      ((:tgt)
+                                       (assoc-val :tgt tool-label))
+                                      ((:tgts)
+                                       (assoc-val :tgts tool-label))
+                                      ((:fg)
+                                       (format #f "*~A*"
+                                       (assoc-val :fg tool-label)))
+                                      (else
+                                       (error 'fixme (format #f "~A: ~A~%" (red "unrecognized tool tag") tool-tag))))))
+                     (format #t "~A: ~A~%" (red "tool-label") tool-label)
+                     (format #t "~A: ~A~%" (red "tool-pkg") tool-pkg)
+                     (format #t "~A: ~A~%" (red "tool-tgt") tool-tgt)
+                     (if (equal? tool-pkg pkg-path)
+                         (format #f "~A" tool-tgt)
+                         (format #f "//~A:~A" tool-pkg tool-tgt)))
+                   (error 'fixme "tool not kw")))
+         (_ (format #t "RESOLVED TOOL: ~A~%" tool))
+         (tool-dep? (if (member tool shell-tools) ;;FIXME: find better method
+                       '() #t))
+         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
+
+        ;; FIXME: shell cmds v. targets that go in tools attr
+
+         ;; FIXME: map dune builtins like 'copy' to shell cmds
+
+         (args (-resolve-args cmd pkg-path deps targets))
+         (_ (format #t "~A: ~A~%" (red "RESOLVED ARGS") args))
          ;; args may mix strings and lists of strings
          (args (fold (lambda (src accum)
                        (if (string? src) (append accum (list src))
@@ -174,55 +204,28 @@
          (_ (format #t "args: ~A~%" args))
          ;; (args (format #f "~A" args))
          )
-    (format #t "tool-dep? ~A" tool-dep?)
-    (format #t "tool ~A" tool)
-    (format #t "args ~A" args)
+    (format #t "TOol-dep? ~A~%" tool-dep?)
+    (format #t "TOol ~A~%" tool)
+    (format #t "ARgs ~A~%" args)
     (values tool-dep? tool args)))
 
-(define (-targets->outs pkg-path targets)
-  (format #t "~A: ~A\n" (blue "-targets->outs") targets)
-  (let* ((outs (map (lambda (src)
-                      (format #t "src: ~A\n" src)
-                      (case (car src)
-
-                        ((::) ;; pkg-local files
-                         (map (lambda (srcfile)
-                                (format #t "srcfile: ~A~%" srcfile)
-                                (let ((dname (dirname srcfile))
-                                      (bname (basename srcfile)))
-                                  ;; (-pkg-path
-                                  ;;      (car (assoc-val :pkg src-alist))))
-                                  (format #f "~A"
-                                          (if (equal dname pkg-path)
-                                              bname srcfile))))
-                              ;; (car
-                              ;;  (assoc-val :file srcfile)))))
-                              (cdr src)))
-
-                        ((:_) ;; non-local, not-tagged
-                         ;; e.g. (:_ "foo/bar/a.txt" "foo/bar/b.txt" ...)
-                         (map (lambda (srcfile)
-                                (format #t "srcfile: ~A~%" srcfile)
-                                (let ((dname (dirname srcfile))
-                                      (bname (basename srcfile)))
-                                  ;; (-pkg-path
-                                  ;;      (car (assoc-val :pkg src-alist))))
-                                  (format #f "~A"
-                                          (if (equal dname pkg-path)
-                                              bname srcfile))))
-                              ;; (car
-                              ;;  (assoc-val :file srcfile)))))
-                              (cdr src)))
-
-                         ;; else tagged (:foo . "foo.txt")
-                         (else
-                          (format #f "~A"
-                                  (let* ((srcfile (cdr src))
-                                         (dname (dirname srcfile))
-                                         (bname (basename srcfile)))
-                                    (if (equal dname pkg-path)
-                                        bname srcfile))))))
-                    targets))
+(define (-outputs->outs-attr pkg-path outputs)
+  (format #t "~A: ~A\n" (blue "-outputs->outs-attr") outputs)
+  (let* ((outs (map (lambda (out-tlbl)
+                      (format #t "out-tlbl: ~A\n" out-tlbl)
+                      (let* ((tag (car out-tlbl))
+                             (_ (format #t "~A: ~A~%" (yellow "tag") tag))
+                             (label (cdr out-tlbl))
+                             (_ (format #t "~A: ~A~%" (yellow "label") label))
+                             (pkg (assoc-val :pkg label))
+                             (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
+                             (tgt (assoc-val :tgt label))
+                             (_ (format #t "~A: ~A~%" (yellow "tgt") tgt)))
+                        (if (equal? pkg pkg-path)
+                            tgt
+                            ;; should not happen?
+                            (format #f "~A:~A" pkg tgt))))
+                        outputs))
          (outs (fold (lambda (src accum)
                        (if (string? src) (append accum (list src))
                            (append accum src)))
@@ -257,15 +260,15 @@
          (_ (format #t "action: ~A~%" action))
          (deps (assoc-val :deps stanza))
          (_ (format #t "~A: ~A~%" (cyan "deps") deps))
-         (srcs (-deps->srcs-attr pkg-path deps))
+         (srcs (deps->srcs-attr pkg-path deps))
          (_ (format #t "~A: ~A~%" (cyan "srcs") srcs))
 
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
-         (targets (assoc-val :targets stanza))
-         (_ (format #t "targets: ~A~%" targets))
-         (outs (-targets->outs pkg-path targets))
+         (outputs (assoc-val :outputs stanza))
+         (_ (format #t "outputs: ~A~%" outputs))
+         (outs (-outputs->outs-attr pkg-path outputs))
 
          (name (format #f "__~A__"
                        (outs 0))))
@@ -299,6 +302,7 @@
                     (format outp "genrule(\n")
                     (format outp "    name  = \"~A\",\n" name)
 
+                    (format #t "~A: ~A~%" (red "SrcS") srcs)
                     (format outp "    srcs  = [\n")
                     (format outp "~{        \"~A\"~^,\n~}\n" srcs)
                     (format outp "    ],\n")
@@ -311,22 +315,23 @@
                     (format outp "    cmd   = \" \".join([\n")
                     (for-each
                      (lambda (cmd)
-                       (format #t "processing cmd: ~A~%" cmd)
+                       (format #t "PROCESSING cmd: ~A~%" cmd)
                        (if (eq? :cmd (car cmd))
                            (let-values
-                               (((tool-dep? tool args)
-                                 (-derive-cmd pkg-path cmd deps targets)))
+                               (((tool-dep? tool xargs)
+                                 (-derive-cmd pkg-path cmd deps outputs)))
                              ;; (format #t "~A:\n" (red "derived cmd"))
                              (format #t "  tool-dep?: ~A~%" tool-dep?)
                              (format #t "  tool: ~A~%" tool)
-                             (format #t "  args: ~A~%" args)
+                             (format #t "~A: ~A~%" (red "ARGSARGS") xargs)
 
                              (if (not (null? tool-dep?))
+                                 ;; HACK: $(location ...)
                                  (format outp "        \"$(location ~A)\",\n" tool)
                                  (format outp "        \"~A\",\n" tool))
-                             (format outp "~{        \"~A\"~^,\n~}\n" args))
+                             (format outp "~{        \"~A\"~^,\n~}\n" xargs))
                            ;; else
-                           ;;(error 'missing-cmd "command w/o :cmd")
+                           (error 'missing-cmd "command w/o :cmd")
                            ))
                      ;; if :stdout, add "> $@"
                      action)
@@ -335,21 +340,66 @@
                     (format outp "    tools = [\n")
                     (for-each ;; fixme: don't iterate this twice
                      (lambda (cmd)
-                       (format #t "Processing cmd: ~A~%" cmd)
+                       (format #t "Processing Cmd: ~A~%" cmd)
                        (let-values
                            (((tool-dep? tool args)
-                             (-derive-cmd pkg-path cmd deps targets)))
+                             (-derive-cmd pkg-path cmd deps outputs)))
+                         (format #t "  Tool-Dep?: ~A~%" tool-dep?)
+                         (format #t "  TooL: ~A~%" tool)
+                         (format #t "  ArgS: ~A~%" args)
+
                          (if (not (null? tool-dep?))
                              (begin
                                (format outp "~{        \"~A\"~^,\n~}\n"
                                        (list tool)) ;;FIXME: support multiple tools
                                ))))
                      action)
-                    (format outp "    ]\n")))
+                    (format outp "    ]\n")
+                    (format outp ")\n"))
+                    )))
+            ))
 
-                    (format outp ")\n")
-                    )
-            )))
+(define (starlark-emit-write-file-target outp stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-write-file-target") stanza)
+  (let* ((output (assoc-val :outputs (cdr stanza)))
+        (_ (format #t "~A: ~A~%" (yellow "output") output))
+        (pkg-tgt (cdar output))
+        (_ (format #t "~A: ~A~%" (yellow "pkg-tgt") pkg-tgt))
+        (pkg (assoc-val :pkg pkg-tgt))
+        (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
+        (tgt (assoc-val :tgt pkg-tgt))
+        (_ (format #t "~A: ~A~%" (yellow "tgt") tgt))
+        (out  (format #f "~A" tgt))
+        (name (format #f "__~A__" tgt))
+        (args (assoc-in '(:actions :cmd :args) (cdr stanza)))
+        (_ (format #t "~A: ~A~%" (yellow "args") args))
+        (content (cadr (find-if (lambda (arg)
+                            ;; (format #t "~A: ~A~%" (yellow "arg") arg)
+                            (if (list? arg)
+                                (equal? (car arg) :content)
+                               #f))
+                          (cdr args)))))
+
+    (format outp "###########\n")
+    (format outp "write_file(\n")
+    (format outp "    name     = \"~A\",\n" name)
+    (format outp "    out      = \"~A\",\n" out)
+    (format outp "    content  = [\"\"\"")
+    (format outp "~A" content)
+    (format outp "\"\"\"]")
+    (format outp ")")
+    (newline outp)
+    (newline outp)
+
+    ;; debugging
+    ;; (if (list? stanza)
+    ;;     (begin
+    ;;       (format outp "## (\n")
+    ;;       (for-each (lambda (sexp)
+    ;;                   (format outp "##   ~A\n" sexp))
+    ;;                 stanza)
+    ;;       (format outp "## )\n")))
+    ))
 
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
@@ -360,7 +410,7 @@
               (let* ((tool (assoc-val :tool (cdr cmd)))
                      (_ (format #t "tool: ~A~%" tool)))
                 (case (car tool)
-                  ((:skylib-write-file) (starlark-emit-skylib-write-file outp cmd stanza))
+                  ((:write-file) (starlark-emit-skylib-write-file outp cmd stanza))
                   (else
                    (starlark-emit-genrule outp pkg-path stanza)))))
             (assoc-val :actions stanza)))
@@ -374,6 +424,7 @@
   (let ((flag #t)
         (pkg-path (car (assoc-val :pkg-path pkg))))
     (for-each (lambda (stanza)
+                (format #t "stanza tag ~A\n" (car stanza))
                 (format #t "ACTION: ~A\n" (assoc :actions (cdr stanza)))
                 (case (car stanza)
                   ((:rule :genrule :with-stdout-to :write-file)
@@ -397,7 +448,7 @@
                        ;; else FIXME: deal with universe stuff
                        ))
                   ((:write-file)
-                   (starlark-emit-write-file-target outp (cdr stanza)))
+                   (starlark-emit-write-file-target outp stanza))
                   (else
                    ;; skip
                    )))
