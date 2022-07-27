@@ -1,0 +1,87 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+cc_binary(
+    name  = "batch",
+    linkstatic = True,
+    srcs  = [
+        "batch.c", "batch.h",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/obazl/batch",
+        "-I$(GENDIR)/external/obazl/batch",
+        # "-I$(GENDIR)/src",
+
+        # "-I$(GENDIR)/external/mibl/batch",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-Iexternal/uthash/include",
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        "-Iexternal/libs7/src",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+        # "-lc_s7"
+    ],
+    data = [
+        "//obazl:srcs",
+        "//obazl/starlark:srcs"
+        # "//mibl:srcs",
+        # "//mibl/dune:srcs",
+        # "//mibl/meta:srcs",
+        # "//mibl/opam:srcs",
+    ],
+    deps = [
+        "@mibl//src:mibl",
+        "@mibl//external/libinih:inih",
+        "@logc//:logc",
+        # "//external/libinih:inih",
+        # "@libs7//src:s7",
+        # "@libs7//src:c_s7",
+        # "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "batch.c",
+    ],
+    outs = [
+        "batch.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location batch.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location @makeheaders//:makeheaders) \\",
+        "    $(location batch.c);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["@makeheaders//:makeheaders"],
+    visibility = ["//visibility:public"]
+)
