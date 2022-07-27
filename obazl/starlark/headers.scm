@@ -1,7 +1,7 @@
 (format #t "loading starlark/headers.scm\n")
 
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
-  (format #t "starlark-emit-buildfile-hdr: ~A\n" obazl-rules)
+  (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules)
 
   (if (member :write-file obazl-rules)
       (begin

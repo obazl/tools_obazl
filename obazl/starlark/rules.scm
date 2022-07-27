@@ -233,22 +233,6 @@
     (format #t "OUTS: ~A\n" outs)
     outs))
 
-(define (starlark-emit-skylib-write-file outp cmd stanza)
-  (format #t "~A: ~A\n" (blue "starlark-emit-skylib-write-file") cmd)
-  (let* ((outfile (if-let ((tgts (assoc-in '(:args :_) (cdr cmd))))
-                          (cadr tgts) "foo"))
-         (_ (format #t "outfile: ~A~%" outfile))
-
-         (content (assoc-in '(:actions :cmd :args :content) stanza))
-         (_ (format #t "~A: ~A~%" (green "content") content)))
-
-      (format outp "###########\n")
-      (format outp "write_file(\n")
-      (format outp "    out     = \"~A\",\n" outfile)
-      (format outp "    content = [\"~A\"],\n" (cadr content))
-      (format outp "    name    = \"__~A__\"\n" outfile)
-      (format outp ")\n")))
-
 ;; FIXME: account for :ctx, which is derived from (chdir ...) in dune
 ;; the target should be written to the :ctx dir?
 ;; but then what if multiple rules chdir to same dir? e.g. %{workspace_root}
@@ -276,7 +260,7 @@
     ;; progn: list of actions.
     (for-each
      (lambda (cmd)
-       (format #t "ACTION: ~A~%" cmd))
+       (format #t "GENRULE ACTION: ~A~%" cmd))
      action)
 
     (if-let ((ctx (assoc-in '(:actions :ctx) stanza)))
@@ -359,6 +343,36 @@
                     )))
             ))
 
+(define (starlark-emit-skylib-write-file outp cmd pkg-path stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-skylib-write-file") cmd)
+  (let* ((args (assoc :args (cdr cmd)))
+         (_ (format #t "~A: ~A~%" (yellow "args") args))
+         (out-tag (cadr args))
+         (_ (format #t "~A: ~A~%" (yellow "out-tag") out-tag))
+         (outputs (assoc :outputs (cdr stanza)))
+         (_ (format #t "~A: ~A~%" (yellow "outputs") outputs))
+         (tfql (assoc out-tag (cdr outputs)))
+         (_ (format #t "~A: ~A~%" (yellow "tfql") tfql))
+         (out-pkg (assoc-val :pkg (cdr tfql)))
+         (_ (format #t "~A: ~A~%" (yellow "out-pkg") out-pkg))
+         (out-tgt (assoc-val :tgt (cdr tfql)))
+         (_ (format #t "~A: ~A~%" (yellow "out-tgt") out-tgt))
+
+         (outfile (if (equal? out-pkg pkg-path)
+                      out-tgt (format #f "~A/~A" out-pkg out-tgt)))
+         (_ (format #t "~A: ~A~%" (yellow "outfile") outfile))
+
+         (content (last (last args))) ;; (assoc '(:content) (cddr args)))
+         (_ (format #t "~A: ~A~%" (green "content") content)))
+
+      (format outp "###########\n")
+      (format outp "write_file(\n")
+      (format outp "    out     = \"~A\",\n" outfile)
+      (format outp "    content = [\"~A\"],\n" content)
+      (format outp "    name    = \"__~A__\"\n" outfile)
+      (format outp ")\n")))
+
+
 (define (starlark-emit-write-file-target outp stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-write-file-target") stanza)
   (let* ((output (assoc-val :outputs (cdr stanza)))
@@ -382,11 +396,11 @@
 
     (format outp "###########\n")
     (format outp "write_file(\n")
-    (format outp "    name     = \"~A\",\n" name)
     (format outp "    out      = \"~A\",\n" out)
     (format outp "    content  = [\"\"\"")
     (format outp "~A" content)
-    (format outp "\"\"\"]")
+    (format outp "\"\"\"],~%")
+    (format outp "    name     = \"~A\"\n" name)
     (format outp ")")
     (newline outp)
     (newline outp)
@@ -410,7 +424,8 @@
               (let* ((tool (assoc-val :tool (cdr cmd)))
                      (_ (format #t "tool: ~A~%" tool)))
                 (case (car tool)
-                  ((:write-file) (starlark-emit-skylib-write-file outp cmd stanza))
+                  ((:write-file)
+                   (starlark-emit-write-file-target outp stanza))
                   (else
                    (starlark-emit-genrule outp pkg-path stanza)))))
             (assoc-val :actions stanza)))
@@ -425,7 +440,7 @@
         (pkg-path (car (assoc-val :pkg-path pkg))))
     (for-each (lambda (stanza)
                 (format #t "stanza tag ~A\n" (car stanza))
-                (format #t "ACTION: ~A\n" (assoc :actions (cdr stanza)))
+                (format #t "RULE ACTION: ~A\n" (assoc :actions (cdr stanza)))
                 (case (car stanza)
                   ((:rule :genrule :with-stdout-to :write-file)
                    (if flag
@@ -437,18 +452,31 @@
 
                 (case (car stanza)
                   ((:rule)
-                   (starlark-emit-rule-target outp pkg-path (cdr stanza)))
+                   (let* ((actions (assoc :actions (cdr stanza)))
+                          (cmd-list (assoc-in* '(:actions :cmd) (cdr stanza)))
+                          (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
+                          (cmd-ct (length cmd-list)))
+                     (if (> cmd-ct 1)
+                         (for-each (lambda (cmd)
+                                     (format #t "~A: ~A~%" (red "cmd") cmd)
+                                     (let ((tool (car (assoc-val :tool (cdr cmd)))))
+                                       (case tool
+                                         ((:write-file)
+                                          (starlark-emit-skylib-write-file outp cmd pkg-path stanza))
+                                         (else
+                                          (starlark-emit-rule-target outp pkg-path (cdr stanza))))))
+                                   cmd-list)
+                         (starlark-emit-rule-target outp pkg-path (cdr stanza)))))
+
+                  ((:write-file)
+                   (starlark-emit-write-file-target outp stanza))
                   ;;FIXME the rest are obsolete
-                  ((:run-cmd)
-                   (starlark-emit-run-cmd-target outp fs-path (cdr stanza)))
                   ((:with-stdout-to)
                    (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
                        (starlark-emit-with-stdout-to-target outp fs-path
                                                             (cdr stanza))
                        ;; else FIXME: deal with universe stuff
                        ))
-                  ((:write-file)
-                   (starlark-emit-write-file-target outp stanza))
                   (else
                    ;; skip
                    )))
