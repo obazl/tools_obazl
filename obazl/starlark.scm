@@ -11,5 +11,6 @@
 (load "starlark/emit.scm")
 (load "starlark/attributes.scm")
 (load "starlark/filegroups.scm")
+(load "starlark/tests.scm")
 
 (format #t "loaded obazl/starlark.scm\n")

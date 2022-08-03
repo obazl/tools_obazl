@@ -49,7 +49,7 @@
                 )
 
               )))
-       ((:executable)
+       ((:executable :test)
         (format #t "exec globals\n")
         (let* ((libname (string-upcase
                          ;; privname or pubname?
@@ -118,31 +118,34 @@
                                 (_ (format #t "~A: ~A~%" (yellow "dune-rule") dune-rule))
                                 (rule (case dune-rule
                                         ((:rule)
-                                          (let* ((actions (assoc :actions stanza-alist))
-                                                 (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
-                                                 (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
-                                                 (cmd-ct (length cmd-list)))
-                                            (if (> cmd-ct 1)
-                                                (fold (lambda (cmd accum)
-                                                        (format #t "~A: ~A~%" (red "cmd") cmd)
-                                                        (let ((tool (car (assoc-val :tool (cdr cmd)))))
-                                                          (case tool
-                                                            ((:write-file)
-                                                             (if (member :write-file accum)
-                                                                 accum (cons :write-file accum)))
-                                                            (else accum))))
-                                                      '() cmd-list)
-                                                dune-rule)))
+                                         (let* ((actions (assoc :actions stanza-alist))
+                                                (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
+                                                (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
+                                                (cmd-ct (length cmd-list)))
+                                           (if (> cmd-ct 1)
+                                               (fold (lambda (cmd accum)
+                                                       (format #t "~A: ~A~%" (red "cmd") cmd)
+                                                       (let ((tool (car (assoc-val :tool (cdr cmd)))))
+                                                         (case tool
+                                                           ((:write-file)
+                                                            (if (member :write-file accum)
+                                                                accum (cons :write-file accum)))
+                                                           (else accum))))
+                                                     '() cmd-list)
+                                               (list dune-rule))))
                                         ((:write-file) (cons :write-file accum))
                                         (else
-                                          dune-rule)))
+                                         (list dune-rule))))
                                 (accum (if rule (append rule accum) accum))
-                               ;; (accum (if (assoc :namespaced s-alist)
-                               ;;            (cons :namespaced accum)
-                               ;;            accum))
-                               )
-                          accum))
-                      '() stanzas)))
+                                ;; (accum (if (assoc :namespaced s-alist)
+                                ;;            (cons :namespaced accum)
+                                ;;            accum))
+                                (accum (if (assoc :ppx stanza-alist)
+                                           (cons :ppx accum)
+                                           accum))
+                                )
+                           accum))
+                       '() stanzas)))
     (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
            (rules (if (assoc :structures pkg) (cons :module rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules)))
@@ -185,12 +188,15 @@
           ;; (starlark-emit-singleton-targets outp pkg-path stanzas
           ;;                                  (cdr pkg-kv))
 
+          (format #t "emitting test targets\n")
+          (starlark-emit-test-targets outp pkg)
+
           ;; (format #t "emitting file generators\n")
           ;; ocamllex, ocamlyacc, etc.
           ;; (starlark-emit-file-generators outp fs-path stanzas)
 
-          ;; (format #t "emitting ppxes\n")
-          ;; (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
+          (format #t "emitting ppxes\n")
+          (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
 
           (format #t "emitting rules\n")
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)

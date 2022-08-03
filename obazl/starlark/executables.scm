@@ -3,8 +3,9 @@
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
 
-(define (starlark-emit-executable-target outp pkg stanza)
+(define (starlark-emit-executable-target outp kind pkg stanza)
   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza)
+  (format #t "~A: ~A~%" (blue "kind") kind)
   (let* ((stanza-alist (cdr stanza))
          (privname (assoc-val :privname stanza-alist))
          ;; (mainname (normalize-module-name privname))
@@ -78,12 +79,19 @@
 
       (begin
         (format outp "#############\n")
-        (format outp "ocaml_binary(\n")
+        (case kind
+          ((:executable) (format outp "ocaml_binary(\n"))
+          ((:test) (format outp "ocaml_test(\n"))
+          (else (error 'fixme "unexpected kind for executable")))
         (format outp "    name     = \"~A\",\n" tgtname)
-        ;; attr 'exe': string name of outfile excluding extension,
-        ;; not a dependency
-        (format outp "    exe      = \"~A\",\n" exename)
-        ;; (format outp "    main    = \":~A\",\n" mainname)
+
+        (if (eq? kind :executable)
+            (begin
+              ;; attr 'exe': string name of outfile excluding extension,
+              ;; not a dependency
+              (format outp "    exe      = \"~A\",\n" exename)
+              ;; (format outp "    main    = \":~A\",\n" mainname)
+              ))
 
         (if (not (null? link-opts))
             (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
@@ -92,7 +100,7 @@
             (format outp "    main     = \"~A\",\n" main))
 
         (if (not (null? manifest))
-            (format outp "    manifest = [~{\":~A\"~^, ~}]\n\n" manifest))
+            (format outp "    manifest = [~{\":~A\"~^, ~}],\n" manifest))
 
             ;; (begin
             ;;   ;; (format #t "MODDEPS: ~A\n" modules)
@@ -123,7 +131,13 @@
         (format outp ")\n")
         (newline outp)
         ;;(format outp "#############################\n")
-        ))))
+        ))
+    ;; now emit modules for compilation
+    ;; (if pkg-modules (-emit-modules outp pkg pkg-modules))
+    ;; (if (or sigs *build-dyads*)
+    ;;     (-emit-signatures outp pkg sigs pkg-modules))
+    ;; (starlark-emit-singleton-targets outp pkg)
+    ))
 
 (define (starlark-emit-executable-targets outp pkg) ;;fs-path stanzas)
   (format #t "~A\n" (blue "starlark-emit-executable-targets"))
@@ -139,7 +153,7 @@
                          (format outp "##############################\n")
                          (format outp "####  Executable Targets  ####\n")
                          (set! flag #f)))
-                   (starlark-emit-executable-target outp pkg stanza))
+                   (starlark-emit-executable-target outp :executable pkg stanza))
 
                   ((:executables)
                    (error 'bad-arg "unexpected :executables stanza")

@@ -13,7 +13,8 @@
                                 :library
                                 :ns-archive
                                 :ns-library
-                                :executable)))
+                                :executable
+                                :test)))
                obazl-rules)
       (begin
         (format #t "writing buildfile header\n")
@@ -61,7 +62,8 @@
             (format outp "     \"ocaml_module\",\n"))
 
         (if (member :sig obazl-rules)
-            (format outp "     \"ocaml_signature\",\n"))
+            (if *build-dyads*
+                (format outp "     \"ocaml_signature\",\n")))
 
         ;; (if (pkg-has-archive? obazl-rules)
         ;;     (if (pkg-namespaced? obazl-rules)
@@ -71,15 +73,18 @@
         ;; (if (pkg-has-signature? obazl-rules)
         ;;     (format outp "     \"ocaml_signature\",\n"))
 
+        (if (member :test obazl-rules)
+            (format outp "     \"ocaml_test\",\n"))
+
+
+        (if (member :ppx obazl-rules)
+            (format outp "     \"ppx_executable\",\n"))
+
+
         (format outp ")\n")
 
         (newline outp)
 
-        (format outp "package(default_visibility = [\"//visibility:public\"])\n")
-
-        (newline outp)
-
-        ;; (format outp "#############################\n")
         ))
 
   (format outp "package(default_visibility = [\"//visibility:public\"])\n")

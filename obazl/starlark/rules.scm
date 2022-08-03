@@ -426,6 +426,11 @@
                 (case (car tool)
                   ((:write-file)
                    (starlark-emit-write-file-target outp stanza))
+                  ((:cat)
+                   (error 'fixme "IMPLEMENT :cat"))
+                  ((:copy)
+                   (error 'fixme "IMPLEMENT :copy"))
+                  ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
                   (else
                    (starlark-emit-genrule outp pkg-path stanza)))))
             (assoc-val :actions stanza)))

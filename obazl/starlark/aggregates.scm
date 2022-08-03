@@ -110,9 +110,9 @@
     (case kind
       ((:ns-archive :ns-library)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind pubname submodules flags)
+           (-emit-topdown-aggregate outp kind privname submodules flags)
            ;; aggregated bottomup, needs archive or lib w/o ns
-           (-emit-bottomup-aggregate outp kind ns pubname submodules flags)))
+           (-emit-bottomup-aggregate outp kind ns privname submodules flags)))
 
       ((:archive :library)
        (begin
@@ -121,7 +121,7 @@
          (if (eq? kind :library)
              (format outp "ocaml_library(\n")
              (format outp "ocaml_archive(\n"))
-         (format outp "    name     = \"~A\",\n" pubname)
+         (format outp "    name     = \"~A\",\n" privname)
          (format outp "    manifest = [~{\":~A\"~^, ~}],\n" submodules)
          (format outp ")\n\n")))
 

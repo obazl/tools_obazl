@@ -49,8 +49,29 @@
          (ns (assoc-val :ns stanza-alist))
          (_ (format #t "em ns: ~A~%" ns))
 
-         (deps (assoc-val :deps stanza-alist))
-         (_ (format #t "deps: ~A~%" deps))
+         (agg-deps (if-let ((deps (assoc-val :deps stanza-alist)))
+                       deps
+                       ;; else :executable or :test
+                       ;; FIXME: should not be any deps in :compile ?
+                       (if-let ((deps (assoc-in '(:compile :deps)
+                                                stanza-alist)))
+                               deps
+                               '())))
+         (_ (format #t "agg-deps: ~A~%" agg-deps))
+
+         (local-deps (if (proper-list? module)
+                         (if (alist? (cdr module))
+                             ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...))
+                             (if-let ((locals (assoc :ml-deps (cdr module))))
+                                     (cdr locals)
+                                     '())
+                             ;; else (A a.ml Foo Bar ...)
+                             (cdr module))
+                         ;; else (A . a.ml) from :structures
+                         ;; should not happen?
+                         (cdr module)))
+
+         (_ (format #t "~A: ~A~%" (red "local-deps") local-deps))
 
          (opts (if-let ((opts (assoc-val :opts stanza-alist)))
                        ;; aggregate
@@ -89,92 +110,112 @@
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
 
-    (if (proper-list? module) ;; (A (:ml a.ml)(:mli a.mli)), from :modules
-        (let* ((modname (car module))
-               (srcs    (cdr module))
-               (select-sigfile (assoc-val :mli_ srcs))
-               (sigfile (if select-sigfile
-                            (make-selector module stanza)
-                            (assoc-val :mli srcs)))
+    (if (proper-list? module)
+        (if (alist? (cdr module)) ;; :modules (A (:ml a.ml)(:mli a.mli))
+            (let* ((_ (format #t "~A~%" (red "proper, alist")))
+                   (modname (car module))
+                   (srcs    (cdr module))
+                   (select-sigfile (assoc-val :mli_ srcs))
+                   (sigfile (if select-sigfile
+                                (make-selector module stanza)
+                                (assoc-val :mli srcs)))
 
-               (select-structfile (assoc-val :ml_ srcs))
-               (structfile (if select-structfile
-                            (make-selector module stanza)
-                            (assoc-val :ml srcs))))
+                   (select-structfile (assoc-val :ml_ srcs))
+                   (structfile (if select-structfile
+                                   (make-selector module stanza)
+                                   (assoc-val :ml srcs))))
 
-          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-  ;;         ;;               (cdr opts) '())))
-          (format #t "emitting module: ~A: ~A\n" modname srcs)
+              ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+              ;;         ;;               (cdr opts) '())))
+              (format #t "emitting module: ~A: ~A\n" modname srcs)
 
-          (format outp "ocaml_module(\n")
-          (format outp "    name          = \"~A\",\n" modname)
-          (if (and ns (not *ns-topdown*))
-              (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+              (format outp "ocaml_module(\n")
+              (format outp "    name          = \"~A\",\n" modname)
+              (if (and ns (not *ns-topdown*))
+                  (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
 
-          (if (or select-structfile select-sigfile)
-          (format outp "    module        = \"~A\",\n" modname))
+              (if (or select-structfile select-sigfile)
+                  (format outp "    module        = \"~A\",\n" modname))
 
-          (if select-structfile
-              (begin
-                (format outp "    struct        = select(~%")
-                (format outp "        {~%")
-                (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
-                (format outp "        },~%")
-                (format outp "        no_match_error=\"no file selected\"),\n")
-                )
-              (begin
-                (format outp "    struct        = \"~A\",\n" structfile)
-                ))
-
-          (if *build-dyads*
-              (format outp "    sig           = \":~A.cmi\",\n" modname)
-              ;; else
-              (if select-sigfile
+              (if select-structfile
                   (begin
-                    (format outp "    sig           = select(~%")
+                    (format outp "    struct        = select(~%")
                     (format outp "        {~%")
-                    (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
+                    (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
                     (format outp "        },~%")
                     (format outp "        no_match_error=\"no file selected\"),\n")
                     )
-                  ;; else
                   (begin
-                    (format outp "    sig           = \"~A\",\n" sigfile)
-                    )))
+                    (format outp "    struct        = \"~A\",\n" structfile)
+                    ))
 
-          ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-          (if (not (null? opts))
-              (format outp "    opts          = ~A_OPTS,\n" libname))
+              (if *build-dyads*
+                  (format outp "    sig           = \":~A.cmi\",\n" modname)
+                  ;; else
+                  (if select-sigfile
+                      (begin
+                        (format outp "    sig           = select(~%")
+                        (format outp "        {~%")
+                        (format outp "~{~{~8T~S: \"~S\",~%~}~}" sigfile)
+                        (format outp "        },~%")
+                        (format outp "        no_match_error=\"no file selected\"),\n")
+                        )
+                      ;; else
+                      (begin
+                        (format outp "    sig           = \"~A\",\n" sigfile)
+                        )))
 
-          (if (not (null? ocamlc_opts))
-              (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
-                      libname))
+              ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
+              (if (not (null? opts))
+                  (format outp "    opts          = ~A_OPTS,\n" libname))
 
-          (if (not (null? ocamlopt_opts))
-              (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
-                      libname))
+              (if (not (null? ocamlc_opts))
+                  (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+                          libname))
 
-          (if (not (null? deps))
-              (format outp "    deps          = ~A_DEPS,\n" libname))
+              (if (not (null? ocamlopt_opts))
+                  (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
+                          libname))
 
-          (if ppx-alist
-              (begin
-                (format outp
-                       "    ppx           = \":~A\",\n" ppx-name)
-                        ;; (cadr (assoc :name ppx-alist)))
-                (if (not
-                     (equal? :all (cadr (assoc :scope
-                                               ppx-alist))))
+              ;; (if (not (null? agg-deps))
+              ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
+               (format #t "~A: ~A~%" (red "local-deps") local-deps)
+               (if (not (null? local-deps))
+                   (if (not (null? agg-deps))
+                       (begin
+                         (format outp "    deps          = ~A_DEPS + [\n" libname)
+                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                         (format outp "    ],\n"))
+                       (begin
+                         (format outp "    deps          = [\n" libname)
+                         (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+                         (format outp "    ],\n")))
+
+                   (if (not (null? agg-deps))
+                         (format outp "    deps          = ~A_DEPS,\n" libname)))
+
+              ;; (if (not (null? local-deps))
+              ;;     (format outp "    local-deps          = ~A,\n" local-deps))
+
+              (if ppx-alist
+                  (begin
                     (format outp
-                            "    ppx_args = [~{~S, ~}],\n"
-                            (cadr (assoc :args ppx-alist))))))
-          (format outp ")\n")
-
-          )
-        ;; else (M . ml) from :structures
-        (let* ((modname (car module))
-               (structfile (cdr module)))
-
+                            "    ppx           = \":~A\",\n" ppx-name)
+                    ;; (cadr (assoc :name ppx-alist)))
+                    (if (not
+                         (equal? :all (cadr (assoc :scope
+                                                   ppx-alist))))
+                        (format outp
+                                "    ppx_args = [~{~S, ~}],\n"
+                                (cadr (assoc :args ppx-alist))))))
+              (format outp ")\n")
+              )
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ;; pkg dep: (Mytest mytest.ml Hello)
+            (let* ((_ (format #t "~A~%" (red "proper, non-alist")))
+                   (modname (car module))
+                   (structfile (cadr module))
+                   (local-deps (cddr module)))
                ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
                ;;               (cdr opts) '())))
                (format #t "Emitting module: ~A\n" modname)
@@ -196,8 +237,20 @@
                    (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                            libname))
 
-               (if (not (null? deps))
-                   (format outp "    deps          = ~A_DEPS,\n" libname))
+               (format #t "~A: ~A~%" (red "local-deps") local-deps)
+               (if (not (null? local-deps))
+                   (if (not (null? agg-deps))
+                       (begin
+                         (format outp "    deps          = ~A_DEPS + [\n" libname)
+                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                         (format outp "    ],\n"))
+                       (begin
+                         (format outp "    deps          = [\n" libname)
+                         (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+                         (format outp "    ],\n")))
+
+                   (if (not (null? agg-deps))
+                         (format outp "    deps          = ~A_DEPS,\n" libname)))
 
                (if ppx-alist
                    (begin
@@ -211,7 +264,61 @@
                                  (cadr (assoc :args ppx-alist))))))
 
                (format outp ")\n")
-               ) ;; let*
+               ))
+        ;; else (M . ml) from :structures
+        (let* ((_ (format #t "~A~%" (red "improper")))
+               (modname (car module))
+               (structfile (cdr module))
+               (local-deps '()))
+          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+          ;;               (cdr opts) '())))
+          (format #t "Emitting module: ~A\n" modname)
+
+          (format outp "ocaml_module(\n")
+          (format outp "    name          = \"~A\",\n" modname)
+          (if (and ns (not *ns-topdown*))
+              (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+          (format outp "    struct        = \"~A\",\n" structfile)
+
+          (if (not (null? opts))
+              (format outp "    opts          = ~A_OPTS,\n" libname))
+
+          (if (not (null? ocamlc_opts))
+              (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+                      libname))
+
+          (if (not (null? ocamlopt_opts))
+              (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
+                      libname))
+
+          (format #t "~A: ~A~%" (red "local-deps") local-deps)
+          (if (not (null? local-deps))
+              (if (not (null? agg-deps))
+                  (begin
+                    (format outp "    deps          = ~A_DEPS + [\n" libname)
+                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+                    (format outp "    ],\n"))
+                  (begin
+                    (format outp "    deps          = [\n" libname)
+                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+                    (format outp "    ],\n")))
+
+              (if (not (null? agg-deps))
+                  (format outp "    deps          = ~A_DEPS,\n" libname)))
+
+          (if ppx-alist
+              (begin
+                (format outp
+                        "    ppx           = \":~A\",\n" ppx-name)
+                (if (not
+                     (equal? :all (cadr (assoc :scope
+                                               ppx-alist))))
+                    (format outp
+                            "    ppx_args = [~{~S, ~}],\n"
+                            (cadr (assoc :args ppx-alist))))))
+
+          (format outp ")\n")
+          ) ;; let*
         ))
   stanza)
 
@@ -220,7 +327,7 @@
 
   (for-each
    (lambda (module)
-     (format #t "module: ~A\n" module)
+     (format #t "-emit-modules module: ~A\n" module)
      ;; (flush-output-port)
      (let* ((modname (car module))
             (aggregator (find-if
@@ -230,7 +337,7 @@
                              ((:ns-archive :ns-library)
                               (if-let ((submods
                                         (cdr (assoc-in '(:manifest :modules)
-                                                  (cdr stanza)))))
+                                                       (cdr stanza)))))
                                       (begin
                                         (format #t "submods: ~A\n" submods)
                                         (if (member modname submods)
@@ -245,11 +352,11 @@
                                         (if (member modname submods)
                                             ;;(-emit-module outp module stanza)
                                             #t #f))))
-                             ((:executable)
+                             ((:executable :test)
                               (if-let ((submods
                                         (cdr (assoc-in '(:compile :manifest :modules) (cdr stanza)))))
                                       (begin
-                                        (format #t "submods: ~A\n" submods)
+                                        (format #t "~A submods: ~A\n" (green (car stanza)) submods)
                                         (if (member modname submods)
                                             #t #f))))
                              (else #f)))
@@ -323,7 +430,8 @@
       )))
 
 (define (-emit-sigs-hdr outp sigs pkg-modules)
-  (format #t "-emit-sigs-hdr, sigs: ~A, pkg-modules: ~A\n" sigs pkg-modules)
+  (format #t "~A: sigs: ~A, pkg-modules: ~A\n" (blue "-emit-sigs-hdr")
+          sigs pkg-modules)
   (if *build-dyads*
       (if (or (not (null? sigs))
               (find-if (lambda (m)
@@ -335,12 +443,12 @@
           (begin
             (format outp "#############################\n")
             (format outp "####  Signature Targets  ####\n")
-            (newline outp)))
-      (if (not (null? sigs))
-          (begin
-            (format outp "#############################\n")
-            (format outp "####  Signature Targets  ####\n")
             (newline outp)))))
+      ;; (if (not (null? sigs))
+      ;;     (begin
+      ;;       (format outp "#############################\n")
+      ;;       (format outp "####  Signature Targets  ####\n")
+      ;;       (newline outp)))))
 
 (define (-emit-signatures outp pkg sigs pkg-modules)
   (format #t "-emit-signatures: ~A\n" sigs)
@@ -415,19 +523,20 @@
                              (assoc-val :dune pkg)))
                 )
            (format #t "aggregator: ~A\n" aggregator)
-           (format outp ")\n\n")))
+           ;; (format outp ")\n\n")
+           ))
        sigs)))
 
 ;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
 (define (starlark-emit-singleton-targets outp pkg)
-  (format #t "~A: ~A\n" (blue "STARLARK-EMIT-singleton-targets") pkg)
+  (format #t "~A: ~A\n" (blue "starlark-emit-singleton-targets") pkg)
 
   ;; we emit targets for both static and generated source files; in
   ;; addition, we may have :indirect submodule deps (example:
   ;; src/lib_protocol_environment/sigs)
 
-  (let* ((modules-static (if-let ((ms (assoc-in '(:modules :static) pkg)))
+  (let* ((modules-static (if-let ((ms (assoc-in '(:modules) pkg)))
                                  (cdr ms) '()))
          (structs-static (if-let ((structs (assoc-in
                                             '(:structures :static) pkg)))

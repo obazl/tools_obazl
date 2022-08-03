@@ -86,7 +86,8 @@
         (format outp "###############\n")
         (format outp "ppx_executable(\n")
         (format outp "    name    = \"~A.ppx\",\n" libname)
-        (format outp "    main    = \"//ppx:driver\",\n")
+        (format outp "    main    = \"~A\",\n"
+                (if *local-ppx-driver* ":Ppx_driver" "//ppx:Driver"))
 
         (if args
             (begin
@@ -107,6 +108,47 @@
         ))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (starlark-emit-ppx-driver outp pkg stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-ppx-driver") stanza)
+
+  (let* ((stanza-alist (cdr stanza))
+         (privname (assoc-val ':privname stanza-alist))
+         (name 'ppx.exe) ;; FIXME
+         (libname (string-append
+                   (string-upcase
+                    (stringify
+                     (assoc-val :privname stanza-alist)))))
+         (_ (format #t "em libname: ~A~%" libname))
+         (ppx-alist (assoc-val :ppx stanza-alist))
+         (args (if-let ((args (assoc :args ppx-alist)))
+                       (cdr args) #f))
+         (manifest (assoc-val :manifest ppx-alist))
+         ;; (deps (stanza->ppx-deps-labels fs-path ppx-alist))
+         )
+      (begin
+        (newline outp)
+        (format outp "#############\n")
+        (format outp "ocaml_module(\n")
+        (format outp "    name       = \"Ppx_driver\",\n")
+        (format outp "    struct     = \":ppx_driver.ml\",\n")
+        (format outp "    visibility = [\"//visibility:public\"],\n")
+        (format outp "    deps       = [\"@ppxlib//:ppxlib\"],\n")
+        (format outp ")\n")
+        (newline outp)
+
+        (format outp "########\n")
+        (format outp "genrule(\n")
+        (format outp "    name = \"__ppx_driver__\",\n")
+        (format outp "    outs = [\"ppx_driver.ml\"],\n")
+        (format outp "    cmd = \"\\n\".join([\n");
+        (format outp "        \"echo \\\"(* GENERATED FILE - DO NOT EDIT *)\\\" > \\\"$@\\\"\",\n")
+        (format outp "        \"echo \\\"let () = Ppxlib.Driver.standalone ()\\\" >> \\\"$@\\\"\",\n")
+        (format outp "    ])\n")
+        (format outp ")")
+        (newline outp)
+        )))
+
 (define (ppx-hdr outp)
   (if flag
       (begin
@@ -123,7 +165,10 @@
               (case (car stanza)
                 ((:archive :library :ns-archive :ns-library)
                  (if-let ((ppx (assoc :ppx (cdr stanza))))
-                         (starlark-emit-ppx-target outp pkg stanza))
+                         (begin
+                           (starlark-emit-ppx-target outp pkg stanza)
+                           (if *local-ppx-driver*
+                               (starlark-emit-ppx-driver outp pkg stanza))))
                 )))
             (assoc-val :dune pkg)))
 
