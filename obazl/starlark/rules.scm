@@ -1,7 +1,3 @@
-
-(define shell-tools
-  '(cat cp copy)) ;; etc
-
 (define (-deps-kw->cmd-args deps)
   (format #t "~A: ~A~%" (blue "-deps-kw->cmd-args") deps)
   (let ((args (map (lambda (dep)
@@ -60,13 +56,13 @@
   (format #t "~A: ~A~%" (yellow "deps") deps)
   (format #t "~A: ~A~%" (yellow "outputs") outputs)
   (let* ((-args (assoc-val :args (cdr cmd)))
-         (_ (format #t "args: ~A~%" -args))
+         (_ (format #t "-args: ~A~%" -args))
          (args
           (map (lambda (arg)
-                 (format #t "Arg: ~A~%" arg)
+                 (format #t "Mapping arg: ~A~%" arg)
                  (cond
 
-                  ((equal? arg ::targets) ;; or :targets ??
+                  ((equal? arg :targets) ;; or :targets ??
                    (format #t "~A: ~A~%" (red "Arg is ::targets") arg)
                    (let ((outs (-outputs->outs-attr pkg-path outputs)))
                      (map (lambda (out)
@@ -75,7 +71,24 @@
 
                   ((equal? arg ::deps)
                    (format #t "~A: ~A~%" (red "Arg is ::deps") arg)
-                   (error 'fixme "unhandled %{deps} arg"))
+                   ;;(error 'fixme "unhandled %{deps} arg")
+                     (map (lambda (dep)
+                            (format #t "~A: ~A~%" (yellow "dep") dep)
+                            (let* ((label (cdr dep))
+                                   (pkg (assoc-val :pkg label))
+                                   (tgt-tag (caadr label))
+                                   (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
+                                   (tgt (assoc-val tgt-tag label)))
+                              (if (equal? pkg pkg-path)
+                                  (if (eq? tgt-tag :tgts)
+                                      (format #f "$(locations :~A)" tgt)
+                                      (format #f "$(location :~A)" tgt))
+                                  (if (eq? tgt-tag :tgts)
+                                      (format #f "$(locations //~A~A)"
+                                              pkg tgt)
+                                      (format #f "$(location //~A~A)"
+                                              pkg tgt)))))
+                          deps))
 
                   ((keyword? arg)
                    (format #t "KW: ~A\n" arg)
@@ -87,7 +100,7 @@
                                    deps)))
                      (if found
                          (begin
-                           (format #t "~A: ~A~%" (red "FOUND") found)
+                           (format #t "~A: ~A~%" (red "FOUND arg") found)
                            (let* ((label (cdr found))
                                   (pkg (assoc-val :pkg label))
                                   (tgt-tag (caadr label))
@@ -102,7 +115,10 @@
                                               pkg tgt)
                                      (format #f "$(location //~A~A)"
                                              pkg tgt)))))
-                         (error 'fixme "kw arg unresolved"))))
+                         ;; else not found in :deps, try :outputs?
+                         (error 'fixme
+                                (format #f "~A: ~A~%"
+                                        (red "kw arg unresolved") arg)))))
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "arg: string literal\n")
@@ -160,32 +176,10 @@
          (_ (format #t "tool: ~A~%" tool))
          ;; (_ (format #t "tool: ~A~%" (cdr tool)))
          ;; (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
-         (tool (if (keyword? tool)
-                   (let* ((tool-tlbl (assoc tool deps))
-                          (tool-label (cdr tool-tlbl))
-                          (tool-pkg (assoc-val :pkg tool-label))
-                          (tool-tag (caadr tool-label))
-                          (_ (format #t "~A: ~A~%" (cyan "tool-tag") tool-tag))
-                          (tool-tgt (case tool-tag
-                                      ((:tgt)
-                                       (assoc-val :tgt tool-label))
-                                      ((:tgts)
-                                       (assoc-val :tgts tool-label))
-                                      ((:fg)
-                                       (format #f "*~A*"
-                                       (assoc-val :fg tool-label)))
-                                      (else
-                                       (error 'fixme (format #f "~A: ~A~%" (red "unrecognized tool tag") tool-tag))))))
-                     (format #t "~A: ~A~%" (red "tool-label") tool-label)
-                     (format #t "~A: ~A~%" (red "tool-pkg") tool-pkg)
-                     (format #t "~A: ~A~%" (red "tool-tgt") tool-tgt)
-                     (if (equal? tool-pkg pkg-path)
-                         (format #f "~A" tool-tgt)
-                         (format #f "//~A:~A" tool-pkg tool-tgt)))
-                   (error 'fixme "tool not kw")))
-         (_ (format #t "RESOLVED TOOL: ~A~%" tool))
-         (tool-dep? (if (member tool shell-tools) ;;FIXME: find better method
-                       '() #t))
+         (tool (-tool-for-genrule pkg-path tool deps))
+         (_ (format #t "~A: ~A~%" (blue "RESOLVED TOOL for genrule") tool))
+
+         (tool-dep? (not (member tool shell-tools))) ;;FIXME: find better way
          (_ (format #t "tool-dep?: ~A~%" tool-dep?))
 
         ;; FIXME: shell cmds v. targets that go in tools attr
@@ -232,116 +226,6 @@
                      '() outs)))
     (format #t "OUTS: ~A\n" outs)
     outs))
-
-;; FIXME: account for :ctx, which is derived from (chdir ...) in dune
-;; the target should be written to the :ctx dir?
-;; but then what if multiple rules chdir to same dir? e.g. %{workspace_root}
-;; possible resolution: handle all :ctx rules in a separate pass?
-;; for now just emit a comment
-(define (starlark-emit-genrule outp pkg-path stanza)
-  (format #t "~A: ~A\n" (blue "starlark-emit-genrule") stanza)
-  (let* ((action (assoc-val :actions stanza))
-         (_ (format #t "action: ~A~%" action))
-         (deps (assoc-val :deps stanza))
-         (_ (format #t "~A: ~A~%" (cyan "deps") deps))
-         (srcs (deps->srcs-attr pkg-path deps))
-         (_ (format #t "~A: ~A~%" (cyan "srcs") srcs))
-
-         ;; FIXME: derive from :args, :stdout, etc.
-         ;; if %{targets} is in cmd string, ...
-         ;; else if we have (:stdout ...), ...
-         (outputs (assoc-val :outputs stanza))
-         (_ (format #t "outputs: ~A~%" outputs))
-         (outs (-outputs->outs-attr pkg-path outputs))
-
-         (name (format #f "__~A__"
-                       (outs 0))))
-
-    ;; progn: list of actions.
-    (for-each
-     (lambda (cmd)
-       (format #t "GENRULE ACTION: ~A~%" cmd))
-     action)
-
-    (if-let ((ctx (assoc-in '(:actions :ctx) stanza)))
-            (begin
-              (format outp "## omitted:\n")
-              (format outp "## (chdir ~A (run ~A ...))\n\n"
-                    (cadr ctx)
-                    (cadr (assoc-in '(:actions :cmd :tool) stanza))))
-            ;; else
-            (begin
-              (format #t "  outs: ~A~%" outs)
-
-              (format outp "################  rule  ################\n")
-              (if (list? stanza)
-                  (begin
-                    ;; (format outp "## ~A\n" (assoc-val 'dune (stanza)))
-                    ;; (format outp "## (\n")
-                    ;; (for-each (lambda (sexp)
-                    ;;             (format outp "##   ~A\n" sexp))
-                    ;;           stanza)
-                    ;; (format outp "## )\n")
-
-                    (format outp "genrule(\n")
-                    (format outp "    name  = \"~A\",\n" name)
-
-                    (format #t "~A: ~A~%" (red "SrcS") srcs)
-                    (format outp "    srcs  = [\n")
-                    (format outp "~{        \"~A\"~^,\n~}\n" srcs)
-                    (format outp "    ],\n")
-
-                    (format outp "    outs  = [\n")
-                    (format outp "~{        \"~A\"~^,\n~}\n" outs)
-                    ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
-                    (format outp "    ],\n")
-
-                    (format outp "    cmd   = \" \".join([\n")
-                    (for-each
-                     (lambda (cmd)
-                       (format #t "PROCESSING cmd: ~A~%" cmd)
-                       (if (eq? :cmd (car cmd))
-                           (let-values
-                               (((tool-dep? tool xargs)
-                                 (-derive-cmd pkg-path cmd deps outputs)))
-                             ;; (format #t "~A:\n" (red "derived cmd"))
-                             (format #t "  tool-dep?: ~A~%" tool-dep?)
-                             (format #t "  tool: ~A~%" tool)
-                             (format #t "~A: ~A~%" (red "ARGSARGS") xargs)
-
-                             (if (not (null? tool-dep?))
-                                 ;; HACK: $(location ...)
-                                 (format outp "        \"$(location ~A)\",\n" tool)
-                                 (format outp "        \"~A\",\n" tool))
-                             (format outp "~{        \"~A\"~^,\n~}\n" xargs))
-                           ;; else
-                           (error 'missing-cmd "command w/o :cmd")
-                           ))
-                     ;; if :stdout, add "> $@"
-                     action)
-                    (format outp "    ]),\n")
-
-                    (format outp "    tools = [\n")
-                    (for-each ;; fixme: don't iterate this twice
-                     (lambda (cmd)
-                       (format #t "Processing Cmd: ~A~%" cmd)
-                       (let-values
-                           (((tool-dep? tool args)
-                             (-derive-cmd pkg-path cmd deps outputs)))
-                         (format #t "  Tool-Dep?: ~A~%" tool-dep?)
-                         (format #t "  TooL: ~A~%" tool)
-                         (format #t "  ArgS: ~A~%" args)
-
-                         (if (not (null? tool-dep?))
-                             (begin
-                               (format outp "~{        \"~A\"~^,\n~}\n"
-                                       (list tool)) ;;FIXME: support multiple tools
-                               ))))
-                     action)
-                    (format outp "    ]\n")
-                    (format outp ")\n"))
-                    )))
-            ))
 
 (define (starlark-emit-skylib-write-file outp cmd pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-skylib-write-file") cmd)
@@ -418,21 +302,26 @@
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
 
+  ;; FIXME: if rule is alias of test executable, skip it - the
+  ;; executable will be translated to ocaml_test
+
   ;; FIXM: :actions may contain multiple :cmd (progn); iterate
   (for-each (lambda (cmd)
-              (format #t "rule cmd: ~A~%" cmd)
-              (let* ((tool (assoc-val :tool (cdr cmd)))
-                     (_ (format #t "tool: ~A~%" tool)))
-                (case (car tool)
-                  ((:write-file)
-                   (starlark-emit-write-file-target outp stanza))
-                  ((:cat)
-                   (error 'fixme "IMPLEMENT :cat"))
-                  ((:copy)
-                   (error 'fixme "IMPLEMENT :copy"))
-                  ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
-                  (else
-                   (starlark-emit-genrule outp pkg-path stanza)))))
+              (format #t "Rule cmd: ~A~%" cmd)
+              (if (eq? :cmd (car cmd))
+                  (let* ((tool (assoc-val :tool (cdr cmd)))
+                         (_ (format #t "tool: ~A~%" tool)))
+                    (case (car tool)
+                      ((:write-file)
+                       (starlark-emit-write-file-target outp stanza))
+                      ;; ((::cat) ;=> genrule
+                      ;;  (error 'fixme "IMPLEMENT :cat"))
+                      ((::copy)
+                       (error 'fixme "IMPLEMENT :copy"))
+                      ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
+                      (else
+                       ;; (if (is-test-executable? tool) ...
+                       (starlark-emit-genrule outp pkg-path stanza))))))
             (assoc-val :actions stanza)))
 
 

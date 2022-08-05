@@ -155,7 +155,7 @@
                    ;;  outp fs-path stanza)
                    )
                   (else ;; ignore others
-                   (error 'bad-arg "unexpected test stanza")
+                   ;; (error 'bad-arg "unexpected test stanza")
                    )))
               stanzas)))
 

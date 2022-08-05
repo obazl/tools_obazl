@@ -116,14 +116,20 @@
                    (modname (car module))
                    (srcs    (cdr module))
                    (select-sigfile (assoc-val :mli_ srcs))
+                   (_ (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile))
                    (sigfile (if select-sigfile
                                 (make-selector module stanza)
                                 (assoc-val :mli srcs)))
 
-                   (select-structfile (assoc-val :ml_ srcs))
+                   (select-structfile #f) ;; (assoc-val :ml_ srcs))
+                   (_ (format #t "~A: ~A~%" (red "select-structfile") select-structfile))
                    (structfile (if select-structfile
                                    (make-selector module stanza)
-                                   (assoc-val :ml srcs))))
+                                   (assoc-val :ml srcs)))
+                   ;; for case deps/dynamic
+                   (structfile (if structfile structfile
+                                   (assoc-val :ml_ srcs)))
+                   )
 
               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
               ;;         ;;               (cdr opts) '())))
