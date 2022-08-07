@@ -33,5 +33,7 @@
                             (begin
                               (format #t "~A: ~A~%" (red "YOU") tool-tgt)
                               (format #f "//~A:~A" tool-pkg tool-tgt))))
-                      (error 'fixme "tool not kw"))))
+                      ;; else tool must be bash or system?
+                      tool
+                      )))
        tool))))

@@ -14,10 +14,12 @@ mkdir -vp $HOME/.local/share/mibl/dune
 mkdir -vp $HOME/.local/share/mibl/meta
 mkdir -vp $HOME/.local/share/mibl/opam
 mkdir -vp $HOME/.local/share/mibl/s7
+mkdir -vp $HOME/.local/share/mibl/libc
 mkdir -vp $HOME/.local/share/mibl/starlark
 
 echo "Linking scripts"
 ln -sfv $HOME/obazl/libs7/libs7/*.scm $HOME/.local/share/mibl
+ln -sfv $HOME/obazl/libs7/libs7/libc/*.scm $HOME/.local/share/mibl/libc
 ln -sfv $HOME/obazl/libs7/libs7/s7/*.scm $HOME/.local/share/mibl/s7
 
 ln -sfv $HOME/obazl/mibl/mibl/*scm $HOME/.local/share/mibl
