@@ -87,6 +87,7 @@
                (standard (if (assoc :standard opts) #t #f))
 
                (deps-fixed (if-let ((df
+                                     ;;(assoc-in '(:link :deps :fixed)
                                      (assoc-in '(:compile :deps :fixed)
                                                (cdr stanza))))
                                    (cdr df) #f)))

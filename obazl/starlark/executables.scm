@@ -4,7 +4,7 @@
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
 
 (define (starlark-emit-executable-target outp kind pkg stanza)
-  (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza)
+  (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
   (format #t "~A: ~A~%" (blue "kind") kind)
   (let* ((stanza-alist (cdr stanza))
          (privname (assoc-val :privname stanza-alist))
@@ -140,7 +140,7 @@
     ))
 
 (define (starlark-emit-executable-targets outp pkg) ;;fs-path stanzas)
-  (format #t "~A\n" (blue "starlark-emit-executable-targets"))
+  (format #t "~A\n" (ublue "starlark-emit-executable-targets"))
 
   (let* ((stanzas (assoc-val :dune pkg))
          (flag #t))
