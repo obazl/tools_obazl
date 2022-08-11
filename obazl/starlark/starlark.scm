@@ -4,10 +4,8 @@
 (load "opam.scm")
 (load "string.scm")
 (load "starlark/starlark_emit_rules.scm")
-(load "s7/stuff.scm")
+;; (load "s7/stuff.scm")
 (load "utils.scm")
-
-;; (load "stuff.scm") ;; concatenate
 
 (define (stanza->alist stanza)
   (if (alist? stanza)

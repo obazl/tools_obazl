@@ -1,5 +1,60 @@
 (format #t "loading starlark/headers.scm\n")
 
+(define (pkg->obazl-rules pkg)
+  (format #t "~A~%" (ublue "-pkg->obazl-rules"))
+  (let* ((stanzas (assoc-val :dune pkg))
+         ;; (_ (format #t "stanzas: ~A\n" stanzas))
+         (-rules (fold (lambda (stanza accum)
+                         (format #t "  ~A: ~A\n" (blue "stanza") stanza)
+                         (let* ((stanza-alist (cdr stanza))
+                                (_ (format #t "~A: ~A~%" (yellow "stanza-alist") stanza-alist))
+                                (dune-rule (car stanza))
+                                (_ (format #t "~A: ~A~%" (yellow "dune-rule") dune-rule))
+                                (rule (case dune-rule
+                                        ((:rule)
+                                         (let* ((actions (assoc :actions stanza-alist))
+                                                (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
+                                                (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
+                                                (cmd-ct (length cmd-list)))
+                                           (if (> cmd-ct 1)
+                                               (fold (lambda (cmd accum)
+                                                       (format #t "~A: ~A~%" (red "cmd") cmd)
+                                                       (let ((tool (car (assoc-val :tool (cdr cmd)))))
+                                                         (case tool
+                                                           ((:write-file)
+                                                            (if (member :write-file accum)
+                                                                accum (cons :write-file accum)))
+                                                           (else accum))))
+                                                     '() cmd-list)
+                                               (list dune-rule))))
+                                        ((:write-file) (cons :write-file accum))
+                                        (else
+                                         (list dune-rule))))
+                                (accum (if rule (append rule accum) accum))
+                                ;; (accum (if (assoc :namespaced s-alist)
+                                ;;            (cons :namespaced accum)
+                                ;;            accum))
+                                (accum (if (alist? stanza-alist)
+                                           (if (assoc :ppx stanza-alist)
+                                               (cons :ppx accum)
+                                               accum)
+                                           accum))
+                                )
+                           accum))
+                       '() stanzas)))
+    (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
+           (rules (if (assoc :structures pkg) (cons :module rules) rules))
+           (rules (if (assoc :signatures pkg) (cons :sig rules) rules))
+           (_ (format #t "~A: ~A~%" (red "obazlrules") rules))
+           ;; dedup
+           (rules (fold (lambda (x accum)
+                          (if (member x accum) accum
+                              (cons x accum)))
+                        '() rules))
+           )
+      (format #t "~A: ~A~%" (red "obazlrules") rules)
+      rules)))
+
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
   (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules)
 
@@ -11,8 +66,10 @@
   (if (find-if (lambda (rule)
                  (member rule '(:archive
                                 :library
+                                :module
                                 :ns-archive
                                 :ns-library
+                                :sig
                                 :executable
                                 :test)))
                obazl-rules)
@@ -62,8 +119,8 @@
             (format outp "     \"ocaml_module\",\n"))
 
         (if (member :sig obazl-rules)
-            (if *build-dyads*
-                (format outp "     \"ocaml_signature\",\n")))
+            ;; (if *build-dyads*
+            (format outp "     \"ocaml_signature\",\n")) ;;)
 
         ;; (if (pkg-has-archive? obazl-rules)
         ;;     (if (pkg-namespaced? obazl-rules)

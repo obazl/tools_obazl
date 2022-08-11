@@ -62,8 +62,9 @@
                  (format #t "Mapping arg: ~A~%" arg)
                  (cond
 
-                  ((equal? arg :targets) ;; or :targets ??
-                   (format #t "~A: ~A~%" (red "Arg is ::targets") arg)
+                  ((or (equal? arg :targets)
+                       (equal? arg :outputs))
+                   (format #t "~A: ~A~%" (red "Arg is") arg)
                    (let ((outs (-outputs->outs-attr pkg-path outputs)))
                      (map (lambda (out)
                             (format #f "$(location ~A)" out))
@@ -310,7 +311,8 @@
         (pkg-path (car (assoc-val :pkg-path pkg))))
     (for-each (lambda (stanza)
                 (format #t "stanza tag ~A\n" (car stanza))
-                (format #t "RULE ACTION: ~A\n" (assoc :actions (cdr stanza)))
+                (if (alist? (cdr stanza))
+                    (format #t "RULE ACTION: ~A\n" (assoc :actions (cdr stanza))))
                 (case (car stanza)
                   ((:rule :genrule :with-stdout-to :write-file)
                    (if flag

@@ -3,7 +3,7 @@
 (load "dune.scm")
 (load "opam.scm")
 (load "string.scm")
-(load "s7/stuff.scm")
+;; (load "s7/stuff.scm")
 (load "utils.scm")
 
 ;; (load "stuff.scm") ;; concatenate

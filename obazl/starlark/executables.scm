@@ -12,7 +12,7 @@
          (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
                           pubname
                           privname))
-         (tgtname (format #f "~A" pubname))
+         (tgtname (format #f "~A" privname))
          (exename privname)
 
          ;; 'name', i.e. main, is required by dune so we always have it

@@ -107,61 +107,15 @@
        ))
    (assoc-val :dune pkg)))
 
-(define (-pkg->obazl-rules pkg)
-  (format #t "~A~%" (blue "-pkg->obazl-rules"))
-  (let* ((stanzas (assoc-val :dune pkg))
-         ;; (_ (format #t "stanzas: ~A\n" stanzas))
-         (-rules (fold (lambda (stanza accum)
-                         (format #t "  ~A: ~A\n" (blue "stanza") stanza)
-                         (let* ((stanza-alist (cdr stanza))
-                                (_ (format #t "~A: ~A~%" (yellow "stanza-alist") stanza-alist))
-                                (dune-rule (car stanza))
-                                (_ (format #t "~A: ~A~%" (yellow "dune-rule") dune-rule))
-                                (rule (case dune-rule
-                                        ((:rule)
-                                         (let* ((actions (assoc :actions stanza-alist))
-                                                (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
-                                                (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
-                                                (cmd-ct (length cmd-list)))
-                                           (if (> cmd-ct 1)
-                                               (fold (lambda (cmd accum)
-                                                       (format #t "~A: ~A~%" (red "cmd") cmd)
-                                                       (let ((tool (car (assoc-val :tool (cdr cmd)))))
-                                                         (case tool
-                                                           ((:write-file)
-                                                            (if (member :write-file accum)
-                                                                accum (cons :write-file accum)))
-                                                           (else accum))))
-                                                     '() cmd-list)
-                                               (list dune-rule))))
-                                        ((:write-file) (cons :write-file accum))
-                                        (else
-                                         (list dune-rule))))
-                                (accum (if rule (append rule accum) accum))
-                                ;; (accum (if (assoc :namespaced s-alist)
-                                ;;            (cons :namespaced accum)
-                                ;;            accum))
-                                (accum (if (assoc :ppx stanza-alist)
-                                           (cons :ppx accum)
-                                           accum))
-                                )
-                           accum))
-                       '() stanzas)))
-    (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
-           (rules (if (assoc :structures pkg) (cons :module rules) rules))
-           (rules (if (assoc :signatures pkg) (cons :sig rules) rules)))
-      (format #t "~A: ~A~%" (red "obazlrules") rules)
-      rules)))
-
 ;; FIXME: rename emit-starlark
-(define (mibl-pkg->build-bazel pkg)
-  (format #t "mibl-pkg->build-bazel: ~A\n" pkg)
+(define (mibl-pkg->build-bazel ws pkg)
+  (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg)
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :dune pkg)))
     (if dunefile
         (let* ((stanzas (cadr dunefile))
-               (obazl-rules (-pkg->obazl-rules pkg))
-               (_ (format #t "obazl rules: ~A\n" obazl-rules))
+               (obazl-rules (pkg->obazl-rules pkg))
+               (_ (format #t "~A: ~A\n" (uwhite "obazl rules") obazl-rules))
                (build-file (string-append pkg-path "/BUILD.bazel"))
 
                (outp
@@ -175,6 +129,9 @@
 
           (starlark-emit-buildfile-hdr outp obazl-rules)
           ;; (newline outp)
+
+          (format #t "emitting exports_files\n")
+          (starlark-emit-exports-files outp pkg)
 
           (starlark-emit-global-vars outp pkg)
 
@@ -190,7 +147,7 @@
           ;;                                  (cdr pkg-kv))
 
           (format #t "emitting test targets\n")
-          (starlark-emit-test-targets outp pkg)
+          (starlark-emit-test-targets outp ws pkg)
 
           ;; (format #t "emitting file generators\n")
           ;; ocamllex, ocamlyacc, etc.
@@ -203,7 +160,7 @@
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
           (format #t "emitting filegroups\n")
-          (starlark-emit-filegroups outp pkg)
+          (starlark-emit-filegroups outp ws pkg)
 
           (close-output-port outp)
 
@@ -238,5 +195,5 @@
                          (format #t "OPEN ERROR"))
                        )))
           (format #t "emitting filegroups\n")
-          (starlark-emit-filegroups outp pkg)
+          (starlark-emit-filegroups outp ws pkg)
           (close-output-port outp)))))

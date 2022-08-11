@@ -51,18 +51,18 @@
                                       (case tgt-tag
                                         ((:tgt)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "$(location :~A)" tgt)
-                                             (format #f "$(location //~A:~A)" pkg tgt)))
+                                             (format #f "~A" tgt)
+                                             (format #f "//~A:~A" pkg tgt)))
 
                                         ((:tgts)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "$(locations :~A)" tgt)
-                                             (format #f "$(locations //~A~A)" pkg tgt)))
+                                             (format #f "~A" tgt)
+                                             (format #f "//~A~A" pkg tgt)))
 
                                         ((:fg)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "$(location ~A)" tgt)
-                                             (format #f "$(location //~A:*~A*)" pkg tgt)))
+                                             (format #f "~A" tgt)
+                                             (format #f "//~A:*~A*" pkg tgt)))
 
                                         (else
                                          (error 'fixme "unrecognized target value"))))
@@ -71,10 +71,10 @@
                                       (case (car label)
                                         ((::import)
                                          (format #t "~A: ~A~%" (uyellow "::import") tag)
-                                         (format #f "$(location ~A)" tag))
+                                         (format #f "~A" tag))
                                         ((::pkg)
                                          (format #t "~A: ~A~%" (uyellow "::pkg") tag)
-                                         (format #f "$(location ~A)" tag))
+                                         (format #f "~A" tag))
                                         (else
                                          (error 'fixme "XXXXXXXXXXXXXXXX"))))
                                       )

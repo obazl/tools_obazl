@@ -7,7 +7,53 @@
   (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza)
   (starlark-emit-executable-target outp :test pkg stanza))
 
-(define (starlark-emit-sh-test-target outp pkg stanza)
+(define (-decode-sh-test-args args ws pkg stanza)
+  (format #t "~A: ~A~%" (ublue "-decode-sh-test-args") args)
+  (let* ((stanza-alist (cdr stanza))
+         (deps (assoc-val :deps stanza-alist))
+         (exports (car (assoc-val :exports
+                                  (assoc-val ws -mibl-ws-table)))))
+    (format #t "~A: ~A~%" (uwhite "deps") deps)
+    (format #t "~A: ~A~%" (uwhite "exports tbl") exports)
+    (let ((cooked
+           (map (lambda (arg)
+                  (format #t "~A: ~A~%" (uyellow "decoding arg") arg)
+                  (let ((xarg (flatten (filter-map (lambda (dep)
+                                         (format #t "~A: ~A~%" (yellow "dep") dep)
+                                         (if (eq? ::tools (car dep))
+                                             (let ((t (filter-map (lambda (tool)
+                                                                    (format #t "~A: ~A~%" (yellow "tool") tool)
+                                                                    (if (eq? arg (car tool))
+                                                                        (label-list->label-string (cdr tool))
+                                                                        #f))
+                                                                  (cdr dep))))
+                                               (if (null? t) #f
+                                                   (begin
+                                                     (format #t "~A: ~A~%" (yellow "decoded tool") t)
+                                                     t)))
+                                             (if (eq? arg (car dep))
+                                                 (if (alist? (cdr dep))
+                                                     (label-list->label-string (cdr dep))
+                                                     ;;FIXME
+                                                     (format #f "~A" arg)) ;; (error 'fixme "non-label dep match"))
+                                                 #f)))
+                                                   deps))))
+                    (if xarg
+                        (begin
+                          (format #t "~A: ~A~%" (yellow "decoded to dep") xarg)
+                          xarg)
+                        (let ((xarg (hash-table-ref arg exports)))
+                          (if xarg
+                              (begin
+                                (format #t "~A: ~A~%" (yellow "decoded to export") xarg)
+                                xarg)
+                              arg)))))
+                args)))
+      (format #t "~A: ~A~%" (uwhite "cooked args") cooked)
+      ;; (error 'fixme "STOP decode")
+      (flatten cooked))))
+
+(define (starlark-emit-sh-test-target outp ws pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-sh-test-target") stanza)
   (let* ((stanza-alist (cdr stanza))
          (pubname (car (assoc-val :alias stanza-alist)))
@@ -24,26 +70,45 @@
                   (if (equal? pkg-path (car (assoc-val :pkg-path pkg)))
                       (format #f "~A" tgt)
                       (format #f "//~A:~A" pkg-path tgt))))
-         (args  (cdr (assoc-in '(:actions :cmd :args) stanza-alist)))
+         (deps (assoc-val :deps stanza-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "deps") deps))
+         (deps (flatten (map (lambda (dep)
+                               (if (eq? ::tools (car dep))
+                                   (begin) ;; ignore
+                                   (if (alist? (cdr dep))
+                                       ;;FIXME: unless in this pkg
+                                       (format #f "//~A:~A"
+                                               (assoc-val :pkg (cdr dep))
+                                               (assoc-val :tgt (cdr dep)))
+                                       ;; else FIXME; unresolved
+                                       (format #f ":~A" (car dep)))))
+                             deps)))
+         (_ (format #t "~A: ~A~%" (uwhite "cooked deps") deps))
+
+         (args (cdr (assoc-in '(:actions :cmd :args) stanza-alist)))
+         (_ (format #t "~A: ~A~%" (uwhite "args") args))
+         (args (-decode-sh-test-args args ws pkg stanza))
+         (_ (format #t "~A: ~A~%" (uwhite "Cooked args") args))
          )
-      (format #t "TARGET: ~A\n" pubname)
-      ;; (format #t "MAIN: ~A\n" mainname)
-      (begin
-        (format outp "#############\n")
-        (format outp "sh_test(\n"))
-        (format outp "    name     = \"~A\",\n" pubname)
-        (format outp "    srcs     = [\"~A\"],\n" tools)
-        ;; (format outp "    deps     = [\"~A\"],\n" "dep1")
-        (format outp "    data     = [\n")
-        (format outp "~{        \"~A\"~^,~%~}~%" (cdr args))
-        (format outp "    ],\n")
-        (format outp "    args     = [\n")
-        (format outp "~{        \"~A\"~^,~%~}~%" (cdr args))
-        (format outp "    ],\n")
-        (format outp "    visibility = [\"//visibility:public\"],\n")
-        (format outp ")\n")
-        (newline outp)
-        ))
+    (format #t "TARGET: ~A\n" pubname)
+    ;; (error 'fixme "STOP sh-test")
+
+    ;; (format #t "MAIN: ~A\n" mainname)
+    (begin
+      (format outp "#############\n")
+      (format outp "sh_test(\n"))
+    (format outp "    name     = \"~A\",\n" pubname)
+    (format outp "    srcs     = [\"~A\"],\n" tools)
+    (format outp "    data     = [\n")
+    (format outp "~{        \"~A\"~^,~%~}~%" deps)
+    (format outp "    ],\n")
+    (format outp "    args     = [\n")
+    (format outp "~{        \"$(location ~A)\"~^,~%~}~%" (cdr args))
+    (format outp "    ],\n")
+    (format outp "    visibility = [\"//visibility:public\"],\n")
+    (format outp ")\n")
+    (newline outp)
+    ))
 
 ;; (define (Xstarlark-emit-test-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-test-target") stanza)
@@ -171,7 +236,7 @@
 ;;         ;;(format outp "#############################\n")
 ;;         )))
 
-(define (starlark-emit-test-targets outp pkg) ;;fs-path stanzas)
+(define (starlark-emit-test-targets outp ws pkg) ;;fs-path stanzas)
   (format #t "~A\n" (ublue "starlark-emit-test-targets"))
 
   (let* ((stanzas (assoc-val :dune pkg))
@@ -199,7 +264,7 @@
                          (format outp "##############################\n")
                          (format outp "####  Test Targets  ####\n")
                          (set! hdr-flag #f)))
-                   (starlark-emit-sh-test-target outp pkg stanza))
+                   (starlark-emit-sh-test-target outp ws pkg stanza))
 
                   (else ;; ignore others
                    ;; (error 'bad-arg "unexpected test stanza")
