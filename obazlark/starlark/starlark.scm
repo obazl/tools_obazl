@@ -28,47 +28,47 @@
          (nm (undash (string-upcase x))))
     (string-append nm "_DEPS")))
 
-(define (starlark-emit-build-file-hdr outp dune-pkg-tbl)
+;; (define (starlark-emit-build-file-hdr outp dune-pkg-tbl)
 
-  ;; if write_file, copy_file, etc, emit:
-  ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
+;;   ;; if write_file, copy_file, etc, emit:
+;;   ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
 
-  (format outp "load(\"@obazl_rules_ocaml//ocaml:rules.bzl\",\n")
+;;   (format outp "load(\"@obazl_rules_ocaml//ocaml:rules.bzl\",\n")
 
-  (if (pkg-has-archive? dune-pkg-tbl)
-      (format outp "     \"ocaml_archive\",\n"))
+;;   (if (pkg-has-archive? dune-pkg-tbl)
+;;       (format outp "     \"ocaml_archive\",\n"))
 
-  (if (or (assoc-in '(:stanzas :executable) (cdr dune-pkg-tbl))
-          (assoc-in '(:stanzas :executables) (cdr dune-pkg-tbl)))
-      (format outp "     \"ocaml_executable\",\n"))
+;;   (if (or (assoc-in '(:stanzas :executable) (cdr dune-pkg-tbl))
+;;           (assoc-in '(:stanzas :executables) (cdr dune-pkg-tbl)))
+;;       (format outp "     \"ocaml_executable\",\n"))
 
-  (if (assoc-in '(:stanzas :ocamllex) (cdr dune-pkg-tbl))
-      (format outp "     \"ocaml_lex\",\n"))
+;;   (if (assoc-in '(:stanzas :ocamllex) (cdr dune-pkg-tbl))
+;;       (format outp "     \"ocaml_lex\",\n"))
 
-  (if (pkg-has-library? dune-pkg-tbl)
-      (if (pkg-namespaced? dune-pkg-tbl)
-          (format outp "     \"ocaml_ns_library\",\n")
-          (format outp "     \"ocaml_library\",\n")))
+;;   (if (pkg-has-library? dune-pkg-tbl)
+;;       (if (pkg-namespaced? dune-pkg-tbl)
+;;           (format outp "     \"ocaml_ns_library\",\n")
+;;           (format outp "     \"ocaml_library\",\n")))
 
-  (if (or (assoc-in '(:stanzas :library) (cdr dune-pkg-tbl))
-          (assoc-in '(:stanzas :executable) (cdr dune-pkg-tbl))
-          (assoc-in '(:stanzas :executables) (cdr dune-pkg-tbl)))
-      (format outp "     \"ocaml_module\",\n"))
+;;   (if (or (assoc-in '(:stanzas :library) (cdr dune-pkg-tbl))
+;;           (assoc-in '(:stanzas :executable) (cdr dune-pkg-tbl))
+;;           (assoc-in '(:stanzas :executables) (cdr dune-pkg-tbl)))
+;;       (format outp "     \"ocaml_module\",\n"))
 
-  (if (pkg-has-archive? dune-pkg-tbl)
-      (if (pkg-namespaced? dune-pkg-tbl)
-          (format outp "     \"ocaml_ns_archive\",\n")))
+;;   (if (pkg-has-archive? dune-pkg-tbl)
+;;       (if (pkg-namespaced? dune-pkg-tbl)
+;;           (format outp "     \"ocaml_ns_archive\",\n")))
 
-  ;; (if (assoc-in '(:stanzas :signature) (cdr dune-pkg-tbl))
-  (if (pkg-has-signature? dune-pkg-tbl)
-      (format outp "     \"ocaml_signature\",\n"))
+;;   ;; (if (assoc-in '(:stanzas :signature) (cdr dune-pkg-tbl))
+;;   (if (pkg-has-signature? dune-pkg-tbl)
+;;       (format outp "     \"ocaml_signature\",\n"))
 
-  (format outp ")\n")
+;;   (format outp ")\n")
 
-  (newline outp)
-  ;; (format outp "#############################\n")
+;;   (newline outp)
+;;   ;; (format outp "#############################\n")
 
-  '())
+;;   '())
 
 (define (standard-flags)
   '(-O2))
@@ -523,139 +523,139 @@
 ;;   ;;     ))
 ;;   )
 
-(define (starlark-emit-executable-target outp fs-path stanza-alist)
-  ;; (begin
-    ;; (format #t "starlark-emit-executable-target ~A :: ~A\n"
-    ;;         fs-path (cadr (assoc-in '(:name :private) stanza-alist)))
-  ;;   (format #t " stanza-alist: ~A\n" stanza-alist))
-  (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
-         (mainname (normalize-module-name privname))
-         (pubname (if-let ((pn (assoc-in '(:name :public) stanza-alist)))
-                          (cadr pn)
-                          privname))
-         ;; (pubname (if-let ((pn (assoc :public_name stanza-alist)))
-         ;;                  (cadr pn)
-         ;;                  privname))
-         (tgtname (string-append (symbol->string pubname) ".exe"))
-         (exename privname)
-         (deps (stanza-deps->labels fs-path stanza-alist))
-         (submodules (assoc :submodules stanza-alist))
-         ;; (submodules (stanza-submodules mainname stanza-alist))
-         (modules (stanza-modules mainname stanza-alist))
-         )
+;; (define (starlark-emit-executable-target outp fs-path stanza-alist)
+;;   ;; (begin
+;;     ;; (format #t "starlark-emit-executable-target ~A :: ~A\n"
+;;     ;;         fs-path (cadr (assoc-in '(:name :private) stanza-alist)))
+;;   ;;   (format #t " stanza-alist: ~A\n" stanza-alist))
+;;   (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
+;;          (mainname (normalize-module-name privname))
+;;          (pubname (if-let ((pn (assoc-in '(:name :public) stanza-alist)))
+;;                           (cadr pn)
+;;                           privname))
+;;          ;; (pubname (if-let ((pn (assoc :public_name stanza-alist)))
+;;          ;;                  (cadr pn)
+;;          ;;                  privname))
+;;          (tgtname (string-append (symbol->string pubname) ".exe"))
+;;          (exename privname)
+;;          (deps (stanza-deps->labels fs-path stanza-alist))
+;;          (submodules (assoc :submodules stanza-alist))
+;;          ;; (submodules (stanza-submodules mainname stanza-alist))
+;;          (modules (stanza-modules mainname stanza-alist))
+;;          )
 
-    ;; (begin
-    ;; (format #t "TARGET: ~A\n" tgtname)
-    ;; (format #t "MAIN: ~A\n" mainname)
-    ;; (format #t "MODULES: ~A\n" modules)
-    ;;   (format #t "SUBMs: ~A\n" submodules))
-    ;; (format #t "DEPS: ~A\n" deps)
+;;     ;; (begin
+;;     ;; (format #t "TARGET: ~A\n" tgtname)
+;;     ;; (format #t "MAIN: ~A\n" mainname)
+;;     ;; (format #t "MODULES: ~A\n" modules)
+;;     ;;   (format #t "SUBMs: ~A\n" submodules))
+;;     ;; (format #t "DEPS: ~A\n" deps)
 
-    (let-values (((flags opens) (stanza-opts stanza-alist)))
-      (if (or flags opens
-              (assoc-in '(:opts :raw) stanza-alist))
-          (begin
-            ;; (format #t "FLAGS: ~A\n" flags)
-            ;; (format #t "OPENS: ~A\n" opens)
+;;     (let-values (((flags opens) (stanza-opts stanza-alist)))
+;;       (if (or flags opens
+;;               (assoc-in '(:opts :raw) stanza-alist))
+;;           (begin
+;;             ;; (format #t "FLAGS: ~A\n" flags)
+;;             ;; (format #t "OPENS: ~A\n" opens)
 
-            (format outp "~A = [\n" (name->opts-sym pubname))
-            (if flags
-                (for-each (lambda (flag)
-                            (format outp "    \"~A\",\n" flag))
-                          (cadr flags)))
-            (if opens
-                (for-each (lambda (open)
-                            (format outp "    \"-open\", \"~A\",\n" open))
-                          (cadr opens)))
+;;             (format outp "~A = [\n" (name->opts-sym pubname))
+;;             (if flags
+;;                 (for-each (lambda (flag)
+;;                             (format outp "    \"~A\",\n" flag))
+;;                           (cadr flags)))
+;;             (if opens
+;;                 (for-each (lambda (open)
+;;                             (format outp "    \"-open\", \"~A\",\n" open))
+;;                           (cadr opens)))
 
-            (if (assoc-in '(:opts :raw :standard) stanza-alist)
-                (format outp "    ##FIXME: dune (:standard)\n"))
+;;             (if (assoc-in '(:opts :raw :standard) stanza-alist)
+;;                 (format outp "    ##FIXME: dune (:standard)\n"))
 
-            (format outp "]\n")
-            (newline outp))))
+;;             (format outp "]\n")
+;;             (newline outp))))
 
-    ;; for executables, 'deps' are libdeps ('libraries' fld), and
-    ;; 'modules' are module (src) deps
-    ;; (if (not (null? deps))
-        (begin
-          (format outp "~A = [\n" (name->deps-sym pubname))
-          (for-each (lambda (dep)
-                      (format outp "    \"~A\",\n" dep)
-                      )
-                    deps)
-          (format outp "]\n")
-          (newline outp))
-        ;; )
+;;     ;; for executables, 'deps' are libdeps ('libraries' fld), and
+;;     ;; 'modules' are module (src) deps
+;;     ;; (if (not (null? deps))
+;;         (begin
+;;           (format outp "~A = [\n" (name->deps-sym pubname))
+;;           (for-each (lambda (dep)
+;;                       (format outp "    \"~A\",\n" dep)
+;;                       )
+;;                     deps)
+;;           (format outp "]\n")
+;;           (newline outp))
+;;         ;; )
 
-    (begin
-      (format outp "#################\n")
-      (format outp "ocaml_executable(\n")
-      (format outp "    name    = \"~A\",\n" tgtname)
-      (format outp "    visibility = [\"//visibility:public\"],\n")
-      ;; attr 'exe': string name of outfile excluding extension,
-      ;; not a dependency
-      (format outp "    exe     = \"~A\",\n" exename)
-      (format outp "    main    = \":~A\",\n" mainname)
+;;     (begin
+;;       (format outp "#################\n")
+;;       (format outp "ocaml_executable(\n")
+;;       (format outp "    name    = \"~A\",\n" tgtname)
+;;       (format outp "    visibility = [\"//visibility:public\"],\n")
+;;       ;; attr 'exe': string name of outfile excluding extension,
+;;       ;; not a dependency
+;;       (format outp "    exe     = \"~A\",\n" exename)
+;;       (format outp "    main    = \":~A\",\n" mainname)
 
-      (if (not (and (null? deps) (null? modules)))
-          (begin
-            ;; (format #t "MODDEPS: ~A\n" modules)
-            (if (not (null? deps))
-                (format outp "    deps = ~A + [\n" (name->deps-sym pubname))
-                (format outp "    deps = [\n"))
-            (let ((mods (sort! (hash-table-keys
-                                (remove-if list
-                                           (lambda (entry)
-                                             ;; (format #t "ENTRY ~A\n" entry)
-                                             (equal? (cdr entry) :main))
-                                           modules))
-                               sym<?)))
-              (for-each (lambda (mod) ;; mod:: (modsym . type)
-                          ;; (format #t "mod: ~A\n" mod)
-                          ;; (if (not (equal? (cdr mod) :main))
-                          (format outp "        \":~A\",\n"
-                                  (symbol->string
-                                   (normalize-module-name mod))
-                                  )
-                          ;; )
-                          )
-                        mods))
-            ;; (for-each (lambda (mod)
-            ;;             (format outp "        \"~A\",\n" mod))
-            ;;           modules)
-            (format outp "    ],\n")))
+;;       (if (not (and (null? deps) (null? modules)))
+;;           (begin
+;;             ;; (format #t "MODDEPS: ~A\n" modules)
+;;             (if (not (null? deps))
+;;                 (format outp "    deps = ~A + [\n" (name->deps-sym pubname))
+;;                 (format outp "    deps = [\n"))
+;;             (let ((mods (sort! (hash-table-keys
+;;                                 (remove-if list
+;;                                            (lambda (entry)
+;;                                              ;; (format #t "ENTRY ~A\n" entry)
+;;                                              (equal? (cdr entry) :main))
+;;                                            modules))
+;;                                sym<?)))
+;;               (for-each (lambda (mod) ;; mod:: (modsym . type)
+;;                           ;; (format #t "mod: ~A\n" mod)
+;;                           ;; (if (not (equal? (cdr mod) :main))
+;;                           (format outp "        \":~A\",\n"
+;;                                   (symbol->string
+;;                                    (normalize-module-name mod))
+;;                                   )
+;;                           ;; )
+;;                           )
+;;                         mods))
+;;             ;; (for-each (lambda (mod)
+;;             ;;             (format outp "        \"~A\",\n" mod))
+;;             ;;           modules)
+;;             (format outp "    ],\n")))
 
-      (format outp ")\n")
-      (newline outp)
-      ;;(format outp "#############################\n")
-      )))
+;;       (format outp ")\n")
+;;       (newline outp)
+;;       ;;(format outp "#############################\n")
+;;       )))
 
-(define (starlark-emit-executable-targets outp fs-path stanzas)
-  ;; (format #t "starlark-emit-executable-targets ~A\n" ;; : ~A\n"
-  ;;         fs-path)
-  ;; (format #t "stanzas: ~A\n" stanzas)
-  (let ((flag #t))
-    (for-each (lambda (stanza)
-                ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
-                (case (car stanza)
-                  ((:executable)
-                   (if flag
-                       (begin
-                         (format outp "##############################\n")
-                         (format outp "####  Executable Targets  ####\n")
-                         (set! flag #f)))
-                   (starlark-emit-executable-target
-                    outp fs-path (cadr stanza)))
+;; (define (starlark-emit-executable-targets outp fs-path stanzas)
+;;   ;; (format #t "starlark-emit-executable-targets ~A\n" ;; : ~A\n"
+;;   ;;         fs-path)
+;;   ;; (format #t "stanzas: ~A\n" stanzas)
+;;   (let ((flag #t))
+;;     (for-each (lambda (stanza)
+;;                 ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
+;;                 (case (car stanza)
+;;                   ((:executable)
+;;                    (if flag
+;;                        (begin
+;;                          (format outp "##############################\n")
+;;                          (format outp "####  Executable Targets  ####\n")
+;;                          (set! flag #f)))
+;;                    (starlark-emit-executable-target
+;;                     outp fs-path (cadr stanza)))
 
-                  ((:executables)
-                   (error 'bad-arg "unexpected :executables stanza")
-                   ;; (starlark-emit-executables
-                   ;;  outp fs-path stanza)
-                   )
-                  (else ;; ignore others
-                   ;; (format outp "UNCAUGHT: ~A\n" stanza)
-                   )))
-              stanzas)))
+;;                   ((:executables)
+;;                    (error 'bad-arg "unexpected :executables stanza")
+;;                    ;; (starlark-emit-executables
+;;                    ;;  outp fs-path stanza)
+;;                    )
+;;                   (else ;; ignore others
+;;                    ;; (format outp "UNCAUGHT: ~A\n" stanza)
+;;                    )))
+;;               stanzas)))
 
 ;; (define (starlark-emit-stanza-deps-and-flags outp typ stanza)
 ;;   (format #t "starlark-emit-stanza-deps-and-flags\n")
@@ -1176,62 +1176,6 @@
     ;;                 lib-stanzas))
     ;;   )
     ;; ))
-
-(define (starlark-emit-ocamllex outp stanza)
-  (format #t "starlark-emit-ocamllex: ~A\n" stanza)
-
-  (for-each (lambda (ocamllex)
-              (let* ((module-name (symbol->string ocamllex))
-                     (target-name (string-copy module-name)))
-                (string-set! target-name 0
-                             (char-upcase (string-ref target-name 0)))
-                (format #t "emitting ocamllex: ~A\n" ocamllex)
-
-                ;; ocaml_module target emitted by aggregate emitter
-                ;; (format outp "#############\n")
-                ;; (format outp "ocaml_module(\n")
-                ;; (format outp "    name     = \"~A\",\n" target-name)
-                ;; (format outp "    struct   = \"~A\",\n"
-                ;;         (string-append module-name ".ml"))
-                ;; (format outp ")")
-                ;; (newline outp)
-
-                (format outp "##########\n")
-                (format outp "ocaml_lex(\n")
-                (format outp "    name  = \"lex_~A\",\n" module-name)
-                (format outp "    src   = \"~A\",\n"
-                        (string-append module-name ".mll"))
-                (format outp "    out   = \"~A\",\n"
-                        (string-append module-name ".ml"))
-                (format outp ")")
-                (newline outp)))
-            (cadr stanza)))
-
-(define (starlark-emit-file-generators outp fs-path stanzas)
-  ;; (format #t "starlark-emit-file-generators")
-  (let ((flag #t))
-    (for-each (lambda (stanza)
-                (case (car stanza)
-                  ((:ocamllex)
-                   (if flag
-                       (begin
-                         (format outp "########################\n")
-                         (format outp "####  File Generators  ####\n")
-                         (newline outp)
-                         (set! flag #f)))))
-
-                (case (car stanza)
-                  ((:ocamllex)
-                   (starlark-emit-ocamllex outp stanza))
-                  ((:ocamlyacc)
-                   )
-                  ((:menhir)
-                   )
-                  ;; etc.
-                  (else
-                   ;; skip
-                   )))
-              stanzas)))
 
 (define (starlark-emit-null-stanzas outp fs-path stanzas)
   (format #t "starlark-emit-null-stanzas: ~A\n" fs-path)

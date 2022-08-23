@@ -229,7 +229,7 @@
       (format outp "###########\n")
       (format outp "write_file(\n")
       (format outp "    out     = \"~A\",\n" outfile)
-      (format outp "    content = [\"~A\"],\n" content)
+      (format outp "    content = [~S],\n" content)
       (format outp "    name    = \"__~A__\"\n" outfile)
       (format outp ")\n")))
 
@@ -258,9 +258,9 @@
     (format outp "###########\n")
     (format outp "write_file(\n")
     (format outp "    out      = \"~A\",\n" out)
-    (format outp "    content  = [\"\"\"")
-    (format outp "~A" content)
-    (format outp "\"\"\"],~%")
+    (format outp "    content  = [")
+    (format outp "~S" content)
+    (format outp "],~%")
     (format outp "    name     = \"~A\"\n" name)
     (format outp ")")
     (newline outp)
@@ -334,6 +334,7 @@
                                      (let ((tool (car (assoc-val :tool (cdr cmd)))))
                                        (case tool
                                          ((:write-file)
+                                          ;; rule with multiple cmds (progn)
                                           (starlark-emit-skylib-write-file outp cmd pkg-path stanza))
                                          (else
                                           (starlark-emit-rule-target outp pkg-path (cdr stanza))))))

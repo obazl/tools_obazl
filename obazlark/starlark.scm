@@ -1,4 +1,4 @@
-(format #t "loading obazl/starlark.scm\n")
+;; (format #t "loading obazl/starlark.scm\n")
 
 (load "dune.scm")
 
@@ -13,6 +13,8 @@
 (load "starlark/tools.scm")
 (load "starlark/attributes.scm")
 (load "starlark/filegroups.scm")
+(load "starlark/lexyacc.scm")
+(load "starlark/starlark.scm")
 (load "starlark/tests.scm")
 
-(format #t "loaded obazl/starlark.scm\n")
+;; (format #t "loaded obazl/starlark.scm\n")

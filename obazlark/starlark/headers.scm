@@ -27,6 +27,8 @@
                                                            (else accum))))
                                                      '() cmd-list)
                                                (list dune-rule))))
+                                        ((:ocamllex) (cons :ocamllex accum))
+                                        ((:ocamlyacc) (cons :ocamlyacc accum))
                                         ((:write-file) (cons :write-file accum))
                                         (else
                                          (list dune-rule))))
@@ -69,6 +71,8 @@
                                 :module
                                 :ns-archive
                                 :ns-library
+                                :ocamllex
+                                :ocamlyacc
                                 :sig
                                 :executable
                                 :test)))
@@ -86,6 +90,7 @@
         ;; 'library' with wrapped false:
         (if (member :archive obazl-rules)
             (format outp "     \"ocaml_archive\",\n"))
+
         (if (member :library obazl-rules)
             (format outp "     \"ocaml_library\",\n"))
 
@@ -115,6 +120,9 @@
         ;; (if (assoc-in '(:stanzas :ocamllex) (cdr obazl-rules))
         ;;     (format outp "     \"ocaml_lex\",\n"))
 
+        (if (member :ocamllex obazl-rules)
+            (format outp "     \"ocaml_lex\",\n"))
+
         (if (member :module obazl-rules)
             (format outp "     \"ocaml_module\",\n"))
 
@@ -133,6 +141,8 @@
         (if (member :test obazl-rules)
             (format outp "     \"ocaml_test\",\n"))
 
+        (if (member :ocamlyacc obazl-rules)
+            (format outp "     \"ocaml_yacc\",\n"))
 
         (if (member :ppx obazl-rules)
             (format outp "     \"ppx_executable\",\n"))

@@ -4,10 +4,10 @@
 (load "starlark/rules.scm")
 
 (define (starlark-emit-global-vars outp pkg)
-  (format #t "starlark-emit-global-vars: ~A\n" pkg)
+  (format #t "~A: ~A\n" (ublue "starlark-emit-global-vars") pkg)
   (for-each
    (lambda (stanza)
-     (format #t "stanza: ~A~%" stanza)
+     (format #t "~A: ~A~%" (uwhite "stanza") stanza)
      (case (car stanza)
        ((:archive :library :ns-archive ns-library)
         (let* ((libname (string-upcase
@@ -25,11 +25,12 @@
                                            (map stringify flags)))
                               '()))
                (options (apply append (list opens flags)))
-               (_ (format #t "agg options: ~A\n" options))
+               (_ (format #t "~A: ~A\n" (uyellow "agg options") options))
                (standard (if (assoc :standard opts) #t #f))
 
                (deps-fixed (if-let ((df
-                                     (assoc-in '(:deps :fixed) (cdr stanza))))
+                                     (assoc-in '(:deps :resolved) (cdr stanza))))
+                                     ;; (assoc-in '(:deps :fixed) (cdr stanza))))
                                    (cdr df) #f)))
 
           (if deps-fixed
@@ -88,7 +89,7 @@
 
                (deps-fixed (if-let ((df
                                      ;;(assoc-in '(:link :deps :fixed)
-                                     (assoc-in '(:compile :deps :fixed)
+                                     (assoc-in '(:compile :deps :resolved)
                                                (cdr stanza))))
                                    (cdr df) #f)))
 
@@ -149,9 +150,9 @@
           (format #t "emitting test targets\n")
           (starlark-emit-test-targets outp ws pkg)
 
-          ;; (format #t "emitting file generators\n")
+          (format #t "emitting file generators\n")
           ;; ocamllex, ocamlyacc, etc.
-          ;; (starlark-emit-file-generators outp fs-path stanzas)
+          (starlark-emit-file-generators outp pkg)
 
           (format #t "emitting ppxes\n")
           (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)

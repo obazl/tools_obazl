@@ -6,7 +6,7 @@
   (format #f "//foo/bar:~A" sym))
 
 (define (make-selector module stanza)
-  (format #t "make-selector: ~A, ~A\n" module stanza)
+  (format #t "~A: ~A, ~A\n" (ublue "make-selector") module stanza)
   (let* ((module-name (car module))
          (filename (let ((pairs (cdr module)))
                      (if-let ((pr (assoc-val :ml_ pairs)))
@@ -36,7 +36,7 @@
 ;; WARNING: :modules have form (A (:ml a.ml)(:mli a.mli))
 ;; but :structures have form (A . a.ml)
 (define (-emit-module outp module stanza)
-  (format #t "~A: ~A [~A]\n" (blue "-emit-module") module stanza)
+  (format #t "~A: ~A [~A]\n" (ublue "-emit-module") module stanza)
 
   (let* ((stanza-alist (cdr stanza))
          (_ (format #t "~A: ~A\n" "stanza-alist" stanza-alist))
@@ -61,10 +61,15 @@
 
          (local-deps (if (proper-list? module)
                          (if (alist? (cdr module))
-                             ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...))
-                             (if-let ((locals (assoc :ml-deps (cdr module))))
-                                     (cdr locals)
-                                     '())
+                             ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...) (:mli-deps...))
+                             (let* ((ml-locals (if-let ((locals (assoc :ml-deps (cdr module))))
+                                                       (cdr locals)
+                                                       '()))
+                                    (mli-locals (if-let ((locals (assoc :mli-deps (cdr module))))
+                                                        (cdr locals)
+                                                        '()))
+                                    (locals (concatenate ml-locals mli-locals)))
+                               (remove-duplicates locals))
                              ;; else (A a.ml Foo Bar ...)
                              (cdr module))
                          ;; else (A . a.ml) from :structures
@@ -111,24 +116,32 @@
     (format #t "module ns: ~A~%" ns)
 
     (if (proper-list? module)
-        (if (alist? (cdr module)) ;; :modules (A (:ml a.ml)(:mli a.mli))
+        (if (alist? (cdr module)) ;; :modules (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
             (let* ((_ (format #t "~A~%" (red "proper, alist")))
                    (modname (car module))
                    (srcs    (cdr module))
-                   (select-sigfile (assoc-val :mli_ srcs))
-                   (_ (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile))
-                   (sigfile (if select-sigfile
-                                (make-selector module stanza)
-                                (assoc-val :mli srcs)))
-
+                   ;;FIXME: :ml_, :mli_ not sufficient to indicate selects, find sth that works
+                   (select-sigfile #f)
+                   ;; (select-sigfile (assoc-val :mli_ srcs))
+                   ;; (_ (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile))
+                   ;; (sigfile (if select-sigfile
+                   ;;              (make-selector module stanza)
+                   ;;              (assoc-val :mli srcs)))
                    (select-structfile #f) ;; (assoc-val :ml_ srcs))
-                   (_ (format #t "~A: ~A~%" (red "select-structfile") select-structfile))
-                   (structfile (if select-structfile
-                                   (make-selector module stanza)
-                                   (assoc-val :ml srcs)))
-                   ;; for case deps/dynamic
-                   (structfile (if structfile structfile
-                                   (assoc-val :ml_ srcs)))
+                   ;; (_ (format #t "~A: ~A~%" (red "select-structfile") select-structfile))
+                   ;; (structfile (if select-structfile
+                   ;;                 (make-selector module stanza)
+                   ;;                 (assoc-val :ml srcs)))
+                   ;; ;; for case deps/dynamic
+                   ;; (structfile (if structfile structfile
+                   ;;                 (assoc-val :ml_ srcs)))
+
+                   (sigfile (if-let ((mli (assoc-val :mli srcs)))
+                                    mli
+                                    (assoc-val :mli_ srcs)))
+                   (structfile (if-let ((mli (assoc-val :ml srcs)))
+                                    mli
+                                    (assoc-val :ml_ srcs)))
                    )
 
               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
@@ -251,8 +264,8 @@
                          (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
                          (format outp "    ],\n"))
                        (begin
-                         (format outp "    deps          = [\n" libname)
-                         (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+                         (format outp "    deps          = [\n")
+                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
                          (format outp "    ],\n")))
 
                    (if (not (null? agg-deps))

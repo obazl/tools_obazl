@@ -16,7 +16,8 @@
          (exename privname)
 
          ;; 'name', i.e. main, is required by dune so we always have it
-         (main (cadr (assoc-in '(:link :main) stanza-alist)))
+         ;; (main (cadr (assoc-in '(:link :main) stanza-alist)))
+         (main (assoc-val :main stanza-alist))
          (_ (format #t "main: ~A~%" main))
 
          ;; (deps (assoc-in '(:compile :deps)))

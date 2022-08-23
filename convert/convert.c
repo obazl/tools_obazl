@@ -1,11 +1,5 @@
 #include <unistd.h>
 
-/* #include "bazel_config.h" */
-/* #include "mibl_config.h" */
-/* #include "s7_config.h" */
-/* #include "ansi_colors.h" */
-/* #include "load_dune.h" */
-
 #include "ini.h"
 #include "log.h"
 #include "mibl.h"
@@ -20,24 +14,6 @@ extern int dir_ct;
 extern int file_ct;
 extern int dunefile_ct;
 
-s7_pointer _load_load_dune(s7_scheme *s7)
-{
-    s7_pointer _load_dune;
-    _load_dune = s7_name_to_value(s7, "load-dune");
-    if (_load_dune == s7_undefined(s7)) {
-        log_error("unbound symbol: load-dune");
-        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
-        s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "load-dune")));
-    }
-    return _load_dune;
-}
-
-void _print_usage()
-{
-    printf("Usage: msg...\n");
-}
-
 int main(int argc, char *argv[])
 {
     char *opts = "p:hdtvx";
@@ -47,7 +23,6 @@ int main(int argc, char *argv[])
     bool exit_on_error = false;
 
     while ((opt = getopt(argc, argv, opts)) != -1) {
-        /* printf("optind: %d\n", optind); */
         switch (opt) {
         case '?':
             fprintf(stderr, "uknown opt: %c", optopt);
@@ -61,30 +36,38 @@ int main(int argc, char *argv[])
             debug = true;
             break;
         case 'h':
-            _print_usage();
+            /* _print_usage(); */
+            printf("help msg ...\n");
             exit(EXIT_SUCCESS);
             break;
         case 'p':
-            printf("package: %s\n", optarg);
             pkgarg = strdup(optarg);
+            /* remove trailing '/' */
+            int len = strlen(pkgarg);
+            if (pkgarg[len-1] == '/') {
+                pkgarg[len-1] = '\0';
+            }
+            log_debug("package: %s\n", pkgarg);
             break;
         case 't':
             trace = true;
             break;
         case 'v':
             verbose = true;
-            break;
         case 'x':
             exit_on_error = true;
         default:
             ;
         }
     }
-
-    if (argc > optind) {
-        printf(RED "ERROR:" CRESET "extra argument passed\n");
-        _print_usage();
-        exit(EXIT_SUCCESS);
+    if ((argc - optind) > 1) {
+        log_error("Too many options");
+        exit(EXIT_FAILURE);
+    } else {
+        if ((argc-optind) == 1) {
+            pkgarg = argv[optind];
+            log_info("PATH: %s", pkgarg);
+        }
     }
 
     /* config in this order: first bazel, then mibl, then s7 */
@@ -93,111 +76,38 @@ int main(int argc, char *argv[])
     s7_scheme *s7 = s7_configure();
 
     if (exit_on_error) {
-        printf("exit on error\n");
         s7_define_variable(s7, "*exit-on-error*", s7_t(s7));
     } else {
-        printf("no exit on error\n");
         s7_define_variable(s7, "*exit-on-error*", s7_f(s7));
     }
-    printf("*exit-on-error*? %d\n",
-           (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*")));
+    /* printf("*exit-on-error*? %d\n", */
+    /*        (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*"))); */
 
     s7_load(s7, "starlark.scm");
 
-    char *rootdir;
-    char *pathdir;
+    s7_load(s7, "convert.scm");
 
-    rootdir = getcwd(NULL, 0);
-    pathdir = "./";
+    s7_pointer _main = s7_name_to_value(s7, "dune->obazl");
 
-    s7_pointer _s7_load_dune = _load_load_dune(s7);
-    printf("load-dune: %s\n", TO_STR(_s7_load_dune));
-    s7_pointer _wss;
-    if (pkgarg) {
-        _wss = s7_call(s7, _s7_load_dune,
-                                  s7_list(s7, 1, s7_make_string(s7, pkgarg)));
-    } else {
-        _wss = s7_call(s7, _s7_load_dune, s7_nil(s7));
-                                  /* s7_list(s7, 1, s7_make_string(s7, pkgarg))); */
-        /* s7_pointer _wss = s7_eval_c_string(s7, "(load-dune)"); */
+    if (_main == s7_undefined(s7)) {
+        log_error(RED "Could not find procedure 'dune->obazl'; exiting\n");
+        exit(EXIT_FAILURE);
     }
 
-    /* printf("_wss: %s\n", TO_STR(_wss)); */
-    /* return 0; */
+    s7_pointer arg;
+    if (pkgarg)
+        arg = s7_list(s7, 1, s7_make_string(s7, pkgarg));
+    else
+        arg = s7_nil(s7);
 
-    /*
-      1. get :@ ws
-      2. get :pkgs from :@
-      2. for-each pkg in :pkgs ...
-     */
+    s7_pointer result = s7_call(s7, _main, arg);
 
-        /* close_error_config(); */
-        /* init_error_handling(); */
-        /* error_config(); */
-
-    s7_pointer root_ws =
-        s7_eval_c_string(s7, "(assoc-val :@ -mibl-ws-table)");
-    /* printf("root_ws: %s\n", TO_STR(root_ws)); */
-
-    s7_pointer pkgs =
-        s7_eval_c_string_with_environment(s7,  "(car (assoc-val :pkgs @ws))",
-                                          s7_inlet(s7, s7_list(s7, 1,
-                                                               s7_cons(s7, s7_make_symbol(s7, "@ws"), root_ws))));
-
-    /* printf("pkgs: %s\n", TO_STR(pkgs)); */
-    /* return 0; */
-
-    char *sexp =
-        "(map (lambda (kv) "
-        "       (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv)))) "
-        "         (hash-table-set! pkgs (car kv) mibl-pkg))) "
-        "  pkgs)";
-
-    s7_pointer npkgs =
-        s7_eval_c_string_with_environment(s7, sexp,
-                                          s7_inlet(s7, s7_list(s7, 1,
-                                                               s7_cons(s7, s7_make_symbol(s7, "pkgs"), pkgs))));
-
-    /* printf("npkgs: %s\n", TO_STR(npkgs)); */
-    /* return 0; */
-
-    /* sexp = "(mibl->starlark :@ -mibl-ws-table)"; */
-    /* s7_pointer spkgs = */
-    /*     s7_eval_c_string_with_environment(s7, sexp, */
-    /*                                       s7_inlet(s7, s7_list(s7, 1, */
-    /*                                                            s7_cons(s7, s7_make_symbol(s7, "npkgs"), pkgs)))); */
-
-    /* printf("spkgs: %s\n", TO_STR(spkgs)); */
-
-    sexp = "(resolve-labels (assoc-val :@ -mibl-ws-table))";
-    s7_eval_c_string(s7, sexp);
-
-    sexp = "(car (assoc-val :exports (assoc-val :@ -mibl-ws-table)))";
-    s7_pointer exports = s7_eval_c_string(s7, sexp);
-
-    printf("exports: %s\n", TO_STR(exports));
-    /* return 0; */
-
-    /* printf("*load-path*: %s\n", TO_STR(s7_load_path(s7))); */
-
-    /* printf("npkgs: %s\n", TO_STR(npkgs)); */
-
-    /* to starlark */
-    /* s7_load(s7, "starlark.scm"); */
-
-    sexp =
-        "(for-each (lambda (kv)"
-        "              (mibl-pkg->starlark (cdr kv)))"
-        "       npkgs)";
-    s7_eval_c_string_with_environment(s7, sexp,
-                                      s7_inlet(s7, s7_list(s7, 1,
-                                                           s7_cons(s7, s7_make_symbol(s7, "npkgs"), npkgs))));
-
-
-    if (verbose) {
-        printf("ews: %s\n", ews_root);
-        printf("dir count: %d\n", dir_ct);
-        printf("file count: %d\n", file_ct);
-        printf("dunefile count: %d\n", dunefile_ct);
+    char *errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+    if ((errmsg) && (*errmsg)) {
+        log_error("[%s\n]", errmsg);
+        s7_quit(s7);
+        exit(EXIT_FAILURE);
     }
+    log_info("convert exit...");
+    return 0;
 }

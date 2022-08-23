@@ -34,5 +34,5 @@ ln -sfv $HOME/obazl/tools_obazl/obazl/starlark/*scm $HOME/.local/share/mibl/star
 cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/obazl
 chmod u+rwx $HOME/.local/bin/obazl
 
-# cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl
-# chmod u+rwx $HOME/.local/share/mibl/libc_s7.so
+cp -fv `realpath bazel-bin/external/libs7/src/libc_s7.so` $HOME/.local/share/mibl
+chmod u+rwx $HOME/.local/share/mibl/libc_s7.so
