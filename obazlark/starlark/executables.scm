@@ -101,7 +101,10 @@
             (format outp "    main     = \"~A\",\n" main))
 
         (if (not (null? manifest))
-            (format outp "    manifest = [~{\":~A\"~^, ~}],\n" manifest))
+            (begin
+              (format outp "    manifest = [~%")
+              (format outp "~{        \":~A\"~^,~%~}~%" manifest)
+              (format outp "    ],\n")))
 
             ;; (begin
             ;;   ;; (format #t "MODDEPS: ~A\n" modules)

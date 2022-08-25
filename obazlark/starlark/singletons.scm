@@ -92,18 +92,20 @@
 
          (_ (format #t "OPTS: ~A\n" opts))
 
-         (ocamlc_opts (if (null? opts) '()
+         (ocamlc_opts (if opts ;; (null? opts) '()
                           (if-let ((x (assoc-val :ocamlc (cdr opts))))
                                   (list (apply string-append
                                                (map stringify x)))
-                                  '())))
+                                  '())
+                          '()))
          (_ (format #t "ocamlc_opts: ~A\n" ocamlc_opts))
 
-         (ocamlopt_opts (if (null? opts) '()
+         (ocamlopt_opts (if opts ;; (null? opts) '()
                             (if-let ((flags (assoc-val :ocamlopt (cdr opts))))
                                     (list (apply string-append
                                                  (map stringify flags)))
-                                    '())))
+                                    '())
+                            ()))
          (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
 
          (ppx-alist (if-let ((ppx (assoc :ppx stanza-alist)))
@@ -189,7 +191,7 @@
                         )))
 
               ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
-              (if (not (null? opts))
+              (if opts ;; (not (null? opts))
                   (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname))
 
               ;; (if (not (null? ocamlc_opts))
@@ -249,16 +251,16 @@
                    (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
                (format outp "    struct        = \"~A\",\n" structfile)
 
-               (if (not (null? opts))
+               (if opts ;; (not (null? opts))
                    (format outp "    opts          = ~A_OPTS,\n" libname))
 
-               (if (not (null? ocamlc_opts))
-                   (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
-                           libname))
+               ;; (if (not (null? ocamlc_opts))
+               ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+               ;;             libname))
 
-               (if (not (null? ocamlopt_opts))
-                   (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
-                           libname))
+               ;; (if (not (null? ocamlopt_opts))
+               ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
+               ;;             libname))
 
                (format #t "~A: ~A~%" (red "local-deps") local-deps)
                (if (not (null? local-deps))
@@ -303,16 +305,16 @@
               (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
           (format outp "    struct        = \"~A\",\n" structfile)
 
-          (if (not (null? opts))
+          (if opts ;; (not (null? opts))
               (format outp "    opts          = ~A_OPTS,\n" libname))
 
-          (if (not (null? ocamlc_opts))
-              (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
-                      libname))
+          ;; (if (not (null? ocamlc_opts))
+          ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+          ;;             libname))
 
-          (if (not (null? ocamlopt_opts))
-              (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
-                      libname))
+          ;; (if (not (null? ocamlopt_opts))
+          ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
+          ;;             libname))
 
           (format #t "~A: ~A~%" (red "local-deps") local-deps)
           (if (not (null? local-deps))

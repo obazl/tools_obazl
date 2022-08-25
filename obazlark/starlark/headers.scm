@@ -393,15 +393,22 @@
                       (newline outp))))
               ;; else toolchain-specific only
               (begin
-                (format outp "~A_COMPILE_OPTS = select({\n" libname)
-                (format outp "    \"@ocaml//host/target:vm\": ")
-                (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                (format outp "    \"@ocaml//host/target:sys\": ")
-                (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
-                (format outp "    \"//conditions:default\": ")
-                (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
-                (format outp "})\n")
-                (newline outp)))))
+                (if (or (assoc :ocamlc compile-options)
+                        (assoc :ocamlopt compile-options))
+                    (begin
+                      (format outp "~A_COMPILE_OPTS = select({\n" libname)
+                      (format outp "    \"@ocaml//host/target:vm\": ")
+                      (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
+                      (format outp "    \"@ocaml//host/target:sys\": ")
+                      (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
+                      (format outp "    \"//conditions:default\": ")
+                      (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
+                      (format outp "})\n")
+                      (newline outp))
+                    ;; else
+                    (begin
+                      (newline outp)
+                      (newline outp)))))))
 
        ((:executable :test)
         (format #t "exec globals\n")
