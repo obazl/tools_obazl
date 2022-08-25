@@ -29,7 +29,7 @@
                   (format #t "~A: ~A => ~A~%" (bggreen "pkg") (green k) pkg)
                   (for-each (lambda (m)
                               (format #t "~A: ~A~%" (ugreen "pkg-module") m))
-                            (assoc-val :modules pkg))
+                            (if-let ((ms (assoc-val :modules pkg))) ms '()))
                   ;; (format #t "~A: ~A~%" (ugreen "pkg-modules") (assoc-val :modules pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-structures") (assoc-val :structures pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-signatures") (assoc-val :signatures pkg))

@@ -78,14 +78,17 @@
 
          (_ (format #t "~A: ~A~%" (red "local-deps") local-deps))
 
-         (opts (if-let ((opts (assoc-val :opts stanza-alist)))
-                       ;; aggregate
-                       opts
-                       ;; else executable
-                       (if-let ((opts (assoc-in '(:compile :opts)
-                                                stanza-alist)))
-                               opts
-                               '())))
+         (opts (or (assoc :compile-opts stanza-alist)
+                   (assoc :ocamlc-opts stanza-alist)
+                   (assoc :ocamlopt-opts stanza-alist)))
+         ;; (opts (if-let ((opts (assoc-val :compile-opts stanza-alist)))
+         ;;               ;; aggregate
+         ;;               opts
+         ;;               ;; else executable
+         ;;               (if-let ((opts (assoc-in '(:compile :opts)
+         ;;                                        stanza-alist)))
+         ;;                       opts
+         ;;                       '())))
 
          (_ (format #t "OPTS: ~A\n" opts))
 
@@ -114,6 +117,7 @@
 
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
+    ;; (error 'stop "STOP module")
 
     (if (proper-list? module)
         (if (alist? (cdr module)) ;; :modules (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
@@ -186,15 +190,15 @@
 
               ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
               (if (not (null? opts))
-                  (format outp "    opts          = ~A_OPTS,\n" libname))
+                  (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname))
 
-              (if (not (null? ocamlc_opts))
-                  (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
-                          libname))
+              ;; (if (not (null? ocamlc_opts))
+              ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
+              ;;             libname))
 
-              (if (not (null? ocamlopt_opts))
-                  (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
-                          libname))
+              ;; (if (not (null? ocamlopt_opts))
+              ;;     (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
+              ;;             libname))
 
               ;; (if (not (null? agg-deps))
               ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
