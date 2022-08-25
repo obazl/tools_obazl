@@ -83,6 +83,13 @@ def _write_codeps_file(ctx, provider, text):
 
 ################
 def _write_providers_file(ctx, tgt, text):
+    text = text + CCCYAN + "DefaultInfo:\n"
+    provider = tgt[DefaultInfo]
+    for d in dir(provider):
+            text = text + "  " + CCRED + d + CCRESET
+            val = getattr(provider, d)
+            text = text + "  " + str(val) + "\n"
+
     if OcamlProvider in tgt:
         provider = tgt[OcamlProvider]
         text = text + CCCYAN + "OcamlProvider:\n"
@@ -104,7 +111,7 @@ def _write_providers_file(ctx, tgt, text):
             color = CCCYAN, reset = CCRESET, lbl=tgt.label)
         print("CCINFO: %s" % tgt[CcInfo])
         print("CCINFO: in rule %s" % tgt.label)
-        dump_compilation_context(tgt[CcInfo])
+        # dump_compilation_context(tgt[CcInfo])
         text = text + ccinfo_to_string(ctx, tgt[CcInfo])
 
     f = ctx.actions.declare_file("inspect.txt")
