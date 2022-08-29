@@ -100,7 +100,12 @@ int main(int argc, char *argv[])
     else
         arg = s7_nil(s7);
 
-    s7_pointer result = s7_call(s7, _main, arg);
+    s7_gc_on(s7, s7_f(s7));
+
+    /* s7_int main_gc_loc = s7_gc_protect_via_stack(s7, _main); */
+    s7_pointer result = s7_apply_function(s7, _main, arg);
+    /* log_info("RESULT: %s\n", TO_STR(result)); */
+    /* s7_gc_unprotect_via_stack(s7, _main); */
 
     char *errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
     if ((errmsg) && (*errmsg)) {

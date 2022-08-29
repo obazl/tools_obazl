@@ -3,6 +3,17 @@
 ;; (define (starlark-emit-test-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-test-target") stanza))
 
+(define (starlark-emit-testsuite outp pkg stanza)
+  (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza)
+  (format outp "#############\n")
+  (format outp "test_suite(~%")
+  (format outp "    name     = \"~A\",\n" (assoc-val :name (cdr stanza)))
+  (format outp "    tests    = [~%")
+  (format outp "~{        \":~A.exe\"~^,~%~}~%" (assoc-val :tests (cdr stanza)))
+  (format outp "    ]~%")
+  (format outp ")~%"))
+
+
 (define (starlark-emit-test-target outp pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza)
   (starlark-emit-executable-target outp :test pkg stanza))
@@ -261,6 +272,14 @@
     (for-each (lambda (stanza)
                 (format #t "~A: ~A\n" (uwhite "stanza") (car stanza))
                 (case (car stanza)
+                  ((:testsuite)
+                   (if hdr-flag
+                       (begin
+                         (format outp "##############################\n")
+                         (format outp "####  Test Suites  ####\n")
+                         (set! hdr-flag #f)))
+                   (starlark-emit-testsuite outp pkg stanza))
+
                   ((:test)
                    (if hdr-flag
                        (begin

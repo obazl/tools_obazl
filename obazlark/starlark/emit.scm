@@ -93,3 +93,24 @@
           (format #t "emitting filegroups\n")
           (starlark-emit-filegroups outp ws pkg)
           (close-output-port outp)))))
+
+(define (ws->starlark ws)
+  (format #t "~A: ~A~%" (bgblue "ws->starlark") ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (pkgs (car (assoc-val :pkgs @ws))))
+
+    ;; if this is the root dunefile (w/sibling dune-project file)
+    ;; and we have :env stanza, emit //profiles/BUILD.bazel
+
+    (for-each (lambda (kv)
+                (format #t "~A: ~S~%" (blue "emitting pkg") (car kv))
+                (if (assoc 'dune-project (cdr kv))
+                    (if (assoc-in '(:dune :env) (cdr kv))
+                        (emit-profiles ws (cdr kv))))
+                (if (not (null? (cdr kv)))
+                    (mibl-pkg->build-bazel ws (cdr kv))
+                    (format #t "~A: ~A~%" (blue "skipping") (car kv)))
+                )
+              pkgs)))
+
+

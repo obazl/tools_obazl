@@ -42,7 +42,7 @@ def _write_codeps_file(ctx, provider, text):
     print("Provider: %s" % provider)
     INDENT = "  "
 
-    tc = ctx.toolchains["@rules_ocaml//toolchain:type"]
+    tc = ctx.toolchains["@rules_ocaml//toolchain/type:std"]
 
     if tc.emitting == "native":
         text = text + "structs:\n"
@@ -124,7 +124,7 @@ def _write_providers_file(ctx, tgt, text):
 
 ################
 def _write_import_providers_file(ctx, tgt, text):
-    # tc = ctx.toolchains["@rules_ocaml//toolchain:type"]
+    # tc = ctx.toolchains["@rules_ocaml//toolchain/type:std"]
 
     provider = tgt[OcamlProvider]
     INDENT = "  "
@@ -351,7 +351,7 @@ inspect = rule(
             default = Label("@ocaml//bin:ocamlobjinfo"),
         )
     ),
-    toolchains = ["@rules_ocaml//toolchain:type"],
+    toolchains = ["@rules_ocaml//toolchain/type:std"],
 )
 
 ################################################################

@@ -84,7 +84,7 @@
           ((:executable) (format outp "ocaml_binary(\n"))
           ((:test) (format outp "ocaml_test(\n"))
           (else (error 'fixme "unexpected kind for executable")))
-        (format outp "    name     = \"~A\",\n" tgtname)
+        (format outp "    name     = \"~A.exe\",\n" tgtname)
 
         (if (eq? kind :executable)
             (begin

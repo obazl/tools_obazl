@@ -37,7 +37,6 @@
 ;; but :structures have form (A . a.ml)
 (define (-emit-module outp module stanza)
   (format #t "~A: ~A [~A]\n" (ublue "-emit-module") module stanza)
-
   (let* ((stanza-alist (cdr stanza))
          (_ (format #t "~A: ~A\n" "stanza-alist" stanza-alist))
          (libname (string-append
@@ -45,6 +44,9 @@
                     (stringify
                      (assoc-val :privname stanza-alist)))))
          (_ (format #t "em libname: ~A~%" libname))
+
+         (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
+                            (string-upcase (format #f "~A" ts)) #f))
 
          (ns (assoc-val :ns stanza-alist))
          (_ (format #t "em ns: ~A~%" ns))
@@ -58,6 +60,10 @@
                                deps
                                '())))
          (_ (format #t "agg-deps: ~A~%" agg-deps))
+         ;; (_ (if (equal? (car module) 'Ocaml_protoc_cmdline)
+         ;;        (begin
+         ;;          (format #t "~A: ~A~%" (uwhite "aggregtor") stanza)
+         ;;          (error 'STOP "STOP emit-module"))))
 
          (local-deps (if (proper-list? module)
                          (if (alist? (cdr module))
@@ -208,7 +214,9 @@
                (if (not (null? local-deps))
                    (if (not (null? agg-deps))
                        (begin
-                         (format outp "    deps          = ~A_DEPS + [\n" libname)
+                         (if (equal? :executable (car stanza))
+                             (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+                             (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
                          (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
                          (format outp "    ],\n"))
                        (begin
@@ -217,7 +225,7 @@
                          (format outp "    ],\n")))
 
                    (if (not (null? agg-deps))
-                         (format outp "    deps          = ~A_DEPS,\n" libname)))
+                         (format outp "    deps          = ~A_DEPS,\n" (if testsuite testsuite libname))))
 
               ;; (if (not (null? local-deps))
               ;;     (format outp "    local-deps          = ~A,\n" local-deps))
@@ -261,21 +269,24 @@
                ;; (if (not (null? ocamlopt_opts))
                ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                ;;             libname))
-
                (format #t "~A: ~A~%" (red "local-deps") local-deps)
                (if (not (null? local-deps))
                    (if (not (null? agg-deps))
                        (begin
-                         (format outp "    deps          = ~A_DEPS + [\n" libname)
+                         (if (equal? :executable (car stanza))
+                             (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+                             (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
                          (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
                          (format outp "    ],\n"))
                        (begin
                          (format outp "    deps          = [\n")
                          (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
                          (format outp "    ],\n")))
-
+                   ;; else no local deps, maybe agg deps
                    (if (not (null? agg-deps))
-                         (format outp "    deps          = ~A_DEPS,\n" libname)))
+                         (if (equal? :executable (car stanza))
+                             (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
+                             (format outp "    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
 
                (if ppx-alist
                    (begin
@@ -320,7 +331,9 @@
           (if (not (null? local-deps))
               (if (not (null? agg-deps))
                   (begin
-                    (format outp "    deps          = ~A_DEPS + [\n" libname)
+                    (if (equal? :executable (car stanza))
+                        (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+                        (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
                     (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
                     (format outp "    ],\n"))
                   (begin
@@ -329,7 +342,7 @@
                     (format outp "    ],\n")))
 
               (if (not (null? agg-deps))
-                  (format outp "    deps          = ~A_DEPS,\n" libname)))
+                  (format outp "    deps          = ~A_DEPS,\n" (if testsuite testsuite libname))))
 
           (if ppx-alist
               (begin
@@ -348,16 +361,16 @@
   stanza)
 
 (define (-emit-modules outp pkg modules)
-  (format #t "~A: ~A\n" (blue "-emit-modules") modules)
+  (format #t "~A: ~A\n" (ublue "-emit-modules") modules)
 
   (for-each
    (lambda (module)
-     (format #t "-emit-modules module: ~A\n" module)
+     (format #t "~A: ~A\n" (blue "-emit-modules module") module)
      ;; (flush-output-port)
      (let* ((modname (car module))
             (aggregator (find-if
                          (lambda (stanza)
-                           (format #t "checking stanza ~A\n" stanza)
+                           (format #t "~A ~A in stanza: ~A~%" (uwhite "searching for module:") modname stanza)
                            (case (car stanza)
                              ((:ns-archive :ns-library)
                               (if-let ((submods
@@ -368,6 +381,7 @@
                                         (if (member modname submods)
                                             ;;(-emit-module outp module stanza)
                                             #t #f))))
+
                              ((:archive :library)
                               (if-let ((submods
                                         (cdr (assoc-in '(:manifest :modules)
@@ -377,16 +391,33 @@
                                         (if (member modname submods)
                                             ;;(-emit-module outp module stanza)
                                             #t #f))))
+
                              ((:executable :test)
+                              (format #t "~A: ~A~%" (uwhite "checking :executable") stanza)
                               (if-let ((submods
                                         (cdr (assoc-in '(:compile :manifest :modules) (cdr stanza)))))
                                       (begin
                                         (format #t "~A submods: ~A\n" (green (car stanza)) submods)
+                                        (format #t "~A member?: ~A\n" (green modname) (member modname submods))
                                         (if (member modname submods)
-                                            #t #f))))
-                             (else #f)))
+                                            #t
+                                            #f))
+                                      ;; else no submods?
+                                      (error 'STOP "no submods")))
+
+                             ((:testsuite) #f)
+
+                             ((:ocamllex :ocamlyacc) #f)
+
+                             (else
+                              (error 'UNHANDLED
+                                     (format #f "unhandled kind: ~A" stanza)))))
                          (assoc-val :dune pkg)))
             )
+       ;; (if (equal? modname 'Pb_codegen_backend)
+       ;;     (begin
+       ;;       (format #t "~A: ~A~%" (bgred "aggregator") aggregator)
+       ;;       (error 'STOP "STOP agg")))
        (if aggregator
            (begin
              (format #t "Found containing aggregator for ~A: ~A\n"

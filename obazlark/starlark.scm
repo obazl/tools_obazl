@@ -9,6 +9,7 @@
 (load "starlark/ppx.scm")
 (load "starlark/emit.scm")
 (load "starlark/genrule.scm")
+(load "starlark/profiles.scm")
 (load "starlark/rules.scm")
 (load "starlark/tools.scm")
 (load "starlark/attributes.scm")

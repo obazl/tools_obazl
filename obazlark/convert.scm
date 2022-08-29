@@ -57,9 +57,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-load-dune path)
   (format #t "~A: ~A (~A)~%" (blue "-load-dune") path (type-of path))
-  (let* ((_wss  (if path (load-dune path) (load-dune)))
-         ;; (_ (format #t "~A: ~A~%" (green "_wss") _wss))
+  (let* ((_wss (if path (load-dune path)
+                   ;; (catch #t
+                   ;;        (lambda () (load-dune path))
+                   ;;        (lambda args
+                   ;;          (format #t "~A: ~A~%" (bgred "ERROR") args)))
+                   (load-dune)))
          )
+    (format #t "~A: ~A~%" (green "stacktrace") (stacktrace))
+    (format #t "~A: ~A~%" (green "_wss") _wss)
     _wss))
 
 (define (-miblize ws)
@@ -142,7 +148,7 @@
 
          (_ (-miblarkize :@))
 
-         (_ (-emit-starlark :@))
+         (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
 
          (_ (format #t "~A~%" (red "PKG DUMP")))
          (_ (-dump-pkgs :@))
