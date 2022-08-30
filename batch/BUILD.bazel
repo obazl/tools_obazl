@@ -57,7 +57,7 @@ cc_binary(
     deps = [
         "@mibl//src:mibl",
         "@mibl//external/libinih:inih",
-        "@logc//:logc",
+        "vendored//logc",
         # "//external/libinih:inih",
         # "@libs7//src:s7",
         # "@libs7//src:c_s7",

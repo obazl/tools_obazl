@@ -52,11 +52,8 @@ cc_binary(
     ],
     deps = [
         "@mibl//src:mibl",
-        # "@libs7//src:s7",
-        # "@libs7//src:c_s7",
-        "@logc//:logc",
-        "@mibl//external/libinih:inih",
-        # "@libs7//vendored/linenoise",
+        "//vendored/logc",
+       "@mibl//external/libinih:inih",
     ],
     visibility = ["//visibility:public"]
 )
@@ -73,11 +70,11 @@ genrule(
     cmd = "\n".join([
         "SRC1=$(location convert.c)",
         "SRCDIR1=`dirname $$SRC1`",
-        "$(location @makeheaders//:makeheaders) \\",
+        "$(execpath //vendored/makeheaders) \\",
         "    $(location convert.c);",
         "cp $${SRCDIR1}/*.h $(@D)",
     ]),
-    tools = ["@makeheaders//:makeheaders"],
+    tools = ["//vendored/makeheaders"],
     visibility = ["//visibility:public"]
 )
 

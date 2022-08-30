@@ -147,18 +147,6 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
     #     # strip_prefix =
     # )
 
-    # http://www.throwtheswitch.org/unity
-    maybe(
-        http_archive,
-        name = "unity",
-        urls = [
-            "https://github.com/ThrowTheSwitch/Unity/archive/refs/tags/v2.5.2.zip",
-        ],
-        strip_prefix = "v2.5.2",
-        build_file_content = all_content,
-        workspace_file_content = "workspace( name = \"unity\" )"
-    )
-
 ####################
 def fetch_stardoc():
 
