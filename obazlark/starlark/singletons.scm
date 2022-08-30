@@ -67,10 +67,10 @@
         (if (or (not (null? local-deps))
                 (not (null? agg-deps)))
             (format outp " + "))
-        (format outp "select{(~%")
-        (format outp "~{        \":~A\": [\"~A\"],~^~%~}~%"
+        (format outp "select({~%")
+        (format outp "~{        \"~A\": [\"~A\"],~^~%~}~%"
                 selectors)
-        (format outp "        \"//conditons:default\": []~%")
+        (format outp "        \"//conditions:default\": []~%")
         (format outp "    })")))
 
   ;; else finish with comma
@@ -135,7 +135,7 @@
          (_ (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional))
 
          (_ (format #t "~A: ~A~%" (bgred "module") module))
-         (module-selected?
+         (module-selected
           (if deps-conditional
               ;;FIXME: deps-conditional may have more than one entry
               (let ((x
@@ -144,30 +144,43 @@
                                   (let ((ctarget (car (assoc-val :target conditional))))
                                     (if (alist? (cdr module))
                                         (find-then (lambda (msrc)
-                                                     (equal? ctarget (cdr msrc)))
+                                                     (if (equal? ctarget (cdr msrc))
+                                                         conditional #f))
                                                  (cdr module))
-                                        (equal? ctarget (cdr module)))))
+                                        (if (equal? ctarget (cdr module))
+                                            conditional #f))))
                                 (cdr deps-conditional))))
                 x)
               #f))
-         (_ (format #t "~A: ~A~%" (bgred "module-selected?") module-selected?))
+         (_ (format #t "~A: ~A~%" (bgred "module-selected") module-selected))
 
-         (selectors
-          (if module-selected?
+         (src-selectors
+          (if module-selected
               (flatten
                (map
                 (lambda (sel)
-                  (cons (format #f "~A_pred" (car sel))
-                        (car sel)))
-                (assoc-val :selectors (cadr deps-conditional))))
+                  (cons (car sel)
+                        (cadr sel)))
+                (assoc-val :selectors module-selected)))
               #f))
-         (_ (format #t "~A: ~A~%" (uwhite "selectors") selectors))
+         (_ (format #t "~A: ~A~%" (uwhite "src-selectors") src-selectors))
 
-         (default-selector
-           (if module-selected?
-               (car (assoc-val :default (cadr deps-conditional)))
+         (dep-selectors
+          (if module-selected
+              (flatten
+               (map
+                (lambda (sel)
+                  (cons (car sel)
+                        (last sel)))
+                (assoc-val :selectors module-selected)))
+              #f))
+         (_ (format #t "~A: ~A~%" (uwhite "dep-selectors") dep-selectors))
+
+         (src-default-selector
+           (if module-selected
+               (car (assoc-val :default module-selected))
                #f))
-         (_ (format #t "~A: ~A~%" (uwhite "default-selector") default-selector))
+         (_ (format #t "~A: ~A~%" (uwhite "src-default-selector") src-default-selector))
 
          (opts (or (assoc :compile-opts stanza-alist)
                    (assoc :ocamlc-opts stanza-alist)
@@ -217,7 +230,6 @@
             (let* ((_ (format #t "~A~%" (red "proper, alist")))
                    (modname (car module))
                    (srcs    (cdr module))
-                   ;;FIXME: :ml_, :mli_ not sufficient to indicate selects, find sth that works
                    (select-sigfile #f)
                    ;; (select-sigfile (assoc-val :mli_ srcs))
                    ;; (_ (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile))
@@ -240,7 +252,7 @@
                                     mli
                                     (assoc-val :ml_ srcs)))
                    )
-
+              ;; (error 'STOP "STOP selmod")
               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
               ;;         ;;               (cdr opts) '())))
               (format #t "emitting module: ~A: ~A\n" modname srcs)
@@ -253,13 +265,20 @@
               (if (or select-structfile select-sigfile)
                   (format outp "    module        = \"~A\",\n" modname))
 
-              (if select-structfile
+              ;; (if select-structfile
+              (if (and module-selected
+                       (eq? (fnmatch "*.ml" (format #f "~A" (car (assoc-val :target module-selected))) 0) 0))
                   (begin
-                    (format outp "    struct        = select(~%")
-                    (format outp "        {~%")
-                    (format outp "~{~{~8T~S: \"~S\",~%~}~}" structfile)
-                    (format outp "        },~%")
-                    (format outp "        no_match_error=\"no file selected\"),\n")
+                    (format #t "~A: ~A~%" (uwhite "src-selectors")
+                            src-selectors)
+                    (format outp "    struct        = select({~%")
+                    (format outp "~{        \"~A\": \"~A\",~^~%~}~%"
+                            src-selectors)
+                    (format outp "        \"//conditions:default\": \"~A\"~%"
+                            src-default-selector)
+                    ;; (format outp "        }, no_match_error=\"no file selected\"\n")
+                    (format outp "    }),~%")
+
                     )
                   (begin
                     (format outp "    struct        = \"~A\",\n" structfile)
@@ -296,7 +315,7 @@
               ;; (if (not (null? agg-deps))
               ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
 
-              (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+              (-emit-deps outp libname stanza agg-deps local-deps dep-selectors testsuite)
 
               ;; (if (not (null? local-deps))
               ;;     (format outp "    local-deps          = ~A,\n" local-deps))
@@ -341,7 +360,7 @@
                ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                ;;             libname))
 
-               (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+               (-emit-deps outp libname stanza agg-deps local-deps dep-selectors testsuite)
                ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
                ;; (if (not (null? local-deps))
                ;;     (if (not (null? agg-deps))
@@ -400,7 +419,7 @@
           ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
           ;;             libname))
 
-          (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+          (-emit-deps outp libname stanza agg-deps local-deps dep-selectors testsuite)
           ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
           ;; (if (not (null? local-deps))
           ;;     (if (not (null? agg-deps))

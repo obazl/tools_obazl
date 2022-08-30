@@ -1,23 +1,30 @@
+(define (->compile-opts copts)
+  (let* ((flags (if-let ((flags (assoc-val :flags copts)))
+                        flags '()))
+         ;; options: list of (k . v) pairs
+         (options (if-let ((options (assoc-val :options copts)))
+                        options '()))
+         (all-opts (concatenate flags
+                                (flatten options))))
+        (format #t "~A: ~A~%" (bgred "all-opts") all-opts)
+        all-opts))
+
 (define (-profile->opts opts-alist)
   (format #t "~A: ~A~%" (ublue "-profile->opts") opts-alist)
   (let ((compile-opts (if-let ((copts (assoc-val :compile-opts opts-alist)))
-                              (assoc-val :flags copts)
+                              (->compile-opts copts)
                               #f))
         (ocamlc-opts (if-let ((copts (assoc-val :ocamlc-opts opts-alist)))
-                             (begin
-                                '("-ocamlcfoo" "-ocamlcbar"))
+                              (->compile-opts copts)
                               #f))
         (ocamlopt-opts (if-let ((copts (assoc-val :ocamlopt-opts opts-alist)))
-                             (begin
-                                '("-ocamloptfoo" "-ocamloptbar"))
+                              (->compile-opts copts)
                               #f))
         (archive-opts (if-let ((aopts (assoc-val :archive-opts opts-alist)))
-                              (begin
-                                '("-afoo" "-abar"))
+                              (->compile-opts aopts)
                               #f))
-        (link-opts (if-let ((aopts (assoc-val :link-opts opts-alist)))
-                           (begin
-                             '("-lfoo" "-lbar"))
+        (link-opts (if-let ((lopts (assoc-val :link-opts opts-alist)))
+                           (->compile-opts lopts)
                            #f)))
     (format #t "~A: ~A~%" (blue "compile-opts") compile-opts)
     (format #t "~A: ~A~%" (blue "archive-opts") link-opts)
@@ -29,9 +36,13 @@
 (define (instructions profiles)
   (string-join
    `(""
-     " To enable these toolchain profiles, add the following 'register_toolchains'"
-     " lines (without the leading '#') to WORKSPACE.bazel, *before* the call to bootstrap()."
-     " For example:"
+     " To enable custom toolchain profiles, pass --extra_toolchains=<labels>",
+     " on the cmd line; e.g.",
+     "     $ bazel build //foo/bar --extra_toolchains=//bzl/profiles:default",
+     "",
+     " Alternatively, add 'register_toolchains' lines to WORKSPACE.bazel,",
+     " *before* the call to bootstrap().",
+     " For example (omit the leading '#'):",
      ""
      ,(format #f "~{register_toolchains(\"//bzl/profiles:~A\")~^~%#~}~%#" profiles)
      "load(\"@coswitch//:BOOTSTRAP.bzl\", \"bootstrap\")"
@@ -156,8 +167,11 @@
                        (format outp "    name                   = \"vm_~A\",~%" name)
                        (format outp "    profile                = \":vm_~A_profile\",~%" name)
                        (format outp "    target_compatible_with = [\"@ocaml//host/target:vm\"],~%")
-                       (if (eq? name 'release)
-                           (format outp "    target_settings        = [\":opt_mode\"]~%"))
+                       (case name
+                         ((dev) (format outp "    target_settings        = [\":fastbuild_mode\"]~%"))
+                         ((release) (format outp "    target_settings        = [\":opt_mode\"]~%"))
+                         ((dbg) (format outp "    target_settings        = [\":dbg_mode\"]~%"))
+                         ((debug) (format outp "    target_settings        = [\":dbg_mode\"]~%")))
                        (format outp ")~%")
                        (newline outp)
                        (newline outp)
@@ -167,18 +181,18 @@
                        (if compile-opts
                            (begin
                              (format outp "    compile_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%"
+                             (format outp "~{        \"~A\"~^,~%~}~%"
                                      (concatenate compile-opts ocamlc-opts))
                              (format outp "    ]~%")))
                        (if archive-opts
                            (begin
                              (format outp "    archive_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" archive-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" archive-opts)
                              (format outp "    ]~%")))
                        (if link-opts
                            (begin
                              (format outp "    link_opts    = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" link-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" link-opts)
                              (format outp "    ]~%")))
                        (format outp ")~%")
                        (newline outp)
@@ -202,18 +216,18 @@
                        (if compile-opts
                            (begin
                              (format outp "    compile_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%"
+                             (format outp "~{        \"~A\"~^,~%~}~%"
                                      (concatenate compile-opts ocamlopt-opts))
                              (format outp "    ]~%")))
                        (if archive-opts
                            (begin
                              (format outp "    archive_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" archive-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" archive-opts)
                              (format outp "    ]~%")))
                        (if link-opts
                            (begin
                              (format outp "    link_opts    = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" link-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" link-opts)
                              (format outp "    ]~%")))
                        (format outp ")~%")
                        (newline outp)

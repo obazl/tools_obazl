@@ -55,8 +55,8 @@
           (format #t "emitting rules\n")
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
-          (format #t "emitting conditional deps\n")
-          (starlark-emit-conditionals outp ws pkg)
+          ;; (format #t "emitting conditional deps\n")
+          ;; (starlark-emit-conditionals outp ws pkg)
 
           (format #t "emitting filegroups\n")
           (starlark-emit-filegroups outp ws pkg)
