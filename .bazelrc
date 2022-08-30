@@ -1,6 +1,4 @@
-## for parser testing, data file won't be read without this. why???
-# build --nobuild_runfile_links
-
 build --color=yes
 
-try-import private/bazelrc
+try-import .config/user.bazelrc
+try-import .config/dev.bazelrc

@@ -1,0 +1,45 @@
+; mibl config
+
+[mibl]
+version = 0.1.0
+grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
+
+[srcs]
+
+include = test
+;; cwd always included
+
+;; broken:
+exclude = test/b
+exclude = test/c
+exclude = test/d
+exclude = test/dune/unit_tests/fields/modules/a
+exclude = test/dune/tezos/lib_requester/test
+exclude = test/dune/tezos/lib_clic/test
+
+;; non-dune dirs
+exclude = aspects
+exclude = bazel
+exclude = bzl
+exclude = convert
+exclude = data
+exclude = external
+exclude = inspect
+exclude = null
+exclude = obazl
+exclude = obsolete
+exclude = ocamlobj
+exclude = private
+exclude = repl
+exclude = sig
+exclude = src
+exclude = stardoc
+exclude = struct
+exclude = tgt
+exclude = tool
+exclude = tools
+exclude = update
+exclude = vendored
+exclude = watch
+
+exclude = test/dune/stanzas/library/root_module/fail1
