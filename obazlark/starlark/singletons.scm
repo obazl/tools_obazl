@@ -33,6 +33,52 @@
                               (cdr s)))
                  selectors))))))
 
+(define (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+  (format #t "~A: ~A~%" (red "local-deps") local-deps)
+  (if (or (not (null? local-deps))
+          (not (null? agg-deps))
+          selectors)
+      (format outp "    deps          = ")
+      )
+
+  (if (not (null? local-deps))
+      (if (not (null? agg-deps))
+          (begin
+            (if (equal? :executable (car stanza))
+                (format outp "= ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+                (format outp "~A_DEPS + [\n" (if testsuite testsuite libname)))
+            (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+            (format outp "    ]~%"))
+          (begin
+            (format outp "    deps          = [\n" libname)
+            (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+            (format outp "    ]~%")))
+      ;; else no local-deps
+               ;;     (if (not (null? agg-deps))
+               ;;           (if (equal? :executable (car stanza))
+               ;;               (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
+               ;;               (format outp "A    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
+      (if (not (null? agg-deps))
+          (format outp "~A_DEPS" (if testsuite testsuite libname))))
+
+  (if selectors
+      (begin
+        (format #t "~A: ~A~%" (uwhite "emitting selectors") selectors)
+        (if (or (not (null? local-deps))
+                (not (null? agg-deps)))
+            (format outp " + "))
+        (format outp "select{(~%")
+        (format outp "~{        \":~A\": [\"~A\"],~^~%~}~%"
+                selectors)
+        (format outp "        \"//conditons:default\": []~%")
+        (format outp "    })")))
+
+  ;; else finish with comma
+  (if (or (not (null? local-deps))
+          (not (null? agg-deps))
+          selectors)
+      (format outp ",~%")))
+
 ;; WARNING: :modules have form (A (:ml a.ml)(:mli a.mli))
 ;; but :structures have form (A . a.ml)
 (define (-emit-module outp module stanza)
@@ -52,14 +98,15 @@
          (_ (format #t "em ns: ~A~%" ns))
 
          (agg-deps (if-let ((deps (assoc-val :deps stanza-alist)))
-                       deps
+                           ;; or: (assoc-in '(:deps :resolved) stanza-alist)
+                           (dissoc '(:conditionals :seldeps) deps)
                        ;; else :executable or :test
                        ;; FIXME: should not be any deps in :compile ?
                        (if-let ((deps (assoc-in '(:compile :deps)
                                                 stanza-alist)))
                                deps
                                '())))
-         (_ (format #t "agg-deps: ~A~%" agg-deps))
+         (_ (format #t "~A: ~A~%" (uwhite "agg-deps") agg-deps))
          ;; (_ (if (equal? (car module) 'Ocaml_protoc_cmdline)
          ;;        (begin
          ;;          (format #t "~A: ~A~%" (uwhite "aggregtor") stanza)
@@ -82,7 +129,45 @@
                          ;; should not happen?
                          (cdr module)))
 
-         (_ (format #t "~A: ~A~%" (red "local-deps") local-deps))
+         (_ (format #t "~A: ~A~%" (uwhite "local-deps") local-deps))
+
+         (deps-conditional (assoc-in '(:deps :conditionals) stanza-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional))
+
+         (_ (format #t "~A: ~A~%" (bgred "module") module))
+         (module-selected?
+          (if deps-conditional
+              ;;FIXME: deps-conditional may have more than one entry
+              (let ((x
+                     (find-then (lambda (conditional)
+                                  (format #t "~A: ~A~%" (bgred "conditional") conditional)
+                                  (let ((ctarget (car (assoc-val :target conditional))))
+                                    (if (alist? (cdr module))
+                                        (find-then (lambda (msrc)
+                                                     (equal? ctarget (cdr msrc)))
+                                                 (cdr module))
+                                        (equal? ctarget (cdr module)))))
+                                (cdr deps-conditional))))
+                x)
+              #f))
+         (_ (format #t "~A: ~A~%" (bgred "module-selected?") module-selected?))
+
+         (selectors
+          (if module-selected?
+              (flatten
+               (map
+                (lambda (sel)
+                  (cons (format #f "~A_pred" (car sel))
+                        (car sel)))
+                (assoc-val :selectors (cadr deps-conditional))))
+              #f))
+         (_ (format #t "~A: ~A~%" (uwhite "selectors") selectors))
+
+         (default-selector
+           (if module-selected?
+               (car (assoc-val :default (cadr deps-conditional)))
+               #f))
+         (_ (format #t "~A: ~A~%" (uwhite "default-selector") default-selector))
 
          (opts (or (assoc :compile-opts stanza-alist)
                    (assoc :ocamlc-opts stanza-alist)
@@ -210,22 +295,8 @@
 
               ;; (if (not (null? agg-deps))
               ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
-               (format #t "~A: ~A~%" (red "local-deps") local-deps)
-               (if (not (null? local-deps))
-                   (if (not (null? agg-deps))
-                       (begin
-                         (if (equal? :executable (car stanza))
-                             (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
-                             (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
-                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-                         (format outp "    ],\n"))
-                       (begin
-                         (format outp "    deps          = [\n" libname)
-                         (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-                         (format outp "    ],\n")))
 
-                   (if (not (null? agg-deps))
-                         (format outp "    deps          = ~A_DEPS,\n" (if testsuite testsuite libname))))
+              (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
 
               ;; (if (not (null? local-deps))
               ;;     (format outp "    local-deps          = ~A,\n" local-deps))
@@ -269,24 +340,26 @@
                ;; (if (not (null? ocamlopt_opts))
                ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                ;;             libname))
-               (format #t "~A: ~A~%" (red "local-deps") local-deps)
-               (if (not (null? local-deps))
-                   (if (not (null? agg-deps))
-                       (begin
-                         (if (equal? :executable (car stanza))
-                             (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
-                             (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
-                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-                         (format outp "    ],\n"))
-                       (begin
-                         (format outp "    deps          = [\n")
-                         (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-                         (format outp "    ],\n")))
-                   ;; else no local deps, maybe agg deps
-                   (if (not (null? agg-deps))
-                         (if (equal? :executable (car stanza))
-                             (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
-                             (format outp "    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
+
+               (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+               ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
+               ;; (if (not (null? local-deps))
+               ;;     (if (not (null? agg-deps))
+               ;;         (begin
+               ;;           (if (equal? :executable (car stanza))
+               ;;               (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+               ;;               (format outp "Z    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
+               ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+               ;;           (format outp "    ],\n"))
+               ;;         (begin
+               ;;           (format outp "    deps          = [\n")
+               ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+               ;;           (format outp "    ],\n")))
+               ;;     ;; else no local deps, maybe agg deps
+               ;;     (if (not (null? agg-deps))
+               ;;           (if (equal? :executable (car stanza))
+               ;;               (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
+               ;;               (format outp "A    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
 
                (if ppx-alist
                    (begin
@@ -327,22 +400,23 @@
           ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
           ;;             libname))
 
-          (format #t "~A: ~A~%" (red "local-deps") local-deps)
-          (if (not (null? local-deps))
-              (if (not (null? agg-deps))
-                  (begin
-                    (if (equal? :executable (car stanza))
-                        (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
-                        (format outp "    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
-                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-                    (format outp "    ],\n"))
-                  (begin
-                    (format outp "    deps          = [\n" libname)
-                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-                    (format outp "    ],\n")))
+          (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
+          ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
+          ;; (if (not (null? local-deps))
+          ;;     (if (not (null? agg-deps))
+          ;;         (begin
+          ;;           (if (equal? :executable (car stanza))
+          ;;               (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+          ;;               (format outp "P    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
+          ;;           (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+          ;;           (format outp "    ],\n"))
+          ;;         (begin
+          ;;           (format outp "    deps          = [\n" libname)
+          ;;           (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+          ;;           (format outp "    ],\n")))
 
-              (if (not (null? agg-deps))
-                  (format outp "    deps          = ~A_DEPS,\n" (if testsuite testsuite libname))))
+          ;;     (if (not (null? agg-deps))
+          ;;         (format outp "Q    deps          = ~A_DEPS,\n" (if testsuite testsuite libname))))
 
           (if ppx-alist
               (begin
@@ -357,7 +431,11 @@
 
           (format outp ")\n")
           ) ;; let*
-        ))
+        )
+    ;; (if deps-conditional
+    ;;     (error 'STOP
+    ;;            (format #f "STOP cond module: ~A" stanza)))
+    )
   stanza)
 
 (define (-emit-modules outp pkg modules)
@@ -408,6 +486,8 @@
                              ((:testsuite) #f)
 
                              ((:ocamllex :ocamlyacc) #f)
+
+                             ((:rule) (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza))
 
                              (else
                               (error 'UNHANDLED

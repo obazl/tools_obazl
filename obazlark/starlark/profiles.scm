@@ -1,8 +1,7 @@
 (define (-profile->opts opts-alist)
-  (format #t "~A: ~A~%" (ublue "-profile->compile-opts") opts-alist)
+  (format #t "~A: ~A~%" (ublue "-profile->opts") opts-alist)
   (let ((compile-opts (if-let ((copts (assoc-val :compile-opts opts-alist)))
-                              (begin
-                                '("-cfoo" "-cbar"))
+                              (assoc-val :flags copts)
                               #f))
         (ocamlc-opts (if-let ((copts (assoc-val :ocamlc-opts opts-alist)))
                              (begin
@@ -23,6 +22,7 @@
     (format #t "~A: ~A~%" (blue "compile-opts") compile-opts)
     (format #t "~A: ~A~%" (blue "archive-opts") link-opts)
     (format #t "~A: ~A~%" (blue "link-opts") link-opts)
+    ;; (error 'STOP "STOP profiles")
     (values compile-opts ocamlc-opts ocamlopt-opts
             archive-opts link-opts)))
 
@@ -81,7 +81,7 @@
                        ))
                )
           (format outp "load(\"@rules_ocaml//toolchain:profiles.bzl\",~%")
-          (format outp "     \"toolchain_profile\", \"ocaml_profile\")")
+          (format outp "     \"toolchain_profile_selector\", \"ocaml_profile\")")
           (newline outp)
 
           (format outp (instructions (-env->profile-names env)))
@@ -105,6 +105,7 @@
           ;; IOW, this is a SNAFU. Assumption: wildcard _ only used in
           ;; isolation, not with other profile definitions.
 
+          (format #t "~A~%" (blue "processing profiles"))
           (for-each
            (lambda (profile)
              (format #t "~A: ~A~%" (ublue "profile") profile)
@@ -121,9 +122,9 @@
                  (if (eq? :_ (car profile))
                      (begin
                        (format outp "##################~%")
-                       (format outp "toolchain_profile(~%")
-                       (format outp "    name            = \"~A\",~%" name)
-                       (format outp "    toolchain       = \":~A_profile\",~%" name)
+                       (format outp "toolchain_profile_selector(~%")
+                       (format outp "    name          = \"~A\",~%" name)
+                       (format outp "    profile       = \":~A_profile\",~%" name)
                        (format outp ")~%")
                        (newline outp)
                        (newline outp)
@@ -133,17 +134,17 @@
                        (if compile-opts
                            (begin
                              (format outp "    compile_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" compile-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" compile-opts)
                              (format outp "    ]~%")))
                        (if archive-opts
                            (begin
                              (format outp "    archive_opts = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" archive-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" archive-opts)
                              (format outp "    ]~%")))
                        (if link-opts
                            (begin
                              (format outp "    link_opts    = [~%")
-                             (format outp "~{        ~S~^,~%~}~%" link-opts)
+                             (format outp "~{        \"~A\"~^,~%~}~%" link-opts)
                              (format outp "    ]~%")))
                        (format outp ")~%")
                        (newline outp)))
@@ -151,9 +152,9 @@
                  (if ocamlc-opts
                      (begin
                        (format outp "##################~%")
-                       (format outp "toolchain_profile(~%")
+                       (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                   = \"vm_~A\",~%" name)
-                       (format outp "    toolchain              = \":vm_~A_profile\",~%" name)
+                       (format outp "    profile                = \":vm_~A_profile\",~%" name)
                        (format outp "    target_compatible_with = [\"@ocaml//host/target:vm\"],~%")
                        (if (eq? name 'release)
                            (format outp "    target_settings        = [\":opt_mode\"]~%"))
@@ -186,9 +187,9 @@
                  (if ocamlopt-opts
                      (begin
                        (format outp "##################~%")
-                       (format outp "toolchain_profile(~%")
+                       (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                   = \"sys_~A\",~%" name)
-                       (format outp "    toolchain              = \":sys_~A_profile\",~%" name)
+                       (format outp "    profile                = \":sys_~A_profile\",~%" name)
                        (format outp "    target_compatible_with = [\"@ocaml//host/target:sys\"],~%")
                        (if (eq? name 'release)
                            (format outp "    target_settings        = [\":opt_mode\"]~%"))

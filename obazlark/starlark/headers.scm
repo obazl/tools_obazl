@@ -365,7 +365,16 @@
                  (deps-fixed (if-let ((df
                                        (assoc-in '(:deps :resolved) (cdr stanza))))
                                      ;; (assoc-in '(:deps :fixed) (cdr stanza))))
-                                     (cdr df) #f)))
+                                     (cdr df) #f))
+
+                 (deps-conditional (if-let ((dc
+                                             (assoc-in '(:deps :conditionals)
+                                                       (cdr stanza))))
+                                           dc #f))
+             )
+
+            (format #t "~A: ~A~%" (uwhite "deps-fixed") deps-fixed)
+            (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
             ;; (error 'stop "STOP globals")
 
             (if deps-fixed
@@ -469,7 +478,12 @@
                                        ;;(assoc-in '(:link :deps :fixed)
                                        (assoc-in '(:compile :deps :resolved)
                                                  (cdr stanza))))
-                                     (cdr df) #f)))
+                                     (cdr df) #f))
+                 (deps-conditional (if-let ((dc
+                                             (assoc-in '(:deps :conditionals)
+                                                       (cdr stanza))))
+                                           dc #f))
+                 )
 
             (if deps-fixed
                 (if (not testsuite)
@@ -494,9 +508,14 @@
                      (format #f "~A" (assoc-val :name (cdr stanza))))
                     deps)))
 
+         ((:rule)
+          (format #t "~A: ~A~%" (bgred "FIXME")
+                  "global hdrs for :rule stanzas"))
+
          ((:env :ocamllex :ocamlyacc) (values))
 
          (else
-          (error 'UNHANDLED "unhandled stanza for hdrs"))
-         )))
+          (error 'UNHANDLED
+                 (format #f "unhandled stanza for hdrs: ~A" stanza))))
+         ))
    (assoc-val :dune pkg)))
