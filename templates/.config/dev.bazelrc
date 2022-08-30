@@ -1,0 +1,69 @@
+common --override_repository=rules_ocaml=/Users/gar/obazl/rules_ocaml
+common --override_repository=opam=/Users/gar/obazl/tools_opam
+common --override_repository=obazl=/Users/gar/obazl/tools_obazl
+common --override_repository=mibl=/Users/gar/obazl/mibl
+common --override_repository=libs7=/Users/gar/obazl/libs7
+
+common --color=yes
+common:dbg --subcommands=pretty_print
+common:dbg --verbose_failures
+build:dbgv --@rules_ocaml//cfg/verbose
+
+build --incompatible_enable_cc_toolchain_resolution
+build --incompatible_use_cc_configure_from_rules_cc
+
+#build --toolchain_resolution_debug=@rules_ocaml//toolchain/type:std
+#build --toolchain_resolution_debug=@rules_ocaml//toolchain/type:profile
+#build --toolchain_resolution_debug=@bazel_tools//tools/cpp:toolchain_type
+#build --toolchain_resolution_debug=.*
+
+# toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
+# with ocamlc.opt, pass --config=sysvm (sys to vm). this means:
+# cross-compile from sys platform (native code) to vm (bytecode).
+
+## IMPORTANT: --host_platform sets buildhost; --platforms sets targethost
+
+# default platform is sys for both buildhost and targethost
+
+# explicitly (sys to sys):
+build:sys --host_platform=@opam//tc/host/build:sys
+build:sys --platforms=@opam//tc/host/target:sys
+
+## use vm for both:
+build:vm --host_platform=@opam//tc/host/build:vm
+build:vm --platforms=@opam//tc/host/target:vm
+
+# more explicitly (vm to vm):
+build:vmvm --host_platform=@opam//tc/host/build:vm
+build:vmvm --platforms=@opam//tc/host/target:vm
+
+# cross-builds:
+## defaulting buildhost:
+# build:sysvm --host_platform=@opam//tc/host/build:sys
+build:sysvm --platforms=@opam//tc/host/target:vm
+
+## defaulting targethost
+build:vmsys --host_platform=@opam//tc/host/build:vm
+# build:vmsys --platforms=@opam//tc/host/target:sys
+
+# to eliminate warning
+# ld: warning: object file (bazel-out/darwin-fastbuild/bin/interop/ffi/case110/cclibs/liblibalpha.a(alpha.o)) was built for newer macOS version (12.3) than being linked (12.0)
+# build --host_macos_minimum_os=12.0
+# build --macos_minimum_os=12.0
+# build --xcode_version_config=//bzl/host/macos:host_xcodes
+
+## global config flags
+# build --no@rules_ocaml//cfg:keep-locs
+# build --no@rules_ocaml//cfg:noassert
+# build --no@rules_ocaml//cfg:opaque
+# build --no@rules_ocaml//cfg:short-paths
+# build --no@rules_ocaml//cfg:strict-formats
+# build --no@rules_ocaml//cfg:strict-sequence
+# build --no@rules_ocaml//cfg:xmo             # cross-module optimization
+
+# build --@rules_ocaml//cfg:cmt        ## -bin-annot
+# build --@rules_ocaml//cfg:debug
+# build --@rules_ocaml//cfg:verbose
+# build --@rules_ocaml//cfg/types:principal
+
+try-import .config/user.bazelrc

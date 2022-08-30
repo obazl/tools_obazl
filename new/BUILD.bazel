@@ -1,0 +1,162 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+alias(
+    name = "ws",
+    actual = ":workspace"
+)
+
+##########
+cc_binary(
+    name  = "workspace",
+    linkstatic = True,
+    srcs  = [
+        "workspace.c", "workspace.h",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I.",
+        "-Iobazl/new",
+        "-I$(GENDIR)/new",
+        "-I$(GENDIR)/external/obazl/new",
+
+        "-I$(GENDIR)",
+
+        "-I$(GENDIR)/runfiles",
+        "-I$(GENDIR)/external/obazl/runfiles",
+
+        # "-I$(GENDIR)/external/mibl/new",
+        # "-I$(GENDIR)/external/mibl/src",
+
+        # "-Iexternal/uthash/include",
+        # "-Iexternal/libinih",
+        # "-Iexternal/logc/src",
+
+        # "-Iexternal/libs7/src",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+        # "-lc_s7"
+    ],
+    data  = [
+        "//templates:all",
+        "//templates/bzl/host:BUILD.bazel",
+        "//templates/bzl/profiles:BUILD.bazel",
+        "//man/man1:new_workspace.1",
+    ],
+    deps = [
+        ":helper",
+        "//runfiles"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+##########
+cc_library(
+    name  = "helper",
+    linkstatic = True,
+    srcs  = [
+        "help.c",
+        "log.c",
+        "utils.c"
+    ],
+    hdrs = [
+        "help.h",
+        "log.h",
+        "utils.h",
+        "utstring.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/new",
+        "-I$(GENDIR)/external/obazl/new",
+        # "-I$(GENDIR)/src",
+
+        # "-I$(GENDIR)/external/mibl/new",
+        # "-I$(GENDIR)/external/mibl/src",
+
+        # "-Iexternal/uthash/include",
+        # "-Iexternal/libinih",
+        # "-Iexternal/logc/src",
+
+        # "-Iexternal/libs7/src",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+        # "-lc_s7"
+    ],
+    data  = [
+        "//templates:all",
+        "//man/man1:new_workspace.1",
+    ],
+    deps = [
+        # "@mibl//src:mibl",
+        # "@mibl//external/libinih:inih",
+        # "@logc//:logc",
+        # "//external/libinih:inih",
+        # "@libs7//src:s7",
+        # "@libs7//src:c_s7",
+        # "@libs7//vendored/linenoise",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "workspace.c",
+        "utils.c",
+        "help.c",
+        "ansi_colors.h"
+    ],
+    outs = [
+        "workspace.h",
+        "utils.h",
+        "help.h"
+    ],
+    cmd = "\n".join([
+        "$(execpath //vendored/makeheaders) $(SRCS);",
+        "cp `dirname $(location help.c)`/*.h $(RULEDIR)",
+    ]),
+    tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)

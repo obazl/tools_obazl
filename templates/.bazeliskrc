@@ -1,0 +1,11 @@
+# use this to set env vars:
+# BAZELISK_BASE_URL
+# BAZELISK_CLEAN
+# BAZELISK_GITHUB_TOKEN
+# BAZELISK_HOME
+# BAZELISK_SHUTDOWN
+# BAZELISK_SKIP_WRAPPER
+# BAZELISK_USER_AGENT
+# USE_BAZEL_VERSION
+
+## recommendation: set version in .bazelversion, not here

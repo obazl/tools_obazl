@@ -1,0 +1,9 @@
+exports_files(glob(["**"]))
+
+filegroup(
+    name = "all",
+    data = glob(["**"]),
+    visibility = ["//visibility:public"]
+)
+
+

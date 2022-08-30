@@ -1,0 +1,148 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+###########
+cc_library(
+    name  = "runfiles",
+    srcs  = [
+        "runfiles.c", "runfiles.h",
+        "log.c", "log.h",
+        "utstring.h"
+    ],
+    hdrs = ["librunfiles.h"],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-Iexternal/logc/src",
+
+        "-I$(GENDIR)/runfiles",
+        "-I$(GENDIR)/external/obazl/runfiles",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        # "-lm",
+    ],
+    # data  = [
+    #     "//templates:all",
+    #     "//man/man1:new_workspace.1",
+    # ],
+    deps = [
+        "//vendored/logc",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+##########
+cc_test(
+    name  = "test",
+    srcs  = [
+        "test.c", "test.h",
+        # "runfiles.h",
+        "log.c", "log.h",
+        "utstring.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/runfiles",
+        "-I$(GENDIR)/external/obazl/runfiles",
+
+        "-Ivendored/unity",
+        "-Iexternal/obazl/vendored/unity",
+   ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        # "-l",
+    ],
+    data  = [
+        "//templates:all",
+    ],
+    deps = [
+        ":runfiles",
+        "//vendored/unity",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "runfiles.c",
+        "test.c",
+        "ansi_colors.h"
+    ],
+    outs = [
+        "runfiles.h",
+        "test.h"
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location runfiles.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location //vendored/makeheaders) \\",
+        "    $(location ansi_colors.h) \\",
+        "    $(location runfiles.c) \\",
+        "    $(location test.c);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)
+########
+genrule(
+    name = "mkhdrs-export",
+    srcs = [
+        "runfiles.c",
+        "test.c",
+        "ansi_colors.h"
+    ],
+    outs = [
+        "librunfiles.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location runfiles.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location //vendored/makeheaders) -H \\",
+        "    $(location ansi_colors.h) \\",
+        "    $(location runfiles.c) \\",
+        "    $(location test.c) \\",
+        " > $@",
+        # "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)

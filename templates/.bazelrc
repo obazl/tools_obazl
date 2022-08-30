@@ -1,0 +1,4 @@
+build --color=yes
+
+try-import .config/user.bazelrc
+try-import .config/dev.bazelrc
