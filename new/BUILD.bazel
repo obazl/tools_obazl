@@ -59,7 +59,7 @@ cc_binary(
     data  = [
         "//templates:all",
         "//templates/bzl/host:BUILD.bazel",
-        "//templates/bzl/profiles:BUILD.bazel",
+        "//templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
     ],
     deps = [

@@ -38,13 +38,13 @@
    `(""
      " To enable custom toolchain profiles, pass --extra_toolchains=<labels>",
      " on the cmd line; e.g.",
-     "     $ bazel build //foo/bar --extra_toolchains=//bzl/profiles:default",
+     "     $ bazel build //foo/bar --extra_toolchains=//bzl/dune/profile:default",
      "",
      " Alternatively, add 'register_toolchains' lines to WORKSPACE.bazel,",
      " *before* the call to bootstrap().",
      " For example (omit the leading '#'):",
      ""
-     ,(format #f "~{register_toolchains(\"//bzl/profiles:~A\")~^~%#~}~%#" profiles)
+     ,(format #f "~{register_toolchains(\"//bzl/dune/profile:~A\")~^~%#~}~%#" profiles)
      "load(\"@coswitch//:BOOTSTRAP.bzl\", \"bootstrap\")"
      "bootstrap()"
      )
@@ -77,7 +77,7 @@
                (_ (format #t "~A: ~A~%" (uwhite "stanzas") stanzas))
                (env (assoc-val :env stanzas))
                (_ (format #t "~A: ~A~%" (uwhite "env") env))
-               (profiles-dir (format #f "~A/bzl/profiles" pkg-path))
+               (profiles-dir (format #f "~A/bzl/dune/profile" pkg-path))
                (_ (system (format #f "mkdir -p ~A" profiles-dir)))
                (build-file (format #f "~A/BUILD.bazel" profiles-dir))
                (_ (format #t "~A: ~A~%" (uwhite "build-file") build-file))
@@ -92,7 +92,7 @@
                        ))
                )
           (format outp "load(\"@rules_ocaml//toolchain:profiles.bzl\",~%")
-          (format outp "     \"toolchain_profile_selector\", \"ocaml_profile\")")
+          (format outp "     \"toolchain_profile_selector\", \"ocaml_toolchain_profile\")")
           (newline outp)
 
           (format outp (instructions (-env->profile-names env)))
@@ -127,8 +127,8 @@
                               archive-opts link-opts)
                              (-profile->opts (cdr profile))))
 
-                 ;;TODO: if name is dev, use target_settings = [\":fastbuild_mode\"]
-                 ;;TODO: if name is release, use target_settings = [\":opt_mode\"]
+                 ;;TODO: if name is dev, use toolchain_constraints = [\":fastbuild_mode\"]
+                 ;;TODO: if name is release, use toolchain_constraints = [\":opt_mode\"]
 
                  (if (eq? :_ (car profile))
                      (begin
@@ -140,7 +140,7 @@
                        (newline outp)
                        (newline outp)
 
-                       (format outp "ocaml_profile(~%")
+                       (format outp "ocaml_toolchain_profile(~%")
                        (format outp "    name         = \"~A_profile\",~%" name)
                        (if compile-opts
                            (begin
@@ -166,17 +166,17 @@
                        (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                   = \"vm_~A\",~%" name)
                        (format outp "    profile                = \":vm_~A_profile\",~%" name)
-                       (format outp "    target_compatible_with = [\"@ocaml//host/target:vm\"],~%")
+                       (format outp "    target_platform_constraints = [\"@ocaml//host/target:vm\"],~%")
                        (case name
-                         ((dev) (format outp "    target_settings        = [\":fastbuild_mode\"]~%"))
-                         ((release) (format outp "    target_settings        = [\":opt_mode\"]~%"))
-                         ((dbg) (format outp "    target_settings        = [\":dbg_mode\"]~%"))
-                         ((debug) (format outp "    target_settings        = [\":dbg_mode\"]~%")))
+                         ((dev) (format outp "    toolchain_constraints        = [\":fastbuild_mode\"]~%"))
+                         ((release) (format outp "    toolchain_constraints        = [\":opt_mode\"]~%"))
+                         ((dbg) (format outp "    toolchain_constraints        = [\":dbg_mode\"]~%"))
+                         ((debug) (format outp "    toolchain_constraints        = [\":dbg_mode\"]~%")))
                        (format outp ")~%")
                        (newline outp)
                        (newline outp)
 
-                       (format outp "ocaml_profile(~%")
+                       (format outp "ocaml_toolchain_profile(~%")
                        (format outp "    name         = \"vm_~A_profile\",~%" name)
                        (if compile-opts
                            (begin
@@ -204,14 +204,14 @@
                        (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                   = \"sys_~A\",~%" name)
                        (format outp "    profile                = \":sys_~A_profile\",~%" name)
-                       (format outp "    target_compatible_with = [\"@ocaml//host/target:sys\"],~%")
+                       (format outp "    target_platform_constraints = [\"@ocaml//host/target:sys\"],~%")
                        (if (eq? name 'release)
-                           (format outp "    target_settings        = [\":opt_mode\"]~%"))
+                           (format outp "    toolchain_constraints        = [\":opt_mode\"]~%"))
                        (format outp ")~%")
                        (newline outp)
                        (newline outp)
 
-                       (format outp "ocaml_profile(~%")
+                       (format outp "ocaml_toolchain_profile(~%")
                        (format outp "    name         = \"sys_~A_profile\",~%" name)
                        (if compile-opts
                            (begin

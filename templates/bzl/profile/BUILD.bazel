@@ -1,0 +1,107 @@
+load("@rules_ocaml//toolchain:profiles.bzl",
+     "toolchain_profile_selector", "ocaml_toolchain_profile")
+
+package(default_visibility = ["//visibility:public"])
+
+# To enable custom toolchain profiles, pass --extra_toolchains=<labels>
+# on the cmd line; e.g.
+#     $ bazel build //foo/bar --extra_toolchains=//bzl/profile:dbg
+#
+# Alternatively, add 'register_toolchains' lines to WORKSPACE.bazel,
+# *before* the call to bootstrap().
+# For example (omit the leading '#'):
+#
+#register_toolchains("//bzl/profile:dev")
+#register_toolchains("//bzl/profile:dbg")
+#register_toolchains("//bzl/profile:opt")
+#
+#load("@coswitch//:BOOTSTRAP.bzl", "bootstrap")
+#bootstrap()
+
+## Both methods merely register the profile selectors; to become
+## activated, the constraints must be satisfied. These samples have no
+## host platform constraints; to satisfy the toolchain constraints
+## pass the --compilation_mode (or -c) flag.
+
+# (Please do not be alarmed by the mismatch between concept and
+# terminology; we are using the toolchain mechanism to support both
+# toolchains proper and toolchain profiles, and we use slightly more
+# accurate terminology than Bazel does, e.g. what Bazel calls a
+# "toolchain" actually functions as a toolchain selector
+# specification, so that's what we call it.)
+
+## Here are the toolchain profiles defined here, and their intended
+## purpose. Edit as you wish.
+
+# //bzl/profiles:default - matches any toolchain
+# //bzl/profiles:dbg - activate with --compilation_mode=dbg (-c dbg)
+# //bzl/profiles:dev - activate with --compilation_mode=fastbuild (default)
+# //bzl/profiles:opt - activate with --compilation_mode=opt (-c opt)
+
+# If multiple toolchain profile selectors are registered, the first
+# one whose constraints are satisfied will be selected. So for example,
+# if the unconstrained //bzl/profile:default is registered first,
+# it will always be selected.
+
+#################################
+config_setting(name = "dbg_mode",
+               values = {"compilation_mode": "dbg"})
+
+config_setting(name   = "fastbuild_mode",
+               values = {"compilation_mode": "fastbuild"})
+
+config_setting(name   = "opt_mode",
+               values = {"compilation_mode": "opt"})
+
+###########################
+toolchain_profile_selector(
+    name    = "default",
+    profile = ":default_profile",
+)
+
+ocaml_toolchain_profile(
+    name         = "default_profile",
+    compile_opts = [
+        "-bin-annot",
+        "-annot",
+        "-strict-sequence",
+        "-keep-locs",
+        "-no-alias-deps"
+    ]
+)
+###########################
+toolchain_profile_selector(
+    name                  = "dev",
+    profile               = ":dev_profile",
+    toolchain_constraints = [":fastbuild_mode"]
+)
+
+ocaml_toolchain_profile(
+    name                  = "dev_profile",
+    compile_opts          = [], # you decide
+    link_opts             = [] # you decide
+)
+###########################
+toolchain_profile_selector(
+    name                  = "dbg",
+    profile               = ":dbg_profile",
+    toolchain_constraints = [":dbg_mode"]
+)
+
+ocaml_toolchain_profile(
+    name                  = "dbg_profile",
+    compile_opts          = ["-g"], # you decide
+    link_opts             = ["-g"] # you decide
+)
+###########################
+toolchain_profile_selector(
+    name                  = "opt",
+    profile               = ":opt_profile",
+    toolchain_constraints = [":opt_mode"]
+)
+
+ocaml_toolchain_profile(
+    name                  = "opt_profile",
+    compile_opts          = [], # you decide
+    link_opts             = [] # you decide
+)
