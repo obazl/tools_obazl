@@ -1,11 +1,12 @@
 (define (-tool-for-genrule pkg-path tool deps)
-  (format #t "~A: ~A~%" (blue "-tool-for-genrule") tool)
+  (format #t "~A: ~A~%" (ublue "-tool-for-genrule") tool)
   (format #t "~A: ~A~%" (blue "deps") deps)
   (case tool
     ((::cat) 'cat) ;; FIXME: use lookup table from constants.scm
     (else
      ;; not a (builtin) shell tool
-     (let* ((tool-deps (assoc-val ::tools deps))
+     (let* ((tool-deps (if-let ((tds (assoc-val ::tools deps)))
+                               tds deps))
             (_ (format #t "~A: ~A~%" (blue "tool-deps") tool-deps))
             (tool (if (keyword? tool)
                       (let* ((tool-tlbl (assoc tool tool-deps))

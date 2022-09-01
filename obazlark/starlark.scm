@@ -1,5 +1,7 @@
 ;; (format #t "loading obazl/starlark.scm\n")
 
+(define *select-protases* '())
+
 (load "dune.scm")
 
 (load "starlark/headers.scm")

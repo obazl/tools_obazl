@@ -48,11 +48,11 @@
                 (format outp "= ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
                 (format outp "~A_DEPS + [\n" (if testsuite testsuite libname)))
             (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-            (format outp "    ]~%"))
+            (format outp "    ]"))
           (begin
             (format outp "    deps          = [\n" libname)
             (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-            (format outp "    ]~%")))
+            (format outp "    ]")))
       ;; else no local-deps
                ;;     (if (not (null? agg-deps))
                ;;           (if (equal? :executable (car stanza))
@@ -68,7 +68,7 @@
                 (not (null? agg-deps)))
             (format outp " + "))
         (format outp "select({~%")
-        (format outp "~{        \"~A\": [\"~A\"],~^~%~}~%"
+        (format outp "~{        \"//bzl/import:~A?\": [\"~A\"],~^~%~}~%"
                 selectors)
         (format outp "        \"//conditions:default\": []~%")
         (format outp "    })")))
@@ -272,7 +272,7 @@
                     (format #t "~A: ~A~%" (uwhite "src-selectors")
                             src-selectors)
                     (format outp "    struct        = select({~%")
-                    (format outp "~{        \"~A\": \"~A\",~^~%~}~%"
+                    (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
                             src-selectors)
                     (format outp "        \"//conditions:default\": \"~A\"~%"
                             src-default-selector)
@@ -628,7 +628,7 @@
       )))
 
 (define (-emit-sigs-hdr outp sigs pkg-modules)
-  (format #t "~A: ~A~%" (bgblue "-emit-sigs-hdr") sigs)
+  (format #t "~A: ~A~%" (ublue "-emit-sigs-hdr") sigs)
   (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules)
   (format #t "~A: ~A~%" (blue "*build-dyads*") *build-dyads*)
   (if *build-dyads*

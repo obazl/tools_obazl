@@ -1,15 +1,16 @@
 (define (-expand-bash-tool tool pkg-path stanza)
-  (format #t "~A: ~A~%" (blue "-expand-bash-tool") tool)
-  (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
-  (format #t "~A: ~A~%" (blue "stanza") stanza)
+  (format #t "~A: ~A~%" (ublue "-expand-bash-tool") tool)
+  (format #t "~A: ~A~%" (uwhite "pkg-path") pkg-path)
+  (format #t "~A: ~A~%" (uwhite "stanza") stanza)
 
   (let ((tool (if (string? tool) tool (format #f "~A" tool))))
     (if (member (string->symbol tool) shell-tools)
-        #f
+        (begin
+          (format #t "~A: ~A~%" (red "FOO") tool)
+          #f)
         (let* ((key (string->keyword tool)))
-          ;; search :deps
           (let* ((deps (assoc-val :deps stanza))
-                 (_ (format #t "~A: ~A~%" (yellow "searching") deps))
+                 (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
                  (match (find-if (lambda (dep)
                                    ;; (format #t "~A: ~A~%" (yellow "dep") dep)
                                    (eq? key (car dep)))
@@ -25,7 +26,7 @@
                                     (error 'fixme "bash tool has :tgts"))))
                   (format #t "~A: ~A~%" (yellow "RESOLVED") tgt)
                   tgt)
-                tool))))))
+                (format #t "~A" tool)))))))
 
 (define (-expand-bash-arg arg pkg-path stanza)
   (format #t "~A: ~A~%" (blue "-expand-bash-arg") arg)
@@ -46,9 +47,9 @@
                  ;; (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
                  (pkg (if (equal? pkg-path pkg) "" pkg))
                  (tgt (if-let ((t (assoc-val :tgt lbl)))
-                              (format #f "$(location ~A:~A)" pkg t)
+                              (format #f "$(rootpath ~A:~A)" pkg t)
                               (if-let ((t (assoc-val :tgts lbl)))
-                                      (format #f "$(locations ~A:~A)" pkg t)
+                                      (format #f "$(rootpaths ~A:~A)" pkg t)
                                       (error 'fixme "lbl missing tgt/tgs")))))
             (format #t "~A: ~A~%" (yellow "RESOLVED") tgt)
             tgt)
@@ -57,7 +58,7 @@
 ;; handle all pct-vars: %{deps}, %{target}, etc.
 ;; also filename literals
 (define (-expand-bash-args args pkg-path stanza)
-  (format #t "~A: ~A~%" (blue "-expand-bash-args") args)
+  (format #t "~A: ~A~%" (ublue "-expand-bash-args") args)
   ;; args is either a string (the tool), a list of one string, or list of strings & syms
   ;; (bash "...cmd...")
   ;; or (run bash "foo.sh" bar ...)
@@ -104,7 +105,7 @@
                             ;; (format #t "~A: ~A~%" (red "sfx") sfx)
                             (format #f "~A~A~A" pfx replacement sfx))
                           (-expand-bash-arg arg pkg-path stanza))))
-                  arg-list)))
+                  (cdr arg-list))))
         (regfree rgx)
         (let* ((expanded-args
                 (if-let ((stdout (assoc-in '(:actions :stdout) stanza)))
@@ -116,7 +117,7 @@
           (format #t "~A: ~A~%" (red "EXPANDED ARGS") expanded-args)
           (values expanded-tool expanded-args))))))
 
-(define (-emit-bash-cmd outp pkg-path stanza)
+(define (-emit-bash-cmd outp with-stdout? outs pkg-path stanza)
   (format #t "~A: ~A~%" (blue "-emit-bash-cmd") stanza)
   (let* ((args (assoc-in '(:actions :cmd :args) stanza))
          (args (cdr args))
@@ -128,9 +129,12 @@
       (format #t "~A: ~S~%" (yellow "parsed args") parsed-args)
 
       (format outp "    cmd_bash   = \" \".join([\n")
-      (format outp "~{        ~S~^,~%~}~%" parsed-args)
-      ;; (if stdout
-      ;;     (format outp "        \"> $@\",\n"))
+      (format outp "        \"$(execpath ~A)\",~%" tool)
+      (format outp "        \"$(SRCS);\",~%")
+      ;; (format outp "~{        ~S~^,~%~}~%" parsed-args)
+      (if with-stdout?
+          (format outp "        \"> $@\",\n")
+          (format outp "        \"cp ~{~A ~} $@\",\n" outs))
       (format outp "    ]),\n")
       (if tool
           (format outp "    tools   = [~S]\n" tool))

@@ -1,3 +1,5 @@
+;; rules.scm
+
 (define (-deps-kw->cmd-args deps)
   (format #t "~A: ~A~%" (blue "-deps-kw->cmd-args") deps)
   (let ((args (map (lambda (dep)
@@ -5,19 +7,19 @@
                      (case (car dep)
                        ((::) ;; local files, :foo.txt
                         (map (lambda (d)
-                               (format #f "$(Location ~A)" d))
+                               (format #f "$(rootpath ~A)" d))
                              (cdr dep)))
 
                        ((:_) ;; //pkg:tgt files
                         (map (lambda (d)
-                               (format #f "$(Location //~A)" d))
+                               (format #f "$(rootpath //~A)" d))
                              (cdr dep)))
 
                        (else ;; custom tag
                         (map (lambda (d)
                                ;; FIXME: could contain either :: or :_ files
                                ;; e.g. (:css file_glob(*.css)) => (::css (:: "foo.css"...
-                               (format #f "$(Location //~A)" d))
+                               (format #f "$(rootpath //~A)" d))
                              (cdr dep)))))
                    deps)))
     (apply append args)))
@@ -67,7 +69,7 @@
                    (format #t "~A: ~A~%" (red "Arg is") arg)
                    (let ((outs (-outputs->outs-attr pkg-path outputs)))
                      (map (lambda (out)
-                            (format #f "$(location ~A)" out))
+                            (format #f "$(rootpath ~A)" out))
                           outs)))
 
                   ((equal? arg ::deps)
@@ -82,12 +84,12 @@
                                    (tgt (assoc-val tgt-tag label)))
                               (if (equal? pkg pkg-path)
                                   (if (eq? tgt-tag :tgts)
-                                      (format #f "$(locations :~A)" tgt)
-                                      (format #f "$(location :~A)" tgt))
+                                      (format #f "$(rootpaths :~A)" tgt)
+                                      (format #f "$(rootpath :~A)" tgt))
                                   (if (eq? tgt-tag :tgts)
-                                      (format #f "$(locations //~A~A)"
+                                      (format #f "$(rootpaths //~A:~A)"
                                               pkg tgt)
-                                      (format #f "$(location //~A~A)"
+                                      (format #f "$(rootpath //~A:~A)"
                                               pkg tgt)))))
                           deps))
 
@@ -109,12 +111,12 @@
                                   (tgt (assoc-val tgt-tag label)))
                              (if (equal? pkg pkg-path)
                                  (if (eq? tgt-tag :tgts)
-                                     (format #f "$(locations ~A)" tgt)
-                                     (format #f "$(location ~A)" tgt))
+                                     (format #f "$(rootpaths :~A)" tgt)
+                                     (format #f "$(rootpath :~A)" tgt))
                                  (if (eq? tgt-tag :tgts)
-                                     (format #f "$(locations //~A~A)"
+                                     (format #f "$(rootpaths //~A:~A)"
                                               pkg tgt)
-                                     (format #f "$(location //~A~A)"
+                                     (format #f "$(rootpath //~A:~A)"
                                              pkg tgt)))))
                          ;; else not found in :deps, try :outputs?
                          (error 'fixme
@@ -123,7 +125,7 @@
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "arg: string literal\n")
-                   ;; how do we know which strings need $(location)?
+                   ;; how do we know which strings need $(rootpath)?
                    ;; assumption: files must be listed in deps, so any
                    ;; strings we see are just string args
                    (if-let ((x (-arg->dep arg deps)))
@@ -133,7 +135,7 @@
                              (let* ((fname (format #f "~A" x))
                                     (dname (dirname fname))
                                     (bname (basename fname)))
-                               (let ((tmp (format #f "$(location ~A)"
+                               (let ((tmp (format #f "$(rootpath ~A)"
                                                   (if (equal dname pkg-path)
                                                       bname fname))))
                                  tmp)))
@@ -147,7 +149,7 @@
                    (map (lambda (a)
                           (let* ((dirname (dirname a))
                                  (basename (basename a)))
-                            (format #f "$(location ~A)"
+                            (format #f "$(rootpath ~A)"
                                     (if (equal dirname pkg-path)
                                         basename a))))
                         (cdr arg)))

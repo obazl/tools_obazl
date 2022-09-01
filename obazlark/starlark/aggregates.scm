@@ -182,7 +182,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-targets outp pkg) ;; fs-path stanzas)
-  (format #t "~A: ~A\n" (blue "STARLARK-EMIT-AGGREGATE-TARGETS") pkg)
+  (format #t "~A: ~A\n" (bgblue "starlark-emit-aggregate-targets") pkg)
 
   ;; only emit header if aggregators
   (let* ((stanzas (assoc-val :dune pkg))
@@ -225,4 +225,4 @@
                        ;;     (starlark-emit-stanza-deps-and-flags outp 'ns-archive
                        ;;                                          (cadr stanza)))
 
-(format #t "loaded starlark/aggregates.scm\n")
+;; (format #t "loaded starlark/aggregates.scm\n")

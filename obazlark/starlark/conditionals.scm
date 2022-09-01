@@ -1,3 +1,66 @@
+(define (starlark-emit-select-flags outp ws pkg)
+  (format #t "~A: ~A\n" (ublue "starlark-emit-select-flags") pkg)
+
+  (if (not (null? *select-protases*))
+      (begin
+        (system "mkdir -p bzl/import")
+        (let ((outp
+               (catch #t
+                      (lambda ()
+                        (open-output-file "bzl/import/BUILD.bazel"))
+                      (lambda args
+                        (format #t "OPEN ERROR"))
+                      )))
+
+          (format outp
+                  "load(\"@bazel_skylib//rules:common_settings.bzl\", \"bool_flag\")")
+          (newline outp)
+          (format outp "package(default_visibility = [\"//visibility:public\"])")
+          (newline outp)
+          (newline outp)
+
+          (for-each
+           (lambda (key)
+             (format outp
+                     "bool_flag( name = \"~A\", build_setting_default = False )"
+                     key)
+             (newline outp)
+             (format outp "config_setting(name = \"~A?\"," key)
+             (newline outp)
+             (format outp "               flag_values = {\":~A\": str(True)})" key)
+             (newline outp)
+             (newline outp))
+           (remove-duplicates *select-protases*))
+          (close-output-port outp)))))
+
+  ;; (format #t "~A: ~A~%" (red "emitting keys") *select-protases*)
+  ;; (for-each
+  ;;  (lambda (key)
+  ;;    (format #t "~A: ~A~%" (red "key") key)
+  ;;    (let* ((builddir (format #f "bzl/import/~A" key))
+  ;;           (buildfile (format #f "bzl/import/~A/BUILD.bazel" key))
+  ;;           (_ (format #t "~A: ~A~%" (red "buildfile") buildfile))
+  ;;           (_ (system (format #f "mkdir -p ~A" builddir)))
+  ;;           (outp
+  ;;            (catch #t
+  ;;                   (lambda ()
+  ;;                     (open-output-file buildfile))
+  ;;                   (lambda args
+  ;;                     (format #t
+  ;;                             "OPEN ERROR: ~A" buildfile)))))
+  ;;   (format outp
+  ;;           "load(\"@bazel_skylib//rules:common_settings.bzl\", \"bool_flag\")")
+  ;;   (newline outp)
+  ;;   (format outp "package(default_visibility = [\"//visibility:public\"])")
+  ;;   (newline outp)
+  ;;   (newline outp)
+  ;;   (format outp
+  ;;              "bool_flag( name = \"~A\", build_setting_default = False )"
+  ;;              key)
+  ;;   (close-output-port outp)))
+  ;;  (remove-duplicates *select-protases*))
+  ;; )
+
 (define (starlark-emit-conditionals outp ws pkg)
   (format #t "~A: ~A\n" (bgred "starlark-emit-conditionals") pkg)
   (for-each

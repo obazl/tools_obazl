@@ -3,6 +3,13 @@
 (load "starlark/headers.scm")
 (load "starlark/rules.scm")
 
+;; (define (starlark-emit-tuareg outp ws pkg)
+;;   (format #t "~A: ~A~%" (red "starlark-emit-tuareg") pkg)
+;;   (if (assoc-in '(:dune :tuareg) pkg)
+;;       (begin
+;;         (format outp "fail(\"FIXME: tuareg file\")")
+;;         (newline outp))))
+
 ;; FIXME: rename emit-starlark
 (define (mibl-pkg->build-bazel ws pkg)
   (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg)
@@ -21,7 +28,9 @@
                        (lambda args
                          (format #t "OPEN ERROR"))
                        )))
-          (format #t "\nEmitting ~A, port ~A\n" build-file outp)
+
+          (format #t "~%~A: ~A~%"
+                  (bgred "Emitting buildfile") build-file)
 
           (starlark-emit-buildfile-hdr outp obazl-rules)
           ;; (newline outp)
@@ -55,11 +64,14 @@
           (format #t "emitting rules\n")
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
-          ;; (format #t "emitting conditional deps\n")
-          ;; (starlark-emit-conditionals outp ws pkg)
+          (format #t "emitting conditional deps\n")
+          (starlark-emit-select-flags outp ws pkg)
 
           (format #t "emitting filegroups\n")
           (starlark-emit-filegroups outp ws pkg)
+
+          ;; (format #t "emitting tuareg\n")
+          ;; (starlark-emit-tuareg outp ws pkg)
 
           (close-output-port outp)
 
@@ -97,16 +109,35 @@
           (starlark-emit-filegroups outp ws pkg)
           (close-output-port outp)))))
 
+;; (define (-emit-import settings ws)
+;;   ;; emit one //bzl/import structure per workspace
+;;   ;; (to handle dune 'select' flds)
+;;   ;; one string_flag/config_setting pair per selector protasis
+;;   (let* ((@ws (assoc-val ws -mibl-ws-table))
+;;          (pkgs (car (assoc-val :pkgs @ws))))
+;;     ;; 1. accumulate all select protases
+;; g    ;; alternative: update global var as we go
+;; ;; 2. generate BUILDfiles with config_settings/string_flags
+
+;;     (for-each (lambda (kv)
+;;                 )
+;;               pkgs)))
+
 (define (ws->starlark ws)
-  (format #t "~A: ~A~%" (bgblue "ws->starlark") ws)
+  (format #t "~%~A: ~A~%" (bgred "ws->starlark") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
 
-    ;; if this is the root dunefile (w/sibling dune-project file)
-    ;; and we have :env stanza, emit //profiles/BUILD.bazel
+    ;; (-emit-import-settings ws)
+
+    ;; also one //bzl/profiles per workspace
 
     (for-each (lambda (kv)
                 (format #t "~A: ~S~%" (blue "emitting pkg") (car kv))
+                ;; if this is the root dunefile (w/sibling dune-project file)
+                ;; and we have :env stanza, emit //profiles/BUILD.bazel
+                ;; PROBLEM: what if we have sub-workspaces, i.e.
+                ;; multiple (env ...) dunefiles?
                 (if (assoc 'dune-project (cdr kv))
                     (if (assoc-in '(:dune :env) (cdr kv))
                         (emit-profiles ws (cdr kv))))

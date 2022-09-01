@@ -13,9 +13,9 @@
                (_ (format #t "~A: ~A~%" (yellow "lbl") lbl))
                (pkg (assoc-val :pkg lbl))
                (tgt (if-let ((t (assoc-val :tgt lbl)))
-                            (format #f "$(location ~A)" (cdr t))
+                            (format #f "$(rootpath ~A)" (cdr t))
                             (if-let ((t (assoc-val :tgts lbl)))
-                                    (format #f "$(locations ~A)" t)
+                                    (format #f "$(rootpaths ~A)" t)
                                     (error 'fixme
                                            (format #f "no tgt/tgts in dep: ~A" found)))))
                )
@@ -41,9 +41,9 @@
                               ;;FIXME: support :fg
                               ;;FIXME: match paths
                               (if-let ((t (assoc :tgt (cdr dep))))
-                                      (format #f "$(location :~A)" (cdr t))
+                                      (format #f "$(rootpath :~A)" (cdr t))
                                       (if-let ((t (assoc :tgts (cdr dep))))
-                                              (format #f "$(locations :~A)" (cdr t))
+                                              (format #f "$(rootpaths :~A)" (cdr t))
                                               (error 'fixme
                                                      (format #f "missing tgt/tgts: ~A" dep)))))
                             (cdr dassoc))))
@@ -56,7 +56,7 @@
   (format #t "~A: ~A~%" (blue "-expand-outputs") stanza)
   (let ((outs (assoc-val :outputs stanza)))
     (format #t "~A: ~A~%" (yellow "outs") outs)
-    "foobar"))
+    "FOOBAR"))
 
 ;; FIXME: account for :ctx, which is derived from (chdir ...) in dune
 ;; the target should be written to the :ctx dir?
@@ -64,11 +64,11 @@
 ;; possible resolution: handle all :ctx rules in a separate pass?
 ;; for now just emit a comment
 (define (starlark-emit-genrule outp pkg-path stanza)
-  (format #t "~A: ~A\n" (magenta "STARLARK-EMIT-GENRULE") stanza)
+  (format #t "~A: ~A\n" (bgblue "starlark-emit-genrule") stanza)
   (let* ((action (assoc-val :actions stanza))
-         (_ (format #t "action: ~A~%" action))
+         (_ (format #t "~A: ~A~%" (uwhite "action") action))
          (tool (cadr (assoc-in '(:cmd :tool) action)))
-         (_ (format #t "tool: ~A~%" tool))
+         (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
          (bash-cmd? (eq? tool 'bash))
          (deps (assoc-val :deps stanza))
          (_ (format #t "~A: ~A~%" (cyan "deps") deps))
@@ -78,9 +78,11 @@
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
+         (with-stdout? #f) ;; FIXME
          (outputs (assoc-val :outputs stanza))
-         (_ (format #t "outputs: ~A~%" outputs))
-         (outs (-outputs->outs-attr pkg-path outputs))
+         (_ (format #t "~A: ~A~%" (ucyan "outputs") outputs))
+         (outs (outputs->outs-attr pkg-path outputs))
+         (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
 
          (name (format #f "__~A__"
                        (outs 0))))
@@ -133,7 +135,7 @@
                     (format outp "    ],\n")
 
                     (if bash-cmd?
-                        (-emit-bash-cmd outp pkg-path stanza)
+                        (-emit-bash-cmd outp with-stdout? outs pkg-path stanza)
                         (begin
                           (format outp "    cmd   = \" \".join([\n")
                           (for-each
@@ -151,9 +153,11 @@
 
                                    (if tool-dep?
                                        ;; HACK: $(location ...)
-                                       (format outp "        \"$(location ~A)\",\n" tool)
+                                       (format outp "        \"$(execpath ~A)\",\n" tool)
                                        (format outp "        \"~A\",\n" tool))
-                                   (format outp "~{        \"~A\",~^\n~}\n" xargs))
+                                   (format outp "        \"$(SRCS)\",\n")
+                                   ;; (format outp "~{        \"~A\",~^\n~}\n" xargs)
+                                   )
                                  ;; else
                                  (if (eq? :stdout (car cmd))
                                      (format outp "        \"> $@\"\n")

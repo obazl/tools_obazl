@@ -38,13 +38,13 @@
    `(""
      " To enable custom toolchain profiles, pass --extra_toolchains=<labels>",
      " on the cmd line; e.g.",
-     "     $ bazel build //foo/bar --extra_toolchains=//bzl/dune/profile:default",
+     "     $ bazel build //foo/bar --extra_toolchains=//bzl/profile/dune:default",
      "",
      " Alternatively, add 'register_toolchains' lines to WORKSPACE.bazel,",
      " *before* the call to bootstrap().",
      " For example (omit the leading '#'):",
      ""
-     ,(format #f "~{register_toolchains(\"//bzl/dune/profile:~A\")~^~%#~}~%#" profiles)
+     ,(format #f "~{register_toolchains(\"//bzl/profile/dune:~A\")~^~%#~}~%#" profiles)
      "load(\"@coswitch//:BOOTSTRAP.bzl\", \"bootstrap\")"
      "bootstrap()"
      )
@@ -54,7 +54,9 @@
   (let ((names '()))
     (for-each (lambda (profile)
                 (let ((name (keyword->symbol (car profile))))
-                  (if (eq? name '_) (set! names (cons "default" names)))
+                  (if (eq? name '_)
+                      (set! names (cons "_" names))
+                      (set! names (cons name names)))
                   ;; (if (assoc-val :compile-opts (cdr profile))
                   ;;     (set! names (cons (format #f "~A" name) names)))
                   (if (assoc-val :ocamlc-opts (cdr profile))
@@ -69,7 +71,11 @@
 ;; but dev and release seem to be standard, mapping to fastbuild and opt
 
 (define (emit-profiles ws pkg)
-  (format #t "~A: ~A\n" (ublue "emit-profiles") pkg)
+  (format #t "~A: ~A\n" (bgblue "emit-profiles") pkg)
+  (define dev-mode? #f)
+  (define opt-mode? #f)
+  (define dbg-mode? #f)
+
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :dune pkg)))
     (if dunefile
@@ -77,7 +83,7 @@
                (_ (format #t "~A: ~A~%" (uwhite "stanzas") stanzas))
                (env (assoc-val :env stanzas))
                (_ (format #t "~A: ~A~%" (uwhite "env") env))
-               (profiles-dir (format #f "~A/bzl/dune/profile" pkg-path))
+               (profiles-dir (format #f "~A/bzl/profile/dune" pkg-path))
                (_ (system (format #f "mkdir -p ~A" profiles-dir)))
                (build-file (format #f "~A/BUILD.bazel" profiles-dir))
                (_ (format #t "~A: ~A~%" (uwhite "build-file") build-file))
@@ -116,27 +122,36 @@
           ;; IOW, this is a SNAFU. Assumption: wildcard _ only used in
           ;; isolation, not with other profile definitions.
 
-          (format #t "~A~%" (blue "processing profiles"))
+          (format #t "~A~%" (uwhite "processing profiles"))
           (for-each
            (lambda (profile)
-             (format #t "~A: ~A~%" (ublue "profile") profile)
-             (let ((name (if (eq? :_ (car profile))
-                             "default"
-                             (keyword->symbol (car profile)))))
+             (format #t "~A: ~A~%" (uwhite "profile") profile)
+             (let* ((name (if (eq? :_ (car profile))
+                              "default"
+                              (keyword->symbol (car profile)))))
                (let-values (((compile-opts ocamlc-opts ocamlopt-opts
                               archive-opts link-opts)
                              (-profile->opts (cdr profile))))
 
-                 ;;TODO: if name is dev, use toolchain_constraints = [\":fastbuild_mode\"]
-                 ;;TODO: if name is release, use toolchain_constraints = [\":opt_mode\"]
+                 (case name
+                   ((dbg) (set! dbg-mode? #t))
+                   ((debug) (set! dbg-mode? #t))
+                   ((dev) (set! dev-mode? #t))
+                   ((release) (set! opt-mode? #t)))
 
-                 (if (eq? :_ (car profile))
+                 ;; :_ is default mode
+                 ;; (if (eq? :_ (car profile))
                      (begin
                        (format outp "##################~%")
                        (format outp "toolchain_profile_selector(~%")
                        (format outp "    name          = \"~A\",~%" name)
                        (format outp "    profile       = \":~A_profile\",~%" name)
-                       (format outp ")~%")
+                       (case name
+                         ((dev) (format outp "    constraints   = [\":fastbuild_mode\"]~%"))
+                         ((release) (format outp "    constraints   = [\":opt_mode\"]~%"))
+                         ((dbg) (format outp "    constraints   = [\":dbg_mode\"]~%"))
+                         ((debug) (format outp "    constraints   = [\":dbg_mode\"]~%")))
+                       (format outp ")")
                        (newline outp)
                        (newline outp)
 
@@ -158,21 +173,22 @@
                              (format outp "~{        \"~A\"~^,~%~}~%" link-opts)
                              (format outp "    ]~%")))
                        (format outp ")~%")
-                       (newline outp)))
+                       (newline outp))
+                     ;;)
 
                  (if ocamlc-opts
                      (begin
                        (format outp "##################~%")
                        (format outp "toolchain_profile_selector(~%")
-                       (format outp "    name                   = \"vm_~A\",~%" name)
-                       (format outp "    profile                = \":vm_~A_profile\",~%" name)
-                       (format outp "    target_platform_constraints = [\"@ocaml//host/target:vm\"],~%")
+                       (format outp "    name                        = \"vm_~A\",~%" name)
+                       (format outp "    profile                     = \":vm_~A_profile\",~%" name)
+                       (format outp "    target_host_constraints = [\"@ocaml//host/target:vm\"],~%")
                        (case name
-                         ((dev) (format outp "    toolchain_constraints        = [\":fastbuild_mode\"]~%"))
-                         ((release) (format outp "    toolchain_constraints        = [\":opt_mode\"]~%"))
-                         ((dbg) (format outp "    toolchain_constraints        = [\":dbg_mode\"]~%"))
-                         ((debug) (format outp "    toolchain_constraints        = [\":dbg_mode\"]~%")))
-                       (format outp ")~%")
+                ((dev) (format outp "    constraints                 = [\":fastbuild_mode\"]~%"))
+                         ((release) (format outp "    constraints                 = [\":opt_mode\"]~%"))
+                         ((dbg) (format outp "    constraints                 = [\":dbg_mode\"]~%"))
+                         ((debug) (format outp "    constraints                 = [\":dbg_mode\"]~%")))
+                       (format outp ")")
                        (newline outp)
                        (newline outp)
 
@@ -202,12 +218,16 @@
                      (begin
                        (format outp "##################~%")
                        (format outp "toolchain_profile_selector(~%")
-                       (format outp "    name                   = \"sys_~A\",~%" name)
-                       (format outp "    profile                = \":sys_~A_profile\",~%" name)
-                       (format outp "    target_platform_constraints = [\"@ocaml//host/target:sys\"],~%")
-                       (if (eq? name 'release)
-                           (format outp "    toolchain_constraints        = [\":opt_mode\"]~%"))
-                       (format outp ")~%")
+                       (format outp "    name                        = \"sys_~A\",~%" name)
+                       (format outp "    profile                     = \":sys_~A_profile\",~%" name)
+                       (format outp "    target_host_constraints = [\"@ocaml//host/target:sys\"],~%")
+                       (case name
+                         ((dev) (format outp "    constraints                 = [\":fastbuild_mode\"]~%"))
+                         ((release) (format outp "    constraints                 = [\":opt_mode\"]~%"))
+                         ((dbg) (format outp "    constraints                 = [\":dbg_mode\"]~%"))
+                         ((debug) (format outp "    constraints                 = [\":dbg_mode\"]~%")))
+
+                       (format outp ")")
                        (newline outp)
                        (newline outp)
 
@@ -235,34 +255,32 @@
 
                  )))
            env)
-          (newline outp)
 
           ;; emit bld settings for standard compilation_modes
           (format outp "################################~%")
-          (format outp "config_setting(~%")
-          (format outp "    name = \"dbg_mode\",~%")
-          (format outp "    values = {\"compilation_mode\": \"dbg\"},~%")
-          (format outp ")~%")
-          (newline outp)
+          (if dbg-mode?
+              (begin
+                (format outp "config_setting(~%")
+                (format outp "    name = \"dbg_mode\",~%")
+                (format outp "    values = {\"compilation_mode\": \"dbg\"},~%")
+                (format outp ")~%")
+                (newline outp)))
 
-          (format outp "config_setting(~%")
-          (format outp "    name = \"fastbuild_mode\",~%")
-          (format outp "    values = {\"compilation_mode\": \"fastbuild\"},~%")
-          (format outp ")~%")
-          (newline outp)
+          (if dev-mode?
+              (begin
+                (format outp "config_setting(~%")
+                (format outp "    name = \"fastbuild_mode\",~%")
+                (format outp "    values = {\"compilation_mode\": \"fastbuild\"},~%")
+                (format outp ")~%")
+                (newline outp)))
 
-          (format outp "config_setting(~%")
-          (format outp "    name = \"opt_mode\",~%")
-          (format outp "    values = {\"compilation_mode\": \"opt\"},~%")
-          (format outp ")~%")
-          (newline outp)
-
-          ;; other config_settings
-          ;; (format outp "config_setting(~%")
-          ;; (format outp "    name = \"~A\"~%," name)
-          ;; (format outp "    flag_values = {\"//bzl:foo\": \"bar\"},~%")
-          ;; (format outp ")~%")
-          ;; (newline outp)
+          (if opt-mode?
+              (begin
+                (format outp "config_setting(~%")
+                (format outp "    name = \"opt_mode\",~%")
+                (format outp "    values = {\"compilation_mode\": \"opt\"},~%")
+                (format outp ")~%")
+                (newline outp)))
 
           (close-output-port outp)))))
 

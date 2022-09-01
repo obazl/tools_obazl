@@ -164,7 +164,7 @@
                         ((pair? arg)
                          (case ((car arg))
                            ((:_srcfile :_genfile)
-                            (format #f "        \"$(location //~A)\","
+                            (format #f "        \"$(rootpath //~A)\","
                                     (make-filedep-arg-label arg)))
                            ((:_string)
                             (format #f "        \"~A\"," (cadr arg)))

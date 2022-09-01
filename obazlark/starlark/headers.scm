@@ -487,17 +487,20 @@
 
             (if deps-fixed
                 (if (not testsuite)
-                    (format outp "~A_EXE_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                    ;; (format outp "~A_EXE_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                    (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
                             libname deps-fixed)))
             (if (not (null? options))
-                (format outp "~A-EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                ;; (format outp "~A_EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n"
                         libname options))
-            (if (not (null? ocamlc_opts))
-                (format outp "~A_EXE_OCAMLC_OPTS = [~{\"~A\"~^, ~}]\n\n"
-                        libname ocamlc_opts))
-            (if (not (null? ocamlopt_opts))
-                (format outp "~A_EXE_OCAMLOPT_OPTS = [~{\"~A\"~^, ~}]\n\n"
-                        libname ocamlopt_opts))))
+            ;; (if (not (null? ocamlc_opts))
+            ;;     (format outp "~A_EXE_OCAMLC_OPTS = [~{\"~A\"~^, ~}]\n\n"
+            ;;             libname ocamlc_opts))
+            ;; (if (not (null? ocamlopt_opts))
+            ;;     (format outp "~A_EXE_OCAMLOPT_OPTS = [~{\"~A\"~^, ~}]\n\n"
+            ;;             libname ocamlopt_opts))
+            ))
 
          ((:testsuite)
           (format #t "~A: ~A~%" (bgred "testsuite") (assoc-val :name (cdr stanza)))
@@ -513,6 +516,8 @@
                   "global hdrs for :rule stanzas"))
 
          ((:env :ocamllex :ocamlyacc) (values))
+
+         ((:tuareg) (values))
 
          (else
           (error 'UNHANDLED
