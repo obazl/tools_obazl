@@ -1,4 +1,28 @@
 build --color=yes
 
-try-import .config/user.bazelrc
+# toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
+# with ocamlc.opt, pass --config=sysvm (sys to vm). this means:
+# cross-compile from sys platform (native code) to vm (bytecode).
+
+## IMPORTANT: --host_platform sets buildhost; --platforms sets targethost
+
+# default platform is sys for both buildhost and targethost
+
+## vm targethost, any buildhost:
+build:vm --platforms=@ocaml//host/target:vm
+
+# explicitly sys to sys (this is the default) :
+build:syssys --host_platform=@opam//tc/host/build:sys
+build:syssys --platforms=@opam//tc/host/target:sys
+
+# explicitly vm to vm:
+build:vmvm --host_platform=@opam//tc/host/build:vm
+build:vmvm --platforms=@opam//tc/host/target:vm
+
+# cross-builds:
+## default is always sys, for both build and target hosts
+build:sysvm --platforms=@opam//tc/host/target:vm
+build:vmsys --host_platform=@opam//tc/host/build:vm
+
 try-import .config/dev.bazelrc
+try-import .config/user.bazelrc
