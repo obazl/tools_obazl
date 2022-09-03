@@ -14,7 +14,7 @@
                (pkg (assoc-val :pkg lbl))
                (tgt (if-let ((t (assoc-val :tgt lbl)))
                             (format #f "$(rootpath ~A)" (cdr t))
-                            (if-let ((t (assoc-val :tgts lbl)))
+                            (if-let ((t (assoc-val :glob #|:tgts|# lbl)))
                                     (format #f "$(rootpaths ~A)" t)
                                     (error 'fixme
                                            (format #f "no tgt/tgts in dep: ~A" found)))))
@@ -42,7 +42,7 @@
                               ;;FIXME: match paths
                               (if-let ((t (assoc :tgt (cdr dep))))
                                       (format #f "$(rootpath :~A)" (cdr t))
-                                      (if-let ((t (assoc :tgts (cdr dep))))
+                                      (if-let ((t (assoc :glob #|:tgts|# (cdr dep))))
                                               (format #f "$(rootpaths :~A)" (cdr t))
                                               (error 'fixme
                                                      (format #f "missing tgt/tgts: ~A" dep)))))
@@ -122,12 +122,14 @@
 
                     (if (not (null? srcs))
                         (if bash-cmd?
-                            (-emit-bash-srcs outp srcs pkg-path stanza)
-                            (begin
-                              (format #t "~A: ~A~%" (red "SrcS") srcs)
-                              (format outp "    srcs  = [\n")
-                              (format outp "~{        \"~A\"~^,\n~}\n" srcs)
-                              (format outp "    ],\n"))))
+                            (emit-bash-srcs outp srcs pkg-path stanza)
+                            (emit-bash-srcs outp srcs pkg-path stanza)
+                            ;; (begin
+                            ;;   (format #t "~A: ~A~%" (red "SrcS") srcs)
+                            ;;   (format outp "    SRCS  = [\n")
+                            ;;   (format outp "~{        \"~A\"~^,\n~}\n" srcs)
+                            ;;   (format outp "    ],\n"))
+                            ))
 
                     (format outp "    outs  = [\n")
                     (format outp "~{        \"~A\"~^,\n~}\n" outs)
@@ -135,7 +137,7 @@
                     (format outp "    ],\n")
 
                     (if bash-cmd?
-                        (-emit-bash-cmd outp with-stdout? outs pkg-path stanza)
+                        (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
                         (begin
                           (format outp "    cmd   = \" \".join([\n")
                           (for-each

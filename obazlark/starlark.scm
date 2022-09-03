@@ -17,7 +17,7 @@
 (load "starlark/tools.scm")
 (load "starlark/attributes.scm")
 (load "starlark/filegroups.scm")
-(load "starlark/lexyacc.scm")
+(load "starlark/parsers.scm")
 (load "starlark/starlark.scm")
 (load "starlark/tests.scm")
 

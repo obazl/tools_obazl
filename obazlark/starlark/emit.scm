@@ -15,6 +15,7 @@
   (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg)
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :dune pkg)))
+    (format #t "~A: ~A~%" (uwhite "dune") dunefile)
     (if dunefile
         (let* ((stanzas (cadr dunefile))
                (obazl-rules (pkg->obazl-rules pkg))
@@ -98,6 +99,7 @@
           )
         ;; no :dune, emit filegroups
         (let* ((build-file (string-append pkg-path "/BUILD.bazel"))
+               (_ (format #t "~A: ~A~%" (uwhite "build-file") build-file))
                (outp
                 (catch #t
                        (lambda ()

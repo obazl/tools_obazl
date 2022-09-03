@@ -3,6 +3,8 @@
   (format #t "~A: ~A~%" (blue "deps") deps)
   (case tool
     ((::cat) 'cat) ;; FIXME: use lookup table from constants.scm
+    ((::deps)
+     (car deps))
     (else
      ;; not a (builtin) shell tool
      (let* ((tool-deps (if-let ((tds (assoc-val ::tools deps)))

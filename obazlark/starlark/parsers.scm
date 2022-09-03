@@ -21,7 +21,7 @@
                 ;; (newline outp)
 
                 (format outp "##########\n")
-                (format outp "ocaml_lex(\n")
+                (format outp "ocamllex(\n")
                 (format outp "    name  = \"lex_~S\",\n" module-name)
                 (format outp "    src   = \"~A\",\n" (cdr ocamllex))
                         ;; (string-append module-name ".mll"))
@@ -43,8 +43,31 @@
                 (format #t "emitting ocamlyacc: ~A\n" ocamlyacc)
 
                 (format outp "##########\n")
-                (format outp "ocaml_yacc(\n")
+                (format outp "ocamlyacc(\n")
                 (format outp "    name  = \"yacc_~S\",\n" module-name)
+                (format outp "    src   = \"~A\",\n" (cdr ocamlyacc))
+                (format outp "    outs  = [\"~A.ml\", \"~A.mli\"]~%" principal-name principal-name)
+                (format outp ")")
+                (newline outp)))
+            (cdr stanza)))
+
+(define (starlark-emit-menhir outp stanza)
+  (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza)
+  (format outp "#######  emitting menhir ####")
+  (newline outp)
+
+  (for-each (lambda (ocamlyacc)
+              (let* ((principal-name (principal-name (cdr ocamlyacc)))
+                     (module-name (car ocamlyacc))
+                     (target-name (string-copy
+                                   (format #f "~A" module-name))))
+                (string-set! target-name 0
+                             (char-upcase (string-ref target-name 0)))
+                (format #t "emitting ocamlyacc: ~A\n" ocamlyacc)
+
+                (format outp "##########\n")
+                (format outp "menhir(\n")
+                (format outp "    name  = \"menhir_~S\",\n" module-name)
                 (format outp "    src   = \"~A\",\n" (cdr ocamlyacc))
                 (format outp "    outs  = [\"~A.ml\", \"~A.mli\"]~%" principal-name principal-name)
                 (format outp ")")
@@ -71,7 +94,7 @@
                   ((:ocamlyacc)
                    (starlark-emit-ocamlyacc outp stanza))
                   ((:menhir)
-                   (error 'fixme "emit-menhir not implemented"))
+                   (starlark-emit-menhir outp stanza))
                   ;; etc.
                   (else)
                    ))

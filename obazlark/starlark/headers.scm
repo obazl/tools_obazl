@@ -113,15 +113,12 @@
 
 
 
+        (if (member :ocamllex obazl-rules)
+            (format outp "     \"ocamllex\",\n"))
+
         ;; (if (or (assoc-in '(:stanzas :executable) (cdr obazl-rules))
         ;;         (assoc-in '(:stanzas :executables) (cdr obazl-rules)))
         ;;     (format outp "     \"ocaml_executable\",\n"))
-
-        ;; (if (assoc-in '(:stanzas :ocamllex) (cdr obazl-rules))
-        ;;     (format outp "     \"ocaml_lex\",\n"))
-
-        (if (member :ocamllex obazl-rules)
-            (format outp "     \"ocaml_lex\",\n"))
 
         (if (member :module obazl-rules)
             (format outp "     \"ocaml_module\",\n"))
@@ -142,11 +139,25 @@
             (format outp "     \"ocaml_test\",\n"))
 
         (if (member :ocamlyacc obazl-rules)
-            (format outp "     \"ocaml_yacc\",\n"))
+            (format outp "     \"ocamlyacc\",\n"))
 
         (if (member :ppx obazl-rules)
             (format outp "     \"ppx_executable\",\n"))
 
+        (format outp ")\n")
+
+        (newline outp)
+
+        ))
+
+  (if (find-if (lambda (rule)
+                 (member rule '(:menhir)))
+               obazl-rules)
+      (begin
+        (format outp "load(\"@obazl//build/rules_ocaml.bzl\",\n")
+
+        (if (member :menhir obazl-rules)
+            (format outp "     \"menhir\",\n"))
 
         (format outp ")\n")
 
@@ -343,184 +354,187 @@
   (for-each
    (lambda (stanza)
      (format #t "~A: ~A~%" (uwhite "stanza") stanza)
-     (let ((testsuite (assoc-val :in-testsuite (cdr stanza))))
-       (case (car stanza)
-         ((:archive :library :ns-archive :ns-library)
-          (let* ((libname (string-upcase
-                           ;; privname or pubname?
-                           (stringify (assoc-val :privname (cdr stanza)))))
+     (if (not (equal? :exports-files (car stanza)))
+         (let ((testsuite (assoc-val :in-testsuite (cdr stanza))))
+           (case (car stanza)
+             ((:archive :library :ns-archive :ns-library)
+              (let* ((libname (string-upcase
+                               ;; privname or pubname?
+                               (stringify (assoc-val :privname (cdr stanza)))))
 
-                 ;; compile-options is an alist,
-                 ;; keys :generic, :ocamlc, :ocamlopt
-                 (archive-options (-get-archive-opts (cdr stanza)))
-                 (_ (format #t "~A: ~A~%" (bgyellow "archive-options")
-                            archive-options))
-                 (compile-options (-get-compile-opts (cdr stanza)))
-                 (_ (format #t "~A: ~A~%" (bgyellow "compile-options")
-                            compile-options))
-                 (exec-options (-get-exec-opts (cdr stanza)))
-                 (_ (format #t "~A: ~A~%" (bgyellow "exec-options")
-                            exec-options))
+                     ;; compile-options is an alist,
+                     ;; keys :generic, :ocamlc, :ocamlopt
+                     (archive-options (-get-archive-opts (cdr stanza)))
+                     (_ (format #t "~A: ~A~%" (bgyellow "archive-options")
+                                archive-options))
+                     (compile-options (-get-compile-opts (cdr stanza)))
+                     (_ (format #t "~A: ~A~%" (bgyellow "compile-options")
+                                compile-options))
+                     (exec-options (-get-exec-opts (cdr stanza)))
+                     (_ (format #t "~A: ~A~%" (bgyellow "exec-options")
+                                exec-options))
 
-                 (deps-fixed (if-let ((df
-                                       (assoc-in '(:deps :resolved) (cdr stanza))))
-                                     ;; (assoc-in '(:deps :fixed) (cdr stanza))))
-                                     (cdr df) #f))
+                     (deps-fixed (if-let ((df
+                                           (assoc-in '(:deps :resolved) (cdr stanza))))
+                                         ;; (assoc-in '(:deps :fixed) (cdr stanza))))
+                                         (cdr df) #f))
 
-                 (deps-conditional (if-let ((dc
-                                             (assoc-in '(:deps :conditionals)
-                                                       (cdr stanza))))
-                                           dc #f))
-             )
+                     (deps-conditional (if-let ((dc
+                                                 (assoc-in '(:deps :conditionals)
+                                                           (cdr stanza))))
+                                               dc #f))
+                     )
 
-            (format #t "~A: ~A~%" (uwhite "deps-fixed") deps-fixed)
-            (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
-            ;; (error 'stop "STOP globals")
+                (format #t "~A: ~A~%" (uwhite "deps-fixed") deps-fixed)
+                (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
+                ;; (error 'stop "STOP globals")
 
-            (if deps-fixed
-                (begin
-                  (format outp "~A_DEPS = [\n" libname)
-                  (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
-                  (format outp "]\n")
-                  (format outp "\n")
-                  ))
+                (if deps-fixed
+                    (begin
+                      (format outp "~A_DEPS = [\n" libname)
+                      (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
+                      (format outp "]\n")
+                      (format outp "\n")
+                      ))
 
-            (if (not (null? archive-options))
-                (begin
-                  (format outp "~A_ARCHIVE_OPTS = [\n" libname)
-                  (format outp "~{        \"~A\"~^,\n~}\n" archive-options)
-                  (format outp "]\n")
-                  (format outp "\n")
-                  )
-                )
+                (if (not (null? archive-options))
+                    (begin
+                      (format outp "~A_ARCHIVE_OPTS = [\n" libname)
+                      (format outp "~{        \"~A\"~^,\n~}\n" archive-options)
+                      (format outp "]\n")
+                      (format outp "\n")
+                      )
+                    )
 
-            ;; (if (not (null? compile-options))
-            (if (assoc :generic compile-options)
-                (begin
-                  (format outp "~A_COMPILE_OPTS = [\n" libname)
-                  (format outp "~{        \"~A\"~^,\n~}\n"
-                          (assoc-val :generic compile-options))
-                  (format outp "]")
-                  (if (or (assoc :ocamlc compile-options)
-                          (assoc :ocamlopt compile-options))
-                      (begin
-                        (format outp " + select({\n")
-                        (format outp "    \"@ocaml//host/target:vm\": ")
-                        (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                        (format outp "    \"@ocaml//host/target:sys\": ")
-                        (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
-                        (format outp "    \"//conditions:default\": ")
-                        (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
-                        (format outp "})\n")
-                        (newline outp)
-                        )
-                      ;; else
-                      (begin
-                        (newline outp)
-                        (newline outp))))
-                ;; else toolchain-specific only
-                (begin
-                  (if (or (assoc :ocamlc compile-options)
-                          (assoc :ocamlopt compile-options))
-                      (begin
-                        (format outp "~A_COMPILE_OPTS = select({\n" libname)
-                        (format outp "    \"@ocaml//host/target:vm\": ")
-                        (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                        (format outp "    \"@ocaml//host/target:sys\": ")
-                        (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
-                        (format outp "    \"//conditions:default\": ")
-                        (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
-                        (format outp "})\n")
-                        (newline outp))
-                      ;; else
-                      (begin
-                        (newline outp)
-                        (newline outp)))))))
+                ;; (if (not (null? compile-options))
+                (if (assoc :generic compile-options)
+                    (begin
+                      (format outp "~A_COMPILE_OPTS = [\n" libname)
+                      (format outp "~{        \"~A\"~^,\n~}\n"
+                              (assoc-val :generic compile-options))
+                      (format outp "]")
+                      (if (or (assoc :ocamlc compile-options)
+                              (assoc :ocamlopt compile-options))
+                          (begin
+                            (format outp " + select({\n")
+                            (format outp "    \"@ocaml//host/target:vm\": ")
+                            (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
+                            (format outp "    \"@ocaml//host/target:sys\": ")
+                            (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
+                            (format outp "    \"//conditions:default\": ")
+                            (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
+                            (format outp "})\n")
+                            (newline outp)
+                            )
+                          ;; else
+                          (begin
+                            (newline outp)
+                            (newline outp))))
+                    ;; else toolchain-specific only
+                    (begin
+                      (if (or (assoc :ocamlc compile-options)
+                              (assoc :ocamlopt compile-options))
+                          (begin
+                            (format outp "~A_COMPILE_OPTS = select({\n" libname)
+                            (format outp "    \"@ocaml//host/target:vm?\": ")
+                            (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
+                            (format outp "    \"@ocaml//host/target:sys?\": ")
+                            (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
+                            (format outp "    \"//conditions:default\": ")
+                            (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
+                            (format outp "})\n")
+                            (newline outp))
+                          ;; else
+                          (begin
+                            (newline outp)
+                            (newline outp)))))))
 
-         ((:executable :test)
-          (format #t "exec globals\n")
-          (let* ((libname (string-upcase
-                           ;; privname or pubname?
-                           (stringify (assoc-val :privname (cdr stanza)))))
-                 (_ (format #t "libname: ~A~%" libname))
-                 (opts (if-let ((opts (assoc-in '(:compile :opts)
-                                                (cdr stanza))))
-                               (cdr opts) '()))
-                 (_ (format #t "opts: ~A~%" opts))
-                 (opens (if-let ((opens (assoc-val :opens opts)))
-                                (apply append (map (lambda (o)
-                                                     (list "-open" (stringify o)))
-                                                   opens))
-                                '()))
-                 ;; (_ (format #t "opens: ~A~%" opens))
-                 (flags (if-let ((flags (assoc-val :flags opts)))
-                                (list (apply string-append
-                                             (map stringify flags)))
-                                '()))
+             ((:executable :test)
+              (format #t "exec globals\n")
+              (let* ((libname (string-upcase
+                               ;; privname or pubname?
+                               (stringify (assoc-val :privname (cdr stanza)))))
+                     (_ (format #t "libname: ~A~%" libname))
+                     (opts (if-let ((opts (assoc-in '(:compile :opts)
+                                                    (cdr stanza))))
+                                   (cdr opts) '()))
+                     (_ (format #t "opts: ~A~%" opts))
+                     (opens (if-let ((opens (assoc-val :opens opts)))
+                                    (apply append (map (lambda (o)
+                                                         (list "-open" (stringify o)))
+                                                       opens))
+                                    '()))
+                     ;; (_ (format #t "opens: ~A~%" opens))
+                     (flags (if-let ((flags (assoc-val :flags opts)))
+                                    (list (apply string-append
+                                                 (map stringify flags)))
+                                    '()))
 
-                 (ocamlc_opts (if-let ((flags (assoc-val :ocamlc opts)))
-                                      (list (apply string-append
-                                                   (map stringify flags)))
-                                      '()))
-                 (_ (format #t "g ocamlc_opts: ~A\n" ocamlc_opts))
+                     (ocamlc_opts (if-let ((flags (assoc-val :ocamlc opts)))
+                                          (list (apply string-append
+                                                       (map stringify flags)))
+                                          '()))
+                     (_ (format #t "g ocamlc_opts: ~A\n" ocamlc_opts))
 
-                 (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
-                                        (list (apply string-append
-                                                     (map stringify flags)))
-                                        '()))
-                 (_ (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts))
+                     (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
+                                            (list (apply string-append
+                                                         (map stringify flags)))
+                                            '()))
+                     (_ (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts))
 
-                 (options (apply append (list opens flags)))
-                 (_ (format #t "exe options: ~A\n" options))
-                 (standard (if (assoc :standard opts) #t #f))
+                     (options (apply append (list opens flags)))
+                     (_ (format #t "exe options: ~A\n" options))
+                     (standard (if (assoc :standard opts) #t #f))
 
-                 (deps-fixed (if-let ((df
-                                       ;;(assoc-in '(:link :deps :fixed)
-                                       (assoc-in '(:compile :deps :resolved)
-                                                 (cdr stanza))))
-                                     (cdr df) #f))
-                 (deps-conditional (if-let ((dc
-                                             (assoc-in '(:deps :conditionals)
-                                                       (cdr stanza))))
-                                           dc #f))
-                 )
+                     (deps-fixed (if-let ((df
+                                           ;;(assoc-in '(:link :deps :fixed)
+                                           (assoc-in '(:compile :deps :resolved)
+                                                     (cdr stanza))))
+                                         (cdr df) #f))
+                     (deps-conditional (if-let ((dc
+                                                 (assoc-in '(:deps :conditionals)
+                                                           (cdr stanza))))
+                                               dc #f))
+                     )
 
-            (if deps-fixed
-                (if (not testsuite)
-                    ;; (format outp "~A_EXE_DEPS = [~{\"~A\"~^, ~}]\n\n"
-                    (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
-                            libname deps-fixed)))
-            (if (not (null? options))
-                ;; (format outp "~A_EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
-                (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n"
-                        libname options))
-            ;; (if (not (null? ocamlc_opts))
-            ;;     (format outp "~A_EXE_OCAMLC_OPTS = [~{\"~A\"~^, ~}]\n\n"
-            ;;             libname ocamlc_opts))
-            ;; (if (not (null? ocamlopt_opts))
-            ;;     (format outp "~A_EXE_OCAMLOPT_OPTS = [~{\"~A\"~^, ~}]\n\n"
-            ;;             libname ocamlopt_opts))
-            ))
+                (if deps-fixed
+                    (if (not testsuite)
+                        ;; (format outp "~A_EXE_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                        (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                                libname deps-fixed)))
+                (if (not (null? options))
+                    ;; (format outp "~A_EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                    (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                            libname options))
+                ;; (if (not (null? ocamlc_opts))
+                ;;     (format outp "~A_EXE_OCAMLC_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                ;;             libname ocamlc_opts))
+                ;; (if (not (null? ocamlopt_opts))
+                ;;     (format outp "~A_EXE_OCAMLOPT_OPTS = [~{\"~A\"~^, ~}]\n\n"
+                ;;             libname ocamlopt_opts))
+                ))
 
-         ((:testsuite)
-          (format #t "~A: ~A~%" (bgred "testsuite") (assoc-val :name (cdr stanza)))
-          (let* ((name (assoc-val :name (cdr stanza)))
-                 (deps (-get-testsuite-deps name pkg)))
-            (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
-                    (string-upcase
-                     (format #f "~A" (assoc-val :name (cdr stanza))))
-                    deps)))
+             ((:testsuite)
+              (format #t "~A: ~A~%" (bgred "testsuite") (assoc-val :name (cdr stanza)))
+              (let* ((name (assoc-val :name (cdr stanza)))
+                     (deps (-get-testsuite-deps name pkg)))
+                (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
+                        (string-upcase
+                         (format #f "~A" (assoc-val :name (cdr stanza))))
+                        deps)))
 
-         ((:rule)
-          (format #t "~A: ~A~%" (bgred "FIXME")
-                  "global hdrs for :rule stanzas"))
+             ((:rule)
+              (format #t "~A: ~A~%" (bgred "FIXME")
+                      "global hdrs for :rule stanzas"))
 
-         ((:env :ocamllex :ocamlyacc) (values))
+             ((:env :ocamllex :ocamlyacc) (values))
 
-         ((:tuareg) (values))
+             ((:tuareg) (values))
 
-         (else
-          (error 'UNHANDLED
-                 (format #f "unhandled stanza for hdrs: ~A" stanza))))
-         ))
+             ((:menhir) (values))
+
+             (else
+              (error 'UNHANDLED
+                     (format #f "unhandled stanza for hdrs: ~A" stanza))))
+           )))
    (assoc-val :dune pkg)))

@@ -153,3 +153,9 @@
 
          )
     '()))
+
+;; (define* (dune->obazl path)
+;;   (let ((p (->canonical-path "compiler/./lib/../../runtime")))
+;;     (format #t "~A: ~A~%" (bgred "p") p)
+;;     p))
+

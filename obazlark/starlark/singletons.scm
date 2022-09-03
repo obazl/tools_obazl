@@ -34,7 +34,9 @@
                  selectors))))))
 
 (define (-emit-deps outp libname stanza agg-deps local-deps selectors testsuite)
-  (format #t "~A: ~A~%" (red "local-deps") local-deps)
+  (format #t "~A: ~A~%" (ublue "-emit-deps") libname)
+  (format #t "~A: ~A~%" (uwhite "agg-deps") agg-deps)
+  (format #t "~A: ~A~%" (uwhite "local-deps") local-deps)
   (if (or (not (null? local-deps))
           (not (null? agg-deps))
           selectors)
@@ -50,7 +52,7 @@
             (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
             (format outp "    ]"))
           (begin
-            (format outp "    deps          = [\n" libname)
+            (format outp "    deps          = [~%")
             (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
             (format outp "    ]")))
       ;; else no local-deps
@@ -82,13 +84,18 @@
 ;; WARNING: :modules have form (A (:ml a.ml)(:mli a.mli))
 ;; but :structures have form (A . a.ml)
 (define (-emit-module outp module stanza)
-  (format #t "~A: ~A [~A]\n" (ublue "-emit-module") module stanza)
+  (format #t "~A: ~A [~A]\n" (bgblue "-emit-module") module stanza)
   (let* ((stanza-alist (cdr stanza))
-         (_ (format #t "~A: ~A\n" "stanza-alist" stanza-alist))
-         (libname (string-append
-                   (string-upcase
-                    (stringify
-                     (assoc-val :privname stanza-alist)))))
+         (_ (format #t "~A: ~A\n" (uwhite "stanza-alist") stanza-alist))
+
+         (privname (if-let ((privname (assoc-val :privname stanza-alist)))
+                           privname
+                           #f))
+
+         (libname (if privname
+                      (string-append
+                       (string-upcase (stringify privname)))
+                      "FOOBAR"))
          (_ (format #t "em libname: ~A~%" libname))
 
          (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
@@ -106,7 +113,7 @@
                                                 stanza-alist)))
                                deps
                                '())))
-         (_ (format #t "~A: ~A~%" (uwhite "agg-deps") agg-deps))
+         (_ (format #t "~A: ~A~%" (uwhite "Agg-deps") agg-deps))
          ;; (_ (if (equal? (car module) 'Ocaml_protoc_cmdline)
          ;;        (begin
          ;;          (format #t "~A: ~A~%" (uwhite "aggregtor") stanza)
@@ -129,12 +136,12 @@
                          ;; should not happen?
                          (cdr module)))
 
-         (_ (format #t "~A: ~A~%" (uwhite "local-deps") local-deps))
+         (_ (format #t "~A: ~A~%" (uwhite "Local-deps") local-deps))
 
          (deps-conditional (assoc-in '(:deps :conditionals) stanza-alist))
          (_ (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional))
 
-         (_ (format #t "~A: ~A~%" (bgred "module") module))
+         (_ (format #t "~A: ~A~%" (uwhite "module") module))
          (module-selected
           (if deps-conditional
               ;;FIXME: deps-conditional may have more than one entry
@@ -152,7 +159,7 @@
                                 (cdr deps-conditional))))
                 x)
               #f))
-         (_ (format #t "~A: ~A~%" (bgred "module-selected") module-selected))
+         (_ (format #t "~A: ~A~%" (uwhite "module-selected") module-selected))
 
          (src-selectors
           (if module-selected
@@ -194,7 +201,7 @@
          ;;                       opts
          ;;                       '())))
 
-         (_ (format #t "OPTS: ~A\n" opts))
+         (_ (format #t "~A: ~A~%" (uwhite "OPTS") opts))
 
          (ocamlc_opts (if opts ;; (null? opts) '()
                           (if-let ((x (assoc-val :ocamlc (cdr opts))))
@@ -202,7 +209,7 @@
                                                (map stringify x)))
                                   '())
                           '()))
-         (_ (format #t "ocamlc_opts: ~A\n" ocamlc_opts))
+         (_ (format #t "~A: ~A~%" (uwhite "ocamlc_opts") ocamlc_opts))
 
          (ocamlopt_opts (if opts ;; (null? opts) '()
                             (if-let ((flags (assoc-val :ocamlopt (cdr opts))))
@@ -210,12 +217,12 @@
                                                  (map stringify flags)))
                                     '())
                             ()))
-         (_ (format #t "ocamlopt_opts: ~A\n" ocamlopt_opts))
+         (_ (format #t "~A: ~A~%" (uwhite "ocamlopt_opts") ocamlopt_opts))
 
          (ppx-alist (if-let ((ppx (assoc :ppx stanza-alist)))
                             (cdr ppx) #f))
           ;; (module->ppx-alist fs-path mname stanzas))
-         (_ (format #t "ppx-alist: ~A\n" ppx-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "ppx-alist") ppx-alist))
 
          (ppx-name (if ppx-alist (format #f "~A.ppx" libname)))
 
@@ -350,7 +357,7 @@
                (format outp "    struct        = \"~A\",\n" structfile)
 
                (if opts ;; (not (null? opts))
-                   (format outp "    opts          = ~A_OPTS,\n" libname))
+                   (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname))
 
                ;; (if (not (null? ocamlc_opts))
                ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -409,7 +416,7 @@
           (format outp "    struct        = \"~A\",\n" structfile)
 
           (if opts ;; (not (null? opts))
-              (format outp "    opts          = ~A_OPTS,\n" libname))
+              (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname))
 
           ;; (if (not (null? ocamlc_opts))
           ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -458,16 +465,17 @@
   stanza)
 
 (define (-emit-modules outp pkg modules)
-  (format #t "~A: ~A\n" (ublue "-emit-modules") modules)
+  (format #t "~A: ~A\n" (bgblue "-emit-modules") modules)
 
   (for-each
    (lambda (module)
-     (format #t "~A: ~A\n" (blue "-emit-modules module") module)
+     (format #t "~A: ~A  ~A\n" (ublue "finding aggregator for module")
+             (ured (car module)) module)
      ;; (flush-output-port)
      (let* ((modname (car module))
             (aggregator (find-if
                          (lambda (stanza)
-                           (format #t "~A ~A in stanza: ~A~%" (uwhite "searching for module:") modname stanza)
+                           (format #t "~A: ~A~%" (uwhite "searching stanza:") stanza)
                            (case (car stanza)
                              ((:ns-archive :ns-library)
                               (if-let ((submods
@@ -504,9 +512,11 @@
 
                              ((:testsuite) #f)
 
-                             ((:ocamllex :ocamlyacc) #f)
+                             ((:ocamllex :ocamlyacc :menhir) #f)
 
-                             ((:rule) (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza))
+                             ((:rule)
+                              (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza)
+                              #f)
 
                              (else
                               (error 'UNHANDLED
@@ -519,12 +529,14 @@
        ;;       (error 'STOP "STOP agg")))
        (if aggregator
            (begin
-             (format #t "Found containing aggregator for ~A: ~A\n"
+             (format #t "~A ~A: ~A\n"
+                     (uwhite "Found containing aggregator for")
                      modname aggregator)
              (-emit-module outp module aggregator)
              (format outp "\n"))
            (begin
-             (format #t "No aggregator found for ~A; excluding\n" modname)))
+             (format #t "~A ~A; excluding\n"
+                     (uwhite "No aggregator found for") modname)))
        ))
    (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
 
@@ -567,7 +579,7 @@
       (if (and ns (not *ns-topdown*))
           (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
       (format outp "    sig           = \"~A\",\n" sigfile)
-      (format outp "    opts          = ~A_OPTS,\n" libname)
+      (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname)
       (format outp "    deps          = ~A_DEPS,\n" libname)
 
       (if ppx-alist
@@ -731,6 +743,14 @@
   ;; addition, we may have :indirect submodule deps (example:
   ;; src/lib_protocol_environment/sigs)
 
+  ;; FIXME: pkg-modules will not contain modules completed by dune
+  ;; select. E.g. js_of_ocaml/compiler/lib:Sourc_map_io, where the .ml
+  ;; file is selected.
+
+  ;; FIXME: pkg-structs will contain "selectable" structs, i.e.
+  ;; structs listed as apodoses of select fields. TODO: move them from
+  ;; (:structures :static) to (:structures :conditional).
+
   (let* ((pkg-modules (if-let ((ms (assoc-in '(:modules) pkg)))
                               (cdr ms) '()))
          (pkg-structs (pkg->structs pkg))
@@ -753,14 +773,27 @@
     (if (or (not (null? pkg-modules))
             (not (null? pkg-sigs)))
         (begin
-          (format outp "#############################\n")
-          (format outp "####  Singleton Targets  ####\n")
+          (format outp "#############################")
+          (newline outp)
+          (format outp "####  Singleton Targets  ####")
           (newline outp)))
 
-    (if pkg-modules (-emit-modules outp pkg pkg-modules))
-    (if pkg-structs (-emit-modules outp pkg pkg-structs))
+    (if pkg-modules
+        (begin
+          (newline)
+          (format #t "~A~%" (bgblue "emitting pkg-modules"))
+          (-emit-modules outp pkg pkg-modules)))
+
+    (if pkg-structs
+        (begin
+          (newline)
+          (format #t "~A~%" (bgblue "emitting pkg-structs"))
+          (-emit-modules outp pkg pkg-structs)))
+
     (if (or pkg-sigs *build-dyads*)
-        (-emit-signatures outp pkg pkg-sigs pkg-modules))
+        (begin
+          (newline)
+          (-emit-signatures outp pkg pkg-sigs pkg-modules)))
     ))
 
     ;; (let ((lib-stanzas (assoc+ :library stanzas)))
@@ -788,4 +821,4 @@
     ;;   )
     ;; ))
 
-(format #t "loaded starlark/singletons.scm\n")
+;;(format #t "loaded starlark/singletons.scm\n")

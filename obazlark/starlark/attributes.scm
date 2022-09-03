@@ -56,7 +56,7 @@
                                              (format #f "~A" tgt)
                                              (format #f "//~A:~A" pkg tgt)))
 
-                                        ((:tgts)
+                                        ((:glob :tgts)
                                          (if (equal? pkg-path pkg)
                                              (format #f "~A" tgt)
                                              (format #f "//~A:~A" pkg tgt)))
