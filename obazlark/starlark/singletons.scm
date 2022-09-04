@@ -52,8 +52,8 @@
             (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
             (format outp "    ]"))
           (begin
-            (format outp "    deps          = [~%")
-            (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
+            (format outp "[~%")
+            (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
             (format outp "    ]")))
       ;; else no local-deps
                ;;     (if (not (null? agg-deps))

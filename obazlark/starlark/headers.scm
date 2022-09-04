@@ -60,6 +60,10 @@
 (define (starlark-emit-buildfile-hdr outp obazl-rules)
   (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules)
 
+  (format outp "package(default_visibility = [\"//visibility:public\"])")
+  (newline outp)
+  (newline outp)
+
   (if (member :write-file obazl-rules)
       (begin
         (format outp "load(\"@bazel_skylib//rules:write_file.bzl\", \"write_file\")\n")
@@ -150,23 +154,11 @@
 
         ))
 
-  (if (find-if (lambda (rule)
-                 (member rule '(:menhir)))
-               obazl-rules)
+  (if (member :menhir obazl-rules)
       (begin
-        (format outp "load(\"@obazl//build/rules_ocaml.bzl\",\n")
-
-        (if (member :menhir obazl-rules)
-            (format outp "     \"menhir\",\n"))
-
-        (format outp ")\n")
-
+        (format outp "load(\"@obazl//build:rules_ocaml.bzl\", \"menhir\")")
         (newline outp)
-
         ))
-
-  (format outp "package(default_visibility = [\"//visibility:public\"])\n")
-  (newline outp)
   )
 
 ;; multiple options classes:
@@ -499,9 +491,10 @@
 
                 (if deps-fixed
                     (if (not testsuite)
-                        ;; (format outp "~A_EXE_DEPS = [~{\"~A\"~^, ~}]\n\n"
-                        (format outp "~A_DEPS = [~{\"~A\"~^, ~}]\n\n"
-                                libname deps-fixed)))
+                        (begin
+                          (format outp "~A_DEPS = [~%" libname)
+                          (format outp "~{    \"~A\"~^,~%~}~%" deps-fixed)
+                          (format outp "]~%"))))
                 (if (not (null? options))
                     ;; (format outp "~A_EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
                     (format outp "~A_OPTS = [~{\"~A\"~^, ~}]\n\n"
