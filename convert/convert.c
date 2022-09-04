@@ -2,6 +2,8 @@
 
 #include "ini.h"
 #include "log.h"
+#include "utarray.h"
+
 #include "mibl.h"
 #include "convert.h"
 

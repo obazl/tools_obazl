@@ -6,6 +6,7 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "convert.c", "convert.h",
+        "log.c", "log.h", "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -25,8 +26,12 @@ cc_binary(
         "-Wpedantic",
         "-Wno-unused-function",
 
+        "-Iexternal/obazl/convert",
+
         "-I$(GENDIR)/convert",
         "-I$(GENDIR)/external/obazl/convert",
+
+        "-I$(GENDIR)/external/mibl/src",
 
         "-Iexternal/uthash/include",
         "-Iexternal/libinih",
