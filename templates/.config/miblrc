@@ -15,5 +15,5 @@ include = test
 ;; bazel-bin, bazel-out etc. - bazel symlinks
 ;; hidden files and dirs (.git/, .github/, .merlin, etc.)
 
-exclude = docs
-exclude = test/foo  ;; e.g. if test/foo contains broken stuff
+;exclude = docs
+;exclude = test/foo  ;; e.g. if test/foo contains broken stuff
