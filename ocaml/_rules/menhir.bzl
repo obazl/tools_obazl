@@ -32,11 +32,11 @@ def _menhir_impl(ctx):
         if debug: print("has _ns_resolver")
         nsop = ctx.attr._ns_resolver[OcamlProvider]
         if debug:
-            print("nsrp: %s" % nsrp)
+            # print("nsrp: %s" % nsrp)
             print("nsrp.cmi: %s" % nsrp.cmi)
             print("nsrp.cmi.struct: %s" % nsrp.struct)
             print("nsrp.cmi.ofile: %s" % nsrp.ofile)
-            print("nsop: %s" % nsop)
+            # print("nsop: %s" % nsop)
 
     tc = ctx.toolchains["@rules_ocaml//toolchain/type:std"]
 
@@ -56,7 +56,14 @@ def _menhir_impl(ctx):
     # Step 1. 'menhir parser.mly --infer-write-query parser.mock.ml'
     args = ctx.actions.args()
     args.add(mly.path) # ctx.file.src.path)
-    args.add("--base", "parser")
+    args.add("--base", ctx.attr.base)
+    if ctx.attr.token:
+        args.add("--external-tokens", ctx.attr.token[OcamlProvider].submodule)
+                 ## ctx.attr.token)
+
+    # if ctx.attr.base:
+    #     args.add("--base", ctx.attr.base)
+    args.add_all(ctx.attr.flags)
     args.add("--infer-write-query", mock_ml.path)
 
     ctx.actions.run(
@@ -73,16 +80,26 @@ def _menhir_impl(ctx):
     ## 2. 'ocamlc -I path/to/dep -i parser.mock.ml > parser.inferred.mli'
     args = ctx.actions.args()
 
-    dep_dirs = [d.dirname for d in ctx.files.deps]
+    # for d in ctx.attr.deps:
+    #     print("MENHIR DEP: %s" % d[DefaultInfo])
+
     action_inputs = [mock_ml] + ctx.files.deps
+
+    dep_dirs = [d.dirname for d in ctx.files.deps]
+    # if ctx.attr.token:
+    #     print("TOKEN: %s" % ctx.files.token)
+    #     action_inputs.extend(ctx.files.token)
+    #     dep_dirs.extend([d.dirname for d in ctx.files.token])
+
     # if OcamlNsResolverProvider in ctx.attr._ns_resolver:
     if hasattr(nsrp, "cmi"):
+        # print("NSRP: %s" % nsrp)
         nsrp = ctx.attr._ns_resolver[OcamlNsResolverProvider]
         dep_dirs.append(nsrp.cmi.dirname)
         action_inputs.append(nsrp.cmi)
         action_inputs.append(nsrp.struct)
         action_inputs.append(nsrp.ofile)
-        args.add("-open", "LibMwe")
+        args.add("-open", nsrp.module_name)
 
     args.add_all(dep_dirs, before_each="-I", uniquify = True)
     args.add("-i", mock_ml.path)
@@ -104,6 +121,11 @@ def _menhir_impl(ctx):
     ################################################################
     ## 3. 'menhir parser.mly --infer-read-reply parser.inferred.mli'
 
+    if ctx.attr.token:
+        extern = "--external-tokens " + ctx.attr.token[OcamlProvider].submodule
+    else:
+        extern = ""
+
     ## WARNING: menhir writes its output to ${PWD}, and does not seem to
     ## support any kind of -outdir option to redirect output. Since our
     ## outfiles are relative to the pkg dir, we must copy the output to
@@ -116,10 +138,16 @@ def _menhir_impl(ctx):
         command = " ".join([
             ctx.file.tool.path,
             mly.path,
-            "--base", "parser",
+            "--table", "--explain",
+            extern,
+            "--base", ctx.attr.base,
             "--infer-read-reply", inferred_mli.path + ";",
-            "cp parser.ml {dst};".format(dst=ctx.outputs.outs[0].dirname),
-            "cp parser.mli {dst};".format(dst=ctx.outputs.outs[0].dirname),
+            "cp {src} {dst};".format(
+                src= ctx.outputs.outs[0].short_path,
+                dst=ctx.outputs.outs[0].dirname),
+            "cp {src} {dst};".format(
+                src = ctx.outputs.outs[1].short_path,
+                dst=ctx.outputs.outs[1].dirname),
         ]),
         mnemonic = "EmitParser",
         progress_message = "menhir: generating parser",
@@ -153,9 +181,6 @@ menhir = rule(
             doc = """Output filenames, .ml and .mli.""",
             mandatory = True
         ),
-        opts = attr.string_list(
-            doc = "Options"
-        ),
         tool = attr.label(
             doc = "Bazel label of a menhir executable.",
             mandatory = True,
@@ -163,7 +188,36 @@ menhir = rule(
             executable = True,
             cfg = "exec"
         ),
+        base = attr.string(
+            doc = "Equivalent to --base arg",
+        ),
+        cmly = attr.bool(
+            doc = "Produce .cmly file",
+            default = False
+        ),
+        explain = attr.bool(
+            doc = "Produce basename.conflicts file",
+            default = False
+        ),
+        # options
+        flags = attr.string_list(
+            doc = "Boolean flag options"
+        ),
+        opts = attr.string_list(
+            doc = "Options of form --option val"
+        ),
+        tokens_unused = attr.string_list(
+            doc = "--unused-tokens list"
+        ),
+        token = attr.label(
+            doc = "--external-token value.",
+        ),
+        compile_errors = attr.label(
+            doc = "--compile-errors switch"
+        ),
         ## top-down namespacing support
+        ns = attr.label(
+        ),
         _ns_resolver = attr.label(
             doc = "NS resolver module for bottom-up namespacing",
             # allow_single_file = True,
