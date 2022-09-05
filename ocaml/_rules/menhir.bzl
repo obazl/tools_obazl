@@ -42,35 +42,58 @@ def _menhir_impl(ctx):
 
     pfx = "__obazl/" ## for intermediate files
 
-    mly = ctx.file.src
-    # mly = ctx.actions.declare_file(pfx + ctx.file.src.basename)
-    # ctx.actions.symlink(output=mly, target_file=ctx.file.src)
+    mly = ctx.files.grammars
 
-    mock_ml_name = paths.replace_extension(ctx.file.src.basename, ".mock.ml")
+    if len(ctx.files.grammars) > 1:
+        base_grammar = ctx.attr.base
+    else:
+        (base_grammar, extension) = paths.split_extension(
+            ctx.files.grammars[0].basename)
+
+    # mly = ctx.actions.declare_file(pfx + ctx.file.grammars.basename)
+    # ctx.actions.symlink(output=mly, target_file=ctx.file.grammars)
+
+    mock_ml_name = paths.replace_extension(base_grammar, ".mock.ml")
     mock_ml = ctx.actions.declare_file(pfx + mock_ml_name)
 
-    inferred_mli_name = paths.replace_extension(ctx.file.src.basename,
-                                                ".inferred.mli")
+    inferred_mli_name = paths.replace_extension(base_grammar, ".inferred.mli")
     inferred_mli = ctx.actions.declare_file(pfx + inferred_mli_name)
 
+    ################################################################
     # Step 1. 'menhir parser.mly --infer-write-query parser.mock.ml'
     args = ctx.actions.args()
-    args.add(mly.path) # ctx.file.src.path)
-    args.add("--base", ctx.attr.base)
-    if ctx.attr.token:
-        args.add("--external-tokens", ctx.attr.token[OcamlProvider].submodule)
-                 ## ctx.attr.token)
+    args.add_all([g.path for g in ctx.files.grammars])
 
-    # if ctx.attr.base:
-    #     args.add("--base", ctx.attr.base)
-    args.add_all(ctx.attr.flags)
+    if len(ctx.files.grammars) > 1:
+        if ctx.attr.base:
+            args.add("--base", ctx.attr.base)
+        else:
+            fail("Attribute 'base' must be used if multiple src files listed")
+
+    if ctx.attr.token:
+        args.add("--external-tokens",
+                 ctx.attr.token[OcamlProvider].submodule)
+
+    if ctx.attr.tokens_unused:
+        args.add_all(ctx.attr.tokens_unused,
+                     before_each="--unused-token", uniquify = True)
+
+    if ctx.attr.opts:
+        args.add_all(ctx.attr.opts)
+
+    if ctx.attr.flags:
+        args.add_all(ctx.attr.flags)
+
     args.add("--infer-write-query", mock_ml.path)
+
+    action_inputs  = ctx.files.grammars
+    action_outputs = [mock_ml]
 
     ctx.actions.run(
         executable = ctx.file.tool.path,
         arguments = [args],
-        inputs  = [mly],  ## ctx.file.src],
-        outputs = [mock_ml],
+        inputs  = action_inputs,
+        outputs = action_outputs,
         tools = [ctx.file.tool],
         mnemonic = "MenhirMock",
         progress_message = "menhir: generating mock",
@@ -84,12 +107,12 @@ def _menhir_impl(ctx):
     #     print("MENHIR DEP: %s" % d[DefaultInfo])
 
     action_inputs = [mock_ml] + ctx.files.deps
+    action_outputs = [inferred_mli]
 
     dep_dirs = [d.dirname for d in ctx.files.deps]
-    # if ctx.attr.token:
-    #     print("TOKEN: %s" % ctx.files.token)
-    #     action_inputs.extend(ctx.files.token)
-    #     dep_dirs.extend([d.dirname for d in ctx.files.token])
+    if ctx.attr.token:
+        action_inputs.extend(ctx.files.token)
+        dep_dirs.extend([d.dirname for d in ctx.files.token])
 
     # if OcamlNsResolverProvider in ctx.attr._ns_resolver:
     if hasattr(nsrp, "cmi"):
@@ -111,7 +134,7 @@ def _menhir_impl(ctx):
     ctx.actions.run_shell(
         arguments = [args],
         inputs  = action_inputs,
-        outputs = [inferred_mli],
+        outputs = action_outputs,
         tools   = [tc.compiler],
         command = tc.compiler.path + " $@ > " + inferred_mli.path,
         mnemonic = "ExtractMli",
@@ -119,36 +142,74 @@ def _menhir_impl(ctx):
     )
 
     ################################################################
-    ## 3. 'menhir parser.mly --infer-read-reply parser.inferred.mli'
+    ## 3. emit parser.ml, parser.mli
+    ## 'menhir parser.mly --infer-read-reply parser.inferred.mli'
+
+    action_inputs  = ctx.files.grammars + [inferred_mli]
+    action_outputs = ctx.outputs.outs
+
+    args = ctx.actions.args()
+
+    # args.add(mly.path)
+    args.add_all([g.path for g in ctx.files.grammars])
+
+    if ctx.attr.base:
+        args.add("--base", ctx.attr.base)
+
+    dep_dirs = [d.dirname for d in ctx.files.deps]
+    if ctx.attr.token:
+        action_inputs.extend(ctx.files.token)
+        dep_dirs.extend([d.dirname for d in ctx.files.token])
+
+    # args.add_all(dep_dirs, before_each="-I", uniquify = True)
 
     if ctx.attr.token:
-        extern = "--external-tokens " + ctx.attr.token[OcamlProvider].submodule
-    else:
-        extern = ""
+        args.add("--external-tokens",
+                 ctx.attr.token[OcamlProvider].submodule)
+    if ctx.attr.tokens_unused:
+        args.add_all(ctx.attr.tokens_unused,
+                     before_each="--unused-token", uniquify = True)
+    if ctx.attr.opts:
+        args.add_all(ctx.attr.opts)
+    if ctx.attr.flags:
+        args.add_all(ctx.attr.flags)
+    args.add("--infer-read-reply", inferred_mli.path)
 
-    ## WARNING: menhir writes its output to ${PWD}, and does not seem to
-    ## support any kind of -outdir option to redirect output. Since our
-    ## outfiles are relative to the pkg dir, we must copy the output to
-    ## that directory.
+    cmd = "\n".join([
+        ctx.file.tool.path + " $@;",
+        "    cp {src} {dst};".format(
+            src= ctx.outputs.outs[0].short_path,
+            dst=ctx.outputs.outs[0].dirname),
+        "    cp {src} {dst};".format(
+            src = ctx.outputs.outs[1].short_path,
+            dst=ctx.outputs.outs[1].dirname),
+    ])
+
+    # cmd = " ".join([
+    #     ctx.file.tool.path,
+    #     mly.path,
+    #     "--table", "--explain",
+    #     extern,
+    #     "--base", ctx.attr.base,
+    #     "--infer-read-reply", inferred_mli.path + ";",
+    #     "cp {src} {dst};".format(
+    #         src= ctx.outputs.outs[0].short_path,
+    #         dst=ctx.outputs.outs[0].dirname),
+    #     "cp {src} {dst};".format(
+    #         src = ctx.outputs.outs[1].short_path,
+    #         dst=ctx.outputs.outs[1].dirname),
+    # ])
+
+    ## WARNING: menhir writes its output to ${PWD} (?), and does not
+    ## seem to support any kind of -outdir option to redirect output.
+    ## Since our outfiles are relative to the pkg dir, we must copy
+    ## the output to that directory.
     ctx.actions.run_shell(
-        inputs  = [mly, inferred_mli], # ctx.file.src
-        # outputs = [mly_ml, mly_mli],
-        outputs = ctx.outputs.outs,
+        arguments = [args],
+        inputs  = action_inputs,
+        outputs = action_outputs,
         tools = [ctx.file.tool],
-        command = " ".join([
-            ctx.file.tool.path,
-            mly.path,
-            "--table", "--explain",
-            extern,
-            "--base", ctx.attr.base,
-            "--infer-read-reply", inferred_mli.path + ";",
-            "cp {src} {dst};".format(
-                src= ctx.outputs.outs[0].short_path,
-                dst=ctx.outputs.outs[0].dirname),
-            "cp {src} {dst};".format(
-                src = ctx.outputs.outs[1].short_path,
-                dst=ctx.outputs.outs[1].dirname),
-        ]),
+        command = cmd,
         mnemonic = "EmitParser",
         progress_message = "menhir: generating parser",
     )
@@ -164,9 +225,9 @@ menhir = rule(
     implementation = _menhir_impl,
     doc = """Runs menhir.""",
     attrs = dict(
-        src = attr.label(
-            doc = "A single .mly menhir source file label",
-            allow_single_file = [".mly"]
+        grammars = attr.label_list(
+            doc = "Menhir source files.",
+            allow_files = [".mly"]
         ),
         deps = attr.label_list(
             doc = "List of OCaml dependencies.",
