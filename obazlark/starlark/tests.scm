@@ -13,7 +13,6 @@
   (format outp "    ]~%")
   (format outp ")~%"))
 
-
 (define (starlark-emit-test-target outp pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza)
   (starlark-emit-executable-target outp :test pkg stanza))

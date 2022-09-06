@@ -261,13 +261,14 @@
     ;; (error 'STOP "stop cp")
     (if (equal? out-pkg pkg-path)
         (begin
-          (format #t "~A: ~A~%" (ured "emitting alias") output)
+          (format #t "~A: ~A~%" (ured "emitting copy_file") output)
           (format outp "######\n")
-          (format outp "alias(~%")
-          (format outp "    name = \"~A\",~%" out-tgt)
-          (format outp "    actual = \"~A:~A\"~%"
+          (format outp "copy_file(~%")
+          (format outp "    name = \"__~A\",~%" out-tgt)
+          (format outp "    src  = \"~A:~A\",~%"
                   (if (equal? "./" in-pkg) "//" in-pkg)
                   in-tgt)
+          (format outp "    out  = \"~A\"~%" out-tgt)
           (format outp ")~%")
           )
         (let ((out  (format #f "~A" tgt))
@@ -350,7 +351,7 @@
                        (starlark-emit-write-file-target outp stanza))
                       ;; ((::cat) ;=> genrule
                       ;;  (error 'fixme "IMPLEMENT :cat"))
-                      ((::copy)
+                      ((:copy ::copy)
                        (starlark-emit-copy-file outp pkg-path stanza))
                       ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
                       (else

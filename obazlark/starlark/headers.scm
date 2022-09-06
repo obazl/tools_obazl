@@ -16,17 +16,20 @@
                                                 (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
                                                 (_ (format #t "~A: ~A~%" (green "cmd-list") cmd-list))
                                                 (cmd-ct (length cmd-list)))
-                                           (if (> cmd-ct 1)
-                                               (fold (lambda (cmd accum)
-                                                       (format #t "~A: ~A~%" (red "cmd") cmd)
-                                                       (let ((tool (car (assoc-val :tool (cdr cmd)))))
-                                                         (case tool
-                                                           ((:write-file)
-                                                            (if (member :write-file accum)
-                                                                accum (cons :write-file accum)))
-                                                           (else accum))))
-                                                     '() cmd-list)
-                                               (list dune-rule))))
+                                           (format #t "~A: ~A~%" (green "cmd-ct") cmd-ct)
+                                           ;; (if (> cmd-ct 1)
+                                           (fold (lambda (cmd accum)
+                                                   (format #t "~A: ~A~%" (red "cmd") cmd)
+                                                   (let ((tool (car (assoc-val :tool (cdr cmd)))))
+                                                     (case tool
+                                                       ((:copy ::copy)
+                                                        (if (member :copy accum)
+                                                            accum (cons :copy accum)))
+                                                       ((:write-file)
+                                                        (if (member :write-file accum)
+                                                            accum (cons :write-file accum)))
+                                                       (else accum))))
+                                                 '() cmd-list)))
                                         ((:ocamllex) (cons :ocamllex accum))
                                         ((:ocamlyacc) (cons :ocamlyacc accum))
                                         ((:write-file) (cons :write-file accum))
@@ -67,6 +70,11 @@
   (if (member :write-file obazl-rules)
       (begin
         (format outp "load(\"@bazel_skylib//rules:write_file.bzl\", \"write_file\")\n")
+        (format outp "\n")))
+
+  (if (member :copy obazl-rules)
+      (begin
+        (format outp "load(\"@bazel_skylib//rules:copy_file.bzl\", \"copy_file\")\n")
         (format outp "\n")))
 
   (if (find-if (lambda (rule)
@@ -157,6 +165,7 @@
   (if (member :menhir obazl-rules)
       (begin
         (format outp "load(\"@obazl//build:rules_ocaml.bzl\", \"menhir\")")
+        (newline outp)
         (newline outp)
         ))
   )

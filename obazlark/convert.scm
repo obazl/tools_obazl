@@ -1,4 +1,4 @@
-(format #t "loading mibl~%")
+(format #t "loading convert.scm~%")
 
 (define arg
   "deps/literals/cwd"
@@ -136,6 +136,8 @@
 
          (mpkgs (add-filegroups-to-pkgs :@))
 
+         (mpkgs (normalize-manifests! :@))
+
          (_ (-resolve-labels :@))
 
          (_ (resolve-pkg-file-deps :@))
@@ -146,10 +148,11 @@
 
          (_ (format #t "~A~%" (red "PKG DUMP")))
          (_ (-dump-pkgs :@))
-         (_ (format #t "~A: ~A~%" (green "selectors")
-                    (remove-duplicates *select-protases*)))
-         (_ (-dump-exports :@))
-         (_ (-dump-filegroups :@))
+
+         ;; (_ (format #t "~A: ~A~%" (green "selectors")
+         ;;            (remove-duplicates *select-protases*)))
+         ;; (_ (-dump-exports :@))
+         ;; (_ (-dump-filegroups :@))
 
          )
     '()))

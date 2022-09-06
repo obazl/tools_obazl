@@ -53,26 +53,46 @@
 
 (define (starlark-emit-menhir outp stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza)
-  (format outp "#######  emitting menhir ####")
   (newline outp)
 
-  (for-each (lambda (ocamlyacc)
-              (let* ((principal-name (principal-name (cdr ocamlyacc)))
-                     (module-name (car ocamlyacc))
-                     (target-name (string-copy
-                                   (format #f "~A" module-name))))
-                (string-set! target-name 0
-                             (char-upcase (string-ref target-name 0)))
-                (format #t "emitting ocamlyacc: ~A\n" ocamlyacc)
-
-                (format outp "##########\n")
+  (for-each (lambda (parser)
+              (let ((principal-name (principal-name parser)))
+                (format #t "emitting menhir parser: ~A\n" parser)
+                (format outp "#######\n")
                 (format outp "menhir(\n")
-                (format outp "    name  = \"menhir_~S\",\n" module-name)
-                (format outp "    src   = \"~A\",\n" (cdr ocamlyacc))
-                (format outp "    outs  = [\"~A.ml\", \"~A.mli\"]~%" principal-name principal-name)
+                (format outp "    name     = \"menhir_~S\",\n" parser)
+                (format outp "    grammars = [\"~A.mly\"],\n" parser)
+                (if-let ((deps (assoc-val :deps (cdr stanza))))
+                        (begin
+                          (format outp "    deps = [~%")
+                          (format outp "~{        \"~A\"~^,~%~}~%" deps)
+                          (format outp "    ],~%")))
+                (format outp "    outs     = [\"~A.ml\", \"~A.mli\"],~%" principal-name principal-name)
+                (format outp "    tool     = \"@ocaml//bin:menhir\",~%")
+                (if-let ((unused (assoc-val :unused-tokens (cdr stanza))))
+                        (begin
+                          (format outp "    tokens_unused = [~%")
+                          (format outp "~{        \"~A\"~^,~%~}~%" unused)
+                          (format outp "    ],~%")))
+                (if-let ((token (assoc-val :external-tokens (cdr stanza))))
+                        (begin
+                          (format outp "    token = \":~A\",~%" (car token))))
+                (if-let ((options (assoc-val :options (cdr stanza))))
+                        (begin
+                          (format outp "    opts = [~%")
+                          (format outp "~{        \"~A\", \"~A\"~^,~%~}~%"
+                                  (map (lambda (x)
+                                         (values (car x) (cdr x)))
+                                       options))
+                          (format outp "    ],~%")))
+                (if-let ((flags (assoc-val :flags (cdr stanza))))
+                        (begin
+                          (format outp "    flags = [~%")
+                          (format outp "~{        \"~A\"~^,~%~}~%" flags)
+                          (format outp "    ]~%")))
                 (format outp ")")
                 (newline outp)))
-            (cdr stanza)))
+            (assoc-val :grammars (cdr stanza))))
 
 (define (starlark-emit-file-generators outp pkg)
   (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg)
