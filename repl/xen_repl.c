@@ -7,6 +7,7 @@
 #include "s7.h"
 /* #include "s7_config.h" */
 
+#include "utarray.h"
 #include "mibl.h"
 #include "xen_repl.h"
 

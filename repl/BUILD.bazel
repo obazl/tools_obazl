@@ -29,7 +29,8 @@ cc_binary(
         "-I$(GENDIR)/repl",
         "-I$(GENDIR)/external/obazl/repl",
 
-        "-Iexternal/uthash/include",
+        "-Iexternal/mibl/vendored/uthash",
+
         # "-Iexternal/libinih",
         "-Iexternal/logc/src",
 
@@ -54,6 +55,7 @@ cc_binary(
     ],
     deps = [
         "@mibl//src:mibl",
+        "@mibl//vendored/uthash",
         "@libs7//src:s7",
         "@libs7//src:c_s7",
         "@logc//:logc",
