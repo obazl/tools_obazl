@@ -23,7 +23,7 @@
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
 
-(define (-emit-topdown-aggregate outp kind pubname submodules flags)
+(define (-emit-topdown-aggregate outp kind ns privname submodules flags)
   (begin
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
     (format #t " flags: ~A\n" flags)
@@ -31,7 +31,8 @@
     (if (eq? kind :ns-archive)
         (format outp "ocaml_ns_archive(\n")
         (format outp "ocaml_ns_library(\n"))
-    (format outp "    name       = \"~A\",\n" pubname)
+    (format outp "    name       = \"~A\",\n" ns)
+    (format outp "    ns         = \"~A\",\n" privname)
     (format outp "    submodules = [\n")
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],\n")
@@ -77,13 +78,14 @@
   (format #t "~A: ~A\n" (blue "STARLARK-EMIT-AGGREGATE-TARGET") stanza)
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
+         (ns (assoc-val :ns stanza-alist))
          (privname (assoc-val :privname stanza-alist))
+         (pubname (if ns ns
+                      (if-let ((pubname (assoc-val :pubname stanza-alist)))
+                              pubname
+                              privname)))
          (modname (normalize-module-name privname))
-         (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
-                          pubname
-                          privname))
          (_ (format #t "name: ~A, modname: ~A\n" pubname modname))
-         (ns (assoc-val :ns (cdr stanza)))
          (libname (string-upcase (stringify privname)))
 
          (opts (if-let ((opts (assoc :opts (cdr stanza))))
@@ -112,7 +114,7 @@
     (case kind
       ((:ns-archive :ns-library)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind privname submodules flags)
+           (-emit-topdown-aggregate outp kind ns privname submodules flags)
            ;; aggregated bottomup, needs archive or lib w/o ns
            (-emit-bottomup-aggregate outp kind ns privname submodules flags)))
 

@@ -249,14 +249,21 @@
          (out-tgt (assoc-val :tgt output-alist))
          (_ (format #t "~A: ~A~%" (yellow "out-tgt") out-tgt))
 
-         (deps (car (assoc-val :deps stanza)))
+         (deps (assoc-val :deps stanza))
          (_ (format #t "~A: ~A~%" (uwhite "deps") deps))
-         (input-alist (cdr deps))
-         (_ (format #t "~A: ~A~%" (uwhite "input") input-alist))
-         (in-pkg (assoc-val :pkg input-alist))
+
+         (cmd-args (cdr (assoc-in '(:actions :cmd :args) stanza)))
+         (_ (format #t "~A: ~A~%" (uwhite "cmd-args") cmd-args))
+         (src-arg (assoc-val (car cmd-args) deps))
+         (_ (format #t "~A: ~A~%" (ured "src-arg") src-arg))
+
+         (in-pkg (assoc-val :pkg src-arg))
          (_ (format #t "~A: ~A~%" (yellow "in-pkg") in-pkg))
-         (in-tgt (assoc-val :tgt input-alist))
+         (in-pkg (if (equal? pkg-path in-pkg) "" (format #f "//~A" in-pkg)))
+         (in-tgt (assoc-val :tgt src-arg))
          (_ (format #t "~A: ~A~%" (yellow "in-tgt") in-tgt))
+
+         ;; (_ (error 'STOP "stop cp"))
          )
     ;; (error 'STOP "stop cp")
     (if (equal? out-pkg pkg-path)
@@ -265,12 +272,13 @@
           (format outp "######\n")
           (format outp "copy_file(~%")
           (format outp "    name = \"__~A\",~%" out-tgt)
-          (format outp "    src  = \"~A:~A\",~%"
-                  (if (equal? "./" in-pkg) "//" in-pkg)
-                  in-tgt)
+          (format outp "    src  = \"~A:~A\",~%" in-pkg in-tgt)
+                  ;; (if (equal? pkg-path in-pkg) "" "//")
+                  ;; in-tgt)
           (format outp "    out  = \"~A\"~%" out-tgt)
           (format outp ")~%")
           )
+        ;; copying to external pkg dir???
         (let ((out  (format #f "~A" tgt))
               (name (format #f "__~A__" tgt))
               (args (assoc-in '(:actions :cmd :args) (cdr stanza)))
