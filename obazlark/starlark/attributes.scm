@@ -25,7 +25,7 @@
     (format #t "OUTPUTS: ~A\n" outs)
     outs))
 
-(define (deps->srcs-attr pkg-path deps)
+(define (deps->srcs-attr pkg-path tool deps)
   (format #t "~A: ~A\n" (ublue "deps->srcs-attr") deps)
   ;; deps is a list of alists; key :maps to list of (:pkg :file) pairs
   ;; key :_ (anonymous) may map to multiple pairs
@@ -34,9 +34,12 @@
   (if deps
       (let* ((srcs (map (lambda (dep)
                           (format #t "dep: ~A~%" dep)
-                          (if (eq? ::tools (car dep))
-                              (begin) ;; skip, it goes in tools attr
-                              (let* ((tag (car dep))
+                          (cond
+                           ((equal? (car dep) tool) (begin)) ;; skip, it goes in tools attr
+                           ((eq? (car dep) ::tools) ;; form: (::tools (:foo (:pkg x) (:tgt y)) (:bar (:pkg a)(:tgt b)))
+                             (begin))
+                            (else
+                             (let* ((tag (car dep))
                                      (_ (format #t "~A: ~A~%" (yellow "tag") tag))
                                      (label (cdr dep))
                                      (_ (format #t "~A: ~A~%" (yellow "label") label)))
@@ -53,13 +56,13 @@
                                       (case tgt-tag
                                         ((:tgt)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "~A" tgt)
+                                             (format #f "~A" tgt) ;; file in cwd?
                                              (format #f "//~A:~A" pkg tgt)))
 
                                         ((:glob :tgts)
                                          (if (equal? pkg-path pkg)
                                              (format #f "~A" tgt)
-                                             (format #f "//~A:~A" pkg tgt)))
+                                             (format #f "//~A~A" pkg tgt)))
 
                                         ((:fg)
                                          (if (equal? pkg-path pkg)
@@ -80,7 +83,7 @@
                                         (else
                                          (error 'fixme "XXXXXXXXXXXXXXXX"))))
                                       )
-                                    )))
+                                ))))
                         deps))
              (_ (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs))
              ;; srcs list may contain mix of strings and sublists

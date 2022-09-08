@@ -355,7 +355,7 @@
   (for-each
    (lambda (stanza)
      (format #t "~A: ~A~%" (uwhite "stanza") stanza)
-     (if (not (equal? :exports-files (car stanza)))
+     (if (not (equal? :install (car stanza)))
          (let ((testsuite (assoc-val :in-testsuite (cdr stanza))))
            (case (car stanza)
              ((:archive :library :ns-archive :ns-library)
@@ -534,6 +534,8 @@
              ((:tuareg) (values))
 
              ((:menhir) (values))
+
+             ((:sh-test) (values))
 
              (else
               (error 'UNHANDLED

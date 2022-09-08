@@ -796,29 +796,4 @@
           (-emit-signatures outp pkg pkg-sigs pkg-modules)))
     ))
 
-    ;; (let ((lib-stanzas (assoc+ :library stanzas)))
-    ;;   (if (not (null? lib-stanzas))
-    ;;       (for-each (lambda (stanza)
-    ;;                   (newline outp)
-    ;;                   (format outp "lib stanza: ~A\n"
-    ;;                           (assoc 'name (cdr stanza)))
-    ;;                   (let ((modules (assoc 'modules (cdr stanza)))
-    ;;                         (flags (if-let
-    ;;                                 ((flags (assoc 'flags (cdr stanza))))
-    ;;                                 (cadr flags)
-    ;;                                 '()))
-    ;;                         (ocamlopt-flags
-    ;;                          (if-let
-    ;;                           ((flags (assoc 'ocamlopt_flags (cdr stanza))))
-    ;;                           (cadr ocamlopt-flags)
-    ;;                           '())))
-    ;;                     (format outp "modules: ~A\n" modules)
-    ;;                     (format outp "flags: ~A\n" flags)
-    ;;                     (format outp "ocamlopt_flags: ~A\n" ocamlopt-flags)
-    ;;                     ))
-    ;;                 ;;(emit-lib-args fs-path stanza srcfiles out-port))
-    ;;                 lib-stanzas))
-    ;;   )
-    ;; ))
-
 ;;(format #t "loaded starlark/singletons.scm\n")

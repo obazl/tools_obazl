@@ -105,14 +105,16 @@
                          (begin
                            (format #t "~A: ~A~%" (red "FOUND arg") found)
                            (let* ((label (cdr found))
-                                  (pkg (assoc-val :pkg label))
+                                  (pkg (let ((p (assoc-val :pkg label)))
+                                         (if (string=? p "./") "." p)))
+                                  (_ (format #t "~A: ~A~%" (bgred "pkg") pkg))
                                   (tgt-tag (caadr label))
                                   (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
                                   (tgt (assoc-val tgt-tag label)))
                              (if (equal? pkg pkg-path)
                                  (if (eq? tgt-tag :glob) ;; :tgts)
-                                     (format #f "$(rootpaths :~A)" tgt)
-                                     (format #f "$(rootpath :~A)" tgt))
+                                     (format #f "$(rootpaths //:~A)" tgt)
+                                     (format #f "$(rootpath //:~A)" tgt))
                                  (if (eq? tgt-tag :glob) ;; :tgts)
                                      (format #f "$(rootpaths //~A:~A)"
                                               pkg tgt)
@@ -161,8 +163,8 @@
     (format #t "~A: ~A~%" (red "Args") args)
     args))
 
-(define (-derive-cmd pkg-path cmd deps targets)
-  (format #t "~A: ~A~%" (blue "-derive-cmd") cmd)
+(define (derive-cmd pkg-path cmd deps targets)
+  (format #t "~A: ~A~%" (ublue "derive-cmd") cmd)
   (format #t "targets: ~A~%" targets)
   (format #t "deps: ~A~%" deps)
   ;; (format #t "stdout: ~A~%" (assoc-val :stdout cmd))
@@ -183,7 +185,13 @@
          (_ (format #t "~A: ~A~%" (blue "RESOLVED TOOL for genrule") tool))
 
          (tool-dep? (not (member tool shell-tools))) ;;FIXME: find better way
-         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
+         ;; (_ (format #t "tool-dep?: ~A~%" tool-dep?))
+
+         ;; (tool (if tool-dep?
+         ;;           (let ((pkg (assoc-val :pkg (cdr tool)))
+         ;;                 (tgt (assoc-val :tgt (cdr tool))))
+         ;;             (format #f "//~A:~A" pkg tgt))
+         ;;           tool))
 
         ;; FIXME: shell cmds v. targets that go in tools attr
 
@@ -201,7 +209,7 @@
          (_ (format #t "args: ~A~%" args))
          ;; (args (format #f "~A" args))
          )
-    (format #t "TOol-dep? ~A~%" tool-dep?)
+    ;; (format #t "TOol-dep? ~A~%" tool-dep?)
     (format #t "TOol ~A~%" tool)
     (format #t "ARgs ~A~%" args)
     (values tool-dep? tool args)))

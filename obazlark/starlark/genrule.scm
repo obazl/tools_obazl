@@ -72,8 +72,8 @@
          (bash-cmd? (eq? tool 'bash))
          (deps (assoc-val :deps stanza))
          (_ (format #t "~A: ~A~%" (cyan "deps") deps))
-         (srcs (deps->srcs-attr pkg-path deps))
-         (_ (format #t "~A: ~A~%" (cyan "srcs") srcs))
+         (srcs (deps->srcs-attr pkg-path tool deps))
+         (_ (format #t "~A: ~A~%" (cyan "genrule srcs") srcs))
 
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
@@ -110,6 +110,7 @@
               (format outp "################  rule  ################\n")
               (if (list? stanza)
                   (begin
+                    (format #t "~A~%" (uwhite "emitting genrule"))
                     ;; (format outp "## ~A\n" (assoc-val 'dune (stanza)))
                     ;; (format outp "## (\n")
                     ;; (for-each (lambda (sexp)
@@ -136,9 +137,11 @@
                     ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
                     (format outp "    ],\n")
 
+                    (format #t "~A~%" (uwhite "emitting tool attrib"))
                     (if bash-cmd?
                         (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
                         (begin
+                          (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
                           (format outp "    cmd   = \" \".join([\n")
                           (for-each
                            (lambda (cmd)
@@ -146,7 +149,7 @@
                              (if (eq? :cmd (car cmd))
                                  (let-values
                                      (((tool-dep? tool xargs)
-                                       (-derive-cmd pkg-path cmd deps outputs)))
+                                       (derive-cmd pkg-path cmd deps outputs)))
                                    ;; (format #t "~A:\n" (red "derived cmd"))
                                    (format #t "~A: ~A~%" (magenta "tool-dep?")
                                            tool-dep?)
@@ -180,7 +183,7 @@
                              (if (eq? :cmd (car cmd))
                                  (let-values
                                      (((tool-dep? tool args)
-                                       (-derive-cmd pkg-path cmd deps outputs)))
+                                       (derive-cmd pkg-path cmd deps outputs)))
                                    (format #t "  Tool-Dep?: ~A~%" tool-dep?)
                                    (format #t "  TooL: ~A~%" tool)
                                    (format #t "  ArgS: ~A~%" args)

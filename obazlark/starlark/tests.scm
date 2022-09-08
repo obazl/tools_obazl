@@ -42,48 +42,54 @@
                                   (assoc-val ws -mibl-ws-table)))))
     (format #t "~A: ~A~%" (uwhite "deps") deps)
     (format #t "~A: ~A~%" (uwhite "exports tbl") exports)
-    (let ((cooked
-           (map (lambda (arg)
-                  (format #t "~A: ~A~%" (uyellow "decoding arg") arg)
-                  (let ((xarg (flatten (filter-map
-                                        (lambda (dep)
-                                          (format #t "~A: ~A~%" (yellow "dep") dep)
-                                          (if (eq? ::tools (car dep))
-                                              (let ((t (filter-map (lambda (tool)
-                                                                     (format #t "~A: ~A~%" (yellow "tool") tool)
-                                                                     (if (eq? arg (car tool))
-                                                                         (label-list->label-string (cdr tool))
-                                                                         #f))
-                                                                   (cdr dep))))
-                                                (if t
-                                                    (if (null? t)
-                                                        #f
-                                                        (begin
-                                                          (format #t "~A: ~A~%" (yellow "decoded tool") t)
-                                                          t))
-                                                    #f))
-                                              ;;FIXME: detect file args and wrap in $(location ...)
-                                              (if (eq? arg (car dep))
-                                                  (if (alist? (cdr dep))
-                                                      (format #f "$(location ~A)" label-list->label-string (cdr dep))
-                                                      ;;FIXME
-                                                      (format #f "~A" arg)) ;; (error 'fixme "non-label dep match"))
-                                                  #f)))
-                                        deps))))
-                    (if (not (null? xarg))
-                        (begin
-                          (format #t "~A: ~A~%" (yellow "decoded to dep") xarg)
-                          xarg)
-                        (let ((xarg (hash-table-ref exports arg)))
-                          (if xarg
-                              (begin
-                                (format #t "~A: ~A~%" (yellow "decoded to export") xarg)
-                                xarg)
-                              arg)))))
-                args)))
-      (format #t "~A: ~A~%" (uwhite "cooked args") cooked)
-      ;; (error 'fixme "STOP decode")
-      (flatten cooked))))
+    (if deps
+        (let ((cooked
+               (map (lambda (arg)
+                      (format #t "~A: ~A~%" (uyellow "decoding arg") arg)
+                      (let ((xarg (flatten (filter-map
+                                            (lambda (dep)
+                                              (format #t "~A: ~A~%" (yellow "dep") dep)
+                                              (if (eq? ::tools (car dep))
+                                                  (let ((t (filter-map (lambda (tool)
+                                                                         (format #t "~A: ~A~%" (yellow "tool") tool)
+                                                                         (if (eq? arg (car tool))
+                                                                             (label-list->label-string (cdr tool))
+                                                                             #f))
+                                                                       (cdr dep))))
+                                                    (if t
+                                                        (if (null? t)
+                                                            #f
+                                                            (begin
+                                                              (format #t "~A: ~A~%" (yellow "decoded tool") t)
+                                                              t))
+                                                        #f))
+                                                  ;;FIXME: detect file args and wrap in $(location ...)
+                                                  (if (eq? arg (car dep))
+                                                      (if (alist? (cdr dep))
+                                                          (format #f "$(location ~A)" label-list->label-string (cdr dep))
+                                                          ;;FIXME
+                                                          (format #f "~A" arg)) ;; (error 'fixme "non-label dep match"))
+                                                      #f)))
+                                            deps))))
+                        (if (not (null? xarg))
+                            (begin
+                              (format #t "~A: ~A~%" (yellow "decoded to dep") xarg)
+                              xarg)
+                            (let ((xarg (hash-table-ref exports arg)))
+                              (if xarg
+                                  (begin
+                                    (format #t "~A: ~A~%" (yellow "decoded to export") xarg)
+                                    xarg)
+                                  arg)))))
+                    args)))
+          (format #t "~A: ~A~%" (uwhite "cooked args") cooked)
+          ;; (error 'fixme "STOP decode")
+          (flatten cooked))
+        ;; else no deps - args must be files in cwd?
+        (begin
+          (format #t "~A: ~A~%" (bgred "FIXME") "args w/o deps")
+          args))
+        ))
 
 (define (starlark-emit-sh-test-target outp ws pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-sh-test-target") stanza)
@@ -91,20 +97,24 @@
          (pubname (car (assoc-val :alias stanza-alist)))
          (_ (format #t "~A: ~A~%" (uwhite "pubname") pubname))
          ;;FIXME: assuming one tool
-         (tools (let* ((ts (cadr
-                            (assoc-in '(:deps ::tools) stanza-alist)))
-                       (_ (format #t "~A: ~A~%" (uwhite "ts") ts))
-                       (pkg-path (assoc-val :pkg (cdr ts)))
-                       (_ (format #t "~A: ~A~%" (uwhite "pkg-path")
-                                  pkg-path))
-                       (tgt (assoc-val :tgt (cdr ts)))
-                       (_ (format #t "~A: ~A~%" (uwhite "tgt") tgt)))
-                  (if (equal? pkg-path (car (assoc-val :pkg-path pkg)))
-                      (format #f "~A" tgt)
-                      (format #f "//~A:~A" pkg-path tgt))))
+         (tools (let* ((tool (cadr
+                              (assoc-in '(:actions :cmd :tool) stanza-alist))))
+                  (format #t "~A: ~A~%" (uwhite "tool") tool)
+                  (case tool
+                    ((::diff) "diff")
+                    (else
+                     (error 'STOP "FIXME: sh-test tool")))))
+                  ;;      (pkg-path (assoc-val :pkg (cdr ts)))
+                  ;;      (_ (format #t "~A: ~A~%" (uwhite "pkg-path")
+                  ;;                 pkg-path))
+                  ;;      (tgt (assoc-val :tgt (cdr ts)))
+                  ;;      (_ (format #t "~A: ~A~%" (uwhite "tgt") tgt)))
+                  ;; (if (equal? pkg-path (car (assoc-val :pkg-path pkg)))
+                  ;;     (format #f "~A" tgt)
+                  ;;     (format #f "//~A:~A" pkg-path tgt))))
          (deps (assoc-val :deps stanza-alist))
          (_ (format #t "~A: ~A~%" (uwhite "deps") deps))
-         (deps (-decode-sh-test-deps deps ws pkg stanza))
+         (deps (if deps (-decode-sh-test-deps deps ws pkg stanza) deps))
          (_ (format #t "~A: ~A~%" (uwhite "cooked deps") deps))
 
          (args (cdr (assoc-in '(:actions :cmd :args) stanza-alist)))
@@ -121,12 +131,12 @@
       (format outp "sh_test(\n"))
     (format outp "    name     = \"~A\",\n" pubname)
     (format outp "    srcs     = [\"~A\"],\n" tools)
-    (if (not (null? deps))
+    (if deps ;; (not (null? deps))
         (begin
           (format outp "    data     = [\n")
           (format outp "~{        \"~A\"~^,~%~}~%" deps)
           (format outp "    ],\n")))
-    (if (not (null? args))
+    (if args ;; (not (null? args))
         (begin
           (format outp "    args     = [\n")
           (format outp "~{        ~S~^,~%~}~%" args)

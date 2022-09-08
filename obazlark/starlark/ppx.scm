@@ -133,7 +133,7 @@
         (format outp "    name       = \"Ppx_driver\",\n")
         (format outp "    struct     = \":ppx_driver.ml\",\n")
         (format outp "    visibility = [\"//visibility:public\"],\n")
-        (format outp "    deps       = [\"@ppxlib//ppxlib\"],\n")
+        (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
         (format outp ")\n")
         (newline outp)
 

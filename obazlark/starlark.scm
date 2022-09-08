@@ -11,6 +11,7 @@
 (load "starlark/executables.scm")
 (load "starlark/aggregates.scm")
 (load "starlark/conditionals.scm")
+(load "starlark/opam.scm")
 (load "starlark/ppx.scm")
 (load "starlark/tests.scm")
 (load "starlark/genrule.scm")

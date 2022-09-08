@@ -22,11 +22,12 @@
                        ;; (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
                        (pkg (if (equal? pkg-path pkg) "" pkg))
                        (tgt (if-let ((t (assoc-val :tgt lbl)))
-                                    (format #f "~A:~A" pkg t)
+                                    (format #f "//~A:~A" pkg t)
                                     (error 'fixme "bash tool has :tgts"))))
                   (format #t "~A: ~A~%" (yellow "RESOLVED") tgt)
                   tgt)
-                (format #t "~A" tool)))))))
+                ;; (format #t "~A~%" tool)
+                ))))))
 
 (define (-expand-bash-arg arg pkg-path stanza)
   (format #t "~A: ~A~%" (blue "-expand-bash-arg") arg)
@@ -47,7 +48,7 @@
                  ;; (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
                  (pkg (if (equal? pkg-path pkg) "" pkg))
                  (tgt (if-let ((t (assoc-val :tgt lbl)))
-                              (format #f "$(rootpath ~A:~A)" pkg t)
+                              (format #f "$(rootpath //~A:~A)" pkg t)
                               (if-let ((t (assoc-val :tgts lbl)))
                                       (format #f "$(rootpaths ~A:~A)" pkg t)
                                       (error 'fixme "lbl missing tgt/tgs")))))
@@ -64,7 +65,7 @@
   ;; or (run bash "foo.sh" bar ...)
   (if (null? args)
       (begin
-        (values '() '()) ;; expanded-tool expanded-args)
+l        (values '(:FOO) '(:BAR)) ;; expanded-tool expanded-args)
         )
       (let* ((pct-regex "%{([^}]+)}")
              (rgx (regex.make))
@@ -145,7 +146,7 @@
       )))
 
 (define (emit-bash-srcs outp srcs pkg-path stanza)
-  (format #t "~A: ~A~%" (blue "emit-bash-srcs") srcs)
+  (format #t "~A: ~A~%" (ublue "emit-bash-srcs") srcs)
   ;; remove bash tool from srcs
 
   (let* ((args (assoc-in '(:actions :cmd :args) stanza))
@@ -154,7 +155,6 @@
                   (-expand-bash-args args pkg-path stanza)))
       (format #t "~A: ~A~%" (yellow "TOOL") tool)
       (let ((srcs (remove tool srcs)))
-
         (format #t "~A: ~A~%" (red "srcs") srcs)
         (format outp "    srcs  = [\n")
         (format outp "~{        \"~A\"~^,\n~}\n" srcs)

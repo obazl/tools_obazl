@@ -56,6 +56,17 @@
          (filegroups (car (assoc-val :filegroups @ws))))
     (format #t "~A: ~A~%" (red "filegroups table") filegroups)))
 
+(define (-dump-opam ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (opam (car (assoc-val :opam @ws))))
+    (format #t "~A: ~A~%" (red "opam keys") (hash-table-keys opam))
+    (for-each (lambda (ws)
+                (format #t "~A: ~A~%" (red "opam ws") (car ws))
+                (for-each (lambda (item)
+                            (format #t "  ~A~%" item))
+                          (cdr ws)))
+              opam)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-load-dune path)
   (format #t "~A: ~A (~A)~%" (blue "-load-dune") path (type-of path))
@@ -136,31 +147,28 @@
 
          (mpkgs (-miblize :@))
 
-         (mpkgs (add-filegroups-to-pkgs :@))
+         ;; (mpkgs (add-filegroups-to-pkgs :@))
 
-         (mpkgs (normalize-manifests! :@))
+         ;; (mpkgs (normalize-manifests! :@))
 
-         (_ (-resolve-labels :@))
+         ;; (_ (-resolve-labels :@))
 
-         (_ (resolve-pkg-file-deps :@))
+         ;; (_ (resolve-pkg-file-deps :@))
 
-         (_ (-miblarkize :@))
+         ;; (_ (-miblarkize :@))
 
-         (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
+         ;; (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
+
+         ;; (_ (ws->opam-bundles :@))
 
          (_ (format #t "~A~%" (red "PKG DUMP")))
          (_ (-dump-pkgs :@))
 
-         ;; (_ (format #t "~A: ~A~%" (green "selectors")
-         ;;            (remove-duplicates *select-protases*)))
-         ;; (_ (-dump-exports :@))
-         ;; (_ (-dump-filegroups :@))
+         (_ (format #t "~A: ~A~%" (green "selectors")
+                    (remove-duplicates *select-protases*)))
+         (_ (-dump-exports :@))
+         (_ (-dump-filegroups :@))
+         (_ (-dump-opam :@))
 
          )
     '()))
-
-;; (define* (dune->obazl path)
-;;   (let ((p (->canonical-path "compiler/./lib/../../runtime")))
-;;     (format #t "~A: ~A~%" (bgred "p") p)
-;;     p))
-
