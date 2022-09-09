@@ -71,8 +71,8 @@
           (format #t "emitting filegroups\n")
           (starlark-emit-filegroups outp ws pkg)
 
-          ;; (format #t "emitting tuareg\n")
-          ;; (starlark-emit-tuareg outp ws pkg)
+          (format #t "emitting cc targets\n")
+          (starlark-emit-cc-targets outp ws pkg)
 
           (close-output-port outp)
 

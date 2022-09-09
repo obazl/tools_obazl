@@ -12,30 +12,34 @@
             (_ (format #t "~A: ~A~%" (blue "tool-deps") tool-deps))
             (tool (if (keyword? tool)
                       (let* ((tool-tlbl (assoc tool tool-deps))
-                             (tool-label (cdr tool-tlbl))
+                             (tool-alist (cdr tool-tlbl))
+                             (_ (format #t "~A: ~A~%" (red "tool-alist") tool-alist))
+                             (tool-label (assoc-val :lbl tool-alist))
                              (_ (format #t "~A: ~A~%" (red "tool-label") tool-label))
-                             (tool-pkg (assoc-val :pkg tool-label))
+                             (tool-pkg (assoc-val :pkg tool-alist))
                              (_ (format #t "~A: ~A~%" (red "tool-pkg") tool-pkg))
                              (_ (format #t "~A: ~A~%" (red "pkg-path") pkg-path))
-                             (tool-tag (caadr tool-label))
+                             (tool-tag (caadr tool-alist))
                              (_ (format #t "~A: ~A~%" (cyan "tool-tag") tool-tag))
                              (tool-tgt (case tool-tag
                                          ((:tgt)
-                                          (assoc-val :tgt tool-label))
+                                          (assoc-val :tgt tool-alist))
                                          ((:tgts)
-                                          (assoc-val :tgts tool-label))
+                                          (assoc-val :tgts tool-alist))
                                          ((:fg)
                                           (format #f "*~A*"
-                                                  (assoc-val :fg tool-label)))
+                                                  (assoc-val :fg tool-alist)))
                                          (else
                                           (error 'fixme (format #f "~A: ~A~%" (red "unrecognized tool tag") tool-tag))))))
                         (format #t "~A: ~A~%" (red "tool-tgt") tool-tgt)
-                        (if (equal? tool-pkg pkg-path)
-                            (begin
-                              (format #f "~A" tool-tgt))
-                            (begin
-                              (format #t "~A: ~A~%" (red "YOU") tool-tgt)
-                              (format #f "//~A:~A" tool-pkg tool-tgt))))
+                        (if tool-label
+                            tool-label
+                            (if (equal? tool-pkg pkg-path)
+                                (begin
+                                  (format #f "~A" tool-tgt))
+                                (begin
+                                  (format #t "~A: ~A~%" (red "YOU") tool-tgt)
+                                  (format #f "//~A:~A" tool-pkg tool-tgt)))))
                       ;; else tool must be bash or system?
                       tool
                       )))

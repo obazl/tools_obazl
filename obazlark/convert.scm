@@ -36,6 +36,7 @@
                   (format #t "~A: ~A~%" (ugreen "pkg-signatures") (assoc-val :signatures pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamllex") (assoc-val :ocamllex pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamlyacc") (assoc-val :ocamlyacc pkg))
+                  (format #t "~A: ~A~%" (ugreen "pkg-cc") (assoc-val :cc pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-opam") (assoc-val :opam pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-files") (assoc-val :files pkg))
                   (if-let ((dune (assoc :dune pkg)))
@@ -147,19 +148,19 @@
 
          (mpkgs (-miblize :@))
 
-         ;; (mpkgs (add-filegroups-to-pkgs :@))
+         (mpkgs (add-filegroups-to-pkgs :@))
 
-         ;; (mpkgs (normalize-manifests! :@))
+         (mpkgs (normalize-manifests! :@))
 
-         ;; (_ (-resolve-labels :@))
+         (_ (-resolve-labels :@))
 
-         ;; (_ (resolve-pkg-file-deps :@))
+         (_ (resolve-pkg-file-deps :@))
 
-         ;; (_ (-miblarkize :@))
+         (_ (-miblarkize :@))
 
-         ;; (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
+         (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
 
-         ;; (_ (ws->opam-bundles :@))
+         (_ (ws->opam-bundles :@))
 
          (_ (format #t "~A~%" (red "PKG DUMP")))
          (_ (-dump-pkgs :@))

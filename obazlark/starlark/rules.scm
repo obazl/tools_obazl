@@ -165,8 +165,8 @@
 
 (define (derive-cmd pkg-path cmd deps targets)
   (format #t "~A: ~A~%" (ublue "derive-cmd") cmd)
-  (format #t "targets: ~A~%" targets)
-  (format #t "deps: ~A~%" deps)
+  (format #t "~A: ~A~%" (blue "targets") targets)
+  (format #t "~A: ~A~%" (blue "deps") deps)
   ;; (format #t "stdout: ~A~%" (assoc-val :stdout cmd))
 
   ;; ((:cmd (:run (:tool (:pkg :bin) (:tgt ...
@@ -178,11 +178,12 @@
 
   (let* ((cmd-alist (cdr cmd))
          (tool (car (assoc-val :tool cmd-alist)))
-         (_ (format #t "tool: ~A~%" tool))
+         (_ (format #t "~A: ~A~%" (blue "tool") tool))
          ;; (_ (format #t "tool: ~A~%" (cdr tool)))
          ;; (_ (format #t "(alist? (cdr tool)) ~A~%" (alist? (cdr tool))))
          (tool (-tool-for-genrule pkg-path tool deps))
          (_ (format #t "~A: ~A~%" (blue "RESOLVED TOOL for genrule") tool))
+         ;; (_ (error 'X "STOP derive-cmd"))
 
          (tool-dep? (not (member tool shell-tools))) ;;FIXME: find better way
          ;; (_ (format #t "tool-dep?: ~A~%" tool-dep?))
@@ -267,7 +268,12 @@
 
          (in-pkg (assoc-val :pkg src-arg))
          (_ (format #t "~A: ~A~%" (yellow "in-pkg") in-pkg))
-         (in-pkg (if (equal? pkg-path in-pkg) "" (format #f "//~A" in-pkg)))
+         (in-pkg (if (equal? in-pkg "./")
+                     "//"
+                     (if (equal? pkg-path in-pkg)
+                         ""
+                         (format #f "//~A" in-pkg))))
+
          (in-tgt (assoc-val :tgt src-arg))
          (_ (format #t "~A: ~A~%" (yellow "in-tgt") in-tgt))
 

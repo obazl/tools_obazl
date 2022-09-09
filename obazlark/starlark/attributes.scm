@@ -62,7 +62,7 @@
                                         ((:glob :tgts)
                                          (if (equal? pkg-path pkg)
                                              (format #f "~A" tgt)
-                                             (format #f "//~A~A" pkg tgt)))
+                                             (format #f "//~A:~A" pkg tgt)))
 
                                         ((:fg)
                                          (if (equal? pkg-path pkg)
@@ -86,6 +86,7 @@
                                 ))))
                         deps))
              (_ (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs))
+
              ;; srcs list may contain mix of strings and sublists
              (srcs (fold (lambda (src accum)
                            (cond

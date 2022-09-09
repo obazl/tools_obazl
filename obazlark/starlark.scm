@@ -6,6 +6,7 @@
 
 (load "starlark/parsers.scm")
 (load "starlark/singletons.scm")
+(load "starlark/cc.scm")
 (load "starlark/emit.scm")
 (load "starlark/headers.scm")
 (load "starlark/executables.scm")

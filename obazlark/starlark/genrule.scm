@@ -74,7 +74,7 @@
          (_ (format #t "~A: ~A~%" (cyan "deps") deps))
          (srcs (deps->srcs-attr pkg-path tool deps))
          (_ (format #t "~A: ~A~%" (cyan "genrule srcs") srcs))
-
+         ;; (_ (error 'X "stop genrule"))
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
@@ -119,6 +119,11 @@
                     ;; (format outp "## )\n")
 
                     (format outp "genrule(\n")
+                    (format outp "    outs  = [\n")
+                    (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                    ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                    (format outp "    ],\n")
+
                     (format outp "    name  = \"~A\",\n" name)
 
                     (if (not (null? srcs))
@@ -131,11 +136,6 @@
                             ;;   (format outp "~{        \"~A\"~^,\n~}\n" srcs)
                             ;;   (format outp "    ],\n"))
                             ))
-
-                    (format outp "    outs  = [\n")
-                    (format outp "~{        \"~A\"~^,\n~}\n" outs)
-                    ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
-                    (format outp "    ],\n")
 
                     (format #t "~A~%" (uwhite "emitting tool attrib"))
                     (if bash-cmd?
@@ -155,6 +155,7 @@
                                            tool-dep?)
                                    (format #t "~A: ~A~%" (magenta "tool") tool)
                                    (format #t "~A: ~A~%" (magenta "XARGS") xargs)
+                                   ;; (_ (error 'X "STOP genrule"))
 
                                    (if tool-dep?
                                        ;; HACK: $(location ...)

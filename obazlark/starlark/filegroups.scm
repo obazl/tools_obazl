@@ -35,25 +35,31 @@
 (define (starlark-emit-filegroups outp ws pkg)
   (format #t "~A: ~A~%" (ublue "starlark-emit-filegroups") pkg)
   (format #t "~A~%" (blue "processing pkg-filegroups"))
-  (let ((pkg-filegroups (assoc :filegroups pkg)))
+  (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+        (pkg-filegroups (assoc :filegroups pkg)))
     (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups)
     (if pkg-filegroups
         (begin
           (newline outp)
           (for-each (lambda (fg)
                       (format #t "~A: ~A~%" (white "pkg filegroup") fg)
-                      (let* ((glob? (eq? :glob (caadr fg)))
-                             (pattern (cdadr fg))
-                             (pattern (if glob?
+                      (let* (;; (glob? (eq? :glob (caadr fg)))
+                             (pattern (assoc-val :glob (cdr fg)))
+                             (pattern (if pattern
                                           (format #f "glob([~S])" pattern)
                                           (format #f "[~S]" pattern))))
                         (format #t "~A: ~A~%" (white "glob") glob)
                         (format outp "filegroup(\n")
-                        (format outp "    name = \"~A\",\n"
-                                (keyword->symbol (car fg)))
+                        (format outp "    name = \"~A\",\n" (car fg))
+                                ;; (keyword->symbol (car fg)))
                         (format outp "    srcs = ~A,\n" pattern)
                         (if-let ((client (assoc-val :client (cdr fg))))
-                                (format outp "    visibility = [\"//~A:__pkg__\"]\n" (car client))
+                                (begin
+                                  (format #t "~A: ~A~%" (bggreen "client") client)
+                                  (format #t "~A: ~A~%" (bggreen "pkg-path") pkg-path)
+                                  (if (equal? client pkg-path)
+                                      (format outp "    visibility = [\"//visibility:private\"]\n")
+                                      (format outp "    visibility = [\"//~A:__pkg__\"]\n" client)))
                                 (format outp "    visibility = [\"//visibility:public\"]\n"))
                         (format outp ")\n")
                         (newline outp)))
@@ -89,7 +95,12 @@
                               ;; (keyword->symbol (car fg)))
                               (format outp "    srcs = ~A,\n" pattern)
                               (if-let ((client (assoc :client fg)))
-                                      (format outp "    visibility = [\"//~A:__pkg__\"]\n")
+                                      (begin
+                                        (format #t "~A: ~A~%" (bggreen "client") (car client))
+                                        (format #t "~A: ~A~%" (bggreen "pkg-path") pkg-path)
+                                        (if (equal? (car client) pkg-path)
+                                            (format outp "    visibility = [\"//visibility:private\"]\n")
+                                            (format outp "    visibility = [\"//~A:__pkg__\"]\n" client)))
                                       (format outp "    visibility = [\"//visibility:public\"]\n"))
 
                               (format outp ")\n")

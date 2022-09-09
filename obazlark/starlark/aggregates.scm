@@ -23,7 +23,7 @@
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
 
-(define (-emit-topdown-aggregate outp kind ns privname submodules flags)
+(define (-emit-topdown-aggregate outp kind ns privname submodules flags cc-deps)
   (begin
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
     (format #t " flags: ~A\n" flags)
@@ -35,7 +35,14 @@
     (format outp "    ns         = \"~A\",\n" privname)
     (format outp "    submodules = [\n")
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
-    (format outp "    ],\n")
+    (format outp "    ],")
+    (newline outp)
+
+    (if cc-deps
+        (begin
+          (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+          (format outp "    cc_deps    = [\"~A.stubs\"]," (cdadr cc-deps))
+          (newline outp)))
 
     (if (not (null? flags))
         (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags))
@@ -49,9 +56,11 @@
     ;;                           ))
     ;;                 submods)
     ;;       (format outp "    ],\n")
-    (format outp ")\n\n")))
+    (format outp ")")
+    (newline outp)
+    (newline outp)))
 
-(define (-emit-bottomup-aggregate outp kind ns pubname submodules flags)
+(define (-emit-bottomup-aggregate outp kind ns pubname submodules flags cc-deps)
   (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind)
   (format outp "#################\n")
   (if (eq? kind :ns-archive)
@@ -102,7 +111,8 @@
                                                  stanza-alist)))
                              (cdr submods) '()))
          (submodules (sort! submodules sym<?))
-         (deps (assoc :deps stanza-alist)))
+         (deps (assoc :deps stanza-alist))
+         (cc-deps (assoc :cc-stubs stanza-alist)))
 
     (begin
       (format #t "kind: ~A\n" kind)
@@ -114,9 +124,9 @@
     (case kind
       ((:ns-archive :ns-library)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind ns privname submodules flags)
+           (-emit-topdown-aggregate outp kind ns privname submodules flags cc-deps)
            ;; aggregated bottomup, needs archive or lib w/o ns
-           (-emit-bottomup-aggregate outp kind ns privname submodules flags)))
+           (-emit-bottomup-aggregate outp kind ns privname submodules flags cc-deps)))
 
       ((:archive :library)
        (begin
