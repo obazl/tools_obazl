@@ -17,13 +17,13 @@ load("@rules_ocaml//ocaml/_rules:impl_ccdeps.bzl",
      "ccinfo_to_string")
 
 load("@rules_ocaml//ocaml/_debug:colors.bzl",
-     "CCRED", "CCGRN", "CCBLU", "CCMAG", "CCCYAN", "CCRESET")
+     "CCRED", "CCGRN", "CCBLU", "CCMAG", "CCCYN", "CCRESET")
 
 #####################################################
 def _inspect_out_transition_impl(settings, attr):
     # print(">>> INSPECT_OUT_TRANSITION: %s" % attr.name)
     return {
-        "@rules_ocaml//ppx:stop": True,
+        # "@rules_ocaml//ppx:stop": True,
         "@rules_ocaml//ppx/print": "text"
     }
 
@@ -32,7 +32,7 @@ inspect_out_transition = transition(
     implementation = _inspect_out_transition_impl,
     inputs = [],
     outputs = [
-        "@rules_ocaml//ppx:stop",
+        # "@rules_ocaml//ppx:stop",
         "@rules_ocaml//ppx/print"
     ]
 )
@@ -83,7 +83,7 @@ def _write_codeps_file(ctx, provider, text):
 
 ################
 def _write_providers_file(ctx, tgt, text):
-    text = text + CCCYAN + "DefaultInfo:\n"
+    text = text + CCCYN + "DefaultInfo:\n"
     provider = tgt[DefaultInfo]
     for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
@@ -92,7 +92,7 @@ def _write_providers_file(ctx, tgt, text):
 
     if OcamlProvider in tgt:
         provider = tgt[OcamlProvider]
-        text = text + CCCYAN + "OcamlProvider:\n"
+        text = text + CCCYN + "OcamlProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
@@ -100,7 +100,7 @@ def _write_providers_file(ctx, tgt, text):
 
     if PpxCodepsProvider in tgt:
         provider = tgt[PpxCodepsProvider]
-        text = text + CCCYAN + "PpxCodepsProvider:\n"
+        text = text + CCCYN + "PpxCodepsProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
@@ -108,7 +108,7 @@ def _write_providers_file(ctx, tgt, text):
 
     if CcInfo in tgt:
         text = text + "{color}CcInfo in {lbl}{reset}".format(
-            color = CCCYAN, reset = CCRESET, lbl=tgt.label)
+            color = CCCYN, reset = CCRESET, lbl=tgt.label)
         print("CCINFO: %s" % tgt[CcInfo])
         print("CCINFO: in rule %s" % tgt.label)
         # dump_compilation_context(tgt[CcInfo])
@@ -319,7 +319,7 @@ inspect = rule(
     executable = True,
     attrs = dict(
         obj = attr.label(
-            doc = "Label of object to inspect; must be ocaml_module or ocaml_signature target.",
+            doc = "Label of object to inspect; must be ocaml_module, ocaml_signature target, library or archive.",
             mandatory = True,
             providers = [
                 [OcamlArchiveMarker],
@@ -331,6 +331,7 @@ inspect = rule(
                 [PpxExecutableMarker],
                 [CcInfo]
             ],
+            ##FIXME: support stop on target
             ## transition fn: enable ppx_print:text for inspect:ppx
             cfg = inspect_out_transition
         ),
