@@ -140,44 +140,18 @@
                     (format #t "~A~%" (uwhite "emitting tool attrib"))
                     (if bash-cmd?
                         (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
-                        (begin
-                          (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
-                          (format outp "    cmd   = \" \".join([\n")
-                          (for-each
-                           (lambda (cmd)
-                             (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd)
-                             (if (eq? :cmd (car cmd))
-                                 (let-values
-                                     (((tool-dep? tool xargs)
-                                       (derive-cmd pkg-path cmd deps outputs)))
-                                   ;; (format #t "~A:\n" (red "derived cmd"))
-                                   (format #t "~A: ~A~%" (magenta "tool-dep?")
-                                           tool-dep?)
-                                   (format #t "~A: ~A~%" (magenta "tool") tool)
-                                   (format #t "~A: ~A~%" (magenta "XARGS") xargs)
-                                   ;; (_ (error 'X "STOP genrule"))
-
-                                   (if tool-dep?
-                                       ;; HACK: $(location ...)
-                                       (format outp "        \"$(execpath ~A)\",\n" tool)
-                                       (format outp "        \"~A\",\n" tool))
-                                   (format outp "        \"$(SRCS)\",\n")
-                                   ;; (format outp "~{        \"~A\",~^\n~}\n" xargs)
-                                   )
-                                 ;; else
-                                 (if (eq? :stdout (car cmd))
-                                     (format outp "        \"> $@\"\n")
-                                     (error 'unknown-cmd
-                                            (format #f "unknown cmd: ~A" cmd)))
-                                 ))
-                           action)
-                          (format #t "~A~%" (red "emitted cmd attrib"))
-                          (format outp "    ]),\n")))
+                        (emit-shell-cmd outp tool
+                                        with-stdout?
+                                        deps
+                                        action
+                                        outs
+                                        pkg-path
+                                        stanza))
 
                     (if (and (not (member tool shell-tool-kws))
                              (not bash-cmd?))
                         (begin
-                          (format outp "    tools = [\n")
+                          (format outp "    exec_tools = [\n")
                           (for-each ;; fixme: don't iterate this twice
                            (lambda (cmd)
                              (format #t "Processing CMD: ~A~%" cmd)

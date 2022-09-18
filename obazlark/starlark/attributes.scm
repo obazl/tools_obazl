@@ -56,17 +56,17 @@
                                       (case tgt-tag
                                         ((:tgt)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "~A" tgt) ;; file in cwd?
+                                             (format #f ":~A" tgt) ;; file in cwd?
                                              (format #f "//~A:~A" pkg tgt)))
 
                                         ((:glob :tgts)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "~A" tgt)
+                                             (format #f ":~A" tgt)
                                              (format #f "//~A:~A" pkg tgt)))
 
                                         ((:fg)
                                          (if (equal? pkg-path pkg)
-                                             (format #f "~A" tgt)
+                                             (format #f ":~A" tgt)
                                              (format #f "//~A:*~A*" pkg tgt)))
 
                                         (else

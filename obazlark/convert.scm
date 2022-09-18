@@ -27,16 +27,32 @@
     (format #t "~A: ~A ~A~%" (bggreen "workspace") (assoc :name @ws) (assoc :path @ws))
     (for-each (lambda (k)
                 (let ((pkg (hash-table-ref pkgs k)))
-                  (format #t "~%~A: ~A => ~A~%" (ugreen "package") (green k) pkg)
-                  (for-each (lambda (m)
-                              (format #t "~A: ~A~%" (ugreen "pkg-module") m))
-                            (if-let ((ms (assoc-val :modules pkg))) ms '()))
-                  ;; (format #t "~A: ~A~%" (ugreen "pkg-modules") (assoc-val :modules pkg))
-                  (format #t "~A: ~A~%" (ugreen "pkg-structures") (assoc-val :structures pkg))
+                  (format #t "~%~A: ~A => ~A~%" (bggreen "package") (green k) (assoc-val :pkg-path pkg))
+                  (for-each (lambda (fld)
+                              (format #t "~A: ~A~%" (ugreen "fld") (car fld)))
+                            pkg)
+                  (if-let ((ms (assoc-val :modules pkg)))
+                          (for-each (lambda (m)
+                                      (format #t "~A: ~A~%" (ugreen "pkg-module") m))
+                                    ms)
+                          (format #t "~A: ~A~%" (ugreen "pkg-modules") ms))
+                  (format #t "~A:~%" (ugreen "pkg-structures"))
+                  (if-let ((ss (assoc-in '(:structures :static) pkg)))
+                          (for-each (lambda (s)
+                                      (format #t "  ~A: ~A~%" (ugreen "static") s))
+                                    (cdr ss))
+                          (format #t "  ~A: ~A~%" (ugreen "statics") ss))
+                  (if-let ((ss (assoc-in '(:structures :dynamic) pkg)))
+                          (for-each (lambda (s)
+                                      (format #t "  ~A: ~A~%" (ugreen "dynamic") s))
+                                    (cdr ss))
+                          (format #t "  ~A: ~A~%" (ugreen "dynamics") ss))
+                  ;; (format #t "~A: ~A~%" (ugreen "pkg-structures") (assoc-val :structures pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-signatures") (assoc-val :signatures pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamllex") (assoc-val :ocamllex pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-ocamlyacc") (assoc-val :ocamlyacc pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-cc") (assoc-val :cc pkg))
+                  (format #t "~A: ~A~%" (ugreen "pkg-ppx") (assoc-val :shared-ppx pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-opam") (assoc-val :opam pkg))
                   (format #t "~A: ~A~%" (ugreen "pkg-files") (assoc-val :files pkg))
                   (if-let ((dune (assoc :dune pkg)))
@@ -56,6 +72,11 @@
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (filegroups (car (assoc-val :filegroups @ws))))
     (format #t "~A: ~A~%" (red "filegroups table") filegroups)))
+
+(define (-dump-ppx ws)
+  (let* ((@ws (assoc-val ws -mibl-ws-table))
+         (ppx-tbl (car (assoc-val :shared-ppx @ws))))
+    (format #t "~A: ~A~%" (bgcyan "shared-ppx") ppx-tbl)))
 
 (define (-dump-opam ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
@@ -141,6 +162,8 @@
   ;; (format #t "BYE~%"))
 
   (set! *build-dyads* #f)
+  (set! *shared-deps* '("compiler/tests-compiler" "lib/js_of_ocaml"))
+
   ;; (set! *wrapped-libs-to-ns-archives* #f)
   ;; (set! *unwrapped-libs-to-archives* #f)
 
@@ -150,26 +173,33 @@
 
          (mpkgs (add-filegroups-to-pkgs :@))
 
-         (mpkgs (normalize-manifests! :@))
+         (mpkgs (normalize-manifests! :@)))
 
-         (_ (-resolve-labels :@))
+    (-resolve-labels :@)
+    (resolve-pkg-file-deps :@)
+    (-miblarkize :@)
 
-         (_ (resolve-pkg-file-deps :@))
+    (handle-shared-ppx :@)
 
-         (_ (-miblarkize :@))
+    (if *shared-deps*
+        (begin
+          (handle-shared-deps :@)
+          (handle-shared-opts :@)
+          ))
 
-         (_ (ws->starlark :@)) ;; (_ (-emit-starlark :@))
+    (ws->starlark :@)
 
-         (_ (ws->opam-bundles :@))
+    (ws->opam-bundles :@)
 
-         (_ (format #t "~A~%" (red "PKG DUMP")))
-         (_ (-dump-pkgs :@))
+    (format #t "~A~%" (red "PKG DUMP"))
+    (-dump-pkgs :@)
 
-         (_ (format #t "~A: ~A~%" (green "selectors")
-                    (remove-duplicates *select-protases*)))
-         (_ (-dump-exports :@))
-         (_ (-dump-filegroups :@))
-         (_ (-dump-opam :@))
+    ;; (format #t "~A: ~A~%" (green "selectors")
+    ;;         (remove-duplicates *select-protases*))
+    ;; (-dump-exports :@)
+    (-dump-ppx :@)
+    ;; (-dump-filegroups :@)
+    ;; (-dump-opam :@)
 
-         )
-    '()))
+    )
+  '())

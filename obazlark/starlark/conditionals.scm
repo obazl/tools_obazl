@@ -77,7 +77,7 @@
                (archive-options (-get-archive-opts (cdr stanza)))
                (_ (format #t "~A: ~A~%" (bgyellow "archive-options")
                           archive-options))
-               (compile-options (-get-compile-opts (cdr stanza)))
+               (compile-options (get-compile-opts (cdr stanza) pkg))
                (_ (format #t "~A: ~A~%" (bgyellow "compile-options")
                           compile-options))
                (exec-options (-get-exec-opts (cdr stanza)))
@@ -90,7 +90,6 @@
                                          dc #f))
                )
           (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
-          ;; (error 'stop "STOP agg conditionals")
 
           (if deps-conditional
               (let ((outfile (car (assoc-val :target (cadr deps-conditional))))
@@ -100,6 +99,9 @@
                                    (cons (format #f "~A_pred" (car sel))
                                          (cdr sel)))
                                  (assoc-val :selectors (cadr deps-conditional))))))
+                ;; (format #t "~A: ~A~%" (bgred "selectors") selectors)
+                ;; (error 'stop "STOP agg conditionals")
+
                 (if hdr-flag
                     (format outp
                             "load(\"@bazel_skylib//rules:copy_file.bzl\", \"copy_file\")~%"))

@@ -121,7 +121,8 @@ def _menhir_impl(ctx):
         dep_dirs.append(nsrp.cmi.dirname)
         action_inputs.append(nsrp.cmi)
         action_inputs.append(nsrp.struct)
-        action_inputs.append(nsrp.ofile)
+        if nsrp.ofile:
+            action_inputs.append(nsrp.ofile)
         args.add("-open", nsrp.module_name)
 
     args.add_all(dep_dirs, before_each="-I", uniquify = True)
@@ -280,7 +281,7 @@ menhir = rule(
         ns = attr.label(
         ),
         _ns_resolver = attr.label(
-            doc = "NS resolver module for bottom-up namespacing",
+            doc = "NS resolver module for top-down namespacing",
             # allow_single_file = True,
             providers = [OcamlNsResolverProvider],
             default = "@rules_ocaml//cfg/ns:resolver",

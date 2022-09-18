@@ -58,10 +58,11 @@
                           (format #t "~A: ~A~%" (bggreen "clients") clients)
                           (format #t "~A: ~A~%" (bggreen "pkg-path") pkg-path)
                           ;; (error 'STOP "STOP emit fgs")
-                          (if clients
+                          (if clients  ;; FIXME FIXME: make this work again
                               (format outp "    visibility = [~{\"//~A:__pkg__\"~^, ~}]\n" clients)
-                              (format outp "    visibility = [\"//visibility:private\"]\n")))
-                        ;; (format outp "    visibility = [\"//visibility:public\"]\n"))
+                              (format outp "    visibility = [\"//visibility:public\"]\n")))
+                              ;; (format outp "    visibility = [\"//visibility:private\"]\n")))
+
                         (format outp ")\n")
                         (newline outp)))
                     (cdr pkg-filegroups))))
@@ -105,5 +106,6 @@
 
                               (format outp ")\n")
                               (newline outp)))))
-                    ws-filegroups)))
-    ))
+                    ws-filegroups))))
+  (format #t "~A~%" (red "finished starlark-emit-filegroups"))
+  )

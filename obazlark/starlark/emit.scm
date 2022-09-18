@@ -48,7 +48,7 @@
           (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
 
           (format #t "emitting singleton targets\n")
-          (starlark-emit-singleton-targets outp pkg)
+          (starlark-emit-singleton-targets outp ws pkg)
           ;; (starlark-emit-singleton-targets outp pkg-path stanzas
           ;;                                  (cdr pkg-kv))
 
@@ -59,8 +59,10 @@
           ;; ocamllex, ocamlyacc, etc.
           (starlark-emit-file-generators outp pkg)
 
-          (format #t "emitting ppxes\n")
-          (starlark-emit-ppxes outp pkg) ;;fs-path stanzas)
+          (if *local-ppx-driver*
+              (begin
+                (format #t "emitting pkg ppxes\n")
+                (starlark-emit-pkg-ppxes outp ws pkg)))
 
           (format #t "emitting rules\n")
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
@@ -147,4 +149,7 @@
                     (mibl-pkg->build-bazel ws (cdr kv))
                     (format #t "~A: ~A~%" (blue "skipping") (car kv)))
                 )
-              pkgs)))
+              pkgs)
+    (if (not *local-ppx-driver*)
+        (starlark-emit-global-ppxes ws))
+    ))

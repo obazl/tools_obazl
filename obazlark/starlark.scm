@@ -18,6 +18,7 @@
 (load "starlark/genrule.scm")
 (load "starlark/profiles.scm")
 (load "starlark/rules.scm")
+(load "starlark/shell.scm")
 (load "starlark/tools.scm")
 (load "starlark/attributes.scm")
 (load "starlark/filegroups.scm")

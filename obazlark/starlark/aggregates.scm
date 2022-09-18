@@ -33,7 +33,7 @@
         (format outp "ocaml_ns_library(\n"))
     (format outp "    name       = \"~A\",\n" ns)
     (format outp "    ns         = \"~A\",\n" privname)
-    (format outp "    submodules = [\n")
+    (format outp "    manifest = [\n")
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],")
     (newline outp)
@@ -41,14 +41,14 @@
     (if cc-deps
         (begin
           (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
-          (format outp "    cc_deps    = [\"~A.stubs\"]," (cdadr cc-deps))
+          (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
           (newline outp)))
 
     (if (not (null? flags))
         (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags))
     ;; (format outp "    opts       = ~A_OPTS,\n" libname)
 
-    ;; (format outp "    submodules = [\n")
+    ;; (format outp "    manifest = [\n")
     ;;       (for-each (lambda (submod)
     ;;                   (format outp "        \":~A\",\n"
     ;;                           (symbol->string
@@ -72,13 +72,19 @@
   (format outp "    ],~%")
   (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags)
   ;; (format outp "    opts       = ~A_OPTS,\n" libname)
+  (if cc-deps
+      (begin
+        (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+        (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
+        (newline outp)))
+
   (format outp ")\n\n")
 
   (format outp "#################\n")
   (format outp "ocaml_ns_resolver(\n")
   (format outp "    name       = \"ns.~A\",\n" pubname)
   (format outp "    ns         = \"~A\",\n" ns)
-  (format outp "    submodules = [~{\"~A\"~^, ~}],\n" submodules)
+  (format outp "    manifest = [~{\"~A\"~^, ~}],\n" submodules)
   (format outp ")\n\n")
   )
 
@@ -140,6 +146,11 @@
          (format outp "    manifest   = [~%")
          (format outp "~{        \":~A\"~^,~%~}~%" submodules)
          (format outp "    ],~%")
+         (if cc-deps
+             (begin
+               (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+               (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
+               (newline outp)))
          (format outp ")\n\n")))
 
       ;; ((:archive)

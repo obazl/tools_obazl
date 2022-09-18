@@ -28,7 +28,7 @@
                                  (cdr mani) '())
                           sym<?))
          (_ (format #t "manifest: ~A~%" manifest))
-         (manifest (remove main manifest))
+         ;; (manifest (remove main manifest))
          (_ (format #t "manifest: ~A~%" manifest))
          )
     (let-values (((link-std link-opts)
@@ -41,6 +41,7 @@
       (format #t "MANIFEST: ~A\n" manifest)
       ;; (format #t "SUBMs: ~A\n" submodules)
       ;; (format #t "DEPS: ~A\n" deps)
+      ;; (error 'STOP "STOP exec linkflags")
 
       ;; (let-values (((flags opens) (stanza-opts stanza-alist)))
       ;;   (if (or flags opens
@@ -97,14 +98,25 @@
         (if (not (null? link-opts))
             (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
 
-        (if main
-            (format outp "    main     = \"~A\",\n" main))
+        (format outp "    manifest   = [\":__lib_~A__\"],\n" tgtname)
+        (format outp "    visibility = [\"//visibility:public\"],\n")
+        (format outp ")\n")
+        (newline outp)
 
-        (if (not (null? manifest))
-            (begin
-              (format outp "    manifest = [~%")
-              (format outp "~{        \":~A\"~^,~%~}~%" manifest)
-              (format outp "    ],\n")))
+        ;;;;;;;;;;;;;;;;
+        (format outp "ocaml_ns_library(~%")
+        (format outp "    name = \"__lib_~A__\",~%" tgtname)
+
+        ;; (if (not (null? manifest))
+        ;;     (begin
+        (format outp "    manifest = [~%")
+        (format outp "~{        \":~A\"~^,~%~}~%" manifest)
+        (format outp "    ],\n")
+        ;; ))
+        (format outp "    visibility = [\"//visibility:private\"],~%")
+        (format outp ")")
+        (newline outp)
+        (newline outp)
 
             ;; (begin
             ;;   ;; (format #t "MODDEPS: ~A\n" modules)
@@ -131,9 +143,9 @@
             ;;   ;;           modules)
             ;;   (format outp "    ],\n")))
 
-        (format outp "    visibility = [\"//visibility:public\"],\n")
-        (format outp ")\n")
-        (newline outp)
+        ;; (format outp "    visibility = [\"//visibility:public\"],\n")
+        ;; (format outp ")\n")
+        ;; (newline outp)
         ;;(format outp "#############################\n")
         ))
     ;; now emit modules for compilation
