@@ -65,22 +65,27 @@
                                                         #f))
                                                   ;;FIXME: detect file args and wrap in $(location ...)
                                                   (if (eq? arg (car dep))
-                                                      (if (alist? (cdr dep))
-                                                          (format #f "$(location ~A)" label-list->label-string (cdr dep))
-                                                          ;;FIXME
-                                                          (format #f "~A" arg)) ;; (error 'fixme "non-label dep match"))
+                                                      (begin
+                                                        (format #t "~A: ~A~%" (yellow "found arg in dep") dep)
+                                                        (if (alist? (cdr dep))
+                                                            (format #f "$(location ~A)" (label-list->label-string (cdr dep)))
+                                                            ;;FIXME
+                                                            (format #f "~A" arg))) ;; (error 'fixme "non-label dep match"))
                                                       #f)))
                                             deps))))
                         (if (not (null? xarg))
                             (begin
                               (format #t "~A: ~A~%" (yellow "decoded to dep") xarg)
                               xarg)
-                            (let ((xarg (hash-table-ref exports arg)))
-                              (if xarg
-                                  (begin
-                                    (format #t "~A: ~A~%" (yellow "decoded to export") xarg)
-                                    xarg)
-                                  arg)))))
+                            (begin
+                              ;; should not happen, all dep labels should have been resolved by prev pass
+                              (format #t "~A: ~A~%" (yellow "NOT decoded to dep") xarg)
+                              (let ((xarg (hash-table-ref exports arg)))
+                                (if xarg
+                                    (begin
+                                      (format #t "~A: ~A~%" (yellow "decoded to export") xarg)
+                                      xarg)
+                                    arg))))))
                     args)))
           (format #t "~A: ~A~%" (uwhite "cooked args") cooked)
           ;; (error 'fixme "STOP decode")

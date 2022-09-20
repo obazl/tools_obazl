@@ -40,50 +40,55 @@
                              (begin))
                             (else
                              (let* ((tag (car dep))
-                                     (_ (format #t "~A: ~A~%" (yellow "tag") tag))
-                                     (label (cdr dep))
-                                     (_ (format #t "~A: ~A~%" (yellow "label") label)))
-                                (if (alist? label)
-                                    (let* ((pkg (cdr (assoc :pkg label)))
-                                           (_ (format #t "~A: ~A~%" (yellow "pkg") pkg))
-                                           (tgt (cadr label))
-                                           (_ (format #t "~A: ~A~%" (yellow "tgt") tgt))
-                                           (tgt-tag (car tgt))
-                                           (_ (format #t "~A: ~A~%" (yellow "tgt-tag") tgt-tag))
-                                           (tgt (cdr tgt))
-                                           (_ (format #t "~A: ~A~%" (yellow "tgt") tgt))
-                                           )
-                                      (case tgt-tag
-                                        ((:tgt)
-                                         (if (equal? pkg-path pkg)
-                                             (format #f ":~A" tgt) ;; file in cwd?
-                                             (format #f "//~A:~A" pkg tgt)))
+                                    (_ (format #t "~A: ~A~%" (yellow "tag") tag))
+                                    (label (cdr dep))
+                                    (_ (format #t "~A: ~A~%" (yellow "label") label)))
+                               (cond
+                                ((alist? label)
+                                 (let* ((pkg (cdr (assoc :pkg label)))
+                                        (ws (if-let ((ws (assoc-val :ws label)))
+                                                    ws "")))
+                                   (cond
+                                    ((assoc-val :tgt label)
+                                     (if (equal? pkg-path pkg)
+                                          (format #f ":~A" (assoc-val :tgt label))
+                                          (format #f "~A//~A:~A" ws pkg (assoc-val :tgt label))))
+                                    ((assoc-val :tgts label)
+                                     (if (equal? pkg-path pkg)
+                                         (format #f ":~A" (assoc-val :tgts label))
+                                         (format #f "~A//~A:~A" ws pkg (assoc-val :tgts label))))
+                                    ((assoc-val :glob label)
+                                      (if (equal? pkg-path pkg)
+                                          (format #f ":~A" (assoc-val :glob label))
+                                          (format #f "~A//~A:*~A*" ws pkg (assoc-val :glob label))))
+                                    ((assoc-val :fg label)
+                                     (if (equal? pkg-path pkg)
+                                         (format #f ":~A" (assoc-val :fg label))
+                                         (format #f "~A//~A:*~A*" ws pkg (assoc-val :fg label))))
+                                    (else (error 'FIXME
+                                                 (format #f "Unrecognized tag in: ~A" label))))))
 
-                                        ((:glob :tgts)
-                                         (if (equal? pkg-path pkg)
-                                             (format #f ":~A" tgt)
-                                             (format #f "//~A:~A" pkg tgt)))
+                                ((keyword? label)
+                                 (if (equal? ::unresolved label)
+                                     (begin
+                                       (format #t "~A: ~A for ~A~%" (bgred "omitting unresolved src lbl") label tag)
+                                       (values))
+                                     (error 'FIXME (format #f "dunno how to handle this dep: ~A" dep))))
 
-                                        ((:fg)
-                                         (if (equal? pkg-path pkg)
-                                             (format #f ":~A" tgt)
-                                             (format #f "//~A:*~A*" pkg tgt)))
-
-                                        (else
-                                         (error 'fixme "unrecognized target value"))))
-                                    ;; else not a (:pkg ) (:tgt ) dep
-                                    (begin
-                                      (case (car label)
-                                        ((::import)
-                                         (format #t "~A: ~A~%" (uyellow "::import") tag)
-                                         (format #f "~A" tag))
-                                        ((::pkg)
-                                         (format #t "~A: ~A~%" (uyellow "::pkg") tag)
-                                         (format #f "~A" tag))
-                                        (else
-                                         (error 'fixme "XXXXXXXXXXXXXXXX"))))
-                                      )
-                                ))))
+                                ((list? label)
+                                 (begin
+                                   (case (car label)
+                                     ((::import)
+                                      (format #t "~A: ~A~%" (uyellow "::import") tag)
+                                      (format #f "~A" tag))
+                                     ((::pkg)
+                                      (format #t "~A: ~A~%" (uyellow "::pkg") tag)
+                                      (format #f "~A" tag))
+                                     (else
+                                      (error 'fixme "XXXXXXXXXXXXXXXX")))))
+                                (else
+                                 (error 'FIXME
+                                        (format #f "unrecognized form ~A" label))))))))
                         deps))
              (_ (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs))
 

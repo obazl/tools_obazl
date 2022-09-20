@@ -182,7 +182,8 @@
                                deps
                                '())))
          (agg-deps (if (number? deps-tag)
-                       (dissoc '(:deps :resolved) agg-deps)))
+                       (dissoc '(:deps :resolved) agg-deps)
+                       agg-deps))
 
          (_ (format #t "~A: ~A~%" (uwhite "Agg-deps") agg-deps))
 
@@ -326,8 +327,9 @@
     ;; (if ppx-id (error 'stop "STOP ppx id"))
 
     (if (proper-list? module)
-        (if (alist? (cdr module)) ;; :modules (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
-            (let* ((_ (format #t "~A~%" (red "proper, alist")))
+        (if (alist? (cdr module))
+            ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
+            (let* ((_ (format #t "~A~%" (red "proper alist module-spec")))
                    (modname (car module))
                    (srcs    (cdr module))
                    (select-sigfile #f)
@@ -439,8 +441,8 @@
               (format outp ")\n")
               )
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;; pkg dep: (Mytest mytest.ml Hello)
-            (let* ((_ (format #t "~A~%" (red "proper, non-alist")))
+            ;; proper list: (Mytest mytest.ml Hello)
+            (let* ((_ (format #t "~A~%" (red "proper list module-spec")))
                    (modname (car module))
                    (structfile (cadr module))
                    (local-deps (cddr module)))
@@ -499,8 +501,8 @@
 
                (format outp ")\n")
                ))
-        ;; else (M . ml) from :structures
-        (let* ((_ (format #t "~A~%" (red "improper")))
+        ;; improper pair (M . ml) from :structures
+        (let* ((_ (format #t "~A~%" (red "improper pair module-spec")))
                (modname (car module))
                (structfile (cdr module))
                (local-deps '()))
@@ -619,9 +621,8 @@
                                       ;; else no submods?
                                       (error 'STOP "no submods")))
 
-                             ((:testsuite) #f)
 
-                             ((:ocamllex :ocamlyacc :menhir) #f)
+                             ((:install :ocamllex :ocamlyacc :menhir :testsuite) #f)
 
                              ((:rule)
                               (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza)

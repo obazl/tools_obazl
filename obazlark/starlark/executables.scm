@@ -15,6 +15,11 @@
          (tgtname (format #f "~A" privname))
          (exename privname)
 
+         (modes (if-let ((ms (assoc-in '(:link :modes) stanza-alist)))
+                        (cdr ms) ms))
+         (_ (format #t "~A: ~A~%" (bgred "modes") modes))
+         ;; (_ (if (truthy? modes) (error 'X "X")))
+
          ;; 'name', i.e. main, is required by dune so we always have it
          ;; (main (cadr (assoc-in '(:link :main) stanza-alist)))
          (main (assoc-val :main stanza-alist))
@@ -100,6 +105,11 @@
 
         (format outp "    manifest   = [\":__lib_~A__\"],\n" tgtname)
         (format outp "    visibility = [\"//visibility:public\"],\n")
+
+        (if modes
+            (if (equal? '(byte) modes)
+                (format outp "    target_compatible_with = [\"@ocaml//host/target:vm?\"]~%")))
+
         (format outp ")\n")
         (newline outp)
 

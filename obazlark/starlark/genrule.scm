@@ -126,7 +126,7 @@
 
                     (format outp "    name  = \"~A\",\n" name)
 
-                    (if (not (null? srcs))
+                    (if (truthy? srcs)
                         (if bash-cmd?
                             (emit-bash-srcs outp srcs pkg-path stanza)
                             (emit-bash-srcs outp srcs pkg-path stanza)
@@ -144,7 +144,7 @@
                                         with-stdout?
                                         deps
                                         action
-                                        outs
+                                        outputs ;; outs
                                         pkg-path
                                         stanza))
 

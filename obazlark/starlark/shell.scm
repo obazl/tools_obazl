@@ -7,6 +7,7 @@
                         stanza)
   (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
   (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
+  (format #t "~A: ~A~%" (uwhite "outputs") outputs)
 
   (format outp "    cmd   = \" \".join([\n")
 

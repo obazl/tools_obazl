@@ -691,7 +691,7 @@
                             ;; (format outp "]~%")))
                             (cadr stanza))))
 
-             ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx)
+             ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx :alias)
               (values))
 
              (else

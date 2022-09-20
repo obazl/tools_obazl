@@ -135,20 +135,24 @@
     ;; (-emit-import-settings ws)
 
     ;; also one //bzl/profiles per workspace
-
+    (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*)
     (for-each (lambda (kv)
-                (format #t "~A: ~S~%" (blue "emitting pkg") (car kv))
-                ;; if this is the root dunefile (w/sibling dune-project file)
-                ;; and we have :env stanza, emit //profiles/BUILD.bazel
-                ;; PROBLEM: what if we have sub-workspaces, i.e.
-                ;; multiple (env ...) dunefiles?
-                (if (assoc 'dune-project (cdr kv))
-                    (if (assoc-in '(:dune :env) (cdr kv))
-                        (emit-profiles ws (cdr kv))))
-                (if (not (null? (cdr kv)))
-                    (mibl-pkg->build-bazel ws (cdr kv))
-                    (format #t "~A: ~A~%" (blue "skipping") (car kv)))
-                )
+                (if (or (not *emit-bazel-pkg*)
+                        (and (truthy? *emit-bazel-pkg*)
+                             (string-prefix? *emit-bazel-pkg* (car kv))))
+                    (begin
+                      (format #t "~A: ~S~%" (blue "emitting pkg") (car kv))
+                      ;; if this is the root dunefile (w/sibling dune-project file)
+                      ;; and we have :env stanza, emit //profiles/BUILD.bazel
+                      ;; PROBLEM: what if we have sub-workspaces, i.e.
+                      ;; multiple (env ...) dunefiles?
+                      (if (assoc 'dune-project (cdr kv))
+                          (if (assoc-in '(:dune :env) (cdr kv))
+                              (emit-profiles ws (cdr kv))))
+                      (if (not (null? (cdr kv)))
+                          (mibl-pkg->build-bazel ws (cdr kv))
+                          (format #t "~A: ~A~%" (blue "skipping") (car kv)))
+                      )))
               pkgs)
     (if (not *local-ppx-driver*)
         (starlark-emit-global-ppxes ws))

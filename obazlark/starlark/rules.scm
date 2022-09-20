@@ -64,7 +64,6 @@
           (map (lambda (arg)
                  (format #t "Mapping arg: ~A~%" arg)
                  (cond
-
                   ((or (equal? arg :targets)
                        (equal? arg :outputs))
                    (format #t "~A: ~A~%" (red "Arg is") arg)
@@ -94,58 +93,76 @@
                                               pkg tgt)))))
                           (dissoc '(::tools) deps)))
 
+                  ;; ((member arg ocaml-std-pkgs)
+                  ;;  (error 'X "ocaml-std-pkgs"))
+
                   ((keyword? arg)
                    (format #t "KW: ~A\n" arg)
-                   ;; find args in deplist
-                   (let ((found
-                          (find-if (lambda (dep)
-                                     (format #t "dep: ~A\n" dep)
-                                     (equal? arg (car dep)))
-                                   deps)))
-                     (if found
-                         (begin
-                           (format #t "~A: ~A~%" (red "FOUND arg") found)
-                           (let* ((label (cdr found))
-                                  (pkg (let ((p (format #f "~A" (assoc-val :pkg label))))
-                                         (if (string=? p "./") "." p)))
-                                  (_ (format #t "~A: ~A~%" (bgred "pkg") pkg))
-                                  (tgt-tag (caadr label))
-                                  (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
-                                  (tgt (assoc-val tgt-tag label)))
-                             (if (equal? pkg pkg-path)
-                                 (if (eq? tgt-tag :glob) ;; :tgts)
-                                     (format #f "`realpath $(locations :~A)`" tgt)
-                                     (format #f "`realpath $(location :~A)`" tgt))
-                                 (if (eq? tgt-tag :glob) ;; :tgts)
-                                     (format #f "`realpath $(locations //~A:~A)`"
-                                              pkg tgt)
-                                     (format #f "`realpath $(location //~A:~A)`"
-                                             pkg tgt)))))
-                         ;; else not found in :deps, try :outputs?
-                         (error 'fixme
-                                (format #f "~A: ~A~%"
-                                        (red "kw arg unresolved") arg)))))
+                   (if (equal? ::pkg-dir arg)
+                       "./"
+                       ;; find args in deplist
+                       (let ((found
+                              (find-if (lambda (dep)
+                                         (format #t "dep: ~A\n" dep)
+                                         (equal? arg (car dep)))
+                                       deps)))
+                         (if found
+                             (begin
+                               (format #t "~A: ~A~%" (red "FOUND arg") found)
+                               (if (equal? (cdr found) ::unresolved)
+                                   (symbol->string (keyword->symbol (car found)))
+                                   (let* ((label (cdr found))
+                                          (ws (if-let ((ws (assoc-val :ws label)))
+                                                      ws ""))
+                                          (pkg (let ((p (format #f "~A" (assoc-val :pkg label))))
+                                                 (if (string=? p "./") "." p)))
+                                          (_ (format #t "~A: ~A~%" (bgred "pkg") pkg))
+                                          ;; tgt tag may be :tgt, :tgts, :glob, or :fg
+                                          (_ (format #t "~A: ~A~%" (bgyellow "getting tgt tag") label))
+                                          (tgt-pair (dissoc '(:ws) label))
+                                          (_ (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair))
+                                          (tgt-pair (car (dissoc '(:pkg) tgt-pair)))
+                                          (_ (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair))
+                                          (tgt-tag (car tgt-pair))
+                                          (_ (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag))
+                                          (tgt (cdr tgt-pair)))
+                                     (if (equal? pkg pkg-path)
+                                         (if (eq? tgt-tag :glob) ;; :tgts)
+                                             (format #f "`realpath $(locations :~A)`" tgt)
+                                             (format #f "`realpath $(location :~A)`" tgt))
+                                         (if (eq? tgt-tag :glob) ;; :tgts)
+                                             (format #f "`realpath $(locations ~A//~A:~A)`"
+                                                     ws pkg tgt)
+                                             (format #f "`realpath $(location ~A//~A:~A)`"
+                                                     ws pkg tgt))))))
+                             ;; else not found in :deps, try :outputs?
+
+                             (error 'fixme
+                                    (format #f "~A: ~A~%"
+                                            (red "kw arg unresolved") arg))))))
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "arg: string literal\n")
+                   (if (char=? #\- (arg 0))
+                       arg
                    ;; how do we know which strings need $(location)?
                    ;; assumption: files must be listed in deps, so any
                    ;; strings we see are just string args
-                   (if-let ((x (-arg->dep arg deps)))
-                           ;; (assoc arg deps)))
-                           (begin
-                             (format #t "found arg ~A in deps\n" x)
-                             (let* ((fname (format #f "~A" x))
-                                    (dname (dirname fname))
-                                    (bname (basename fname)))
-                               (let ((tmp (format #f "$(location ~A)"
-                                                  (if (equal dname pkg-path)
-                                                      bname fname))))
-                                 tmp)))
+                       (if-let ((x (-arg->dep arg deps)))
+                               ;; (assoc arg deps)))
+                               (begin
+                                 (format #t "found arg ~A in deps\n" x)
+                                 (let* ((fname (format #f "~A" x))
+                                        (dname (dirname fname))
+                                        (bname (basename fname)))
+                                   (let ((tmp (format #f "$(location ~A)"
+                                                      (if (equal dname pkg-path)
+                                                          bname fname))))
+                                     tmp)))
 
-                           (begin
-                             (format #t "arg not in deps: ~A~%" arg)
-                             arg)))
+                               (begin
+                                 (format #t "arg not in deps: ~A~%" arg)
+                                 arg))))
 
                   ((proper-list? arg) ;; (:_ a.x b.y...)
                    ;; e.g. from %{deps} or a custom var
