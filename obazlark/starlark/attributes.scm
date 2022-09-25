@@ -37,58 +37,61 @@
                           (cond
                            ((equal? (car dep) tool) (begin)) ;; skip, it goes in tools attr
                            ((eq? (car dep) ::tools) ;; form: (::tools (:foo (:pkg x) (:tgt y)) (:bar (:pkg a)(:tgt b)))
-                             (begin))
-                            (else
-                             (let* ((tag (car dep))
-                                    (_ (format #t "~A: ~A~%" (yellow "tag") tag))
-                                    (label (cdr dep))
-                                    (_ (format #t "~A: ~A~%" (yellow "label") label)))
-                               (cond
-                                ((alist? label)
-                                 (let* ((pkg (cdr (assoc :pkg label)))
-                                        (ws (if-let ((ws (assoc-val :ws label)))
-                                                    ws "")))
-                                   (cond
-                                    ((assoc-val :tgt label)
-                                     (if (equal? pkg-path pkg)
-                                          (format #f ":~A" (assoc-val :tgt label))
-                                          (format #f "~A//~A:~A" ws pkg (assoc-val :tgt label))))
-                                    ((assoc-val :tgts label)
-                                     (if (equal? pkg-path pkg)
-                                         (format #f ":~A" (assoc-val :tgts label))
-                                         (format #f "~A//~A:~A" ws pkg (assoc-val :tgts label))))
-                                    ((assoc-val :glob label)
-                                      (if (equal? pkg-path pkg)
-                                          (format #f ":~A" (assoc-val :glob label))
-                                          (format #f "~A//~A:*~A*" ws pkg (assoc-val :glob label))))
-                                    ((assoc-val :fg label)
-                                     (if (equal? pkg-path pkg)
-                                         (format #f ":~A" (assoc-val :fg label))
-                                         (format #f "~A//~A:*~A*" ws pkg (assoc-val :fg label))))
-                                    (else (error 'FIXME
-                                                 (format #f "Unrecognized tag in: ~A" label))))))
+                            (begin))
+                           ((eq? (car dep) ::glob) ;; anonymous glob: (::glob (:pkg . x) (:glob . y))
+                            ;;(find-in-filegroups dep)
+                            (format #f "//~A:~A" (assoc-val :pkg (cdr dep)) (assoc-val :glob (cdr dep))))
+                           (else
+                            (let* ((tag (car dep))
+                                   (_ (format #t "~A: ~A~%" (yellow "tag") tag))
+                                   (label (cdr dep))
+                                   (_ (format #t "~A: ~A~%" (yellow "label") label)))
+                              (cond
+                               ((alist? label)
+                                (let* ((pkg (cdr (assoc :pkg label)))
+                                       (ws (if-let ((ws (assoc-val :ws label)))
+                                                   ws "")))
+                                  (cond
+                                   ((assoc-val :tgt label)
+                                    (if (equal? pkg-path pkg)
+                                        (format #f ":~A" (assoc-val :tgt label))
+                                        (format #f "~A//~A:~A" ws pkg (assoc-val :tgt label))))
+                                   ((assoc-val :tgts label)
+                                    (if (equal? pkg-path pkg)
+                                        (format #f ":~A" (assoc-val :tgts label))
+                                        (format #f "~A//~A:~A" ws pkg (assoc-val :tgts label))))
+                                   ((assoc-val :glob label)
+                                    (if (equal? pkg-path pkg)
+                                        (format #f ":~A" (assoc-val :glob label))
+                                        (format #f "~A//~A:~A" ws pkg (assoc-val :glob label))))
+                                   ((assoc-val :fg label)
+                                    (if (equal? pkg-path pkg)
+                                        (format #f ":~A" (assoc-val :fg label))
+                                        (format #f "~A//~A:*~A*" ws pkg (assoc-val :fg label))))
+                                   (else (error 'FIXME
+                                                (format #f "Unrecognized tag in: ~A" label))))))
 
-                                ((keyword? label)
-                                 (if (equal? ::unresolved label)
-                                     (begin
-                                       (format #t "~A: ~A for ~A~%" (bgred "omitting unresolved src lbl") label tag)
-                                       (values))
-                                     (error 'FIXME (format #f "dunno how to handle this dep: ~A" dep))))
+                               ((keyword? label)
+                                (if (equal? ::unresolved label)
+                                    (begin
+                                      (format #t "~A: ~A for ~A~%" (bgred "omitting unresolved src lbl") label tag)
+                                      (values))
+                                    (error 'FIXME (format #f "dunno how to handle this dep: ~A" dep))))
 
-                                ((list? label)
-                                 (begin
-                                   (case (car label)
-                                     ((::import)
-                                      (format #t "~A: ~A~%" (uyellow "::import") tag)
-                                      (format #f "~A" tag))
-                                     ((::pkg)
-                                      (format #t "~A: ~A~%" (uyellow "::pkg") tag)
-                                      (format #f "~A" tag))
-                                     (else
-                                      (error 'fixme "XXXXXXXXXXXXXXXX")))))
-                                (else
-                                 (error 'FIXME
-                                        (format #f "unrecognized form ~A" label))))))))
+                               ((list? label)
+                                (begin
+                                  (case (car label)
+                                    ((::import)
+                                     (format #t "~A: ~A~%" (uyellow "::import") tag)
+                                     (format #f "~A" tag))
+                                    ((::pkg)
+                                     (format #t "~A: ~A~%" (uyellow "::pkg") tag)
+                                     (format #f "~A" tag))
+                                    (else
+                                     (error 'fixme "XXXXXXXXXXXXXXXX")))))
+                               (else
+                                (error 'FIXME
+                                       (format #f "unrecognized form ~A" label))))))))
                         deps))
              (_ (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs))
 

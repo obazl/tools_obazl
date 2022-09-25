@@ -1,3 +1,5 @@
+exports_files(["BUILD.bazel"])
+
 load("@rules_ocaml//toolchain:profiles.bzl",
      "toolchain_profile_selector", "ocaml_toolchain_profile")
 

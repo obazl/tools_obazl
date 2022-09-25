@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+# load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 ##########
 cc_binary(
@@ -26,29 +26,28 @@ cc_binary(
         "-Wpedantic",
         "-Wno-unused-function",
 
+        "-Iexternal/obazl/repl",
         "-I$(GENDIR)/repl",
         "-I$(GENDIR)/external/obazl/repl",
 
         "-Iexternal/mibl/vendored/uthash",
-
         # "-Iexternal/libinih",
-        "-Iexternal/logc/src",
+        # "-Iexternal/logc/src",
 
-        # "-Iexternal/mibl/src",
+        "-Iexternal/mibl/src", # log.h
         "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
-        "-Iexternal/libs7/src",
+
         # "-Iexternal/mibl/libs7/src",
+
+        "-Iexternal/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/mibl/libs7/vendored/linenoise",
+        # "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
         "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
+    }) + ["-lm"],
     data = [
         "//obazlark:srcs",
         "//obazlark/starlark:srcs"
@@ -58,7 +57,7 @@ cc_binary(
         "@mibl//vendored/uthash",
         "@libs7//src:s7",
         "@libs7//src:c_s7",
-        "@logc//:logc",
+        # "@logc//:logc",  # provided in libmibl.a
         # "//external/libinih:inih",
         # "@libs7//vendored/linenoise",
     ],
@@ -95,74 +94,74 @@ genrule(
 )
 
 ################################################################
-cc_binary(
-    name  = "deploy",
-    srcs  = [
-        "deploy.c", "deploy.h",
-        "deploy_config.c", "deploy_config.h",
-        # "//src:mibl_config.h",
-        # "//src:fs.h"
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-        # "LD_LIBRARY_PATH=external/libs7/src"
-    ],
-    copts = select({
-        # strdup is non-standard, not supported on linux in strict c11 mode
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        # "-pedantic-errors",
-        "-Wall",
-        "-Wno-unused-function",
+# cc_binary(
+#     name  = "deploy",
+#     srcs  = [
+#         "deploy.c", "deploy.h",
+#         "deploy_config.c", "deploy_config.h",
+#         # "//src:mibl_config.h",
+#         # "//src:fs.h"
+#     ],
+#     defines = select({
+#         "//bzl/host:debug": ["DEBUG_TRACE"],
+#         "//conditions:default":   []
+#     }) + select({
+#         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+#         "//conditions:default":   []
+#     }) + [
+#         # "LD_LIBRARY_PATH=external/libs7/src"
+#     ],
+#     copts = select({
+#         # strdup is non-standard, not supported on linux in strict c11 mode
+#         "//bzl/host:macos": ["-std=c11"],
+#         "//bzl/host:linux": ["-std=gnu11"],
+#         "//conditions:default": ["-std=c11"],
+#     }) + [
+#         # "-pedantic-errors",
+#         "-Wall",
+#         "-Wno-unused-function",
 
-        "-I$(GENDIR)/repl",
+#         "-I$(GENDIR)/repl",
 
-        "-I$(GENDIR)/external/mibl/src",
+#         "-I$(GENDIR)/external/mibl/src",
 
-        # "-I$(GENDIR)/deploy",
-        # "-I$(GENDIR)/external/mibl/deploy",
+#         # "-I$(GENDIR)/deploy",
+#         # "-I$(GENDIR)/external/mibl/deploy",
 
-        "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
-        "-Iexternal/logc/src",
+#         "-Iexternal/uthash/include",
+#         "-Iexternal/libinih",
+#         "-Iexternal/logc/src",
 
-        "-Iexternal/libs7/src",
-        "-Iexternal/mibl/libs7/src",
-    ],
-    data = [
-        "@mibl//src:mibl",  # libmibl.so
-        # "//repl", # so we can find it in MANIFEST
-        "@mibl//mibl:srcs",
-        "@mibl//mibl/dune:srcs",
-        "@mibl//mibl/meta:srcs",
-        "@mibl//mibl/opam:srcs",
+#         "-Iexternal/libs7/src",
+#         "-Iexternal/mibl/libs7/src",
+#     ],
+#     data = [
+#         "@mibl//src:mibl",  # libmibl.so
+#         # "//repl", # so we can find it in MANIFEST
+#         "@mibl//mibl:srcs",
+#         "@mibl//mibl/dune:srcs",
+#         "@mibl//mibl/meta:srcs",
+#         "@mibl//mibl/opam:srcs",
 
-        "//obazlark:srcs",
-        "//obazlark/starlark:srcs"
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-        "//conditions:default": {}
-    }) + [
-        "-lm",
-    ],
-    deps = [
-        # "//repl",
-        "@mibl//src:mibl", # since we depend on its config files
-        "//external/libinih:inih",
-        # "@logc//:logc",
-        # "@libs7//src:s7",
-        # "@libs7//vendored/linenoise",
-    ],
-    visibility = ["//visibility:public"]
-)
+#         "//obazlark:srcs",
+#         "//obazlark/starlark:srcs"
+#     ],
+#     linkopts = select({
+#         "//bzl/host:macos": [],
+#         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+#         "//conditions:default": {}
+#     }) + [
+#         "-lm",
+#     ],
+#     deps = [
+#         # "//repl",
+#         "@mibl//src:mibl", # since we depend on its config files
+#         "//external/libinih:inih",
+#         # "@logc//:logc",
+#         # "@libs7//src:s7",
+#         # "@libs7//vendored/linenoise",
+#     ],
+#     visibility = ["//visibility:public"]
+# )
 
 

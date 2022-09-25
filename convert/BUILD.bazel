@@ -6,7 +6,9 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "convert.c", "convert.h",
-        "log.c", "log.h", "utarray.h", "utstring.h", "uthash.h"
+        # "log.c", # supplied by libmibl
+        # "log.h",
+        "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -27,38 +29,33 @@ cc_binary(
         "-Wno-unused-function",
 
         "-Iexternal/obazl/convert",
-
         "-I$(GENDIR)/convert",
         "-I$(GENDIR)/external/obazl/convert",
 
-        "-I$(GENDIR)/external/mibl/src",
-
         "-Iexternal/uthash/include",
         "-Iexternal/libinih",
-        "-Iexternal/logc/src",
+        # "-Iexternal/logc/src",
 
-        # "-Iexternal/mibl/src",
+        "-Iexternal/mibl/src",  ## log.h
         "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
+
         "-Iexternal/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/mibl/libs7/vendored/linenoise",
+        # "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
         "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
+    }) + ["-lm"],
     data = [
         "//obazlark:srcs",
         "//obazlark/starlark:srcs"
     ],
     deps = [
         "@mibl//src:mibl",
-        "//vendored/logc",
-       "@mibl//external/libinih:inih",
+        # "//vendored/logc",
+        "@mibl//external/libinih:inih",
     ],
     visibility = ["//visibility:public"]
 )

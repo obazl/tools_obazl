@@ -28,8 +28,9 @@
                                       (format #f "//~A:~A"
                                               (assoc-val :pkg (cdr dep))
                                               (assoc-val :tgt (cdr dep)))
-                                      ;; else FIXME; unresolved
-                                      (format #f ":~A" (car dep)))))
+                                      (if (equal? ::unresolved (cdr dep))
+                                          (format #f "~A" (car dep))
+                                          (format #f ":~A" (car dep))))))
                             deps))))
     deps))
 
@@ -99,7 +100,8 @@
 (define (starlark-emit-sh-test-target outp ws pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-sh-test-target") stanza)
   (let* ((stanza-alist (cdr stanza))
-         (pubname (car (assoc-val :alias stanza-alist)))
+         ;; (pubname (car (assoc-val :alias stanza-alist)))
+         (pubname (car (assoc-val :name stanza-alist)))
          (_ (format #t "~A: ~A~%" (uwhite "pubname") pubname))
          ;;FIXME: assuming one tool
          (tools (let* ((tool (cadr
@@ -107,8 +109,14 @@
                   (format #t "~A: ~A~%" (uwhite "tool") tool)
                   (case tool
                     ((::diff) "diff")
+                    ((:node) "node")
                     (else
-                     (error 'STOP "FIXME: sh-test tool")))))
+                     (-tool-for-genrule (assoc-val :pkg-path pkg)
+                                        tool
+                                        (assoc-val :deps stanza-alist))
+                     ;; (error 'FIXME
+                     ;;        (format #f "bad sh-test tool: ~A" tool))
+                     ))))
                   ;;      (pkg-path (assoc-val :pkg (cdr ts)))
                   ;;      (_ (format #t "~A: ~A~%" (uwhite "pkg-path")
                   ;;                 pkg-path))

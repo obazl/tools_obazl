@@ -92,7 +92,7 @@
           (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
 
           (if deps-conditional
-              (let ((outfile (car (assoc-val :target (cadr deps-conditional))))
+              (let ((outfile (assoc-val :target (cadr deps-conditional)))
                     (selectors (flatten
                                 (map
                                  (lambda (sel)
@@ -155,7 +155,7 @@
                  (standard (if (assoc :standard opts) #t #f))
 
                  (deps-fixed (if-let ((df
-                                       ;;(assoc-in '(:link :deps :fixed)
+                                       ;;(assoc-in '(:link :deps :remote)
                                        (assoc-in '(:compile :deps :resolved)
                                                  (cdr stanza))))
                                      (cdr df) #f))

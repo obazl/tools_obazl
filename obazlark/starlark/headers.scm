@@ -36,6 +36,11 @@
                                         (else
                                          (list dune-rule))))
                                 (accum (if rule (append rule accum) accum))
+                                (accum (if-let ((modes (assoc-val :modes stanza-alist)))
+                                               (if (member 'js modes)
+                                                   (cons :js accum)
+                                                   accum)
+                                               accum))
                                 ;; (accum (if (assoc :namespaced s-alist)
                                 ;;            (cons :namespaced accum)
                                 ;;            accum))
@@ -174,6 +179,16 @@
         (newline outp)
         (newline outp)
         ))
+
+  (if (member :js obazl-rules)
+      (begin
+        (format outp "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_binary\", \"jsoo_library\")")
+        (newline outp) (newline outp)
+        (format outp "load(\"@aspect_rules_js//js:defs.bzl\",")
+        (newline outp)
+        (format outp "     \"js_binary\", \"js_run_binary\", \"js_library\", \"js_test\")")
+        (newline outp) (newline outp)
+        ))
   )
 
 ;; multiple options classes:
@@ -212,8 +227,7 @@
          (_ (format #t "~A: ~A~%" (uwhite "gopens") gopens))
 
          (gflags (if-let ((flags (assoc-val :flags options)))
-                         (list (apply string-append
-                                      (map stringify flags)))
+                         (map stringify flags)
                          '()))
          (_ (format #t "~A: ~A~%" (uwhite "gflags") gflags))
 
@@ -231,10 +245,10 @@
                                            (list gopens gflags goptions))))
                           (if (null? opts)
                               '()
-                              `((:generic ,@opts)))))
-         (_ (format #t "~A: ~A\n" (bgcyan "generic compile options") g-all-options))
+                              `((:standard ,@opts)))))
+         (_ (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options))
          (g-standard (if (assoc :standard options)
-                         '((:generic-std))
+                         '((:standard-std))
                          '())))
     g-all-options))
 
@@ -267,10 +281,10 @@
                                            (list gopens gflags goptions))))
                           (if (null? opts)
                               '()
-                              `((:generic ,@opts)))))
-         (_ (format #t "~A: ~A\n" (bgcyan "generic compile options") g-all-options))
+                              `((:standard ,@opts)))))
+         (_ (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options))
          (g-standard (if (assoc :standard gopts)
-                         '((:generic-std))
+                         '((:standard-std))
                          '()))
          ;;;;;;;;;;;;;;;; :ocamlc-opts ;;;;;;;;;;;;;;;;
          (bc-opts (if-let ((opts (assoc :ocamlc-opts (cdr stanza))))
@@ -432,7 +446,7 @@
                                (stringify (assoc-val :privname (cdr stanza)))))
 
                      ;; compile-options is an alist,
-                     ;; keys :generic, :ocamlc, :ocamlopt
+                     ;; keys :standard, :ocamlc, :ocamlopt
                      (archive-options (-get-archive-opts (cdr stanza)))
                      (_ (format #t "~A: ~A~%" (bgyellow "archive-options")
                                 archive-options))
@@ -445,7 +459,7 @@
                                 exec-options))
 
                      (deps-fixed (if-let ((df (assoc-in '(:deps :resolved) (cdr stanza))))
-                                         ;; (assoc-in '(:deps :fixed) (cdr stanza))))
+                                         ;; (assoc-in '(:deps :remote) (cdr stanza))))
                                          (cdr df) #f))
 
                      (deps-conditional (if-let ((dc
@@ -458,39 +472,42 @@
                 (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
                 ;; (error 'stop "STOP globals")
 
+                ;; (format outp "## agg deps: ~A~%" (assoc-val :privname (cdr stanza)))
+
                 (if (null? *shared-deps*)
                     (if deps-fixed
                         (begin
-                          (format outp "## *shared-deps*: ~{~A ~}" *shared-deps*)
                           (format outp "DEPS_~A = [\n" libname)
                           (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
                           (format outp "]\n")
                           (format outp "\n")
                           ))
-                    (begin
-                      (format #t "~A: ~A~%" (bgred "shared-deps") *shared-deps*)
-                      (if (member (car (assoc-val :pkg-path pkg))
-                                  *shared-deps*)
-                          (begin)
-                          ;; (-emit-shared-deps pkg)
-                          ;; (begin
-                          ;;   (format outp "## SHARED PPX ##")
-                          ;;   (newline outp)
-                          ;;   (format outp "## ~{~A, ~} ##" *shared-deps*)
-                          ;;   (newline outp)
-                          ;;   (newline outp))
-                          ;; else not shared
-                          (if deps-fixed
-                              (begin
-                                ;; (format outp "## *SHARED-deps*: ~{~A ~}" *shared-deps*)
-                                ;; (newline outp)
-                                ;; (newline outp)
-                                (format outp "DEPS_~A = [\n" libname)
-                                (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
-                                (format outp "]\n")
-                                (format outp "\n")
-                                )))))
-
+                    ;; else deps are shared
+                    ;; (begin
+                    ;;   (format #t "~A: ~A~%" (bggreen "shared-deps") *shared-deps*)
+                    ;;   (if (member (car (assoc-val :pkg-path pkg))
+                    ;;               *shared-deps*)
+                    ;;       (begin
+                    ;;         ;; do not emit if pkg in *shared-deps*, the global var will be emitted by the :shared-deps stanza
+                    ;;         (format #t "~A: ~A~%" (green "pkg in shared-deps list") (car (assoc-val :pkg-path pkg)))
+                    ;;         ;; (format outp "## shared deps~%")
+                    ;;         )
+                    ;;       ;; (-emit-shared-deps pkg)
+                    ;;       ;; (begin
+                    ;;       ;;   (format outp "## SHARED PPX ##")
+                    ;;       ;;   (newline outp)
+                    ;;       ;;   (format outp "## ~{~A, ~} ##" *shared-deps*)
+                    ;;       ;;   (newline outp)
+                    ;;       ;;   (newline outp))
+                    ;;       ;; else pkg not in shared-deps list
+                    ;;       (if deps-fixed
+                    ;;           (begin
+                    ;;             (format outp "DEPS_~A = [\n" libname)
+                    ;;             (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
+                    ;;             (format outp "]\n")
+                    ;;             (format outp "\n")
+                    ;;             ))))
+                    )
 
                 (if (not (null? archive-options))
                     (begin
@@ -503,11 +520,11 @@
 
                 ;; (if (not (null? compile-options))
                 (if compile-options
-                    (if (assoc :generic compile-options)
+                    (if (assoc :standard compile-options)
                         (begin
                           (format outp "OPTS_~A = [\n" libname)
                           (format outp "~{        \"~A\"~^,\n~}\n"
-                                  (assoc-val :generic compile-options))
+                                  (assoc-val :standard compile-options))
                           (format outp "]")
                           (if (or (assoc :ocamlc compile-options)
                                   (assoc :ocamlopt compile-options))
@@ -547,7 +564,7 @@
                               ))))))
 
              ((:executable :test)
-              (format #t "exec globals\n")
+              (format #t "~A: ~A~%" (uwhite "exec globals") (assoc-val :privname (cdr stanza)))
               (let* ((libname (string-upcase
                                ;; privname or pubname?
                                (stringify (assoc-val :privname (cdr stanza)))))
@@ -584,22 +601,28 @@
                      (standard (if (assoc :standard opts) #t #f))
 
                      (deps-fixed (if-let ((df
-                                           ;;(assoc-in '(:link :deps :fixed)
-                                           (assoc-in '(:compile :deps :resolved)
+                                           (assoc-in '(:deps :resolved)
+                                           ;;(assoc-in '(:link :deps :remote)
+                                           ;; (assoc-in '(:compile :deps :resolved)
                                                      (cdr stanza))))
                                          (cdr df) #f))
+                     (_ (format #t "~A: ~A~%" (green "deps-fixed") deps-fixed))
                      (deps-conditional (if-let ((dc
                                                  (assoc-in '(:deps :conditionals)
                                                            (cdr stanza))))
                                                dc #f))
+                     (_ (format #t "~A: ~A~%" (green "deps-conditional") deps-conditional))
                      )
                 ;; (error 'STOP "STOP exec")
+
+                ;; (format outp "## :executable deps: ~A~%" (assoc-val :privname (cdr stanza)))
                 (if deps-fixed
-                    (if (not testsuite)
-                        (begin
-                          (format outp "DEPS_~A = [~%" libname)
-                          (format outp "~{    \"~A\"~^,~%~}~%" deps-fixed)
-                          (format outp "]~%"))))
+                    (if (not (number? deps-fixed))
+                        (if (not testsuite)
+                            (begin
+                              (format outp "DEPS_~A = [~%" libname)
+                              (format outp "~{    \"~A\"~^,~%~}~%" deps-fixed)
+                              (format outp "]~%")))))
 
                 (if (not (null? options))
                     ;; (format outp "~A_EXE_OPTS = [~{\"~A\"~^, ~}]\n\n"
@@ -632,7 +655,8 @@
                           (format #t "~A: ~A~%" (ured "deplist") deplist)
                           (format outp "DEPS_~A = [~%" (car deplist))
                           (format outp "~{    \"~A\"~^,~%~}~%" (cdr deplist))
-                          (format outp "]~%"))
+                          (format outp "]~%")
+                          (newline outp))
                         (cadr stanza)))
 
              ((:shared-compile-opts)
@@ -643,12 +667,12 @@
                               (let ((compile-options (-opts->attrs (cdr optlist))))
                                 (format #t "~A: ~A~%" (bggreen "compile-options") compile-options)
                                 ;; (error 'stop "STOP sharedopts")
-                                (if (assoc :generic compile-options)
+                                (if (assoc :standard compile-options)
                                     (begin
                                       (format outp "OPTS_~A = [~%" (car optlist))
                                       ;; (format outp "X ~A_COMPILE_OPTS = [\n" libname)
                                       (format outp "~{        \"~A\"~^,\n~}\n"
-                                              (assoc-val :generic compile-options))
+                                              (assoc-val :standard compile-options))
                                       (format outp "]")
                                       (if (or (assoc :ocamlc compile-options)
                                               (assoc :ocamlopt compile-options))

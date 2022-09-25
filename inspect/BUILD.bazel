@@ -25,6 +25,7 @@ inspect(
 inspect(
     name = "ppx",
     obj = "//tgt",
+    ##FIXME: support stop on target
 )
 
 inspect(

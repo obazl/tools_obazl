@@ -108,7 +108,7 @@
     ;; (if (not (null? deps))
     (if manifest
         (begin
-          (format outp "    manifest = [\n")
+          (format outp "    deps = [\n")
           (format outp "~{        \"~A\"~^,\n~}\n" manifest)
           (format outp "    ],\n")))
     (if (assoc :inline-tests ppx-alist)
@@ -362,7 +362,7 @@
                   ;; (if (not (null? deps))
                   ;; (if manifest
                   ;;     (begin
-                  (format outp "    manifest = [\n")
+                  (format outp "    deps = [\n")
                   (format outp "~{        \"~A\"~^,\n~}\n" (car ppx))
                   (format outp "    ],\n")
 

@@ -15,8 +15,11 @@
          (tgtname (format #f "~A" privname))
          (exename privname)
 
-         (modes (if-let ((ms (assoc-in '(:link :modes) stanza-alist)))
-                        (cdr ms) ms))
+         ;; (modes (if-let ((ms (assoc-in '(:link :modes) stanza-alist)))
+         ;;                (cdr ms) ms))
+         (_ (format #t "MODES: ~A~%" (assoc-val :modes stanza-alist)))
+         (modes (if-let ((ms (assoc-val :modes stanza-alist)))
+                        ms '()))
          (_ (format #t "~A: ~A~%" (bgred "modes") modes))
          ;; (_ (if (truthy? modes) (error 'X "X")))
 
@@ -25,16 +28,31 @@
          (main (assoc-val :main stanza-alist))
          (_ (format #t "main: ~A~%" main))
 
+         (exec-lib (assoc-val :exec-lib stanza-alist))
+         (_ (format #t "exec-lib: ~A~%" exec-lib))
+
+         (libdeps (if-let ((deps (assoc-in '(:deps :resolved) stanza-alist)))
+                          (cdr deps) '()))
+         (libdeps (if (number? libdeps)
+                      (let ((shared-deps (assoc-in '(:dune :shared-deps) pkg)))
+                        (format #t "~A: ~A~%" (bggreen "share-deps")
+                                shared-deps)
+                        libdeps)
+                      libdeps))
+         (_ (format #t "libdeps: ~A~%" libdeps))
+
+         ;; local module deps
          ;; (deps (assoc-in '(:compile :deps)))
          ;; (_ (format #t "compile deps: ~A~%" deps))
-         (manifest (sort! (if-let ((mani
-                             (assoc-in '(:link :manifest :modules)
-                                       stanza-alist)))
-                                 (cdr mani) '())
-                          sym<?))
-         (_ (format #t "manifest: ~A~%" manifest))
-         ;; (manifest (remove main manifest))
-         (_ (format #t "manifest: ~A~%" manifest))
+         (deps (sort! (if-let ((deps (assoc-in '(:deps :modules) stanza-alist)))
+                             ;; (assoc-in '(:link :manifest :modules)
+                             ;;           stanza-alist)))
+                              (cdr deps) '())
+                      sym<?))
+         (deps (append deps (list main)))
+         (_ (format #t "local deps: ~A~%" deps))
+         ;; (deps (remove main deps))
+         ;; (_ (format #t "deps: ~A~%" deps))
          )
     (let-values (((link-std link-opts)
                   (link-flags->mibl stanza)))
@@ -42,8 +60,8 @@
       (format #t "link std: ~A~%" link-std)
 
       (format #t "TARGET: ~A\n" tgtname)
-      ;; (format #t "MAIN: ~A\n" mainname)
-      (format #t "MANIFEST: ~A\n" manifest)
+      ;; (format #t "MAIN: ~A\n" main)
+      (format #t "DEPS: ~A\n" deps)
       ;; (format #t "SUBMs: ~A\n" submodules)
       ;; (format #t "DEPS: ~A\n" deps)
       ;; (error 'STOP "STOP exec linkflags")
@@ -84,8 +102,58 @@
       ;;   (newline outp))
       ;; ;; )
 
+      (if (member 'js modes)
+          (begin
+            (format outp "#############\n")
+            (case kind
+              ((:executable) (format outp "js_binary(\n"))
+              ((:test) (format outp "js_test(\n"))
+              (else (error 'fixme "unexpected kind for executable")))
+            (format outp "    name        = \"~A.exe.js\",\n" tgtname)
+
+            ;; (if (eq? kind :executable)
+            ;;     ;; do we always want this?
+            ;;     (begin
+            ;;       ;; attr 'exe': string name of outfile excluding extension,
+            ;;       ;; not a dependency
+            ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
+            ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
+            ;;       ))
+
+            (if (not (null? link-opts))
+                (format outp "    opts        = [~{\"~A\"~^, ~}],\n" link-opts))
+
+            (format outp "    entry_point = \":~A.exe.jsoo\",\n" tgtname)
+            (format outp "    visibility  = [\"//visibility:public\"],\n")
+            (format outp ")\n")
+            (newline outp)
+
+            ;; (format outp "#############\n")
+            (case kind
+              ((:executable) (format outp "jsoo_binary(\n"))
+              ((:test) (format outp "jsoo_test(\n"))
+              (else (error 'fixme "unexpected kind for executable")))
+            (format outp "    name     = \"~A.exe.jsoo\",\n" tgtname)
+
+            ;; (if (eq? kind :executable)
+            ;;     ;; do we always want this?
+            ;;     (begin
+            ;;       ;; attr 'exe': string name of outfile excluding extension,
+            ;;       ;; not a dependency
+            ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
+            ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
+            ;;       ))
+
+            (if (not (null? link-opts))
+                (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
+
+            (format outp "    main   = \":~A.exe\",\n" tgtname)
+            (format outp "    visibility = [\"//visibility:public\"],\n")
+            (format outp ")\n")
+            (newline outp)))
+
       (begin
-        (format outp "#############\n")
+        ;; (format outp "#############\n")
         (case kind
           ((:executable) (format outp "ocaml_binary(\n"))
           ((:test) (format outp "ocaml_test(\n"))
@@ -94,16 +162,19 @@
 
         (if (eq? kind :executable)
             (begin
+              (if (truthy? exec-lib)
               ;; attr 'exe': string name of outfile excluding extension,
               ;; not a dependency
-              (format outp "    exe      = \"~A\",\n" exename)
-              ;; (format outp "    main    = \":~A\",\n" mainname)
-              ))
+              ;; (format outp "    exe      = \"~A\",\n" exename)
+                  (format outp "    deps    = [\":__lib_~A__\"],\n" tgtname)
+                  (format outp "    main    = \":~A\",\n"
+                          (normalize-module-name tgtname))
+              )))
 
         (if (not (null? link-opts))
             (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
 
-        (format outp "    manifest   = [\":__lib_~A__\"],\n" tgtname)
+        ;; (format outp "    deps       = [\":__lib_~A__\"],\n" tgtname)
         (format outp "    visibility = [\"//visibility:public\"],\n")
 
         (if modes
@@ -113,50 +184,29 @@
         (format outp ")\n")
         (newline outp)
 
-        ;;;;;;;;;;;;;;;;
-        (format outp "ocaml_ns_library(~%")
-        (format outp "    name = \"__lib_~A__\",~%" tgtname)
+        (format #t "~A: ~A ~A~%" (bggreen "exedeps") tgtname deps)
+        ;; (if (equal? (format #f "~A" tgtname) "js_of_ocaml")
+        ;;     (error 'x "x"))
 
-        ;; (if (not (null? manifest))
-        ;;     (begin
-        (format outp "    manifest = [~%")
-        (format outp "~{        \":~A\"~^,~%~}~%" manifest)
-        (format outp "    ],\n")
-        ;; ))
-        (format outp "    visibility = [\"//visibility:private\"],~%")
-        (format outp ")")
-        (newline outp)
-        (newline outp)
+        ;; (if (truthy? deps)
+        (if (truthy? exec-lib)
+            (begin
+              ;; deps must be namespaced, or at least have unique names
+              (format outp "ocaml_ns_library(~%")
+              (format outp "    name = \"__lib_~A__\",~%" tgtname)
+              (format outp "    ns   = \"lib_~A\",~%" tgtname)
 
-            ;; (begin
-            ;;   ;; (format #t "MODDEPS: ~A\n" modules)
-            ;;   (format outp "    deps = [\n"))
-            ;;   (let ((mods (sort! (hash-table-keys
-            ;;                       (remove-if list
-            ;;                                  (lambda (entry)
-            ;;                                    ;; (format #t "ENTRY ~A\n" entry)
-            ;;                                    (equal? (cdr entry) :main))
-            ;;                                  modules))
-            ;;                      sym<?)))
-            ;;     (for-each (lambda (mod) ;; mod:: (modsym . type)
-            ;;                 ;; (format #t "mod: ~A\n" mod)
-            ;;                 ;; (if (not (equal? (cdr mod) :main))
-            ;;                 (format outp "        \":~A\",\n"
-            ;;                         (symbol->string
-            ;;                          (normalize-module-name mod))
-            ;;                         )
-            ;;                 ;; )
-            ;;                 )
-            ;;               mods))
-            ;;   ;; (for-each (lambda (mod)
-            ;;   ;;             (format outp "        \"~A\",\n" mod))
-            ;;   ;;           modules)
-            ;;   (format outp "    ],\n")))
-
-        ;; (format outp "    visibility = [\"//visibility:public\"],\n")
-        ;; (format outp ")\n")
-        ;; (newline outp)
-        ;;(format outp "#############################\n")
+              ;; (if (not (null? deps))
+              ;;     (begin
+              (format outp "    manifest = [~%")
+              (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib)
+              (format outp "~{        \":~A\"~^,~%~}~%" exec-lib)
+              (format outp "    ],\n")
+              ;; ))
+              (format outp "    visibility = [\"//visibility:private\"],~%")
+              (format outp ")")
+              (newline outp)
+              (newline outp)))
         ))
     ;; now emit modules for compilation
     ;; (if pkg-modules (-emit-modules outp pkg pkg-modules))

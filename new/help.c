@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "log.h"
+
 #include "utstring.h"
 
 #include "help.h"

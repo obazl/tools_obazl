@@ -20,11 +20,6 @@
               (sort! (hash-table-keys pkgs) string<?))
     pkgs))
 
-(define (-dump-filegroups ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
-         (filegroups (car (assoc-val :filegroups @ws))))
-    (format #t "~A: ~A~%" (red "filegroups table") filegroups)))
-
 (define (-dump-ppx ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
@@ -71,18 +66,6 @@
     (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist))
     mpkg-alist))
 
-(define (-miblarkize ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
-         (pkgs (car (assoc-val :pkgs @ws))))
-
-    (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (blue "miblarkizing") kv)
-                ;; dir may have dune-project but no dune file:
-                (if (not (null? (cdr kv)))
-                    (mibl-pkg->miblark (cdr kv)))
-                )
-              pkgs)))
-
 (define (-emit-mibl ws)
   (format #t "~A: ~A~%" (blue "-emit-mibl") ws)
   (let* ((@ws (assoc-val ws -mibl-ws-table))
@@ -117,7 +100,7 @@
   (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*)
 
   (set! *build-dyads* #f)
-  (set! *shared-deps* '("compiler/tests-compiler" "toplevel/bin"))
+  (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
   ;; (set! *wrapped-libs-to-ns-archives* #f)
   ;; (set! *unwrapped-libs-to-archives* #f)
@@ -131,7 +114,7 @@
     (resolve-labels! :@)
     (resolve-pkg-file-deps :@)
 
-    (-miblarkize :@)
+    (miblarkize :@)
 
     (handle-shared-ppx :@)
 
@@ -145,13 +128,16 @@
 
     ;; (ws->opam-bundles :@)
 
-    (debug-dump-pkgs :@)
+    (debug-print-pkgs :@)
 
-    ;; (format #t "~A: ~A~%" (green "selectors")
-    ;;         (remove-duplicates *select-protases*))
+    (format #t "~A: ~A~%" (green "selectors")
+            (remove-duplicates *select-protases*))
+
     (debug-print-exports-table :@)
-    ;; (-dump-ppx :@)
-    ;; (-dump-filegroups :@)
+
+    (-dump-ppx :@)
+
+    (debug-print-filegroups :@)
 
     ;; (-dump-opam :@)
 

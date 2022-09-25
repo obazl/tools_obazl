@@ -23,10 +23,10 @@
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
 
-(define (-emit-topdown-aggregate outp kind ns privname submodules flags cc-deps)
+(define (-emit-topdown-aggregate outp kind ns privname submodules link-opts cc-deps)
   (begin
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
-    (format #t " flags: ~A\n" flags)
+    (format #t " linkpopts: ~A\n" link-opts)
     (format outp "#################\n")
     (if (eq? kind :ns-archive)
         (format outp "ocaml_ns_archive(\n")
@@ -44,9 +44,10 @@
           (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
           (newline outp)))
 
-    (if (not (null? flags))
-        (format outp "    opts       = [~{\"~A\"~^, ~}],\n" flags))
-    ;; (format outp "    opts       = ~A_OPTS,\n" libname)
+    (if (truthy? link-opts)
+        (if (number? link-opts)
+            (format outp "    opts       = ~A_~A,\n" privname link-opts)
+            (format outp "    opts       = [~{\"~A\"~^, ~}],\n" link-opts)))
 
     ;; (format outp "    manifest = [\n")
     ;;       (for-each (lambda (submod)
@@ -90,7 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-target outp stanza) ;; typ fs-path stanza)
-  (format #t "~A: ~A\n" (blue "STARLARK-EMIT-AGGREGATE-TARGET") stanza)
+  (format #t "~A: ~A\n" (blue "starlark-emit-aggregate-target") stanza)
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
          (ns (assoc-val :ns stanza-alist))
@@ -100,16 +101,18 @@
                               pubname
                               privname)))
          (modname (normalize-module-name privname))
-         (_ (format #t "name: ~A, modname: ~A\n" pubname modname))
+         (_ (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname))
          (libname (string-upcase (stringify privname)))
 
-         (opts (if-let ((opts (assoc :opts (cdr stanza))))
-                          (cdr opts) '()))
+         (link-opts (if-let ((opts (assoc-val :link-opts (cdr stanza))))
+                       opts '()))
+         (_ (format #t "~A: ~A\n" (uwhite "link-opts") link-opts))
          ;; skip :opens, '-open' not relevant for aggregates
-         (flags (if-let ((flags (assoc-val :flags opts)))
-                        (list (apply string-append
-                                     (map stringify flags)))
-                        '()))
+         ;; (flags (if-let ((flags (assoc-val :flags opts)))
+         ;;                (list (apply string-append
+         ;;                             (map stringify flags)))
+         ;;                '()))
+         ;; (_ (format #t "~A: ~A\n" (uwhite "flags") flags))
          ;; skip :standard, handled by hidden attributes
          ;; (standard-opts? (if (assoc :standard opts) #t #f))
 
@@ -130,9 +133,9 @@
     (case kind
       ((:ns-archive :ns-library)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind ns privname submodules flags cc-deps)
+           (-emit-topdown-aggregate outp kind ns privname submodules link-opts cc-deps)
            ;; aggregated bottomup, needs archive or lib w/o ns
-           (-emit-bottomup-aggregate outp kind ns privname submodules flags cc-deps)))
+           (-emit-bottomup-aggregate outp kind ns privname submodules link-opts cc-deps)))
 
       ((:archive :library)
        (begin

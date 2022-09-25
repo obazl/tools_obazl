@@ -14,7 +14,7 @@
                (pkg (assoc-val :pkg lbl))
                (tgt (if-let ((t (assoc-val :tgt lbl)))
                             (format #f "$(rootpath ~A)" (cdr t))
-                            (if-let ((t (assoc-val :glob #|:tgts|# lbl)))
+                            (if-let ((t (assoc-val ::glob #|:tgts|# lbl)))
                                     (format #f "$(rootpaths ~A)" t)
                                     (error 'fixme
                                            (format #f "no tgt/tgts in dep: ~A" found)))))
@@ -42,7 +42,7 @@
                               ;;FIXME: match paths
                               (if-let ((t (assoc :tgt (cdr dep))))
                                       (format #f "$(rootpath :~A)" (cdr t))
-                                      (if-let ((t (assoc :glob #|:tgts|# (cdr dep))))
+                                      (if-let ((t (assoc ::glob #|:tgts|# (cdr dep))))
                                               (format #f "$(rootpaths :~A)" (cdr t))
                                               (error 'fixme
                                                      (format #f "missing tgt/tgts: ~A" dep)))))
@@ -78,14 +78,16 @@
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
-         (with-stdout? #f) ;; FIXME
+         (with-stdout? (assoc-in '(:actions :stdout) stanza))
+         (_ (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?))
          (outputs (assoc-val :outputs stanza))
          (_ (format #t "~A: ~A~%" (ucyan "outputs") outputs))
          (outs (outputs->outs-attr pkg-path outputs))
          (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
 
          (name (format #f "__~A__"
-                       (outs 0))))
+                       (outs 0)))
+         )
 
     ;; progn: list of actions. should be just one?
     (for-each
@@ -142,6 +144,7 @@
                         (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
                         (emit-shell-cmd outp tool
                                         with-stdout?
+                                        srcs
                                         deps
                                         action
                                         outputs ;; outs

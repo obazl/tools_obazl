@@ -134,6 +134,8 @@
 
     ;; (-emit-import-settings ws)
 
+    (format #t "~A: ~A~%" (bgred "scan exlusions") *scan-exclusions*)
+
     ;; also one //bzl/profiles per workspace
     (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*)
     (for-each (lambda (kv)
@@ -150,8 +152,9 @@
                           (if (assoc-in '(:dune :env) (cdr kv))
                               (emit-profiles ws (cdr kv))))
                       (if (not (null? (cdr kv)))
-                          (mibl-pkg->build-bazel ws (cdr kv))
-                          (format #t "~A: ~A~%" (blue "skipping") (car kv)))
+                          (if (not (member (car kv) *scan-exclusions*))
+                              (mibl-pkg->build-bazel ws (cdr kv))
+                              (format #t "~A: ~A~%" (blue "skipping") (car kv))))
                       )))
               pkgs)
     (if (not *local-ppx-driver*)

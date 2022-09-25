@@ -1,5 +1,6 @@
 (define (emit-shell-cmd outp tool
                         with-stdout?
+                        srcs
                         deps
                         action
                         outputs
@@ -7,10 +8,19 @@
                         stanza)
   (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
   (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
+  (format #t "~A: ~A~%" (uwhite "deps") deps)
   (format #t "~A: ~A~%" (uwhite "outputs") outputs)
 
   (format outp "    cmd   = \" \".join([\n")
 
+  ;;FIXME: dune seems to cd to the dir containing the executable and
+  ;;run from there, so tools may assume that dep filepaths are
+  ;;relative to that dir. to accomodate this in Bazel we need to copy
+  ;;or symlink deps to the pkg dir.  Example: jsoo/compiler/tests-compiler
+  ;; rule to generate dune.inc.gen.
+  ;;TODO: insert cp or ln before the tool cmd.
+
+  ;; if action takes no args, but we have deps, cp deps to cwd
   (for-each
    (lambda (cmd)
      (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd)
@@ -32,6 +42,9 @@
            ;;     "> $@"
            ;; ]),
 
+           (if (null? xargs)
+               (if (truthy? deps)
+                   (format outp "~{        \"cp $(locations ~A) . ;\"~^,~%~},~%" srcs)))
 
            (if tool-dep?
                ;; HACK: $(location ...)

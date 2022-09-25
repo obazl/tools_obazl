@@ -11,4 +11,4 @@
                    (:module-opts ((:standard) (:opens Tezos_stdlib Tezos_error_monad
                                                       Tezos_error_monad.TzLwtreslib)))
                    (:submodules Clic)
-                   (:deps (:fixed tezos-lwt-result-stdlib tezos-error-monad re lwt tezos-stdlib)))))
+                   (:deps (:remote tezos-lwt-result-stdlib tezos-error-monad re lwt tezos-stdlib)))))

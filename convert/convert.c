@@ -144,12 +144,12 @@ int main(int argc, char *argv[])
 
     if (debug) log_debug("s7 args: %s", TO_STR(_s7_args));
 
-    s7_gc_on(s7, s7_f(s7));
+    /* s7_gc_on(s7, s7_f(s7)); */
 
-    /* s7_int main_gc_loc = s7_gc_protect_via_stack(s7, _main); */
+    /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
     s7_pointer result = s7_apply_function(s7, _main, _s7_args);
     /* log_info("RESULT: %s\n", TO_STR(result)); */
-    /* s7_gc_unprotect_via_stack(s7, _main); */
+    s7_gc_unprotect_at(s7, _main);
 
     char *errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
     if ((errmsg) && (*errmsg)) {

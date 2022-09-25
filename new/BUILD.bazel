@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+# load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 alias(
     name = "ws",
@@ -11,6 +11,7 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "workspace.c", "workspace.h",
+        "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -47,6 +48,9 @@ cc_binary(
         # "-Iexternal/logc/src",
 
         # "-Iexternal/libs7/src",
+
+        # "-Iexternal/uthash",
+        # "-Iexternal/uthash/include",
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -58,13 +62,89 @@ cc_binary(
     ],
     data  = [
         "//templates:all",
-        "//templates/bzl/host:BUILD.bazel",
-        "//templates/bzl/profile:BUILD.bazel",
+        # "//templates/bzl/host:BUILD.bazel",
+        # "//templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
     ],
     deps = [
         ":helper",
-        "//runfiles"
+        "//runfiles",
+        # "@uthash//:include"
+    ],
+    visibility = ["//visibility:public"]
+)
+
+##########
+alias(
+    name = "pkg",
+    actual = ":package"
+)
+
+cc_binary(
+    name  = "package",
+    linkstatic = True,
+    srcs  = [
+        "package.c", "package.h",
+        # "log.c", "log.h",  ## provided by libmibl.a
+        # "@uthash//:include",
+        "utarray.h", "utstring.h", "uthash.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-Inew",
+        "-Iexternal/obazl/new",
+        "-I$(GENDIR)/new",
+        "-I$(GENDIR)/external/obazl/new",
+
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-Iexternal/uthash/include",
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        # "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
+        "-Iexternal/libs7/src",
+        "-Iexternal/libs7/vendored/linenoise",
+        "-Iexternal/mibl/libs7/vendored/linenoise",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+    ],
+    data = [
+        "//obazlark:srcs",
+        "//obazlark/starlark:srcs",
+        "//templates:all",
+        # "//templates/bzl/host:BUILD.bazel",
+        # "//templates/bzl/profile:BUILD.bazel",
+        "//man/man1:new_workspace.1",
+    ],
+    deps = [
+        ":helper",
+        "//runfiles",
+        "//vendored/logc",
+        "@mibl//src:mibl",
+        "@mibl//external/libinih:inih",
     ],
     visibility = ["//visibility:public"]
 )
@@ -75,7 +155,7 @@ cc_library(
     linkstatic = True,
     srcs  = [
         "help.c",
-        "log.c",
+        "log.c", "log.h",
         "utils.c"
     ],
     hdrs = [
@@ -102,6 +182,7 @@ cc_library(
         "-Wpedantic",
         "-Wno-unused-function",
 
+        "-Inew",
         "-I$(GENDIR)/new",
         "-I$(GENDIR)/external/obazl/new",
         # "-I$(GENDIR)/src",
@@ -111,7 +192,8 @@ cc_library(
 
         # "-Iexternal/uthash/include",
         # "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
+
+        "-Iexternal/logc/src",
 
         # "-Iexternal/libs7/src",
     ],
@@ -143,12 +225,14 @@ cc_library(
 genrule(
     name = "mkhdrs",
     srcs = [
+        "package.c",
         "workspace.c",
         "utils.c",
         "help.c",
         "ansi_colors.h"
     ],
     outs = [
+        "package.h",
         "workspace.h",
         "utils.h",
         "help.h"

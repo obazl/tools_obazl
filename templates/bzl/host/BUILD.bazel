@@ -1,3 +1,5 @@
+exports_files(["BUILD.bazel"])
+
 package(default_visibility = ["//visibility:public"])
 
 ###############
