@@ -715,6 +715,9 @@
                             ;; (format outp "]~%")))
                             (cadr stanza))))
 
+             ((:ocamlc) (format outp "## :ocamlc") (newline outp))
+             ((:node) (format outp "## :node") (newline outp))
+
              ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx :alias)
               (values))
 

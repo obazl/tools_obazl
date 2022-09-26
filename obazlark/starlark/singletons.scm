@@ -35,7 +35,7 @@
                               (cdr s)))
                  selectors))))))
 
-(define (-emit-deps outp deps-tag stanza agg-deps local-deps selectors testsuite)
+(define (-emit-deps outp main-module? deps-tag stanza agg-deps local-deps selectors testsuite)
   (format #t "~A: ~A~%" (ublue "-emit-deps") deps-tag)
   (format #t "~A: ~A~%" (uwhite "agg-deps") agg-deps)
   (format #t "~A: ~A~%" (uwhite "local-deps") local-deps)
@@ -65,13 +65,16 @@
                       deps-tag agg-deps))
               (format outp "DEPS_~A"
                       (if testsuite testsuite deps-tag))))
-      ;; have local-deps
+      ;; have local-deps (note: trailing comma+newline added below)
       (if (null? agg-deps)
           (if (number? deps-tag)
-              (begin
-                (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-                (format outp "    ]"))
+              (if main-module?
+                (format outp "[\":~A_execlib\"]" main-module?)
+                (begin
+                  (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
+                  ;; (format outp "        \":~A_execlib\"~%" main-module?)
+                  (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                  (format outp "    ]")))
               ;; else
               (begin
                 ;; (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
@@ -116,13 +119,13 @@
         (format outp "~{        \"//bzl/import:~A?\": [\"~A\"],~^~%~}~%"
                 (flatten selectors))
         (format outp "        \"//conditions:default\": []~%")
-        (format outp "    }),~%"))
+        (format outp "    }),  ## ~%"))
 
-      ;; else finish with comma
+      ;; else no selectors, finish with comma
       (if (or (number? deps-tag)
-              (not (null? local-deps))
-              (not (null? agg-deps))
-              selectors)
+              (truthy? local-deps)
+              (truthy? agg-deps))
+              ;; selectors)
           (format outp ",~%"))
       ))
 
@@ -165,10 +168,20 @@
                            privname
                            #f))
 
+         ;; is module the 'main' of an executable?
+         (_ (format #t "~A: ~A~%" (green "module") (car module)))
+         (main-module? (if-let ((main (assoc-val :main stanza-alist)))
+                               (begin
+                                 (format #t "~A: ~A~%" (green "main") main)
+                                 (if (string=? (format #f "~A" main) (format #f "~A" (car module)))
+                                     main #f))))
+         (_ (format #t "~A: ~A~%" (bggreen "main-module?") main-module?))
+
          (libname (if privname
                       (string-append
                        (string-upcase (stringify privname)))
-                      "FOOBAR"))
+                      ;; e.g. for (:ocamlc ) stanza
+                      #f))
          (_ (format #t "em libname: ~A~%" libname))
 
          (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
@@ -340,7 +353,7 @@
         (if (alist? (cdr module))
             ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
             (let* ((_ (format #t "~A: ~A~%"
-                              (red "proper alist") module))
+                              (red "emitting module (proper assoc-list)") module))
                    (modname (car module))
                    (srcs    (cdr module))
                    (select-sigfile #f)
@@ -368,8 +381,9 @@
               ;; (error 'STOP "STOP selmod")
               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
               ;;         ;;               (cdr opts) '())))
-              (format #t "emitting proper module: ~A: ~A\n" modname srcs)
+              (format #t "emitting module (proper): ~A: ~A\n" modname srcs)
 
+              ;; (format outp "## main-module? ~A~%" main-module?)
               (format outp "ocaml_module(\n")
               (format outp "    name          = \"~A\",\n" modname)
               (if (and ns (not *ns-topdown*))
@@ -399,7 +413,7 @@
 
                         ))
                   (begin
-                    (format outp "    struct        = \"~A\",\n" structfile)
+                    (format outp "    struct        = \"~A\",~%" structfile)
                     ))
 
               (if *build-dyads*
@@ -420,7 +434,9 @@
 
               ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
               (if opts ;; (not (null? opts))
-                  (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                  (if main-module?
+                      (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                      (format outp "    opts          = OPTS_~A,\n" opts-tag)))
 
               ;; (if (not (null? ocamlc_opts))
               ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -433,7 +449,7 @@
               ;; (if (not (null? agg-deps))
               ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
 
-              (-emit-deps outp deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+              (-emit-deps outp main-module? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
               (format #t "~A: ~A~%" (blue "emitted deps A") deps-tag)
 
               ;; (if (not (null? local-deps))
@@ -458,14 +474,13 @@
               (format outp ")\n")
               )
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;; proper list: (Mytest mytest.ml Hello)
-            (let* ((_ (format #t "~A: ~A~%" (red "proper list") module))
+            ;; proper list, not alist: (Mytest mytest.ml Hello)
+            (let* ((_ (format #t "emitting module (proper list): ~A\n" (car module)))
                    (modname (car module))
                    (structfile (cadr module))
                    (local-deps (cddr module)))
-               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-               ;;               (cdr opts) '())))
-               (format #t "Emitting module: ~A\n" modname)
+                   ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+                   ;;               (cdr opts) '())))
 
                (format outp "ocaml_module(\n")
                (format outp "    name          = \"~A\",\n" modname)
@@ -487,11 +502,13 @@
 
                         ))
                   (begin
-                    (format outp "    struct        = \"~A\",\n" structfile)
+                    (format outp "    struct        = \"~A\",~%" structfile)
                     ))
 
                (if opts ;; (not (null? opts))
-                   (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                  (if main-module?
+                      (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                      (format outp "    opts          = OPTS_~A,\n" opts-tag)))
 
                ;; (if (not (null? ocamlc_opts))
                ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -501,7 +518,7 @@
                ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
                ;;             libname))
 
-               (-emit-deps outp deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+               (-emit-deps outp main-module? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
                (format #t "~A: ~A~%" (blue "emitted deps B") deps-tag)
                ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
                ;; (if (not (null? local-deps))
@@ -536,40 +553,42 @@
 
                (format outp ")\n")
                ))
-        ;; improper pair (M . ml) from :structures
-        (let* ((_ (format #t "~A: ~A~%" (red "cons pair") module))
+        ;; not proper-list? - improper pair (M . ml) from :structures
+        (let* ((_ (format #t "emitting module (cons pair): ~A\n" (car module)))
                (modname (car module))
                (structfile (cdr module))
                (local-deps '()))
-          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-          ;;               (cdr opts) '())))
-          (format #t "Emitting module: ~A\n" modname)
+               ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+               ;;               (cdr opts) '())))
 
           (format outp "ocaml_module(\n")
           (format outp "    name          = \"~A\",\n" modname)
           (if (and ns (not *ns-topdown*))
               (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
           ;; (format outp "    struct        = \"~A\",\n" structfile)
-              (if (truthy? target-selector)
-                  (if (eq? (fnmatch "*.ml" (format #f "~A" (assoc-val :target target-selector)) 0) 0)
-                      (begin
-                        (format #t "~A: ~A~%" (uwhite "src-selectors")
-                                src-selectors)
-                        (format outp "    struct        = select({~%")
-                        (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
-                                src-selectors)
-                        (format outp "        \"//conditions:default\": \"~A\"~%"
-                                src-default-apodosis)
-                        ;; (format outp "        }, no_match_error=\"no file selected\"\n")
-                        (format outp "    }),~%")
-
-                        ))
+          (if (truthy? target-selector)
+              (if (eq? (fnmatch "*.ml" (format #f "~A" (assoc-val :target target-selector)) 0) 0)
                   (begin
-                    (format outp "    struct        = \"~A\",\n" structfile)
+                    (format #t "~A: ~A~%" (uwhite "src-selectors")
+                            src-selectors)
+                    (format outp "    struct        = select({~%")
+                    (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
+                            src-selectors)
+                    (format outp "        \"//conditions:default\": \"~A\"~%"
+                            src-default-apodosis)
+                    ;; (format outp "        }, no_match_error=\"no file selected\"\n")
+                    (format outp "    }),~%")
+
                     ))
+              ;; else no 'select'
+              (begin
+                (format outp "    struct        = \"~A\",~%" structfile)
+                ))
 
           (if opts ;; (not (null? opts))
-              (format outp "    opts          = OPTS_~A,\n" opts-tag))
+              (if main-module?
+                  (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                  (format outp "    opts          = OPTS_~A,\n" opts-tag)))
 
           ;; (if (not (null? ocamlc_opts))
           ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -579,7 +598,7 @@
           ;;     (format outp "    opts_ocamlopt = ~A_OCAMLC_OPTS,\n"
           ;;             libname))
 
-          (-emit-deps outp deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+          (-emit-deps outp main-module? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
           (format #t "~A: ~A~%" (blue "emitted deps C") deps-tag)
           ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
           ;; (if (not (null? local-deps))
@@ -643,7 +662,7 @@
                            (format #t "~A: ~A~%" (uwhite "searching stanza:") stanza)
                            (let ((exec-lib (assoc-val :exec-lib (cdr stanza))))
                                    (begin
-                                     (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib)
+                                     ;; (format #t "~A: ~A~%" ( "exec-lib") exec-lib)
                                      (case (car stanza)
                                        ((:ns-archive :ns-library)
                                         (if-let ((submods
@@ -666,27 +685,28 @@
                                                       #t #f))))
 
                                        ((:executable :test)
-                                        (format #t "~A: ~A~%" (uwhite "checking :executable") stanza)
+                                        (format #t "~A: ~A for ~A~%" (uwhite "checking :executable") stanza (bgcyan modname))
                                         (if (equal? modname (assoc-val :main (cdr stanza)))
                                             #t
                                             ;; (let ((exec-lib (assoc-val :exec-lib (cdr stanza))))
                                             (if (truthy? exec-lib)
                                                     (begin
-                                                      (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib)
-                                                      (member modname exec-lib)))))
-                                       ;; (if-let ((submods (assoc-val :deps (cdr stanza))))
-                                       ;;           ;; (cdr (assoc-in '(:compile :manifest :modules) (cdr stanza)))))
-                                       ;;         (begin
-                                       ;;           (format #t "~A submods: ~A\n" (green (car stanza)) submods)
-                                       ;;           (format #t "~A member?: ~A\n" (green modname) (member modname submods))
-                                       ;;           (if (member modname submods)
-                                       ;;               #t
-                                       ;;               #f))
-                                       ;;         ;; else no submods?
-                                       ;;         (error 'STOP "no submods"))
-                                       ;; )
+                                                      (format #t "~A: ~A~%" (uwhite "exec-lib") exec-lib)
+                                                      (member modname exec-lib))
+                                                    #f)))
 
-                                       ((:install :ocamllex :ocamlyacc :menhir :shared-compile-opts :shared-deps :sh-test :testsuite) #f)
+                                       ((:ocamlc) ;; from (rule (action (run %{bin:ocamlc} ...)))
+                                        (if-let ((srcs (assoc-val :srcs (cdr stanza))))
+                                                (begin
+                                                  (format #t "~A: ~A\n" (uwhite "ocamlc srcs") srcs)
+                                                  (find-if (lambda (src)
+                                                             (format #t "~A: ~A\n" (uwhite "ocamlc src") src)
+                                                             (format #t "~A: ~A\n" (uwhite "module file") (cdr module))
+                                                             (string=? (format #f "~A" (assoc-val :tgt (cdr src)))
+                                                                       (format #f "~A" (cdr module))))
+                                                           srcs))))
+
+                                       ((:install :ocamllex :ocamlyacc :menhir :shared-compile-opts :shared-deps :sh-test :testsuite :node) #f)
 
                                        ((:rule)
                                         (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza)
@@ -971,9 +991,13 @@
           (format #t "~A~%" (bgblue "emitting pkg-structs"))
           (-emit-modules outp ws pkg pkg-structs)))
 
+    ;; (if (equal? (car pkg :ocamlc))
+    ;;       (-emit-modules outp ws pkg pkg-structs)))
+
     (if (or pkg-sigs *build-dyads*)
         (begin
           (newline)
+          (format #t "~A~%" (bgblue "emitting pkg-sigs"))
           (-emit-signatures outp pkg pkg-sigs pkg-modules)))
     ))
 

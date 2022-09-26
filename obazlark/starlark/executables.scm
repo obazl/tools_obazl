@@ -29,6 +29,7 @@
          (_ (format #t "main: ~A~%" main))
 
          (exec-lib (assoc-val :exec-lib stanza-alist))
+         (exec-lib (if *dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
          (_ (format #t "exec-lib: ~A~%" exec-lib))
 
          (libdeps (if-let ((deps (assoc-in '(:deps :resolved) stanza-alist)))
@@ -162,14 +163,17 @@
 
         (if (eq? kind :executable)
             (begin
-              (if (truthy? exec-lib)
-              ;; attr 'exe': string name of outfile excluding extension,
-              ;; not a dependency
-              ;; (format outp "    exe      = \"~A\",\n" exename)
-                  (format outp "    deps    = [\":__lib_~A__\"],\n" tgtname)
-                  (format outp "    main    = \":~A\",\n"
+              (if *dune-execlib-includes-main*
+                  ;; (if (truthy? exec-lib)
+                  ;;     (format outp "    main    = \":~A\",\n"
+                  ;;             (normalize-module-name tgtname))
+                  ;;     (format outp "    deps    = [\":__lib_~A__\"],\n"
+                  ;;             tgtname))
+                  (format outp "    main     = \":~A\",\n"
                           (normalize-module-name tgtname))
-              )))
+                  ;; else
+                  (format outp "    main     = [\":__Lib_~A__\"],\n" tgtname)
+                  )))
 
         (if (not (null? link-opts))
             (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
@@ -189,12 +193,15 @@
         ;;     (error 'x "x"))
 
         ;; (if (truthy? deps)
+
+        ;;(if *mibl-bin-main*
+        ;;
         (if (truthy? exec-lib)
             (begin
               ;; deps must be namespaced, or at least have unique names
               (format outp "ocaml_ns_library(~%")
-              (format outp "    name = \"__lib_~A__\",~%" tgtname)
-              (format outp "    ns   = \"lib_~A\",~%" tgtname)
+              (format outp "    name = \"~A_execlib\",~%" tgtname)
+              ;; (format outp "    ns   = \"~A_execlib\",~%" tgtname)
 
               ;; (if (not (null? deps))
               ;;     (begin

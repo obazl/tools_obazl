@@ -82,11 +82,10 @@
          (_ (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?))
          (outputs (assoc-val :outputs stanza))
          (_ (format #t "~A: ~A~%" (ucyan "outputs") outputs))
-         (outs (outputs->outs-attr pkg-path outputs))
+         (outs (if outputs (outputs->outs-attr pkg-path outputs) '()))
          (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
 
-         (name (format #f "__~A__"
-                       (outs 0)))
+         (name (if (truthy? outs) (format #f "__~A__" (outs 0)) "TEST"))
          )
 
     ;; progn: list of actions. should be just one?
@@ -122,7 +121,8 @@
 
                     (format outp "genrule(\n")
                     (format outp "    outs  = [\n")
-                    (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                    (if outs
+                        (format outp "~{        \"~A\"~^,\n~}\n" outs))
                     ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
                     (format outp "    ],\n")
 

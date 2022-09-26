@@ -23,14 +23,22 @@
                               (format #t "~A: ~A~%" (blue "dep") dep)
                               (if (eq? ::tools (car dep))
                                   (begin) ;; ignore
+
                                   (if (alist? (cdr dep))
-                                      ;;FIXME: unless in this pkg
-                                      (format #f "//~A:~A"
-                                              (assoc-val :pkg (cdr dep))
-                                              (assoc-val :tgt (cdr dep)))
-                                      (if (equal? ::unresolved (cdr dep))
-                                          (format #f "~A" (car dep))
-                                          (format #f ":~A" (car dep))))))
+                                      (format #f "$(location ~A)" (label-list->label-string (cdr dep)))
+                                      (case (cdr dep)
+                                        ((::unresolved)
+                                         (format #f "~A" (if (keyword? (car dep)) (keyword->symbol (car dep)) (car dep))))
+                                        (else (format #f "FIXME:~A" dep))))
+                                  ;; (if (alist? (cdr dep))
+                                  ;;     ;;FIXME: unless in this pkg
+                                  ;;     (format #f "//~A:~A"
+                                  ;;             (assoc-val :pkg (cdr dep))
+                                  ;;             (assoc-val :tgt (cdr dep)))
+                                  ;;     (if (equal? ::unresolved (cdr dep))
+                                  ;;         (format #f "~A" (car dep))
+                                  ;;         (format #f ":~A" (car dep))))
+                                  ))
                             deps))))
     deps))
 
@@ -70,8 +78,10 @@
                                                         (format #t "~A: ~A~%" (yellow "found arg in dep") dep)
                                                         (if (alist? (cdr dep))
                                                             (format #f "$(location ~A)" (label-list->label-string (cdr dep)))
-                                                            ;;FIXME
-                                                            (format #f "~A" arg))) ;; (error 'fixme "non-label dep match"))
+                                                            (case (cdr dep)
+                                                              ((::unresolved)
+                                                               (format #f "~A" (if (keyword? arg) (keyword->symbol arg) arg)))
+                                                              (else (format #f "~A" arg))))) ;; (error 'fixme "non-label dep match"))
                                                       #f)))
                                             deps))))
                         (if (not (null? xarg))
