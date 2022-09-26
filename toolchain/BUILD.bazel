@@ -1,0 +1,85 @@
+# load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+##########
+## produces list of modules in stdlib
+cc_binary(
+    name  = "stdlib",
+    # linkstatic = True,
+    srcs  = [
+        "ostdlib.c", "ostdlib.h",
+        "utarray.h", "utstring.h", "uthash.h",
+        # "log.c",
+        # "log.h",  ## provided by libmibl.a???
+        # "@uthash//:include",
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-Itoolchain",
+        "-Iexternal/obazl/toolchain",
+        "-I$(GENDIR)/toolchain",
+        "-I$(GENDIR)/external/obazl/toolchain",
+
+        "-Iexternal/uthash/include",
+        "-Iexternal/libinih",
+        "-Iexternal/logc/src",
+
+        "-Iexternal/mibl/src",           # log.h
+        "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
+        "-Iexternal/libs7/src",
+        "-Iexternal/libs7/vendored/linenoise",
+        "-Iexternal/mibl/libs7/vendored/linenoise",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+    ],
+    data = [
+        "//obazlark:srcs",
+        "//obazlark/starlark:srcs",
+    ],
+    deps = [
+        # ":helper",
+        # "//runfiles",
+        "//vendored/logc",
+        "@mibl//src:mibl",
+        "@mibl//external/libinih:inih",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "ostdlib.c",
+        "ansi_colors.h"
+    ],
+    outs = [
+        "ostdlib.h",
+    ],
+    cmd = "\n".join([
+        "$(execpath //vendored/makeheaders) $(SRCS);",
+        "cp `dirname $(location ostdlib.c)`/*.h $(RULEDIR)",
+    ]),
+    tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)
