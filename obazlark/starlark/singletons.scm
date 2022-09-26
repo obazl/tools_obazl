@@ -177,6 +177,8 @@
                                      main #f))))
          (_ (format #t "~A: ~A~%" (bggreen "main-module?") main-module?))
 
+         (exec-lib? (truthy? (assoc-val :exec-lib stanza-alist)))
+
          (libname (if privname
                       (string-append
                        (string-upcase (stringify privname)))
@@ -435,8 +437,29 @@
               ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
               (if opts ;; (not (null? opts))
                   (if main-module?
-                      (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
-                      (format outp "    opts          = OPTS_~A,\n" opts-tag)))
+                      (if exec-lib?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                          (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                      (if exec-lib?
+                          ;; should not happen?
+                          (format outp "    opts          = OPTS_~A,\n" opts-tag)
+                          ;; else no main-module, no exec-lib
+                          (format outp "    opts          = OPTS_~A,\n" opts-tag)))
+                  ;; else no opts
+                  (if main-module?
+                      (if exec-lib?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else should not happen
+                          ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                          )
+                      ;; no opts, no main-module
+                      (if exec-lib?
+                          ;; should not happen?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else no opts, no main-module, no exec-lib
+                          )))
+                  ;; (if exec-lib?
+                  ;;     (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)))
 
               ;; (if (not (null? ocamlc_opts))
               ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
@@ -506,10 +529,33 @@
                     ))
 
                (if opts ;; (not (null? opts))
+                   (if main-module?
+                       (if exec-lib?
+                           (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                           (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                       (if exec-lib?
+                           ;; should not happen?
+                           (format outp "    opts          = OPTS_~A,\n" opts-tag)
+                           ;; else no main-module, no exec-lib
+                           (format outp "    opts          = OPTS_~A,\n" opts-tag)))
+                  ;; else no opts
                   (if main-module?
-                      (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
-                      (format outp "    opts          = OPTS_~A,\n" opts-tag)))
-
+                      (if exec-lib?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else should not happen
+                          ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                          )
+                      ;; no opts, no main-module
+                      (if exec-lib?
+                          ;; should not happen?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else no opts, no main-module, no exec-lib
+                          )))
+                  ;; (if exec-lib?
+                  ;;     (if main-module?
+                  ;;         (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                  ;;         (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                  ;;     (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)))
                ;; (if (not (null? ocamlc_opts))
                ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
                ;;             libname))
@@ -587,9 +633,31 @@
 
           (if opts ;; (not (null? opts))
               (if main-module?
-                  (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
-                  (format outp "    opts          = OPTS_~A,\n" opts-tag)))
-
+                  (if exec-lib?
+                      (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+                      (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                  (if exec-lib?
+                      ;; should not happen?
+                      (format outp "    opts          = OPTS_~A,\n" opts-tag)
+                      ;; else no main-module, no exec-lib
+                      (format outp "    opts          = OPTS_~A,\n" opts-tag)))
+              ;; (if exec-lib?
+              ;;     (format outp "    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" main-module? opts-tag)
+              ;;     (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                  (if main-module?
+                      (if exec-lib?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else should not happen
+                          ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
+                          )
+                      ;; no opts, no main-module
+                      (if exec-lib?
+                          ;; should not happen?
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)
+                          ;; else no opts, no main-module, no exec-lib
+                          )))
+              ;; (if exec-lib?
+              ;;         (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" main-module?)))
           ;; (if (not (null? ocamlc_opts))
           ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
           ;;             libname))
