@@ -44,7 +44,7 @@
   (if (or (number? deps-tag)
           (truthy? local-deps)
           (truthy? agg-deps)
-          (truthy? exec-lib)
+          (and this-is-main (truthy? exec-lib))
           selectors)
       (format outp "    deps          = ")
       )
@@ -132,7 +132,8 @@
       ;; else no selectors, finish with comma
       (if (or (number? deps-tag)
               (truthy? local-deps)
-              (truthy? agg-deps))
+              (truthy? agg-deps)
+              (and this-is-main (truthy? exec-lib)))
               ;; selectors)
           (format outp ",~%"))
       ))
@@ -414,8 +415,11 @@
               ;;         ;;               (cdr opts) '())))
               (format #t "emitting module (proper): ~A: ~A\n" modname srcs)
 
-              ;; (format outp "## this-is-main ~A~%" this-is-main)
-              (format outp "ocaml_module(\n")
+              (format #t "## this-is-main ~A~%" this-is-main)
+              (format outp "## this-is-main ~A~%" this-is-main)
+              (if this-is-main
+                  (format outp "ocaml_exec_module(\n")
+                  (format outp "ocaml_module(\n"))
               (format outp "    name          = \"~A\",\n" modname)
               (if (and ns (not *ns-topdown*))
                   (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
@@ -504,7 +508,7 @@
               ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
 
               (format #t "~A: ~A~%" (blue "emitting deps A") deps-tag)
-              (format outp "## emitting deps A: ~A~%" deps-tag)
+              ;; (format outp "## emitting deps A: ~A~%" deps-tag)
               (-emit-deps outp this-is-main exec-lib? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
 
               ;; (if (not (null? local-deps))
@@ -537,7 +541,9 @@
                    ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
                    ;;               (cdr opts) '())))
 
-               (format outp "ocaml_module(\n")
+              (if this-is-main
+                  (format outp "ocaml_exec_module(\n")
+                  (format outp "ocaml_module(\n"))
                (format outp "    name          = \"~A\",\n" modname)
                (if (and ns (not *ns-topdown*))
                    (format outp "    ns_resolver   = \":ns.~A\",\n" ns))

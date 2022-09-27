@@ -141,6 +141,9 @@
         ;;         (assoc-in '(:stanzas :executables) (cdr obazl-rules)))
         ;;     (format outp "     \"ocaml_executable\",\n"))
 
+        (if (member :executable obazl-rules)
+            (format outp "     \"ocaml_exec_module\",\n"))
+
         (if (member :module obazl-rules)
             (format outp "     \"ocaml_module\",\n"))
 
