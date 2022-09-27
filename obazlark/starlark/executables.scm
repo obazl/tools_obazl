@@ -3,10 +3,15 @@
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
 
-(define (starlark-emit-executable-target outp kind pkg stanza)
+(define (starlark-emit-executable-target outp ws kind pkg stanza exec-libs)
   (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
   (format #t "~A: ~A~%" (blue "kind") kind)
+  (format #t "~A: ~A~%" (blue "exec-libs") exec-libs)
   (let* ((stanza-alist (cdr stanza))
+
+         (pkg-name (pkg->pkg-name pkg))
+         (_ (format #t "~A: ~A~%" (blue "pkg-name") pkg-name))
+
          (privname (assoc-val :privname stanza-alist))
          ;; (mainname (normalize-module-name privname))
          (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
@@ -28,9 +33,28 @@
          (main (assoc-val :main stanza-alist))
          (_ (format #t "main: ~A~%" main))
 
-         (exec-lib (assoc-val :exec-lib stanza-alist))
-         (exec-lib (if *dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
-         (_ (format #t "exec-lib: ~A~%" exec-lib))
+         ;; TODO: support *dune-execlib-includes-main*
+         ;; (exec-lib (if *dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
+         (exec-lib (if-let ((el (assoc-val :exec-lib stanza-alist)))
+                           el #f))
+         (_ (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib))
+
+        ;; we will use exec-lib-serial and pkg-name to form exec-lib name
+         (exec-lib-serial (if exec-lib
+                              (if (number? exec-lib)
+                                  #f
+                                  (if-let ((match (rassoc (list exec-lib) exec-libs)))
+                                          (car match)
+                                          '(error 'FIXME
+                                                  (format #f "~A: ~A~%" (red "exec-lib not found in exec-libs") exec-lib))))
+                              #f))
+         (_ (format #t "~A: ~A~%" (bgred "exec-lib serial") exec-lib-serial))
+
+         (exec-lib-name (if exec-lib-serial
+                            (if (< (length exec-libs) 2)
+                                (format #f "~A_execlib" main)
+                                (format #f "~A_execlib_~A" pkg-name exec-lib-serial))
+                            #f))
 
          (libdeps (if-let ((deps (assoc-in '(:deps :resolved) stanza-alist)))
                           (cdr deps) '()))
@@ -105,116 +129,106 @@
 
       (if (member 'js modes)
           (begin
-            (format outp "#############\n")
-            (case kind
-              ((:executable) (format outp "js_binary(\n"))
-              ((:test) (format outp "js_test(\n"))
-              (else (error 'fixme "unexpected kind for executable")))
-            (format outp "    name        = \"~A.exe.js\",\n" tgtname)
+            (if *emit-rules-js*
+                (begin
+                  (format outp "#############\n")
+                  (case kind
+                    ((:executable) (format outp "js_binary(\n"))
+                    ((:test) (format outp "js_test(\n"))
+                    (else (error 'fixme "unexpected kind for executable")))
+                  (format outp "    name        = \"~A.exe.js\",\n" tgtname)
 
-            ;; (if (eq? kind :executable)
-            ;;     ;; do we always want this?
-            ;;     (begin
-            ;;       ;; attr 'exe': string name of outfile excluding extension,
-            ;;       ;; not a dependency
-            ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
-            ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
-            ;;       ))
+                  ;; (if (eq? kind :executable)
+                  ;;     ;; do we always want this?
+                  ;;     (begin
+                  ;;       ;; attr 'exe': string name of outfile excluding extension,
+                  ;;       ;; not a dependency
+                  ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
+                  ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
+                  ;;       ))
 
-            (if (not (null? link-opts))
-                (format outp "    opts        = [~{\"~A\"~^, ~}],\n" link-opts))
+                  (if (not (null? link-opts))
+                      (format outp "    opts        = [~{\"~A\"~^, ~}],\n" link-opts))
 
-            (format outp "    entry_point = \":~A.exe.jsoo\",\n" tgtname)
-            (format outp "    visibility  = [\"//visibility:public\"],\n")
-            (format outp ")\n")
-            (newline outp)
+                  (format outp "    entry_point = \":~A.exe.jsoo\",\n" tgtname)
+                  (format outp "    visibility  = [\"//visibility:public\"],\n")
+                  (format outp ")\n")
+                  (newline outp))
+                ;; else
+                (if *emit-rules-swc*
+                    (begin)
+                    (if *emit-rules-closure*
+                        (begin))))
 
-            ;; (format outp "#############\n")
-            (case kind
-              ((:executable) (format outp "jsoo_binary(\n"))
-              ((:test) (format outp "jsoo_test(\n"))
-              (else (error 'fixme "unexpected kind for executable")))
-            (format outp "    name     = \"~A.exe.jsoo\",\n" tgtname)
+            (if (or *emit-rules-jsoo* *emit-rules-js* *emit-rules-swc* *emit-rules-closure*)
+                (begin
+                  ;; (format outp "#############\n")
+                  (case kind
+                    ((:executable) (format outp "jsoo_binary(\n"))
+                    ((:test) (format outp "jsoo_test(\n"))
+                    (else (error 'fixme "unexpected kind for executable")))
+                  (format outp "    name     = \"~A.exe.jsoo\",\n" tgtname)
 
-            ;; (if (eq? kind :executable)
-            ;;     ;; do we always want this?
-            ;;     (begin
-            ;;       ;; attr 'exe': string name of outfile excluding extension,
-            ;;       ;; not a dependency
-            ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
-            ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
-            ;;       ))
+                  ;; (if (eq? kind :executable)
+                  ;;     ;; do we always want this?
+                  ;;     (begin
+                  ;;       ;; attr 'exe': string name of outfile excluding extension,
+                  ;;       ;; not a dependency
+                  ;;       (format outp "    exe      = \"~A.exe.js\",\n" exename)
+                  ;;       ;; (format outp "    main    = \":~A\",\n" mainname)
+                  ;;       ))
 
-            (if (not (null? link-opts))
-                (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
+                  (if (not (null? link-opts))
+                      (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
 
-            (format outp "    main   = \":~A.exe\",\n" tgtname)
-            (format outp "    visibility = [\"//visibility:public\"],\n")
-            (format outp ")\n")
-            (newline outp)))
+                  (format outp "    main   = \":~A.exe\",\n" tgtname)
+                  (format outp "    visibility = [\"//visibility:public\"],\n")
+                  (format outp ")\n")
+                  (newline outp)))))
 
       (begin
-        ;; (format outp "#############\n")
-        (case kind
-          ((:executable) (format outp "ocaml_binary(\n"))
-          ((:test) (format outp "ocaml_test(\n"))
-          (else (error 'fixme "unexpected kind for executable")))
-        (format outp "    name     = \"~A.exe\",\n" tgtname)
+        (begin ;; ocaml_binary
+          (case kind
+            ((:executable) (format outp "ocaml_binary(\n"))
+            ((:test) (format outp "ocaml_test(\n"))
+            (else (error 'fixme "unexpected kind for executable")))
+          (format outp "    name     = \"~A.exe\",\n" tgtname)
 
-        (if (eq? kind :executable)
-            (begin
-              (if *dune-execlib-includes-main*
-                  ;; (if (truthy? exec-lib)
-                  ;;     (format outp "    main    = \":~A\",\n"
-                  ;;             (normalize-module-name tgtname))
-                  ;;     (format outp "    deps    = [\":__lib_~A__\"],\n"
-                  ;;             tgtname))
-                  (format outp "    main     = \":~A\",\n"
-                          (normalize-module-name tgtname))
-                  ;; else
-                  (format outp "    main     = [\":__Lib_~A__\"],\n" tgtname)
-                  )))
+          (if (eq? kind :executable)
+              (begin
+                (if *dune-execlib-includes-main* ;; default: #f
+                    (format outp "    main     = [\":__Lib_~A__\"],\n" tgtname)
+                    (format outp "    main     = \":~A\",\n" main) ;;(normalize-module-name tgtname))
+                    ;; else
+                    )))
 
-        (if (not (null? link-opts))
-            (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
+          (if (not (null? link-opts))
+              (format outp "    opts     = [~{\"~A\"~^, ~}],\n" link-opts))
 
-        ;; (format outp "    deps       = [\":__lib_~A__\"],\n" tgtname)
-        (format outp "    visibility = [\"//visibility:public\"],\n")
+          ;; (format outp "    deps       = [\":__lib_~A__\"],\n" tgtname)
+          (format outp "    visibility = [\"//visibility:public\"],\n")
 
-        (if modes
-            (if (equal? '(byte) modes)
-                (format outp "    target_compatible_with = [\"@ocaml//host/target:vm?\"]~%")))
+          (if modes
+              (if (equal? '(byte) modes)
+                  (format outp "    target_compatible_with = [\"@ocaml//host/target:vm?\"]~%")))
 
-        (format outp ")\n")
+          (format outp ")\n")) ;; end ocaml_binary
+
         (newline outp)
 
-        (format #t "~A: ~A ~A~%" (bggreen "exedeps") tgtname deps)
-        ;; (if (equal? (format #f "~A" tgtname) "js_of_ocaml")
-        ;;     (error 'x "x"))
-
-        ;; (if (truthy? deps)
-
-        ;;(if *mibl-bin-main*
-        ;;
-        (if (truthy? exec-lib)
-            (begin
-              ;; deps must be namespaced, or at least have unique names
-              (format outp "ocaml_ns_library(~%")
-              (format outp "    name = \"~A_execlib\",~%" tgtname)
-              ;; (format outp "    ns   = \"~A_execlib\",~%" tgtname)
-
-              ;; (if (not (null? deps))
-              ;;     (begin
-              (format outp "    manifest = [~%")
-              (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib)
-              (format outp "~{        \":~A\"~^,~%~}~%" exec-lib)
-              (format outp "    ],\n")
-              ;; ))
-              (format outp "    visibility = [\"//visibility:private\"],~%")
-              (format outp ")")
-              (newline outp)
-              (newline outp)))
-        ))
+        ;;FIXME: insert the main exec-module target here
+        (format #t "~A: ~A~%" (cyan "finding main module") main)
+        (let ((main-module (find-module-in-pkg main pkg)))
+          (format #t "~A: ~A~%" (cyan "## main exec module") main-module)
+          ;; (format outp "## main: ~A~%" main)
+          ;; (format outp "## main exec module: ~A~%" main-module)
+          (if main-module
+              (begin
+                (-emit-module outp ws main-module stanza pkg)
+                (newline outp)))
+          )
+        )
+      )
     ;; now emit modules for compilation
     ;; (if pkg-modules (-emit-modules outp pkg pkg-modules))
     ;; (if (or sigs *build-dyads*)
@@ -222,30 +236,97 @@
     ;; (starlark-emit-singleton-targets outp pkg)
     ))
 
-(define (starlark-emit-executable-targets outp pkg) ;;fs-path stanzas)
+(define (starlark-emit-executable-targets outp ws pkg) ;;fs-path stanzas)
   (format #t "~A\n" (ublue "starlark-emit-executable-targets"))
 
-  (let* ((stanzas (assoc-val :dune pkg))
-         (flag #t))
-    (for-each (lambda (stanza)
-                ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
-                (case (car stanza)
-                  ((:executable)
-                   (if flag
-                       (begin
-                         (format outp "##############################\n")
-                         (format outp "####  Executable Targets  ####\n")
-                         (set! flag #f)))
-                   (starlark-emit-executable-target outp :executable pkg stanza))
+  ;; Multiple executables may share the same execlib. for example we
+  ;; may have two (executables), each with n executables and a list
+  ;; of (modules). Each (named) executable serves as main
+  ;; exec-module; the list of (modules) constitute the execlib. In
+  ;; this case we emit two ocaml_ns_library targets, one for each
+  ;; execlib. Rather than one per main exec-module.
 
-                  ((:executables)
-                   (error 'bad-arg "unexpected :executables stanza")
-                   ;; (starlark-emit-executables
-                   ;;  outp fs-path stanza)
-                   )
-                  (else ;; ignore others
-                   ;; (format outp "UNCAUGHT: ~A\n" stanza)
-                   )))
-              stanzas)))
+  ;; Task: iterate the executables to collect the unique execlibs.
+  ;; Also: determine name for the execlib, each main exec-module
+  ;; needs it (above). Since we may have n execlibs for m main
+  ;; exec-modules, we cannot use the main module names. We use the
+  ;; directory name of the pkg with a suffixed serial number.
+
+  ;; FIXME: support *dune-execlib-includes-main*, wherein each each
+  ;; executable uses an exec-lib containing the main exec-module,
+  ;; which means each gets its own exec-lib, with none shared.
+
+    ;; (format #t "~A~%" (bgcyan "collecting exec-libs"))
+
+    (let* ((stanzas (assoc-val :dune pkg))
+           (pkg-name (pkg->pkg-name pkg))
+           (exec-libs (assoc-val :exec-libs stanzas)))
+           ;; (exec-libs (fold (lambda (stanza accum)
+           ;;                    (if (equal? (car stanza) :executable)
+           ;;                        (let ((exec-lib (assoc-val :exec-lib (cdr stanza))))
+           ;;                          (if (truthy? exec-lib)
+           ;;                              (begin
+           ;;                                (format #t "~A: ~A~%" (green "accum") accum)
+           ;;                                (let ((match (rassoc exec-lib accum)))
+           ;;                                  (if (null? match)
+           ;;                                      (let ((serial (if (null? accum) 0 (caar accum))))
+           ;;                                        (format #t "~A: ~A ~A~%" (green "new exec-lib") serial exec-lib)
+           ;;                                        (acons  (+ 1 serial) exec-lib accum))
+           ;;                                      (begin
+           ;;                                        (format #t "~A: ~A~%" (green "dup exec-lib") match)
+           ;;                                        accum))))
+           ;;                              accum))
+           ;;                        accum))
+           ;;                  '() stanzas))
+           ;; (exec-libs (remove '() exec-libs)))
+      (format #t "~A: ~A~%" (bgcyan "pkg exec-libs") exec-libs)
+      ;; now process :executable stanzas, passing the exec-libs
+      (let* ((flag #t))
+        (for-each (lambda (stanza)
+                    ;; (format #t "stanza x: ~A ~A\n" fs-path (car stanza))
+                    (case (car stanza)
+                      ((:executable)
+                       (if flag
+                           (begin
+                             (format outp "##############################\n")
+                             (format outp "####  Executable Targets  ####\n")
+                             (set! flag #f)))
+                       (starlark-emit-executable-target outp ws :executable pkg stanza exec-libs))
+
+                      ((:executables)
+                       (error 'bad-arg "unexpected :executables stanza")
+                       ;; (starlark-emit-executables
+                       ;;  outp fs-path stanza)
+                       )
+                      (else ;; ignore others
+                       ;; (format outp "UNCAUGHT: ~A\n" stanza)
+                       )))
+                  stanzas)
+
+        (if (truthy? exec-libs)
+            (begin
+              (format outp "############################ Exec Libs ###############################~%")
+              (for-each (lambda (exec-lib)
+                          (format #t "~A: ~A~%" (ucyan "emitting exec-libs for pkg") pkg)
+                          (format #t "~A: ~A~%" (ucyan "emitting exec-lib") exec-lib)
+                          ;; deps must be namespaced, or at least have unique names
+
+                          (format outp "ocaml_ns_library(~%")
+                          (format outp "    name = \"~A_execlib\",~%" pkg-name)
+                          ;; (format outp "    ns   = \"~A_execlib\",~%" tgtname)
+
+                          ;; (if (not (null? deps))
+                          ;;     (begin
+                          (format outp "    manifest = [~%")
+                          (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib)
+                          (format outp "~{        \":~A\"~^,~%~}~%" (assoc-val :modules (cdr exec-lib)))
+                          (format outp "    ],\n")
+                          ;; ))
+                          (format outp "    visibility = [\"//visibility:private\"],~%")
+                          (format outp ")")
+                          (newline outp)
+                          (newline outp))
+                        (remove '() exec-libs))))
+        )))
 
 ;; (format #t "loaded starlark/executables.scm\n")

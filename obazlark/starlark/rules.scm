@@ -415,8 +415,7 @@
                   ((:rule :genrule :with-stdout-to :write-file)
                    (if flag
                        (begin
-                         (format outp "########################\n")
-                         (format outp "####  Rule Targets  ####\n")
+                         (format outp "############################# Rules ##################################~%")
                          (newline outp)
                          (set! flag #f)))))
 

@@ -238,11 +238,19 @@
                                          (format #f "~A" (cdr opt))))
                                  goptions))
                            '()))
+
          (_ (format #t "~A: ~A~%" (uwhite "goptions") goptions))
+
+         (gexclusions (if-let ((exclusions (assoc-val :exclusions options)))
+                             (map (lambda (ex)
+                                    (format #f "-no~A" ex))
+                                  exclusions)
+                             '()))
+         (_ (format #t "~A: ~A~%" (uwhite "gexclusions") gexclusions))
 
          ;; (g-all-options (apply append (list gopens gflags goptions)))
          (g-all-options (let ((opts (apply append
-                                           (list gopens gflags goptions))))
+                                           (list gopens gflags goptions gexclusions))))
                           (if (null? opts)
                               '()
                               `((:standard ,@opts)))))
@@ -660,7 +668,7 @@
                         (cadr stanza)))
 
              ((:shared-compile-opts)
-              (format #t "~A: ~A~%" (bgred "shared-compile-opts") stanza)
+              (format #t "~A: ~A~%" (bgred "emitting shared-compile-opts") stanza)
               (if (truthy? (cdr stanza))
                   (for-each (lambda (optlist)
                               (format #t "~A: ~A~%" (ured "shared optlist") optlist)
@@ -715,10 +723,12 @@
                             ;; (format outp "]~%")))
                             (cadr stanza))))
 
-             ((:ocamlc) (format outp "## :ocamlc") (newline outp))
-             ((:node) (format outp "## :node") (newline outp))
+             ((:ocamlc) (values))
+             ;; (format outp "## :ocamlc") (newline outp))
+             ((:node) (values))
+              ;; (format outp "## :node") (newline outp))
 
-             ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx :alias)
+             ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx :alias :exec-libs)
               (values))
 
              (else

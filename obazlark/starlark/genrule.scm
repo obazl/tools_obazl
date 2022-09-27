@@ -85,7 +85,14 @@
          (outs (if outputs (outputs->outs-attr pkg-path outputs) '()))
          (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
 
-         (name (if (truthy? outs) (format #f "__~A__" (outs 0)) "TEST"))
+         (name (if (truthy? outs) (format #f "__~A__" (outs 0))
+                   (if (truthy? srcs)
+                       (string-left-trim ":" (srcs 0))
+                       (if (truthy? deps)
+                           (if (keyword? (caar deps))
+                               (keyword->symbol (caar deps))
+                               (caar deps)
+                                         )))))
          )
 
     ;; progn: list of actions. should be just one?
@@ -108,7 +115,6 @@
             (begin
               (format #t "  outs: ~A~%" outs)
 
-              (format outp "################  rule  ################\n")
               (if (list? stanza)
                   (begin
                     (format #t "~A~%" (uwhite "emitting genrule"))
@@ -119,6 +125,7 @@
                     ;;           stanza)
                     ;; (format outp "## )\n")
 
+                    (format outp "########\n")
                     (format outp "genrule(\n")
                     (format outp "    outs  = [\n")
                     (if outs

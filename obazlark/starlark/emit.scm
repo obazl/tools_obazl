@@ -42,7 +42,7 @@
           (starlark-emit-global-vars outp pkg)
 
           (format #t "emitting executables\n")
-          (starlark-emit-executable-targets outp pkg)
+          (starlark-emit-executable-targets outp ws pkg)
 
           (format #t "emitting aggregate targets (archive, library)\n")
           (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
