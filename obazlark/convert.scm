@@ -111,10 +111,9 @@
          (mpkgs (normalize-manifests! :@))
          )
 
+    (miblarkize :@)
     (resolve-labels! :@)
     (resolve-pkg-file-deps :@)
-
-    (miblarkize :@)
 
     (handle-shared-ppx :@)
 

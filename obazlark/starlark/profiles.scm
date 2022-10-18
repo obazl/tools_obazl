@@ -182,7 +182,7 @@
                        (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                        = \"vm_~A\",~%" name)
                        (format outp "    profile                     = \":vm_~A_profile\",~%" name)
-                       (format outp "    target_host_constraints = [\"@ocaml//host/target:vm\"],~%")
+                       (format outp "    target_host_constraints = [\"@ocaml//platforms:vm\"],~%")
                        (case name
                 ((dev) (format outp "    constraints                 = [\":fastbuild_mode\"]~%"))
                          ((release) (format outp "    constraints                 = [\":opt_mode\"]~%"))
@@ -220,7 +220,7 @@
                        (format outp "toolchain_profile_selector(~%")
                        (format outp "    name                        = \"sys_~A\",~%" name)
                        (format outp "    profile                     = \":sys_~A_profile\",~%" name)
-                       (format outp "    target_host_constraints = [\"@ocaml//host/target:sys\"],~%")
+                       (format outp "    target_host_constraints = [\"@ocaml//platforms:sys\"],~%")
                        (case name
                          ((dev) (format outp "    constraints                 = [\":fastbuild_mode\"]~%"))
                          ((release) (format outp "    constraints                 = [\":opt_mode\"]~%"))

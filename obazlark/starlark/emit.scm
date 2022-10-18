@@ -1,7 +1,7 @@
 (format #t "loading starlark/conversions.scm\n")
 
 (load "starlark/headers.scm")
-(load "starlark/rules.scm")
+(load "starlark/rules_starlark.scm")
 
 ;; (define (starlark-emit-tuareg outp ws pkg)
 ;;   (format #t "~A: ~A~%" (red "starlark-emit-tuareg") pkg)

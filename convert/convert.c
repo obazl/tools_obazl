@@ -1,15 +1,22 @@
+#include <errno.h>
 #include <unistd.h>
 
 #include "ini.h"
-#include "log.h"
-#include "utarray.h"
+/* #include "log.h" */
+/* #include "utarray.h" */
 
-#include "mibl.h"
+#include "s7.h"
+#include "libmibl.h"
 #include "convert.h"
 
+#if defined(DEBUG_TRACE)
 extern bool debug;
 extern bool trace;
+#endif
+
 extern bool verbose;
+
+extern s7_scheme *s7;
 
 extern char *ews_root;
 extern int dir_ct;
@@ -36,15 +43,17 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
             break;
         case 'd':
+#if defined(DEBUG_TRACE)
             printf("SETTING DEBUG\n");
             debug = true;
+#endif
             break;
         case 'h':
             /* _print_usage(); */
             printf("help msg ...\n");
             exit(EXIT_SUCCESS);
             break;
-        case 'p':
+        case 'p':               /* emit pkg */
             pkgarg = strdup(optarg);
             /* remove trailing '/' */
             len = strlen(pkgarg);
@@ -53,7 +62,7 @@ int main(int argc, char *argv[])
             }
             /* validate - no abs paths, may start with '//" */
             break;
-        case 'r':
+        case 'r':               /* traversal root */
             rootpath = strdup(optarg);
             /* remove trailing '/' */
             len = strlen(rootpath);
@@ -63,7 +72,9 @@ int main(int argc, char *argv[])
             /* validate - relative path, not internal .. */
             break;
         case 't':
+#if defined(DEBUG_TRACE)
             trace = true;
+#endif
             break;
         case 'v':
             verbose = true;
@@ -87,10 +98,12 @@ int main(int argc, char *argv[])
     /*     log_info("ROOTPATH: %s", rootpath); */
     /* } */
 
+#if defined(DEBUG_TRACE)
     if (debug) {
         log_debug("rootpath: '%s'", rootpath);
         log_debug("pkgarg: '%s'", pkgarg);
     }
+#endif
 
     /* config in this order: first bazel, then mibl, then s7 */
     bazel_configure(); // getcwd(NULL, 0));
@@ -111,7 +124,7 @@ int main(int argc, char *argv[])
         /* log_debug("SETTING *emit-bazel-pkg* to: %s", pkgarg); */
         s7_eval_c_string(s7, utstring_body(setter));
     }
-
+    log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
     s7_load(s7, "starlark.scm");
 
     s7_load(s7, "convert.scm");
@@ -142,7 +155,9 @@ int main(int argc, char *argv[])
                       _s7_pkgarg);
     }
 
+#if defined(DEBUG_TRACE)
     if (debug) log_debug("s7 args: %s", TO_STR(_s7_args));
+#endif
 
     /* s7_gc_on(s7, s7_f(s7)); */
 

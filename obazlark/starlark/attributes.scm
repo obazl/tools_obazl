@@ -88,7 +88,8 @@
                                      (format #t "~A: ~A~%" (uyellow "::pkg") tag)
                                      (format #f "~A" tag))
                                     (else
-                                     (error 'fixme "XXXXXXXXXXXXXXXX")))))
+                                     (error 'fixme
+                                            (format #f "~A" label))))))
                                (else
                                 (error 'FIXME
                                        (format #f "unrecognized form ~A" label))))))))

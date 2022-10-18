@@ -8,7 +8,9 @@
                         stanza)
   (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
   (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
+  (format #t "~A: ~A~%" (uwhite "srcs") srcs)
   (format #t "~A: ~A~%" (uwhite "deps") deps)
+  (format #t "~A: ~A~%" (uwhite "xdeps") (dissoc '(::tools) deps))
   (format #t "~A: ~A~%" (uwhite "outputs") outputs)
 
   (format outp "    cmd   = \" \".join([\n")
@@ -21,6 +23,7 @@
   ;;TODO: insert cp or ln before the tool cmd.
 
   ;; if action takes no args, but we have deps, cp deps to cwd
+
   (for-each
    (lambda (cmd)
      (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd)
@@ -28,6 +31,7 @@
          (let-values
              (((tool-dep? tool xargs)
                (derive-cmd pkg-path cmd deps outputs)))
+
            ;; (format #t "~A:\n" (red "derived cmd"))
            (format #t "~A: ~A~%" (magenta "tool-dep?")
                    tool-dep?)
@@ -43,7 +47,7 @@
            ;; ]),
 
            (if (null? xargs)
-               (if (truthy? deps)
+               (if (truthy? srcs) ;; deps)
                    (format outp "~{        \"cp $(locations ~A) . ;\"~^,~%~},~%" srcs)))
 
            (if tool-dep?
@@ -56,6 +60,8 @@
            ;;           xargs)
            ;; (format outp "        \"$(SRCS)\",\n")
            (format outp "~{        \"~A\",~^\n~}\n" xargs)
+           (if (equal? 'diff tool)
+                 (format outp "        \"> $@\"\n"))
            )
          ;; else
          (if (eq? :stdout (car cmd))

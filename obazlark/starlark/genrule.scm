@@ -128,8 +128,10 @@
                     (format outp "########\n")
                     (format outp "genrule(\n")
                     (format outp "    outs  = [\n")
-                    (if outs
-                        (format outp "~{        \"~A\"~^,\n~}\n" outs))
+                    (if (truthy? outs)
+                        (format outp "~{        \"~A\"~^,\n~}\n" outs)
+                        (if (equal? ::diff tool)
+                            (format outp "        \"~A.diff.out\"~%" name)))
                     ;; (format outp "~{        \"~A\"~^,\n~}\n" outs)
                     (format outp "    ],\n")
 
@@ -152,7 +154,7 @@
                         (emit-shell-cmd outp tool
                                         with-stdout?
                                         srcs
-                                        deps
+                                        deps ;; (dissoc '(::tools) deps)
                                         action
                                         outputs ;; outs
                                         pkg-path
@@ -169,9 +171,9 @@
                                  (let-values
                                      (((tool-dep? tool args)
                                        (derive-cmd pkg-path cmd deps outputs)))
-                                   (format #t "  Tool-Dep?: ~A~%" tool-dep?)
-                                   (format #t "  TooL: ~A~%" tool)
-                                   (format #t "  ArgS: ~A~%" args)
+                                   (format #t "cmd Tool-Dep?: ~A~%" tool-dep?)
+                                   (format #t "cmd TooL: ~A~%" tool)
+                                   (format #t "cmd ArgS: ~A~%" args)
 
                                    (if (not (null? tool-dep?))
                                        (begin
@@ -180,7 +182,8 @@
                                          )))))
                            action)
                           (format outp "    ]\n")))
-                    (format outp ")\n"))
+                    (format outp ")~%")
+                    (newline outp))
                     )))
             ))
 

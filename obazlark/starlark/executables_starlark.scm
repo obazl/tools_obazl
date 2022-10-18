@@ -136,7 +136,7 @@
                     ((:executable) (format outp "js_binary(\n"))
                     ((:test) (format outp "js_test(\n"))
                     (else (error 'fixme "unexpected kind for executable")))
-                  (format outp "    name        = \"~A.exe.js\",\n" tgtname)
+                  (format outp "    name        = \"~A.bc.js\",\n" tgtname)
 
                   ;; (if (eq? kind :executable)
                   ;;     ;; do we always want this?
@@ -210,7 +210,7 @@
 
           (if modes
               (if (equal? '(byte) modes)
-                  (format outp "    target_compatible_with = [\"@ocaml//host/target:vm?\"]~%")))
+                  (format outp "    target_compatible_with = [\"@ocaml//platforms:vm?\"]~%")))
 
           (format outp ")\n")) ;; end ocaml_binary
 
@@ -312,7 +312,9 @@
                           ;; deps must be namespaced, or at least have unique names
 
                           (format outp "ocaml_ns_library(~%")
-                          (format outp "    name = \"~A_execlib\",~%" pkg-name)
+                          ;; (format outp "## exec-lib~%")
+                          (format outp "    name = \"~A_execlib\",~%"
+                                  (normalize-module-name pkg-name))
                           ;; (format outp "    ns   = \"~A_execlib\",~%" tgtname)
 
                           ;; (if (not (null? deps))

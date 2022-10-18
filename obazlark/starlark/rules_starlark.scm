@@ -129,11 +129,11 @@
                                      (if (equal? pkg pkg-path)
                                          (if (eq? tgt-tag :glob) ;; :tgts)
                                              (format #f "`realpath $(locations :~A)`" tgt)
-                                             (format #f "`realpath $(location :~A)`" tgt))
+                                             (format #f "$(location :~A)" tgt))
                                          (if (eq? tgt-tag :glob) ;; :tgts)
                                              (format #f "`realpath $(locations ~A//~A:~A)`"
                                                      ws pkg tgt)
-                                             (format #f "`realpath $(location ~A//~A:~A)`"
+                                             (format #f "$(location ~A//~A:~A)"
                                                      ws pkg tgt))))))
                              ;; else not found in :deps, try :outputs?
 
@@ -399,6 +399,168 @@
                        (starlark-emit-genrule outp pkg-path stanza))))))
             (assoc-val :actions stanza)))
 
+(define (starlark-emit-diff-target outp pkg-path stanza-alist)
+  (format #t "~A: ~A\n" (bgblue "starlark-emit-diff-target") stanza-alist)
+  (let* ((action (assoc-val :actions stanza-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "action") action))
+         (tool (cadr (assoc-in '(:cmd :tool) action)))
+         (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
+         (bash-cmd? (eq? tool 'bash))
+         (deps (assoc-val :deps stanza-alist))
+         (_ (format #t "~A: ~A~%" (cyan "deps") deps))
+         (srcs (deps->srcs-attr pkg-path tool deps))
+         (_ (format #t "~A: ~A~%" (cyan "genrule srcs") srcs))
+         ;; (_ (error 'X "stop genrule"))
+         ;; FIXME: derive from :args, :stdout, etc.
+         ;; if %{targets} is in cmd string, ...
+         ;; else if we have (:stdout ...), ...
+         (with-stdout? (assoc-in '(:actions :stdout) stanza-alist))
+         (_ (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?))
+         (outputs (assoc-val :outputs stanza-alist))
+         (_ (format #t "~A: ~A~%" (ucyan "outputs") outputs))
+         (outs (if outputs (outputs->outs-attr pkg-path outputs) '()))
+         (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
+
+         (name (if (truthy? outs) (format #f "__~A__" (outs 0))
+                   (if (truthy? srcs)
+                       (string-left-trim ":" (srcs 0))
+                       (if (truthy? deps)
+                           (if (keyword? (caar deps))
+                               (keyword->symbol (caar deps))
+                               (caar deps)
+                                         )))))
+         )
+
+    ;; progn: list of actions. should be just one?
+    (for-each
+     (lambda (cmd)
+       (if (eq? :cmd (car cmd))
+           (format #t "GENRULE ACTION: ~A~%" cmd)
+           (if (eq? :stdout (car cmd))
+               (format #t "GENRULE STDOUT: ~A~%" cmd)
+               (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
+     action)
+
+    (if-let ((ctx (assoc-in '(:actions :ctx) stanza-alist)))
+            (begin
+              (format outp "## omitted:\n")
+              (format outp "## (chdir ~A (run ~A ...))\n\n"
+                    (cadr ctx)
+                    (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
+            ;; else
+            (begin
+              (format #t "  outs: ~A~%" outs)
+
+              (if (list? stanza-alist)
+                  (begin
+                    (format #t "~A~%" (uwhite "emitting diff_test"))
+                    (format outp "##########\n")
+                    (format outp "diff_test(\n")
+                    (format outp "    name  = \"~A.diff_test\",\n" name)
+                    (format outp "    file1  = \"~A\",~%" (srcs 0))
+                    (format outp "    file2  = \"~A\"~%" (srcs 1))
+
+                    (format outp ")~%")
+                    (newline outp))
+                    )))
+            ))
+
+(define (-node-stanza->tool pkg-path args deps)
+  (format #t "~A: ~A~%" (ublue "-node-stanza->tool") deps)
+  (let ((tool-tag (car args)))
+    (if-let ((tool (filter (lambda (dep) (equal? tool-tag (car dep)))
+                           deps)))
+            (let ((pkg (assoc-val :pkg (cdar tool)))
+                  (tgt (assoc-val :tgt (cdar tool))))
+              (format #t "~A: ~A~%" (red "node :tool") tool)
+              (if (equal? (format #f "~A" pkg-path)
+                          (format #f "~A" pkg))
+                  ;;(format #t "~A: ~A~%" (red "node :tool") tgt)
+                  (format #f ":~A" tgt)
+                  ;; (format #t "~A: ~A:~A~%" (red "node tool") pkg tgt)
+                  (format #f "~A:~A" pkg tgt)))
+            (error 'FIXME
+                   (format #f "node tool arg ~A not found in deps: ~A"
+                           tool-tag deps)))))
+
+(define (starlark-emit-node-target outp pkg-path stanza-alist)
+  (format #t "~A: ~A\n" (bgblue "starlark-emit-node-target") stanza-alist)
+  (let* ((action (assoc-val :actions stanza-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "action") action))
+
+         ;; (tool (cadr (assoc-in '(:cmd :tool) action)))
+         ;; (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
+         ;; (bash-cmd? (eq? tool 'bash))
+
+         (args (assoc-in '(:cmd :args) action))
+         (_ (format #t "~A: ~A~%" (cyan "node args") args))
+
+         (deps (assoc-val :deps stanza-alist))
+         (_ (format #t "~A: ~A~%" (cyan "deps") deps))
+
+         (tool (-node-stanza->tool pkg-path (cdr args) deps))
+         (_ (format #t "~A: ~A~%" (uwhite "tool") tool))
+         ;; (_ (error 'X "stop node"))
+
+         ;; (srcs (deps->srcs-attr pkg-path tool deps))
+         ;; (_ (format #t "~A: ~A~%" (cyan "genrule srcs") srcs))
+         (srcs #f)
+
+         ;; FIXME: derive from :args, :stdout, etc.
+         ;; if %{targets} is in cmd string, ...
+         ;; else if we have (:stdout ...), ...
+         (with-stdout? (assoc-in '(:actions :stdout) stanza-alist))
+         (_ (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?))
+         (outputs (assoc-val :outputs stanza-alist))
+         (_ (format #t "~A: ~A~%" (ucyan "outputs") outputs))
+         (outs (if outputs (outputs->outs-attr pkg-path outputs) '()))
+         (_ (format #t "~A: ~A~%" (ucyan "outs") outs))
+
+         (name (if (truthy? outs)
+                   (format #f "~A" (outs 0))
+                   (if (truthy? srcs)
+                       (string-left-trim ":" (srcs 0))
+                       (if (truthy? deps)
+                           (if (keyword? (caar deps))
+                               (string-left-trim ":"
+                                                 (format #f "~A" (caar deps)))
+                               "BAR" ;; (caar deps)
+                               )
+                           "foobar"))))
+         )
+
+    ;; progn: list of actions. should be just one?
+    ;; (for-each
+    ;;  (lambda (cmd)
+    ;;    (if (eq? :cmd (car cmd))
+    ;;        (format #t "GENRULE ACTION: ~A~%" cmd)
+    ;;        (if (eq? :stdout (car cmd))
+    ;;            (format #t "GENRULE STDOUT: ~A~%" cmd)
+    ;;            (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
+    ;;  action)
+
+    (if-let ((ctx (assoc-in '(:actions :ctx) stanza-alist)))
+            (begin
+              (format outp "## omitted:\n")
+              (format outp "## (chdir ~A (run ~A ...))\n\n"
+                    (cadr ctx)
+                    (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
+            ;; else
+            (if (list? stanza-alist)
+                (begin
+                  (format #t "~A~%" (uwhite "emitting js_run_binary"))
+                  (format outp "##############\n")
+                  (format outp "js_run_binary(\n")
+                  (format outp "    name  = \"__~A__\",\n" name)
+
+                  (format outp "    tool  = \"~A\",~%" tool)
+                  (if (truthy? outs)
+                      (format outp "    stdout  = \"~A\"~%" (car outs))
+                      (format outp "    stdout  = \"~A.stdout\"~%" name))
+                  (format outp ")~%")
+                  (newline outp))
+                ))
+            ))
 
 (define (starlark-emit-rule-targets outp pkg) ;;fs-path stanzas)
   (format #t "~A: ~A~%" (blue "starlark-emit-rule-targets") pkg)
@@ -440,6 +602,7 @@
 
                   ((:write-file)
                    (starlark-emit-write-file-target outp stanza))
+
                   ;;FIXME the rest are obsolete
                   ((:with-stdout-to)
                    (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
@@ -447,8 +610,23 @@
                                                             (cdr stanza))
                        ;; else FIXME: deal with universe stuff
                        ))
+                  ((:node)
+                   (starlark-emit-node-target outp pkg-path (cdr stanza)))
+                  ((:diff)
+                   (starlark-emit-diff-target outp pkg-path (cdr stanza)))
+                  ((:executable :exec-libs
+                                :shared-deps :shared-compile-opts
+                                :shared-ppx
+                                :ocamllex :ocamlyacc :menhir
+                                :ocamlc
+                                :library :archive
+                                :ns-archive :ns-library
+                                :alias :install :env)
+                   (values))
                   (else
-                   ;; skip
+                   (error 'FIXME
+                          (format #f "unhandled rule stanza: ~A~%" (car stanza)))
                    )))
               (assoc-val :dune pkg))))
+
 

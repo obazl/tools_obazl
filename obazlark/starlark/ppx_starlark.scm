@@ -112,18 +112,18 @@
           (format outp "~{        \"~A\"~^,\n~}\n" manifest)
           (format outp "    ],\n")))
     (if (assoc :inline-tests ppx-alist)
-        (format outp "    ## @ppx_inline_test//lib/ppx_inline_test~%"))
+        (format outp "    ## @opam_ppx_inline_test//lib/ppx_inline_test~%"))
 
     (format outp ")\n")
 
     ;;;;;;;;;;;;;;;;
     (newline outp)
     (format outp "#############\n")
-    (format outp "ocaml_module(\n")
+    (format outp "ppx_module(\n")
     (format outp "    name       = \"Ppx_driver\",\n")
     (format outp "    struct     = \":ppx_driver.ml\",\n")
     (format outp "    visibility = [\"//visibility:public\"],\n")
-    (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
+    (format outp "    deps       = [\"@opam_ppxlib//lib/ppxlib\"],\n")
     (format outp ")\n")
     (newline outp)
 
@@ -135,7 +135,7 @@
     (format outp "        \"echo \\\"(* GENERATED FILE - DO NOT EDIT *)\\\" > \\\"$@\\\"\",\n")
     (format outp "        \"echo \\\"let () = Ppxlib.Driver.standalone ()\\\" >> \\\"$@\\\"\",\n")
     (format outp "    ])\n")
-    (format outp ")")
+    (format outp ")~%")
     (newline outp)
     ))
 
@@ -377,7 +377,7 @@
       (format outp "    name       = \"Ppx_driver\",\n")
       (format outp "    struct     = \":ppx_driver.ml\",\n")
       (format outp "    visibility = [\"//visibility:public\"],\n")
-      (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
+      (format outp "    deps       = [\"@opam_ppxlib//lib/ppxlib\"],\n")
       (format outp ")\n")
       (newline outp)
 

@@ -24,6 +24,7 @@ cc_binary(
         "//bzl/host:linux": ["-std=gnu11"],
         "//conditions:default": ["-std=c11"],
     }) + [
+        "-std=c11",
         "-Wall",
         "-Wpedantic",
         "-Wno-unused-function",
@@ -37,7 +38,7 @@ cc_binary(
         # "-Iexternal/logc/src",
 
         "-Iexternal/mibl/src",  ## log.h
-        "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
+        "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
 
         "-Iexternal/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
@@ -56,6 +57,7 @@ cc_binary(
         "@mibl//src:mibl",
         # "//vendored/logc",
         "@mibl//external/libinih:inih",
+        "@libs7//src:s7",
     ],
     visibility = ["//visibility:public"]
 )

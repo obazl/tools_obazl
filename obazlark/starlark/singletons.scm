@@ -204,9 +204,10 @@
          (_ (format #t "~A: ~A~%" (bggreen "this-is-main") this-is-main))
 
          (exec-lib? (if-let ((exec-lib (assoc-val :exec-lib stanza-alist)))
-                            (if (> pkg-exec-libs-ct 0)
-                                (format #f "~A_execlib_~A" pkg-name exec-lib)
-                                (format #f "~A_execlib" pkg-name))
+                            (let ((m (normalize-module-name pkg-name)))
+                              (if (> pkg-exec-libs-ct 0)
+                                  (format #f "~A_execlib_~A" m exec-lib)
+                                  (format #f "~A_execlib" m)))
                             #f))
 
          (libname (if privname
@@ -477,20 +478,20 @@
                           (format outp "    opts          = OPTS_~A,\n" opts-tag))
                       (if exec-lib?
                           ;; should not happen?
-                          (format outp "    opts          = OPTS_~A,\n" opts-tag)
+                          (format outp "    opts          = OPTS_~A, ## X0\n" opts-tag)
                           ;; else no main-module, no exec-lib
                           (format outp "    opts          = OPTS_~A,\n" opts-tag)))
                   ;; else no opts
                   (if this-is-main
                       (if exec-lib?
-                          (format outp "X1    opts          = [\"-open\", \"~A_execlib\"],\n" this-is-main)
+                          (format outp "X1    opts          = [\"-open\", \"~A_execlib\"], ## Y0\n" this-is-main)
                           ;; else should not happen
                           ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
                           )
                       ;; no opts, no main-module
                       (if exec-lib?
                           ;; should not happen?
-                          (format outp "X2    opts          = [\"-open\", \"~A_execlib\"],\n" this-is-main)
+                          (format outp "    opts          = [\"-open\", \"~A_execlib\"], ## X1 \n" this-is-main)
                           ;; else no opts, no main-module, no exec-lib
                           )))
                   ;; (if exec-lib?
@@ -576,20 +577,20 @@
                            (format outp "    opts          = OPTS_~A,\n" opts-tag))
                        (if exec-lib?
                            ;; should not happen?
-                           (format outp "    opts          = OPTS_~A,\n" opts-tag)
+                           (format outp "    opts          = OPTS_~A, ## X3\n" opts-tag)
                            ;; else no main-module, no exec-lib
                            (format outp "    opts          = OPTS_~A,\n" opts-tag)))
                   ;; else no opts
                   (if this-is-main
                       (if exec-lib?
-                          (format outp "X4    opts          = [\"-open\", \"~A_execlib\"],\n" this-is-main)
+                          (format outp "    opts          = [\"-open\", \"~A\"],~%" exec-lib?) ;; this-is-main)
                           ;; else should not happen
                           ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
                           )
                       ;; no opts, no main-module
                       (if exec-lib?
                           ;; should not happen?
-                          (format outp "X5    opts          = [\"-open\", \"~A_execlib\"],\n" this-is-main)
+                          (format outp "    opts          = [\"-open\", \"~A\"], ## X4\n" exec-lib?)
                           ;; else no opts, no main-module, no exec-lib
                           )))
 
@@ -804,7 +805,18 @@
                                               (format #t "~A: ~A~%" (cyan "modname") modname)
                                               (format #t "~A: ~A~%" (cyan "huh?") (member modname exec-modules))
                                               (member modname exec-modules))
-                                            #f)))
+                                            ;; else check main module deps in pkg files
+                                            ;; get main module, search for it in pkg-modules, pkg-structs, check the deps
+                                            (let* ((main (assoc-val :main (cdr stanza)))
+                                                   (_ (format #t "~A: ~A~%" (green "checking pkg deps of") main))
+                                                   (mx (if-let ((mdeps (find-module-in-pkg main pkg)))
+                                                               (begin
+                                                                 (format #t "~A: ~A~%" (green "found") mdeps)
+                                                                 (if (list? (cdr mdeps)) ;; e.g. (Foo foo.ml Bar)
+                                                                     (member modname (cddr mdeps))
+                                                                     #f)) ;; e.g. (Foo . fool.ml)
+                                                               #f)))
+                                                  mx))))
 
                                ((:ocamlc) ;; from (rule (action (run %{bin:ocamlc} ...)))
                                 (if-let ((srcs (assoc-val :srcs (cdr stanza))))
@@ -819,7 +831,9 @@
 
                                ((:install :ocamllex :ocamlyacc :menhir
                                           :shared-compile-opts :shared-deps
-                                          :sh-test :testsuite :node :exec-libs) #f)
+                                          :diff :alias :node
+                                          :sh-test :testsuite :exec-libs)
+                                #f)
 
                                ((:rule)
                                 (format #t "~A: ~A~%" (bgred "handle :rule for -emit-modules") stanza)
@@ -852,8 +866,7 @@
              (format #t "~A ~A; excluding\n"
                      (uwhite "No aggregator found for") modname)))
        ))
-   (sort! modules (lambda (a b) (sym<? (car a) (car b)))))
-  (newline outp))
+   (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
 
 (define (-module-record->sigfile module)
   (format #t "-module-record->sigfile ~A\n" module)
@@ -916,7 +929,8 @@
             ;;             "    ppx_args = [~{~S, ~}],\n"
             ;;             (cadr (assoc :args ppx-alist))))
             ))
-      (format outp ")\n\n")
+      (format outp ")~%")
+      (newline outp)
       )))
 
 (define (-emit-sig-freestanding outp sig)
@@ -959,7 +973,8 @@
       ;;           (format outp
       ;;                   "    ppx_args = [~{~S, ~}],\n"
       ;;                   (cadr (assoc :args ppx-alist))))))
-      (format outp ")\n\n")
+      (format outp ")~%")
+      (newline outp)
       )))
 
 (define (-emit-sigs-hdr outp sigs pkg-modules)

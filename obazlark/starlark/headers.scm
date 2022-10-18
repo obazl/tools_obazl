@@ -30,6 +30,8 @@
                                                             accum (cons :write-file accum)))
                                                        (else accum))))
                                                  '() cmd-list)))
+                                        ((:diff) (cons :diff accum))
+                                        ((:node) (cons :js accum))
                                         ((:ocamllex) (cons :ocamllex accum))
                                         ((:ocamlyacc) (cons :ocamlyacc accum))
                                         ((:write-file) (cons :write-file accum))
@@ -81,6 +83,11 @@
   (if (member :copy obazl-rules)
       (begin
         (format outp "load(\"@bazel_skylib//rules:copy_file.bzl\", \"copy_file\")\n")
+        (format outp "\n")))
+
+  (if (member :diff obazl-rules)
+      (begin
+        (format outp "load(\"@bazel_skylib//rules:diff_test.bzl\", \"diff_test\")\n")
         (format outp "\n")))
 
   (if (find-if (lambda (rule)
@@ -166,7 +173,9 @@
             (format outp "     \"ocamlyacc\",\n"))
 
         (if (member :ppx obazl-rules)
-            (format outp "     \"ppx_executable\",\n"))
+            (begin
+              (format outp "     \"ppx_executable\",\n")
+              (format outp "     \"ppx_module\",\n")))
 
         (if (member :cc-deps obazl-rules)
             (format outp "     \"cc_selection_proxy\",\n"))
@@ -541,9 +550,9 @@
                                   (assoc :ocamlopt compile-options))
                               (begin
                                 (format outp " + select({\n")
-                                (format outp "    \"@ocaml//host/target:vm\": ")
+                                (format outp "    \"@ocaml//platforms:vm\": ")
                                 (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                                (format outp "    \"@ocaml//host/target:sys\": ")
+                                (format outp "    \"@ocaml//platforms:sys\": ")
                                 (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
                                 (format outp "    \"//conditions:default\": ")
                                 (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
@@ -560,9 +569,9 @@
                                   (assoc :ocamlopt compile-options))
                               (begin
                                 (format outp "OPTS_~A = select({\n" libname)
-                                (format outp "    \"@ocaml//host/target:vm?\": ")
+                                (format outp "    \"@ocaml//platforms:vm?\": ")
                                 (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                                (format outp "    \"@ocaml//host/target:sys?\": ")
+                                (format outp "    \"@ocaml//platforms:sys?\": ")
                                 (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
                                 (format outp "    \"//conditions:default\": ")
                                 (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
@@ -689,9 +698,9 @@
                                               (assoc :ocamlopt compile-options))
                                           (begin
                                             (format outp " + select({\n")
-                                            (format outp "    \"@ocaml//host/target:vm\": ")
+                                            (format outp "    \"@ocaml//platforms:vm\": ")
                                             (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                                            (format outp "    \"@ocaml//host/target:sys\": ")
+                                            (format outp "    \"@ocaml//platforms:sys\": ")
                                             (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
                                             (format outp "    \"//conditions:default\": ")
                                             (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
@@ -708,9 +717,9 @@
                                               (assoc :ocamlopt compile-options))
                                           (begin
                                             (format outp "OPTS_~A = select({\n" libname)
-                                            (format outp "    \"@ocaml//host/target:vm?\": ")
+                                            (format outp "    \"@ocaml//platforms:vm?\": ")
                                             (format outp "[~{\"~A\"~^,~%~}],~%" (assoc-val :ocamlc compile-options))
-                                            (format outp "    \"@ocaml//host/target:sys?\": ")
+                                            (format outp "    \"@ocaml//platforms:sys?\": ")
                                             (format outp "[~{\"~A\"~^, ~}],~%" (assoc-val :ocamlopt compile-options))
                                             (format outp "    \"//conditions:default\": ")
                                             (format outp "[~{\"~A\"~^, ~}]~%" (assoc-val :ocamlopt compile-options))
@@ -731,7 +740,9 @@
              ((:node) (values))
               ;; (format outp "## :node") (newline outp))
 
-             ((:env :ocamllex :ocamlyacc :tuareg :menhir :sh-test :shared-ppx :alias :exec-libs)
+             ((:env :ocamllex :ocamlyacc :menhir
+                    :tuareg :sh-test :shared-ppx
+                    :diff :alias :exec-libs)
               (values))
 
              (else
