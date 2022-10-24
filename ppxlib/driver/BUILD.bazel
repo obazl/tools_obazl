@@ -1,0 +1,14 @@
+load(
+    "@rules_ocaml//build:rules.bzl",
+    "ppx_module",
+)
+
+ppx_module(
+    name = "standalone",
+    module = "Driver.standalone",
+    struct = "standalone.ml",
+    deps = [
+        "@opam_ppxlib//lib/ppxlib"
+    ],
+    visibility = ["//visibility:public"],
+)
