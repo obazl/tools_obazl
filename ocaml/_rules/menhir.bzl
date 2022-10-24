@@ -59,10 +59,6 @@ def _menhir_impl(ctx):
     inferred_mli_name = paths.replace_extension(base_grammar, ".inferred.mli")
     inferred_mli = ctx.actions.declare_file(pfx + inferred_mli_name)
 
-    if ctx.label.name == "menhir_annot_parser:":
-        print("ctx.files.deps: %s" % ctx.files.deps)
-        fail("puppup")
-
     ################################################################
     # Step 1. 'menhir parser.mly --infer-write-query parser.mock.ml'
     args = ctx.actions.args()
@@ -93,7 +89,6 @@ def _menhir_impl(ctx):
     mock_inputs  = ctx.files.grammars + ctx.files.deps
     mock_outputs = [mock_ml]
 
-    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     ctx.actions.run(
         executable = ctx.file.tool.path,
         arguments = [args],
@@ -107,9 +102,6 @@ def _menhir_impl(ctx):
     ################################################################
     ## 2. 'ocamlc -I path/to/dep -i parser.mock.ml > parser.inferred.mli'
     args = ctx.actions.args()
-
-    # for d in ctx.attr.deps:
-    #     print("MENHIR DEP: %s" % d[DefaultInfo])
 
     if hasattr(ctx.attr, "_ns_resolver"):
         nsrfiles = ctx.files._ns_resolver
@@ -125,7 +117,6 @@ def _menhir_impl(ctx):
 
     # if OcamlNsResolverProvider in ctx.attr._ns_resolver:
     if hasattr(nsrp, "cmi"):
-        # print("NSRP: %s" % nsrp)
         nsrp = ctx.attr._ns_resolver[OcamlNsResolverProvider]
         dep_dirs.append(nsrp.cmi.dirname)
         infer_inputs.append(nsrp.cmi)
@@ -160,7 +151,6 @@ def _menhir_impl(ctx):
 
     args = ctx.actions.args()
 
-    # args.add(mly.path)
     args.add_all([g.path for g in ctx.files.grammars])
 
     if ctx.attr.base:
@@ -170,8 +160,6 @@ def _menhir_impl(ctx):
     if ctx.attr.token:
         gen_parser_inputs.extend(ctx.files.token)
         dep_dirs.extend([d.dirname for d in ctx.files.token])
-
-    # args.add_all(dep_dirs, before_each="-I", uniquify = True)
 
     if ctx.attr.token:
         args.add("--external-tokens",
@@ -194,21 +182,6 @@ def _menhir_impl(ctx):
             src = ctx.outputs.outs[1].short_path,
             dst=ctx.outputs.outs[1].dirname),
     ])
-
-    # cmd = " ".join([
-    #     ctx.file.tool.path,
-    #     mly.path,
-    #     "--table", "--explain",
-    #     extern,
-    #     "--base", ctx.attr.base,
-    #     "--infer-read-reply", inferred_mli.path + ";",
-    #     "cp {src} {dst};".format(
-    #         src= ctx.outputs.outs[0].short_path,
-    #         dst=ctx.outputs.outs[0].dirname),
-    #     "cp {src} {dst};".format(
-    #         src = ctx.outputs.outs[1].short_path,
-    #         dst=ctx.outputs.outs[1].dirname),
-    # ])
 
     ## WARNING: menhir writes its output to ${PWD} (?), and does not
     ## seem to support any kind of -outdir option to redirect output.
