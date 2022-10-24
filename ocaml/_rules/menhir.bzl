@@ -36,7 +36,7 @@ def _menhir_impl(ctx):
             print("nsrp.cmi: %s" % nsrp.cmi)
             print("nsrp.cmi.struct: %s" % nsrp.struct)
             print("nsrp.cmi.ofile: %s" % nsrp.ofile)
-            # print("nsop: %s" % nsop)
+            print("nsop: %s" % nsop)
 
     tc = ctx.toolchains["@rules_ocaml//toolchain/type:std"]
 
@@ -58,6 +58,10 @@ def _menhir_impl(ctx):
 
     inferred_mli_name = paths.replace_extension(base_grammar, ".inferred.mli")
     inferred_mli = ctx.actions.declare_file(pfx + inferred_mli_name)
+
+    if ctx.label.name == "menhir_annot_parser:":
+        print("ctx.files.deps: %s" % ctx.files.deps)
+        fail("puppup")
 
     ################################################################
     # Step 1. 'menhir parser.mly --infer-write-query parser.mock.ml'
@@ -86,14 +90,15 @@ def _menhir_impl(ctx):
 
     args.add("--infer-write-query", mock_ml.path)
 
-    action_inputs  = ctx.files.grammars
-    action_outputs = [mock_ml]
+    mock_inputs  = ctx.files.grammars + ctx.files.deps
+    mock_outputs = [mock_ml]
 
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     ctx.actions.run(
         executable = ctx.file.tool.path,
         arguments = [args],
-        inputs  = action_inputs,
-        outputs = action_outputs,
+        inputs  = mock_inputs,
+        outputs = mock_outputs,
         tools = [ctx.file.tool],
         mnemonic = "MenhirMock",
         progress_message = "menhir: generating mock",
@@ -106,12 +111,16 @@ def _menhir_impl(ctx):
     # for d in ctx.attr.deps:
     #     print("MENHIR DEP: %s" % d[DefaultInfo])
 
-    action_inputs = [mock_ml] + ctx.files.deps
-    action_outputs = [inferred_mli]
+    if hasattr(ctx.attr, "_ns_resolver"):
+        nsrfiles = ctx.files._ns_resolver
+
+    infer_inputs = mock_outputs + nsrfiles + [mock_ml] + ctx.files.deps
+
+    infer_outputs = [inferred_mli]
 
     dep_dirs = [d.dirname for d in ctx.files.deps]
     if ctx.attr.token:
-        action_inputs.extend(ctx.files.token)
+        infer_inputs.extend(ctx.files.token)
         dep_dirs.extend([d.dirname for d in ctx.files.token])
 
     # if OcamlNsResolverProvider in ctx.attr._ns_resolver:
@@ -119,10 +128,10 @@ def _menhir_impl(ctx):
         # print("NSRP: %s" % nsrp)
         nsrp = ctx.attr._ns_resolver[OcamlNsResolverProvider]
         dep_dirs.append(nsrp.cmi.dirname)
-        action_inputs.append(nsrp.cmi)
-        action_inputs.append(nsrp.struct)
+        infer_inputs.append(nsrp.cmi)
+        infer_inputs.append(nsrp.struct)
         if nsrp.ofile:
-            action_inputs.append(nsrp.ofile)
+            infer_inputs.append(nsrp.ofile)
         args.add("-open", nsrp.module_name)
 
     args.add_all(dep_dirs, before_each="-I", uniquify = True)
@@ -134,8 +143,8 @@ def _menhir_impl(ctx):
 
     ctx.actions.run_shell(
         arguments = [args],
-        inputs  = action_inputs,
-        outputs = action_outputs,
+        inputs  = infer_inputs,
+        outputs = infer_outputs,
         tools   = [tc.compiler],
         command = tc.compiler.path + " $@ > " + inferred_mli.path,
         mnemonic = "ExtractMli",
@@ -146,8 +155,8 @@ def _menhir_impl(ctx):
     ## 3. emit parser.ml, parser.mli
     ## 'menhir parser.mly --infer-read-reply parser.inferred.mli'
 
-    action_inputs  = ctx.files.grammars + [inferred_mli]
-    action_outputs = ctx.outputs.outs
+    gen_parser_inputs  = infer_outputs + ctx.files.grammars
+    gen_parser_outputs = ctx.outputs.outs
 
     args = ctx.actions.args()
 
@@ -159,7 +168,7 @@ def _menhir_impl(ctx):
 
     dep_dirs = [d.dirname for d in ctx.files.deps]
     if ctx.attr.token:
-        action_inputs.extend(ctx.files.token)
+        gen_parser_inputs.extend(ctx.files.token)
         dep_dirs.extend([d.dirname for d in ctx.files.token])
 
     # args.add_all(dep_dirs, before_each="-I", uniquify = True)
@@ -207,8 +216,8 @@ def _menhir_impl(ctx):
     ## the output to that directory.
     ctx.actions.run_shell(
         arguments = [args],
-        inputs  = action_inputs,
-        outputs = action_outputs,
+        inputs  = gen_parser_inputs,
+        outputs = gen_parser_outputs,
         tools = [ctx.file.tool],
         command = cmd,
         mnemonic = "EmitParser",
