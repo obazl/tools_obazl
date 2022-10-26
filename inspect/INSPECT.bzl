@@ -100,6 +100,7 @@ def _write_providers_file(ctx, tgt, text):
 
     if PpxCodepsProvider in tgt:
         provider = tgt[PpxCodepsProvider]
+        text = text + "\n"
         text = text + CCCYN + "PpxCodepsProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
