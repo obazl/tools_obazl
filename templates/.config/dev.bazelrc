@@ -4,8 +4,15 @@ common --override_repository=obazl=/Users/gar/obazl/tools_obazl
 common --override_repository=mibl=/Users/gar/obazl/mibl
 common --override_repository=libs7=/Users/gar/obazl/libs7
 
+common --override_repository=rules_jsoo=/Users/gar/obazl/rules_jsoo
+
+common:show --subcommands=pretty_print
+common:show --verbose_failures
+
 common:dbg --subcommands=pretty_print
 common:dbg --verbose_failures
+build:dbg --compilation_mode=dbg
+test:dbg --test_output=errors
 build:dbgv --@rules_ocaml//cfg/verbose
 
 build --incompatible_enable_cc_toolchain_resolution

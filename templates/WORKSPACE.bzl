@@ -40,6 +40,14 @@ def fetch_repos():
         sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
     )
 
+    # maybe(
+    #     http_archive,
+    #     name = "rules_jsoo",
+    #     url = "https://github.com/obazl/rules_jsoo..."
+    #     sha256 =
+    #     strip_prefix =
+    # )
+
     maybe(
         git_repository,
         name = "libs7",
