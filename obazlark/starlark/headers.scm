@@ -122,11 +122,15 @@
 
         ;; 'library' with wrapped true:
         (if (member :ns-archive obazl-rules)
-            (format outp "     \"ocaml_ns_archive\",\n"))
+            (begin
+              (format outp "     \"ocaml_archive\",\n")
+              (format outp "     \"ocaml_ns_archive\",\n")))
 
         (if (or (member :ns-library obazl-rules)
                 (member :executable obazl-rules))
-              (format outp "     \"ocaml_ns_library\",\n"))
+            (begin
+              (format outp "     \"ocaml_library\",\n")
+              (format outp "     \"ocaml_ns_library\",\n")))
 
         (if (not *ns-topdown*)
             (format outp "     \"ocaml_ns_resolver\",\n"))
@@ -463,7 +467,9 @@
              ((:archive :library :ns-archive :ns-library)
               (let* ((libname (string-upcase
                                ;; privname or pubname?
-                               (stringify (assoc-val :privname (cdr stanza)))))
+                               (stringify (if-let ((privname (assoc-val :privname (cdr stanza))))
+                                                  privname
+                                                  (assoc-val :pubname (cdr stanza))))))
 
                      ;; compile-options is an alist,
                      ;; keys :standard, :ocamlc, :ocamlopt
@@ -741,6 +747,7 @@
               ;; (format outp "## :node") (newline outp))
 
              ((:env :ocamllex :ocamlyacc :menhir
+                    :cppo
                     :tuareg :sh-test :shared-ppx
                     :diff :alias :exec-libs)
               (values))

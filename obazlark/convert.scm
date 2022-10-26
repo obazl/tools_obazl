@@ -109,6 +109,7 @@
          (mpkgs (-miblize :@))
          (mpkgs (add-filegroups-to-pkgs :@))
          (mpkgs (normalize-manifests! :@))
+         (mpkgs (normalize-rule-deps! :@))
          )
 
     (miblarkize :@)
@@ -123,9 +124,10 @@
           (handle-shared-opts :@)
           ))
 
-    (ws->starlark :@)
+    (if *emit-starlark*
+        (ws->starlark :@))
 
-    ;; (ws->opam-bundles :@)
+    (ws->opam-bundles :@)
 
     (debug-print-pkgs :@)
 

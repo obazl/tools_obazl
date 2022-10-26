@@ -374,6 +374,125 @@
     ;;       (format outp "## )\n")))
     ))
 
+;; (:cppo (:deps
+;;         (:out (:pkg . "lib") (:tgt . "yojson.cppo.mli"))
+;;         (:monomorphic.mli (:pkg . "lib") (:tgt . "monomorphic.mli")) ... )
+;;        (:outputs (:yojson.mli (:pkg . "lib") (:tgt . "yojson.mli")))
+;;        (:actions (:cmd (:tool :cppo) (:args :out "-o" :outputs))))
+(define (starlark-emit-cppo-target outp stanza pkg)
+  (format #t "~A: ~A\n" (blue "starlark-emit-cppo-target") stanza)
+  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+         (_ (format #t "~A: ~A~%" (yellow "pkg path") pkg-path))
+         (outputs (assoc-val :outputs (cdr stanza)))
+         (_ (format #t "~A: ~A~%" (yellow "outputs") outputs))
+         (name (assoc-val :tgt (cdr (outputs 0))))
+         (_ (format #t "~A: ~A~%" (yellow "name") name))
+         (outputs (map (lambda (output)
+                        (format #t "~A: ~A~%" (yellow "output") output)
+                        (let ((tgt-path (assoc-val :pkg (cdr output)))
+                              (tgt (assoc-val :tgt (cdr output))))
+                          (if (equal? pkg-path tgt-path)
+                              (format #f "~A" tgt)
+                              (format #f "~A/~A" tgt-path tgt))))
+                       outputs))
+         (_ (format #t "~A: ~A~%" (yellow "outputs") outputs))
+         (cmd-outputs (map (lambda (out) (format #f "$(location ~A)" out))
+                           outputs))
+         (_ (format #t "~A: ~A~%" (yellow "cmd-outputs") cmd-outputs))
+         (deps (assoc-val :deps (cdr stanza)))
+         (_ (format #t "~A: ~A~%" (yellow "deps") deps))
+         (srcs (map (lambda (src)
+                      (format #t "~A: ~A~%" (yellow "src") src)
+                      (let ((tgt-path (assoc-val :pkg (cdr src)))
+                            (tgt (assoc-val :tgt (cdr src))))
+                        (if (equal? pkg-path tgt-path)
+                            (format #f "~A" tgt)
+                            (format #f "~A/~A" tgt-path tgt))))
+                      deps))
+         (include-dirs (remove-duplicates
+                        (map (lambda (src)
+                               (let ((dn (dirname src)))
+                                 (if (string=? "./" dn)
+                                     pkg-path
+                                     dn)))
+                             srcs)))
+         (_ (format #t "~A: ~A~%" (uyellow "include") include-dirs))
+         (args (assoc-in '(:actions :cmd :args) (cdr stanza)))
+         (_ (format #t "~A: ~A~%" (yellow "args") args))
+         (args (flatten
+                (map (lambda (arg)
+                       (format #t "~A: ~A~%" (yellow "arg") arg)
+                       (if-let ((a (assoc-val arg deps)))
+                               (let ((_ (format #t "~A: ~A~%" (yellow "A") a))
+                                     (tgt-path (assoc-val :pkg a))
+                                     (tgt (assoc-val :tgt (cdr a))))
+                                 (if (equal? pkg-path tgt-path)
+                                     (format #f "$(location ~A)" tgt)
+                                     (format #f "$(location ~A/~A)"
+                                             tgt-path tgt)))
+                               (if (equal? :outputs arg)
+                                   cmd-outputs
+                                   arg)))
+                     (cdr args)))))
+    (format #t "~A: ~A~%" (yellow "args") args)
+    ;; (error 'x "x")
+    ;; (rule
+    ;;  (targets yojson.mli)
+    ;;  (deps
+    ;;    (:out yojson.cppo.mli)
+    ;;    monomorphic.mli
+    ;;  ...
+    ;;  (action (run cppo %{out} -o %{targets})))
+
+    (format outp "###########\n")
+    (format outp "genrule(\n")
+    (format outp "    outs  = [\n")
+    (format outp "~{        \"~A\"~^,~%~}~%" outputs)
+    (format outp "    ],\n")
+
+    (format outp "    name  = \"__~A__\",\n" name)
+
+    (format outp "    srcs  = [~%")
+    (format outp "~{        \"~A\"~^,~%~}~%" srcs)
+    (format outp "    ],~%")
+
+    (format outp "    cmd   = \" \".join([~%")
+    (format outp "        \"$(execpath @opam_cppo//bin:cppo)\",~%")
+    (format outp "~{        \"-I\", \"~A\"~^,~%~},~%" include-dirs)
+    ;; include GENDIR, in case src files are generated (e.g. by ocamllex)
+    (format outp "~{        \"-I\", \"$(GENDIR)/~A\"~^,~%~},~%" include-dirs)
+    (format outp "~{        \"~A\"~^,~%~}~%" args)
+   (format outp "    ]),~%")
+
+    ;; (if (truthy? srcs)
+    ;;     (if bash-cmd?
+    ;;         (emit-bash-srcs outp srcs pkg-path stanza)
+    ;;         (emit-bash-srcs outp srcs pkg-path stanza)
+    ;;         ;; (begin
+    ;;         ;;   (format #t "~A: ~A~%" (red "SrcS") srcs)
+    ;;         ;;   (format outp "    SRCS  = [\n")
+    ;;         ;;   (format outp "~{        \"~A\"~^,\n~}\n" srcs)
+    ;;         ;;   (format outp "    ],\n"))
+    ;;         ))
+
+    ;; (if bash-cmd?
+    ;;     (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
+    ;;     (emit-shell-cmd outp tool
+    ;;                     with-stdout?
+    ;;                     srcs
+    ;;                     deps ;; (dissoc '(::tools) deps)
+    ;;                     action
+    ;;                     outputs ;; outs
+    ;;                     pkg-path
+    ;;                     stanza))
+
+    (format outp "    exec_tools = [\"@opam_cppo//bin:cppo\"]\n")
+
+    (format outp ")")
+    (newline outp)
+    (newline outp)
+    ))
+
 (define (starlark-emit-rule-target outp pkg-path stanza)
   (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza)
 
@@ -428,16 +547,16 @@
                            (if (keyword? (caar deps))
                                (keyword->symbol (caar deps))
                                (caar deps)
-                                         )))))
+                               )))))
          )
 
     ;; progn: list of actions. should be just one?
     (for-each
      (lambda (cmd)
        (if (eq? :cmd (car cmd))
-           (format #t "GENRULE ACTION: ~A~%" cmd)
+           (format #t "GENRULE ACTION (B): ~A~%" cmd)
            (if (eq? :stdout (car cmd))
-               (format #t "GENRULE STDOUT: ~A~%" cmd)
+               (format #t "GENRULE STDOUT (B): ~A~%" cmd)
                (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
      action)
 
@@ -445,8 +564,8 @@
             (begin
               (format outp "## omitted:\n")
               (format outp "## (chdir ~A (run ~A ...))\n\n"
-                    (cadr ctx)
-                    (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
+                      (cadr ctx)
+                      (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
             ;; else
             (begin
               (format #t "  outs: ~A~%" outs)
@@ -462,8 +581,8 @@
 
                     (format outp ")~%")
                     (newline outp))
-                    )))
-            ))
+                  )))
+    ))
 
 (define (-node-stanza->tool pkg-path args deps)
   (format #t "~A: ~A~%" (ublue "-node-stanza->tool") deps)
@@ -533,9 +652,9 @@
     ;; (for-each
     ;;  (lambda (cmd)
     ;;    (if (eq? :cmd (car cmd))
-    ;;        (format #t "GENRULE ACTION: ~A~%" cmd)
+    ;;        (format #t "GENRULE ACTION (C): ~A~%" cmd)
     ;;        (if (eq? :stdout (car cmd))
-    ;;            (format #t "GENRULE STDOUT: ~A~%" cmd)
+    ;;            (format #t "GENRULE STDOUT (C): ~A~%" cmd)
     ;;            (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
     ;;  action)
 
@@ -543,8 +662,8 @@
             (begin
               (format outp "## omitted:\n")
               (format outp "## (chdir ~A (run ~A ...))\n\n"
-                    (cadr ctx)
-                    (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
+                      (cadr ctx)
+                      (cadr (assoc-in '(:actions :cmd :tool) stanza-alist))))
             ;; else
             (if (list? stanza-alist)
                 (begin
@@ -560,7 +679,7 @@
                   (format outp ")~%")
                   (newline outp))
                 ))
-            ))
+    ))
 
 (define (starlark-emit-rule-targets outp pkg) ;;fs-path stanzas)
   (format #t "~A: ~A~%" (blue "starlark-emit-rule-targets") pkg)
@@ -600,6 +719,9 @@
                                    cmd-list)
                          (starlark-emit-rule-target outp pkg-path (cdr stanza)))))
 
+                  ((:cppo)
+                   (starlark-emit-cppo-target outp stanza pkg))
+
                   ((:write-file)
                    (starlark-emit-write-file-target outp stanza))
 
@@ -615,6 +737,7 @@
                   ((:diff)
                    (starlark-emit-diff-target outp pkg-path (cdr stanza)))
                   ((:executable :exec-libs
+                                :test
                                 :shared-deps :shared-compile-opts
                                 :shared-ppx
                                 :ocamllex :ocamlyacc :menhir

@@ -13,9 +13,10 @@
   (format outp "    ]~%")
   (format outp ")~%"))
 
-(define (starlark-emit-test-target outp pkg stanza)
+(define (starlark-emit-test-target outp ws pkg stanza)
   (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza)
-  (starlark-emit-executable-target outp :test pkg stanza))
+  (starlark-emit-executable-target outp ws :test pkg stanza (assoc :exec-libs (cdr stanza))))
+  ;;(starlark-emit-executable-target outp :test pkg stanza)
 
 (define  (-decode-sh-test-deps deps ws pkg stanza)
   (format #t "~A: ~A~%" (ublue "-decode-sh-test-deps") deps)
@@ -318,7 +319,7 @@
                          (format outp "##############################\n")
                          (format outp "####  Test Targets  ####\n")
                          (set! hdr-flag #f)))
-                   (starlark-emit-test-target outp pkg stanza))
+                   (starlark-emit-test-target outp ws pkg stanza))
 
                   ((:tests)
                    (error 'bad-arg "unexpected :tests stanza")

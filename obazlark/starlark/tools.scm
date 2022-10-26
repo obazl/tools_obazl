@@ -7,6 +7,7 @@
     ((::diff) 'diff)
     ((::ocamlc) 'ocamlc)
     ((::node) 'node)
+
     (else
      ;; not a (builtin) shell tool
      (let* ((tool-deps (if-let ((tds (assoc-val ::tools deps)))

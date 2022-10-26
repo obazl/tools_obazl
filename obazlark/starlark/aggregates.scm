@@ -27,12 +27,24 @@
   (begin
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
     (format #t " linkpopts: ~A\n" link-opts)
-    (format outp "#################\n")
+    (format outp "#################~%")
     (if (eq? kind :ns-archive)
-        (format outp "ocaml_ns_archive(\n")
-        (format outp "ocaml_ns_library(\n"))
+        (if (and (= (length submodules) 1)
+                 (equal? (normalize-module-name ns) (submodules 0)))
+            ;;FIXME: can't do this, clients may depend on ns
+            ;; (format outp "ocaml_archive(  ##\n")
+            (format outp "ocaml_ns_archive(  #0\n")
+            (format outp "ocaml_ns_archive(  #1\n"))
+        (if (and (= (length submodules) 1)
+                 (equal? ns (submodules 0)))
+            ;; (format outp "ocaml_library(  ##\n")
+            (format outp "ocaml_ns_library(  #2\n")
+            (format outp "ocaml_ns_library(  #3\n")))
     (format outp "    name       = \"~A\",\n" ns)
-    (format outp "    ns         = \"~A\",\n" privname)
+    ;; (if (or (> (length submodules) 1)
+    ;;         (not (equal? (normalize-module-name ns) (submodules 0))))
+    (if ns
+        (format outp "    ns         = \"~A\",\n" ns)) ;; privname))
     (format outp "    manifest = [\n")
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],")
@@ -65,8 +77,8 @@
   (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind)
   (format outp "#################\n")
   (if (eq? kind :ns-archive)
-      (format outp "ocaml_archive(\n")
-      (format outp "ocaml_library(\n"))
+      (format outp "ocaml_archive( #4\n")
+      (format outp "ocaml_library( #5\n"))
   (format outp "    name       = \"~A\",\n" pubname)
   (format outp "    manifest   = [~%")
   (format outp "~{        \":~A\"~^,~%~}~%" submodules)
@@ -91,18 +103,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-target outp stanza) ;; typ fs-path stanza)
-  (format #t "~A: ~A\n" (blue "starlark-emit-aggregate-target") stanza)
+  (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza)
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
          (ns (assoc-val :ns stanza-alist))
+         (_ (format #t "~A: ~A~%" (blue "ns") ns))
          (privname (assoc-val :privname stanza-alist))
          (pubname (if ns ns
                       (if-let ((pubname (assoc-val :pubname stanza-alist)))
                               pubname
                               privname)))
-         (modname (normalize-module-name privname))
+         (tgtname (if privname privname pubname))
+         (modname (normalize-module-name (if privname privname pubname)))
          (_ (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname))
-         (libname (string-upcase (stringify privname)))
+         (libname (string-upcase (stringify modname)))
 
          (link-opts (if-let ((opts (assoc-val :link-opts (cdr stanza))))
                        opts '()))
@@ -132,19 +146,20 @@
 
     (case kind
       ((:ns-archive :ns-library)
+       (format #t "~A: ~A~%" (ured "NS") ns)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind ns privname submodules link-opts cc-deps)
+           (-emit-topdown-aggregate outp kind ns tgtname submodules link-opts cc-deps)
            ;; aggregated bottomup, needs archive or lib w/o ns
-           (-emit-bottomup-aggregate outp kind ns privname submodules link-opts cc-deps)))
+           (-emit-bottomup-aggregate outp kind ns tgtname submodules link-opts cc-deps)))
 
       ((:archive :library)
        (begin
          (format #t "EMITTING NON-NS AGGREGATE: ~A\n" kind)
          (format outp "##############\n")
          (if (eq? kind :library)
-             (format outp "ocaml_library(\n")
-             (format outp "ocaml_archive(\n"))
-         (format outp "    name     = \"~A\",\n" privname)
+             (format outp "ocaml_library( #6\n")
+             (format outp "ocaml_archive( #7\n"))
+         (format outp "    name     = \"~A\",\n" tgtname)
          ;; (format outp "    manifest = [~{\":~A\"~^, ~}],\n" submodules)
          (format outp "    manifest   = [~%")
          (format outp "~{        \":~A\"~^,~%~}~%" submodules)

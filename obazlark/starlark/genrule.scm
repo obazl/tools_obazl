@@ -99,9 +99,9 @@
     (for-each
      (lambda (cmd)
        (if (eq? :cmd (car cmd))
-           (format #t "GENRULE ACTION: ~A~%" cmd)
+           (format #t "GENRULE ACTION (A): ~A~%" cmd)
            (if (eq? :stdout (car cmd))
-               (format #t "GENRULE STDOUT: ~A~%" cmd)
+               (format #t "GENRULE STDOUT (A): ~A~%" cmd)
                (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
      action)
 

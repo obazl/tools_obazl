@@ -417,7 +417,7 @@
               (format #t "emitting module (proper): ~A: ~A\n" modname srcs)
 
               (format #t "## this-is-main ~A~%" this-is-main)
-              (format outp "## this-is-main ~A~%" this-is-main)
+              ;; (format outp "## this-is-main ~A~%" this-is-main)
               (if this-is-main
                   (format outp "ocaml_exec_module(\n")
                   (format outp "ocaml_module(\n"))
@@ -518,7 +518,7 @@
               (if ppx-alist
                   (begin
                     (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\",\n"
+                            "    ppx           = \"~A:ppx_~A.exe\", #X2\n"
                             ppx-pkg ppx-id)
                     ;; ppx-name)
                     ;; (cadr (assoc :name ppx-alist)))
@@ -619,14 +619,16 @@
                (if ppx-alist
                    (begin
                      (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id) ;; ppx-name)
+                            "    ppx           = \"~A:ppx_~A.exe\", #X1\n" ppx-pkg ppx-id) ;; ppx-name)
                             ;; "    ppx           = \":~A\",\n" ppx-name)
-                     (if (not
-                          (equal? :all (cadr (assoc :scope
-                                                    ppx-alist))))
+                     (if ppx-args
+                     ;; (if (not  ## why?
+                     ;;      (equal? :all (cadr (assoc :scope
+                     ;;                                ppx-alist))))
                          (format outp
-                                 "    ppx_args = [~{~S, ~}],\n"
-                                 (cadr (assoc :args ppx-alist))))))
+                                 "    ppx_args      = [~{~S, ~}],\n" ppx-args
+                                 ;;(cadr (assoc :args ppx-alist))
+                                 ))))
 
                (if exec-lib?
                   (format outp "    visibility    = [\"//visibility:private\"]~%"))
@@ -793,18 +795,23 @@
                                 (format #t "~A: ~A for ~A~%" (uwhite "checking :executable") stanza (bgcyan modname))
                                 (if (equal? modname (assoc-val :main (cdr stanza)))
                                     #t
-                                    (if-let ((exec-lib (assoc-val :exec-lib (cdr stanza))))
-                                            (let* ((pkg-exec-libs (assoc-in '(:dune :exec-libs) pkg))
-                                                   (_ (format #t "~A: ~A~%" (ucyan "pkg-exec-libs") pkg-exec-libs))
-                                                   (exec-lib-alist (assoc-val exec-lib (cdr pkg-exec-libs)))
-                                                   (_ (format #t "~A: ~A~%" (ucyan "exec-lib alist") exec-lib-alist))
-                                                   (exec-modules (assoc-val :modules exec-lib-alist)))
-                                              (format #t "~A: ~A~%" (cyan "stanza exec-lib") exec-lib)
-                                              (format #t "~A: ~A~%" (cyan "pkg-exec-libs") pkg-exec-libs)
-                                              (format #t "~A: ~A~%" (cyan "exec-modules") exec-modules)
-                                              (format #t "~A: ~A~%" (cyan "modname") modname)
-                                              (format #t "~A: ~A~%" (cyan "huh?") (member modname exec-modules))
-                                              (member modname exec-modules))
+                                    (if-let ((exec-libs (assoc-val :exec-libs (cdr stanza))))
+                                            (member modname exec-libs)
+                                            ;; (let* ((_ (format #t "~A: ~A~%" (ucyan "stanza-exec-libs") exec-libs))
+                                            ;;        (pkg-exec-libs (assoc-in '(:dune :exec-libs) pkg))
+                                            ;;        ;; FIXME: pkg exec-libs?  meaning shared across stanzas?
+                                            ;;        (_ (format #t "~A: ~A~%" (ucyan "pkg") pkg))
+                                            ;;        (_ (format #t "~A: ~A~%" (ucyan "pkg-exec-libs") pkg-exec-libs))
+                                            ;;        (exec-libs-alist (assoc-val exec-libs (cdr pkg-exec-libs)))
+                                            ;;        (_ (format #t "~A: ~A~%" (ucyan "exec-libs alist") exec-libs-alist))
+                                            ;;        (exec-modules (assoc-val :modules exec-libs-alist)))
+                                            ;;   (format #t "~A: ~A~%" (cyan "stanza exec-libs") exec-libs)
+                                            ;;   (format #t "~A: ~A~%" (cyan "pkg-exec-libs") pkg-exec-libs)
+                                            ;;   (format #t "~A: ~A~%" (cyan "exec-modules") exec-modules)
+                                            ;;   (format #t "~A: ~A~%" (cyan "modname") modname)
+                                            ;;   (format #t "~A: ~A~%" (cyan "huh?") (member modname exec-modules))
+                                            ;;   (member modname exec-modules))
+
                                             ;; else check main module deps in pkg files
                                             ;; get main module, search for it in pkg-modules, pkg-structs, check the deps
                                             (let* ((main (assoc-val :main (cdr stanza)))
@@ -830,6 +837,7 @@
                                                    srcs))))
 
                                ((:install :ocamllex :ocamlyacc :menhir
+                                          :cppo
                                           :shared-compile-opts :shared-deps
                                           :diff :alias :node
                                           :sh-test :testsuite :exec-libs)
@@ -914,7 +922,7 @@
       (if ppx-alist
           (begin
             (format outp
-                    "    ppx           = \"~A:ppx_~A.exe\",\n"
+                    "    ppx           = \"~A:ppx_~A.exe\", #X0 \n"
                     ppx-pkg ppx-id) ;; ppx-name)
                     ;; "    ppx           = \":~A\",\n" ppx-name)
                     ;; (cadr (assoc :name ppx-alist)))
