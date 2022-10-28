@@ -210,6 +210,8 @@ def _inspect_impl(ctx):
 
     text = CCGRN + "Providers for " + str(ctx.attr.obj[0].label) + CCRESET + "\n"
 
+    tmpfile = None
+
     if ctx.label.package == "inspect":
         if ctx.label.name == "import":
             is_import = True
@@ -222,6 +224,17 @@ def _inspect_impl(ctx):
                 tool = "echo '{f}:'; cat".format(f=tmpfile.path)
             else:
                 fail("Target is not ocaml_import")
+
+        if ctx.label.name == "objinfo":
+            providers = True
+            print("ctx.attr.obj: %s" % ctx.attr.obj)
+            tool = ctx.expand_location(
+                "$(execpath @ocaml//bin:ocamlobjinfo)",
+                targets = [ctx.attr._tool],
+                ## short_paths = True # unexpected kw argument error
+            )
+            objs = [ctx.attr.obj[0][DefaultInfo].files.to_list()[0]]
+
         if ctx.label.name == "providers":
             providers = True
             print("ctx.attr.obj: %s" % ctx.attr.obj)
@@ -245,20 +258,25 @@ def _inspect_impl(ctx):
                 ppx = True
             else:
                 fail("Target does not carry ppx codeps")
+
         elif ctx.label.name == "ppx":
             print("DefaultInfo: %s" % ctx.attr.obj[0][DefaultInfo])
             objs = ctx.attr.obj[0][DefaultInfo].files.to_list()
             tool = "echo '{f}:'; cat".format(f=objs[0].path)
             print("TOOL %s" % tool)
+
         elif ctx.label.name == "sig":
             tool = ctx.executable._tool.path
             objs = ctx.attr.obj[OutputGroupInfo].cmi.to_list()
+
         elif ctx.label.name == "struct":
             tool = ctx.executable._tool.path
-            if OcamlModuleMarker in ctx.attr.obj:
-                objs = ctx.attr.obj[DefaultInfo].files.to_list()
+            if OcamlModuleMarker in ctx.attr.obj[0]:
+                objs = ctx.attr.obj[0][DefaultInfo].files.to_list()
             else:
+                print("ctx.attr.obj: %s" % ctx.attr.obj[0][DefaultInfo])
                 fail("No struct for inspect target")
+
         elif ctx.label.name == "src":
             if OcamlLibraryMarker in ctx.attr.obj:
                 fail("No srcfile in ocaml_library target: %s" % ctx.attr.obj)
@@ -281,7 +299,7 @@ def _inspect_impl(ctx):
         else:
             fail("No struct for sig target")
 
-    if ppx or is_import or providers:
+    if tmpfile and (ppx or is_import or providers):
         out = ctx.actions.declare_file("inspect.sh")
         runfiles = ctx.runfiles(
             files = [tmpfile]
@@ -293,10 +311,11 @@ def _inspect_impl(ctx):
     else:
         out = ctx.actions.declare_file("inspect.sh")
         runfiles = ctx.runfiles(
-            files = objs # + tool
+            files = objs  + ctx.attr._tool.files.to_list()
         )
         cmd = " ".join([
-            "{tool} `pwd`/{obj}".format(
+            "echo $(PWD);",
+            "$(PWD)/{tool} `pwd`/{obj}".format(
                 tool = tool, obj = objs[0].short_path),
         ])
         # print("CMD: %s" % cmd)

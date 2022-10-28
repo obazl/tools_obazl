@@ -23,6 +23,11 @@ inspect(
 )
 
 inspect(
+    name = "objinfo",
+    obj = "//tgt",
+)
+
+inspect(
     name = "ppx",
     obj = "//tgt",
     ##FIXME: support stop on target
