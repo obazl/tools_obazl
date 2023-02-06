@@ -186,7 +186,7 @@ EXPORT void runfiles_delete(struct runfiles_s *runfiles)
 /*     UT_string *runfile; */
 /*     utstring_new(runfile); */
 /*     utstring_printf(runfile, */
-/*                     "%s/external/opam/man/%s/@opam_%s.1", */
+/*                     "%s/external/opam/man/%s/@%s.1", */
 /*                     runfiles_root, */
 /*                     section, */
 /*                     manpage); */

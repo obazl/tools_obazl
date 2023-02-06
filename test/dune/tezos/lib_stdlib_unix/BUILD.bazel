@@ -1,6 +1,7 @@
 load("@rules_ocaml//build:rules.bzl",
      "ocaml_ns_archive",
      "ocaml_module",
+     "ocaml_signature",
 )
 
 TEZOS_STDLIB_UNIX_DEPS = [

@@ -140,6 +140,7 @@
                              (error 'fixme
                                     (format #f "~A: ~A~%"
                                             (red "kw arg unresolved") arg))))))
+                  ((number? arg) (format #f "~A" arg))
 
                   ((string? arg) ;; e.g. a file literal
                    (format #t "arg: string literal\n")
@@ -457,7 +458,7 @@
     (format outp "    ],~%")
 
     (format outp "    cmd   = \" \".join([~%")
-    (format outp "        \"$(execpath @opam_cppo//bin:cppo)\",~%")
+    (format outp "        \"$(execpath @cppo//bin:cppo)\",~%")
     (format outp "~{        \"-I\", \"~A\"~^,~%~},~%" include-dirs)
     ;; include GENDIR, in case src files are generated (e.g. by ocamllex)
     (format outp "~{        \"-I\", \"$(GENDIR)/~A\"~^,~%~},~%" include-dirs)
@@ -486,7 +487,7 @@
     ;;                     pkg-path
     ;;                     stanza))
 
-    (format outp "    exec_tools = [\"@opam_cppo//bin:cppo\"]\n")
+    (format outp "    exec_tools = [\"@cppo//bin:cppo\"]\n")
 
     (format outp ")")
     (newline outp)

@@ -6,11 +6,24 @@
          ;; (_ (format #t "stanzas: ~A\n" stanzas))
          (-rules (fold (lambda (stanza accum)
                          (format #t "  ~A: ~A\n" (blue "stanza") stanza)
+                         (format #t "  ~A: ~A\n" (blue "accum") accum)
                          (let* ((stanza-alist (cdr stanza))
                                 (_ (format #t "~A: ~A~%" (yellow "stanza-alist") stanza-alist))
                                 (dune-rule (car stanza))
-                                (_ (format #t "~A: ~A~%" (yellow "dune-rule") dune-rule))
+                                (_ (format #t "~A: ~A~%" (yellow "Dune-Rule") dune-rule))
                                 (rule (case dune-rule
+                                        ((:archive
+                                          :library
+                                          :module
+                                          :ns-archive
+                                          :ns-library
+                                          :ocamllex
+                                          :ocamlyacc
+                                          :sig
+                                          :executable
+                                          :test
+                                          :cc-deps)
+                                         (list dune-rule))
                                         ((:rule)
                                          (let* ((actions (assoc :actions stanza-alist))
                                                 (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
@@ -30,17 +43,22 @@
                                                             accum (cons :write-file accum)))
                                                        (else accum))))
                                                  '() cmd-list)))
-                                        ((:diff) (cons :diff accum))
-                                        ((:node) (cons :js accum))
-                                        ((:ocamllex) (cons :ocamllex accum))
-                                        ((:ocamlyacc) (cons :ocamlyacc accum))
-                                        ((:write-file) (cons :write-file accum))
-                                        (else
-                                         (list dune-rule))))
+                                        ;; ((:diff) (cons :diff accum))
+                                        ;; ((:node) (cons :js accum))
+                                        ;; ((:ocamllex) (cons :ocamllex accum))
+                                        ;; ((:ocamlyacc) (cons :ocamlyacc accum))
+                                        ;; ((:write-file) (cons :write-file accum))
+                                        ((:shared-deps) #f)
+                                        ((:shared-ppx) #f)
+                                        (else #f
+                                         ;; (list dune-rule)
+                                              )))
                                 (accum (if rule (append rule accum) accum))
                                 (accum (if-let ((modes (assoc-val :modes stanza-alist)))
                                                (if (member 'js modes)
-                                                   (cons :js accum)
+                                                   (if (member :js accum)
+                                                       accum
+                                                       (cons :js accum))
                                                    accum)
                                                accum))
                                 ;; (accum (if (assoc :namespaced s-alist)
@@ -49,11 +67,14 @@
                                 (accum (if (alist? stanza-alist)
                                            (if (assoc :ppx stanza-alist)
                                                (cons :ppx accum)
-                                               accum)
+                                               (if (assoc :ppxes stanza-alist)
+                                                   (cons :ppx accum)
+                                                   accum))
                                            accum))
                                 )
                            accum))
                        '() stanzas)))
+    (format #t "~A: ~A~%" (bgred "-rules ct") (length -rules))
     (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
            (rules (if (assoc :structures pkg) (cons :module rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules))

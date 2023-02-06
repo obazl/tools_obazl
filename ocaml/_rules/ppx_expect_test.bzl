@@ -487,9 +487,9 @@ ppx_expect_test = rule(
         _deps = attr.label_list(
             doc = "Modules under test, instrumented using ppx_expect.",
             default = [
-                # "@opam_ppx_inline_test//lib/runtime-lib",
-                "@opam_ppx_expect//lib/evaluator",
-                # "@opam_ppx_expect//lib/config",
+                # "@ppx_inline_test//lib/runtime-lib",
+                "@ppx_expect//lib/evaluator",
+                # "@ppx_expect//lib/config",
             ],
             providers = [
                 [OcamlProvider],

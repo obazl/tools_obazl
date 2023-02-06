@@ -112,7 +112,7 @@
           (format outp "~{        \"~A\"~^,\n~}\n" manifest)
           (format outp "    ],\n")))
     (if (assoc :inline-tests ppx-alist)
-        (format outp "    ## @opam_ppx_inline_test//lib/ppx_inline_test~%"))
+        (format outp "    ## @ppx_inline_test//lib/ppx_inline_test~%"))
 
     (format outp ")\n")
 
@@ -123,7 +123,7 @@
     (format outp "    name       = \"Ppx_driver\",\n")
     (format outp "    struct     = \":ppx_driver.ml\",\n")
     (format outp "    visibility = [\"//visibility:public\"],\n")
-    (format outp "    deps       = [\"@opam_ppxlib//lib/ppxlib\"],\n")
+    (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
     (format outp ")\n")
     (newline outp)
 
@@ -377,7 +377,7 @@
       (format outp "    name       = \"Ppx_driver\",\n")
       (format outp "    struct     = \":ppx_driver.ml\",\n")
       (format outp "    visibility = [\"//visibility:public\"],\n")
-      (format outp "    deps       = [\"@opam_ppxlib//lib/ppxlib\"],\n")
+      (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
       (format outp ")\n")
       (newline outp)
 

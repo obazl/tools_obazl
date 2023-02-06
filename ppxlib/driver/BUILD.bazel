@@ -8,7 +8,7 @@ ppx_module(
     module = "Driver.standalone",
     struct = "standalone.ml",
     deps = [
-        "@opam_ppxlib//lib/ppxlib"
+        "@ppxlib//lib/ppxlib"
     ],
     visibility = ["//visibility:public"],
 )

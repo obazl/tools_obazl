@@ -1,0 +1,8 @@
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "obazl",  ## do not change name
+    url = "https://github.com/obazl/tools_obazl/archive/352c4a1b39f19c8f377d0dafda9e6233cf3aee52.zip",
+    strip_prefix = "tools_obazl-352c4a1b39f19c8f377d0dafda9e6233cf3aee52",
+    sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
+)

@@ -1,0 +1,89 @@
+= tools_obazl
+:toc: auto
+:toclevels: 3
+
+WARNING: currently under heavy development, do not use.
+
+A collection of Bazel tools, mainly for OCaml development using obazl_rules_ocaml.
+
+== setup
+
+.WORKSPACE.bazel
+----
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "obazl",  ## do not change name
+    url = "https://github.com/obazl/tools_obazl/archive/352c4a1b39f19c8f377d0dafda9e6233cf3aee52.zip",
+    strip_prefix = "tools_obazl-352c4a1b39f19c8f377d0dafda9e6233cf3aee52",
+    sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
+)
+----
+
+(Dev: add --override_repository to .bazelrc, e.g.
+
+    common --override_repository=obazl=/path/to/tools_obazl
+
+== tools
+
+=== @obazl//new:workspace
+
+Initializes new workspace.
+
+    $ bazel run @obazl//new:workspace
+
+Alias: `@obazl//new:ws`
+
+Installs:
+
+* .bazelignore
+* .bazeliskrc
+* .bazelversion
+* .bazelrc
+* .config/gitignore
+* .config/miblrc
+* .config/user.bazelrc
+* BUILD.bazel
+* BUILD.bzl
+* WORKSPACE.bazel
+* WORKSPACE.bzl
+* bzl/BUILD.bazel
+* bzl/host/BUILD.bazel
+
+* COSWITCH.bzl ???
+
+=== @obazl//new:package
+
+Alias:  `@obazl//new:pkg`
+
+=== @obazl//convert
+
+Convert dune files to BUILD.bazel files.
+
+
+== see also
+
+=== mibl
+
+==== @mibl//coswitch
+
+Obsolete?
+
+    bazel run @mibl//coswitch -- -p <pkg>
+
+
+=== opam
+
+==== @opam//shared:refresh
+
+
+
+
+== misc
+
+* `tokenize` tokenizes a string. Default separator is whitespace.
+  * `load( "@tools_bazel//tools/functions:strings.bzl", "tokenize")`
+  * `tokenize("foo   bar") => ["foo", "bar"]`.
+  * `tokenize("foo_bar", sep="_") => ["foo", "bar"]`.
+
+* `get_xdg(repo_ctx)` returns multival: home, XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME

@@ -141,7 +141,11 @@
 (define (-get-ppx-args ppx-alist libname)
   (format #t "~A: ~A~%" (ublue "-get-ppx-args") ppx-alist)
   ;; opts come in pairs
-  (let* ((opts (assoc-val :opts ppx-alist))
+  (let* ((opts (if-let ((opts (assoc-val :opts ppx-alist)))
+                       opts '()))
+         (args (if-let ((args (assoc-val :args ppx-alist)))
+                       args '()))
+         (opts (append opts args))
          (_ (format #t "~A: ~A~%" (uyellow "ppx opts") opts))
          ;; (flags (assoc-in '(:runtime-opts :flags) ppx-alist))
          ;; (_ (format #t "~A: ~A~%" (uyellow "ppx flags") flags))
@@ -154,7 +158,7 @@
                                (($LIBNAME) libname)
                                (else opt)))
                            (flatten opts))
-                      #f)))
+                       #f)))
          ;; (_ (format #t "~A: ~A~%" (uyellow "ppx options") options)))
          ;; (ppx-args (append (if flags (cdr flags) '())
          ;;                   (if options options '()))))
@@ -175,7 +179,7 @@
 
          (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
                              (cadr shppx) #f))
-         (_ (format #t "~A: ~A~%" (bgyellow "shared-ppx") shared-ppx))
+         (_ (format #t "~A: ~A~%" (bgyellow "eshared-ppx") shared-ppx))
 
          (privname (if-let ((privname (assoc-val :privname stanza-alist)))
                            privname
@@ -354,13 +358,34 @@
 
          ;; we always use shared ppxes, so we have e.g. (:ppx . 1)
          ;; lookup ppx-alist in :shared-ppx
-         (ppx-id (assoc-val :ppx stanza-alist))
-         (_ (format #t "~A: ~A~%" (uyellow "ppx-id") ppx-id))
+         (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                         ppx
+                         (let* ((shared-ppx
+                                 (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
+                                         (find-if (lambda (ppx)
+                                                    (format #t "~A: ~A~%" (bgcyan "trying ppx") ppx)
+                                                    (if-let ((the-ppx (assoc-val (cdr ppx) shared-ppx)))
+                                                            (begin
+                                                              (format #t "~A: ~A~%" (cyan "the-ppx") the-ppx)
+                                                              (let ((scope (assoc-val :scope (cdr the-ppx))))
+                                                                (format #t "~A: ~A~%" (cyan "scope") scope)
+                                                                (format #t "~A: ~A~%" (cyan "module") module)
+                                                                (if (member (car module) scope)
+                                                                    (begin
+                                                                      (format #t "~A: ~A~%" (red "bingo") (cdr ppx))
+                                                                      (cdr ppx)) ;; return ppx id
+                                                                    #f)))
+                                                            #f))
+                                                  ppxes)
+                                         #f)))
+                           (if shared-ppx (cdr shared-ppx) #f))))
+
+         (_ (format #t "~A: ~A~%" (uyellow "module ppx-id") ppx-id))
 
          (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx) #f))
          (_ (format #t "~A: ~A~%" (bgyellow "ppx-alist") ppx-alist))
 
-         (ppx-args (if ppx-alist (-get-ppx-args ppx-alist libname) #f))
+         (ppx-args (if ppx-id (-get-ppx-args ppx-alist libname) #f))
          (_ (format #t "~A: ~A~%" (bgyellow "ppx-args") ppx-args))
 
          ;; (ppx-alist (if-let ((ppx (assoc :ppx stanza-alist)))
@@ -518,7 +543,7 @@
               (if ppx-alist
                   (begin
                     (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\", #X2\n"
+                            "    ppx           = \"~A:ppx_~A.exe\",\n" ;; #X2
                             ppx-pkg ppx-id)
                     ;; ppx-name)
                     ;; (cadr (assoc :name ppx-alist)))
@@ -529,7 +554,7 @@
                     ;;FIXME: handle :scope
                     (if ppx-args
                         (format outp
-                                "    ppx_args = [~{~S, ~}],\n" ppx-args))))
+                                "    ppx_args      = [~{~S~^, ~}], #A0\n" ppx-args))))
                                 ;; (cadr (assoc :args ppx-alist))))))
               (format outp ")\n")
               )
@@ -619,14 +644,14 @@
                (if ppx-alist
                    (begin
                      (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\", #X1\n" ppx-pkg ppx-id) ;; ppx-name)
+                            "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id) ;; ppx-name)
                             ;; "    ppx           = \":~A\",\n" ppx-name)
                      (if ppx-args
                      ;; (if (not  ## why?
                      ;;      (equal? :all (cadr (assoc :scope
                      ;;                                ppx-alist))))
                          (format outp
-                                 "    ppx_args      = [~{~S, ~}],\n" ppx-args
+                                 "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
                                  ;;(cadr (assoc :args ppx-alist))
                                  ))))
 
@@ -837,7 +862,7 @@
                                                    srcs))))
 
                                ((:install :ocamllex :ocamlyacc :menhir
-                                          :cppo
+                                          :cppo :env
                                           :shared-compile-opts :shared-deps
                                           :diff :alias :node
                                           :sh-test :testsuite :exec-libs)
@@ -849,7 +874,7 @@
 
                                (else
                                 (error 'UNHANDLED
-                                       (format #f "unhandled kind: ~A" stanza))))))
+                                       (format #f "emit-modules, unhandled kind: ~A" stanza))))))
                          (assoc-val :dune pkg)))
             )
        ;; (if (equal? modname 'Pb_codegen_backend)
@@ -928,7 +953,7 @@
                     ;; (cadr (assoc :name ppx-alist)))
             (if ppx-args
                 (format outp
-                        "    ppx_args = [~{~S, ~}],\n" ppx-args))
+                        "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
 
             ;; (if (not
             ;;      (equal? :all (cadr (assoc :scope
