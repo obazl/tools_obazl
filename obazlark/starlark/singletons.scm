@@ -170,6 +170,11 @@
 (define (-emit-module outp ws module stanza pkg)
   (format #t "~A: ~A [~A]\n" (bgblue "-emit-module") module stanza)
   ;; (format #t "~A: ~A~%" (bgyellow "pkg") pkg)
+  (if *build-dyads*
+      (if (alist? (cdr module))
+          (if (assoc :mli (cdr module))
+              (-emit-sig outp ws pkg module stanza))))
+
   (let* ((pkg-name (pkg->pkg-name pkg))
          (pkg-exec-libs-ct (if-let ((pkg-exec-libs (assoc-val :exec-libs pkg)))
                                    (length pkg-exec-libs) 0))
@@ -179,7 +184,7 @@
 
          (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
                              (cadr shppx) #f))
-         (_ (format #t "~A: ~A~%" (bgyellow "eshared-ppx") shared-ppx))
+         (_ (format #t "~A: ~A~%" (bgyellow "shared-ppx") shared-ppx))
 
          (privname (if-let ((privname (assoc-val :privname stanza-alist)))
                            privname
@@ -356,29 +361,32 @@
          ;;                    ()))
          ;; (_ (format #t "~A: ~A~%" (uwhite "ocamlopt_opts") ocamlopt_opts))
 
-         ;; we always use shared ppxes, so we have e.g. (:ppx . 1)
+         ;; we always use shared ppxes (pkg scope), so we have e.g. (:ppx . 1)
          ;; lookup ppx-alist in :shared-ppx
+         ;; (ppx-id (get-ppx-id ws (cdr stanza)))
          (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
-                         ppx
-                         (let* ((shared-ppx
-                                 (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
-                                         (find-if (lambda (ppx)
-                                                    (format #t "~A: ~A~%" (bgcyan "trying ppx") ppx)
-                                                    (if-let ((the-ppx (assoc-val (cdr ppx) shared-ppx)))
-                                                            (begin
-                                                              (format #t "~A: ~A~%" (cyan "the-ppx") the-ppx)
-                                                              (let ((scope (assoc-val :scope (cdr the-ppx))))
-                                                                (format #t "~A: ~A~%" (cyan "scope") scope)
-                                                                (format #t "~A: ~A~%" (cyan "module") module)
-                                                                (if (member (car module) scope)
-                                                                    (begin
-                                                                      (format #t "~A: ~A~%" (red "bingo") (cdr ppx))
-                                                                      (cdr ppx)) ;; return ppx id
-                                                                    #f)))
-                                                            #f))
-                                                  ppxes)
-                                         #f)))
-                           (if shared-ppx (cdr shared-ppx) #f))))
+                         ppx #f))
+         ;; (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
+         ;;                 ppx
+         ;;                 (let* ((shared-ppx
+         ;;                         (if-let ((ppxes (assoc-val :ppxes stanza-alist)))
+         ;;                                 (find-if (lambda (ppx)
+         ;;                                            (format #t "~A: ~A~%" (bgcyan "trying ppx") ppx)
+         ;;                                            (if-let ((the-ppx (assoc-val (cdr ppx) shared-ppx)))
+         ;;                                                    (begin
+         ;;                                                      (format #t "~A: ~A~%" (cyan "the-ppx") the-ppx)
+         ;;                                                      (let ((scope (assoc-val :scope (cdr the-ppx))))
+         ;;                                                        (format #t "~A: ~A~%" (cyan "scope") scope)
+         ;;                                                        (format #t "~A: ~A~%" (cyan "module") module)
+         ;;                                                        (if (member (car module) scope)
+         ;;                                                            (begin
+         ;;                                                              (format #t "~A: ~A~%" (red "bingo") (cdr ppx))
+         ;;                                                              (cdr ppx)) ;; return ppx id
+         ;;                                                            #f)))
+         ;;                                                    #f))
+         ;;                                          ppxes)
+         ;;                                 #f)))
+         ;;                   (if shared-ppx (cdr shared-ppx) #f))))
 
          (_ (format #t "~A: ~A~%" (uyellow "module ppx-id") ppx-id))
 
@@ -406,6 +414,8 @@
     (format #t "module libname: ~A~%" libname)
     (format #t "module ns: ~A~%" ns)
     ;; (if ppx-id (error 'stop "STOP ppx id"))
+
+    ;; FIXME: if *build-dyads* then emit both ocaml_module and ocaml_signature
 
     ;; (if (proper-list? module)
         (if (alist? (cdr module))
@@ -443,9 +453,13 @@
 
               (format #t "## this-is-main ~A~%" this-is-main)
               ;; (format outp "## this-is-main ~A~%" this-is-main)
-              (if this-is-main
-                  (format outp "ocaml_exec_module(\n")
-                  (format outp "ocaml_module(\n"))
+              (if (or (assoc :ppx-rewriter stanza-alist) (assoc :ppx-deriver stanza-alist))
+                  (if this-is-main
+                      (format outp "ppx_exec_module(\n")
+                      (format outp "ppx_module(\n"))
+                  (if this-is-main
+                      (format outp "ocaml_exec_module(\n")
+                      (format outp "ocaml_module(\n")))
               (format outp "    name          = \"~A\",\n" modname)
               (if (and ns (not *ns-topdown*))
                   (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
@@ -478,7 +492,7 @@
                     ))
 
               (if *build-dyads*
-                  (format outp "    sig           = \":~A.cmi\",\n" modname)
+                  (format outp "    sig           = \":~A_cmi\",\n" modname)
                   ;; else
                   (if select-sigfile
                       (begin
@@ -542,9 +556,10 @@
 
               (if ppx-alist
                   (begin
-                    (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\",\n" ;; #X2
-                            ppx-pkg ppx-id)
+                    (if (> (length shared-ppx) 1)
+                        (format outp "    ppx           = \"~A:Appx_~A.exe\",\n" ;; #X2
+                                ppx-pkg ppx-id)
+                        (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
                     ;; ppx-name)
                     ;; (cadr (assoc :name ppx-alist)))
                     ;; (if (not
@@ -553,9 +568,11 @@
 
                     ;;FIXME: handle :scope
                     (if ppx-args
-                        (format outp
-                                "    ppx_args      = [~{~S~^, ~}], #A0\n" ppx-args))))
-                                ;; (cadr (assoc :args ppx-alist))))))
+                        (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args))
+                    (if-let ((codeps (assoc-val :ppx-codeps stanza-alist)))
+                            (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}],\n" codeps))
+                    ))
+
               (format outp ")\n")
               )
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -643,17 +660,23 @@
 
                (if ppx-alist
                    (begin
-                     (format outp
-                            "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id) ;; ppx-name)
-                            ;; "    ppx           = \":~A\",\n" ppx-name)
-                     (if ppx-args
-                     ;; (if (not  ## why?
-                     ;;      (equal? :all (cadr (assoc :scope
-                     ;;                                ppx-alist))))
-                         (format outp
-                                 "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
-                                 ;;(cadr (assoc :args ppx-alist))
-                                 ))))
+                    (if (> (length shared-ppx) 1)
+                        (format outp "    ppx           = \"~A:Bppx_~A.exe\",\n" ppx-pkg ppx-id)
+                        (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+
+                    (if ppx-args
+                        (format outp
+                                "    ppx_args      = PPX_ARGS + [~{~S~^, ~}]\n" ppx-args)
+                        )
+                     ;; (if ppx-args
+                     ;; ;; (if (not  ## why?
+                     ;; ;;      (equal? :all (cadr (assoc :scope
+                     ;; ;;                                ppx-alist))))
+                     ;;     (format outp
+                     ;;             "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
+                     ;;             ;;(cadr (assoc :args ppx-alist))
+                     ;;             ))
+                     ))
 
                (if exec-lib?
                   (format outp "    visibility    = [\"//visibility:private\"]~%"))
@@ -911,22 +934,133 @@
                   sig
                   (error 'missing-mli "module record missing :mli, :mli_"))))
 
-(define (-emit-sig outp sig stanza)
-  (format #t "~A: ~A, ~A\n" (blue "-emit-sig") sig stanza)
-  (let* ((libname (string-append
+(define (-emit-sig outp ws pkg sig stanza)
+  (format #t "~A\n" (bgblue "-emit-sig"))
+  (format #t "~A: ~A\n" (blue "sig") sig)
+  (format #t "~A: ~A\n" (blue "stanza") stanza)
+  (let* ((stanza-alist (cdr stanza))
+         (libname (string-append
                    (string-upcase
                     (stringify
                      (assoc-val :privname (cdr stanza))))))
          (ns (assoc-val :ns (cdr stanza)))
 
-         (ppx-alist (if-let ((ppx (assoc-val :ppx (cdr stanza))))
-                            ppx #f))
+         (opts (if-let ((opts (assoc-val :opts stanza-alist)))
+                       opts #f))
+         (_ (format #t "~A: ~A~%" (uwhite "OPTS") opts))
+         (opts-tag (if opts
+                       (if (number? opts) opts
+                           libname)
+                       #f))
+         (_ (format #t "~A: ~A~%" (ugreen "opts-tag") opts-tag))
+
+         (deps-tag (if-let ((shared (assoc-in '(:deps :resolved) stanza-alist)))
+                           (if (number? (cdr shared)) (cdr shared) libname)
+                           libname))
+         (_ (format #t "~A: ~A~%" (uwhite "deps-tag") deps-tag))
+
+         ;; (_ (format #t "~A: ~A~%" (green "module") (car module)))
+         (this-is-main #f)
+         ;; (this-is-main (if-let ((main (assoc-val :main stanza-alist)))
+         ;;                       (begin
+         ;;                         (format #t "~A: ~A~%" (green "main") main)
+         ;;                         (if (string=? (format #f "~A" main) (format #f "~A" (car module)))
+         ;;                             main #f))))
+         ;; (_ (format #t "~A: ~A~%" (bggreen "this-is-main") this-is-main))
+
+         (exec-lib? #f)
+         ;; (exec-lib? (if-let ((exec-lib (assoc-val :exec-lib stanza-alist)))
+         ;;                    (let ((m (normalize-module-name pkg-name)))
+         ;;                      (if (> pkg-exec-libs-ct 0)
+         ;;                          (format #f "~A_execlib_~A" m exec-lib)
+         ;;                          (format #f "~A_execlib" m)))
+         ;;                    #f))
+
+         (agg-deps (if-let ((deps (assoc-val :deps stanza-alist)))
+                           (dissoc '(:conditionals :seldeps) deps)
+                       ;; else :executable or :test
+                       ;; FIXME: should not be any deps in :compile ?
+                       (if-let ((deps (assoc-in '(:compile :deps)
+                                                stanza-alist)))
+                               deps
+                               '())))
+         (agg-deps (if (number? deps-tag)
+                       (dissoc '(:deps :resolved) agg-deps)
+                       agg-deps))
+
+         (_ (format #t "~A: ~A~%" (uwhite "Agg-deps") agg-deps))
+
+         (local-deps (if-let ((locals (assoc :mli-deps (cdr sig))))
+                             (cdr locals)
+                             '()))
+
+         (deps-conditional (assoc-in '(:deps :conditionals) stanza-alist))
+         (_ (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional))
+
+         ;; (_ (format #t "~A: ~A~%" (uwhite "module") module))
+         (target-selector
+          (if deps-conditional
+              ;;FIXME: deps-conditional may have more than one entry
+              (let ((x
+                     (find-then (lambda (conditional)
+                                  (format #t "~A: ~A~%" (bgred "conditional") conditional)
+                                  (let ((ctarget (assoc-val :target conditional)))
+                                    (if (alist? (cdr sig))
+                                        (find-then (lambda (msrc)
+                                                     (if (equal? ctarget (cdr msrc))
+                                                         conditional #f))
+                                                 (cdr sig))
+                                        (if (equal? ctarget (cdr sig))
+                                            conditional #f))))
+                                (cdr deps-conditional))))
+                x)
+              #f))
+         (_ (format #t "~A: ~A~%" (uwhite "target-selector") target-selector))
+
+         (src-selectors
+          (if target-selector
+              (flatten
+               (map
+                (lambda (sel)
+                  (cons (car sel)
+                        (cadr sel)))
+                (assoc-val :selectors target-selector)))
+              #f))
+         (_ (format #t "~A: ~A~%" (uwhite "src-selectors") src-selectors))
+
+         (dep-selectors
+          (if target-selector
+              (map
+               (lambda (sel)
+                 (let* ((protasis (car sel))
+                        (apodosis (last sel)))
+                 (list protasis apodosis)))
+               (assoc-val :selectors target-selector))
+              #f))
+         (_ (format #t "~A: ~A~%" (uwhite "dep-selectors") dep-selectors))
+
+         (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
+                            (string-upcase (format #f "~A" ts)) #f))
+
+         (ppx-pkg (car (assoc-val :pkg-path pkg)))
+         (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
+                         ppx #f))
+
+         (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
+                             (cadr shppx) #f))
+
+         (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx) #f))
+
+         ;; (ppx-alist (if-let ((ppx (assoc-val :ppx (cdr stanza))))
+         ;;                    ppx #f))
          ;; (module->ppx-alist fs-path mname stanzas))
          (_ (format #t "ppx-alist: ~A\n" ppx-alist))
 
-         (ppx-name (if ppx-alist (format #f "~A.ppx" libname)))
+         (ppx-args #f) ;;FIXME
 
-         (ppx-id (-get-ppx-id ws (cdr stanza)))
+         (ppx-name (if ppx-alist (format #f "~A.ppx" libname)))
+         (_ (format #t "ppx-nme: ~A\n" ppx-name))
+         ;; (ppx-id (get-ppx-id ws (cdr stanza)))
          )
 
     (let* ((modname (car sig))
@@ -934,27 +1068,38 @@
                         (-module-record->sigfile (cdr sig))
                         (cdr sig))))
 
-      (format #t "emitting signature: ~A\n" modname)
+      (format #t "emitting signature A: ~A\n" modname)
 
       (format outp "ocaml_signature(\n")
-      (format outp "    name          = \"~A.cmi\",\n" modname)
+      (format outp "    name          = \"~A_cmi\",\n" modname)
       (if (and ns (not *ns-topdown*))
           (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
-      (format outp "    sig           = \"~A\",\n" sigfile)
-      (format outp "    opts          = ~A_COMPILE_OPTS,\n" libname)
-      (format outp "    deps          = DEPS_~A,\n" libname)
+      (format outp "    src           = \"~A\",\n" sigfile)
+      (if opts-tag
+          (format outp "    opts          = OPTS_~A,\n" opts-tag))
+
+      (format #t "~A: ~A~%" (blue "emitting deps A") deps-tag)
+      (-emit-deps outp this-is-main exec-lib? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
 
       (if ppx-alist
           (begin
-            (format outp
-                    "    ppx           = \"~A:ppx_~A.exe\", #X0 \n"
-                    ppx-pkg ppx-id) ;; ppx-name)
-                    ;; "    ppx           = \":~A\",\n" ppx-name)
+            (format #t "~A: ~A~%" (red "stanza") stanza)
+            (format #t "~A: ~A~%" (red "ppx-alist") ppx-alist)
+            (format #t "~A: ~A~%" (red "len ppx-alist") (length ppx-alist))
+            (if (> (length shared-ppx) 1)
+                (begin (error 'stop "SIG")
+                       (format outp "    ppx           = \":Cppx_~A.exe\",\n" ppx-id))
+                (format outp "    ppx           = \":ppx.exe\",\n"))
+                    ;; "    ppx           = \"//~A:ppx_~A.exe\", #X0 \n"
+                    ;; ppx-pkg ppx-id) ;; ppx-name)
                     ;; (cadr (assoc :name ppx-alist)))
+            ;; (if ppx-args
+            ;;     (format outp
+            ;;             "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
             (if ppx-args
                 (format outp
-                        "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
-
+                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}]\n" ppx-args)
+                )
             ;; (if (not
             ;;      (equal? :all (cadr (assoc :scope
             ;;                                ppx-alist))))
@@ -966,7 +1111,7 @@
       (newline outp)
       )))
 
-(define (-emit-sig-freestanding outp sig)
+(define (-emit-sig-freestanding outp ws sig)
   (format #t "~A: ~A~%" (blue "-emit-sig-freestanding") sig)
   (let* (;; (libname (string-append
          ;;           (string-upcase
@@ -987,10 +1132,10 @@
                         (-module-record->sigfile (cdr sig))
                         (cdr sig))))
 
-      (format #t "emitting signature: ~A\n" modname)
+      (format #t "emitting signature B: ~A\n" modname)
 
       (format outp "ocaml_signature(\n")
-      (format outp "    name          = \"~A.cmi\",\n" modname)
+      (format outp "    name          = \"~A_cmi\",\n" modname)
       (format outp "    src           = \"~A\",\n" sigfile)
       ;; (format outp "    opts          = ~A_OPTS,\n" libname)
       ;; (format outp "    deps          = ~A_DEPS,\n" libname)
@@ -1010,7 +1155,7 @@
       (newline outp)
       )))
 
-(define (-emit-sigs-hdr outp sigs pkg-modules)
+(define (-emit-sigs-hdr outp ws sigs pkg-modules)
   (format #t "~A: ~A~%" (ublue "-emit-sigs-hdr") sigs)
   (format #t "~A: ~A~%" (blue "pkg-modules") pkg-modules)
   (format #t "~A: ~A~%" (blue "*build-dyads*") *build-dyads*)
@@ -1032,52 +1177,53 @@
       ;;       (format outp "####  Signature Targets  ####\n")
       ;;       (newline outp)))))
 
-(define (-emit-signatures outp pkg sigs pkg-modules)
+(define (-emit-signatures outp ws pkg sigs pkg-modules)
   (format #t "~A: ~A\n" (bgblue "-emit-signatures") sigs)
   (format #t "*build-dyads*: ~A\n" *build-dyads*)
-  ;; (format #t "pkg: ~A\n" pkg)
+  (format #t "pkg: ~A\n" pkg)
 
-  (-emit-sigs-hdr outp sigs pkg-modules)
+  (if (truthy? sigs)
+      (-emit-sigs-hdr outp ws sigs pkg-modules))
 
-  (if *build-dyads*
-      (for-each
-       (lambda (module)
-         (format #t "dyad: : ~A\n" module)
-         (if (proper-list? module)
-             (let ((modname (car module))
-                   ;; (mli (if-let ((mli (assoc-val :mli (cdr module))))
-                   ;;              mli
-                   ;;              (if-let ((mli (assoc-val :mli_ (cdr module))))
-                   ;;                      mli
-                   ;;                      #f)))
-                   )
-               (format #t "sig for: ~A\n" modname)
-               (let* ((aggregator
-                       (find-if
-                        (lambda (stanza)
-                          (format #t "checking stanza for msig ~A\n" stanza)
-                          (case (car stanza)
-                            ((:archive :library :ns-archive :ns-library)
-                             ;; (if (eq? :library (car stanza))
-                             (if-let ((submods
-                                       (assoc-in '(:manifest :modules)
-                                                  (cdr stanza))))
-                                     (begin
-                                       (format #t "submods: ~A\n" submods)
-                                       (if (member modname (cdr submods))
-                                           #t
-                                           #f))))
-                            (else #f)))
-                        (assoc-val :dune pkg)))
-                      )
-                 (if aggregator
-                     (-emit-sig outp module aggregator)))
-                 ;; (format #t "aggregator: ~A\n" aggregator)
-               ;; (-emit-sig outp mli stanza)
-               )
-             ;; else improper list - ignore for *build-dyads*
-             ))
-       pkg-modules)
+  ;; (if *build-dyads*
+      ;; (for-each
+      ;;  (lambda (module)
+      ;;    (format #t "dyad: : ~A\n" module)
+      ;;    (if (proper-list? module)
+      ;;        (let ((modname (car module))
+      ;;              ;; (mli (if-let ((mli (assoc-val :mli (cdr module))))
+      ;;              ;;              mli
+      ;;              ;;              (if-let ((mli (assoc-val :mli_ (cdr module))))
+      ;;              ;;                      mli
+      ;;              ;;                      #f)))
+      ;;              )
+      ;;          (format #t "sig for: ~A\n" modname)
+      ;;          (let* ((aggregator
+      ;;                  (find-if
+      ;;                   (lambda (stanza)
+      ;;                     (format #t "checking stanza for msig ~A\n" stanza)
+      ;;                     (case (car stanza)
+      ;;                       ((:archive :library :ns-archive :ns-library)
+      ;;                        ;; (if (eq? :library (car stanza))
+      ;;                        (if-let ((submods
+      ;;                                  (assoc-in '(:manifest :modules)
+      ;;                                             (cdr stanza))))
+      ;;                                (begin
+      ;;                                  (format #t "submods: ~A\n" submods)
+      ;;                                  (if (member modname (cdr submods))
+      ;;                                      #t
+      ;;                                      #f))))
+      ;;                       (else #f)))
+      ;;                   (assoc-val :dune pkg)))
+      ;;                 )
+      ;;            (if aggregator
+      ;;                (-emit-sig outp ws pkg module aggregator)))
+      ;;            ;; (format #t "aggregator: ~A\n" aggregator)
+      ;;          ;; (-emit-sig outp mli stanza)
+      ;;          )
+      ;;        ;; else improper list - ignore for *build-dyads*
+      ;;        ))
+      ;;  pkg-modules)
       ;; else just free-standing sigs
       (for-each
        (lambda (sig)
@@ -1095,15 +1241,16 @@
                                           (begin
                                             (format #t "~A: ~A\n" (red "subsigs") subsigs)
                                             (if (member modname subsigs)
-                                                (-emit-sig outp sig stanza)
+                                                (-emit-sig outp ws pkg sig stanza)
                                                 #f))))
                                  (else #f)))
                              (assoc-val :dune pkg)))
                 )
            (if (not aggregator)
-               (-emit-sig-freestanding outp sig))))
+               (-emit-sig-freestanding outp ws sig))))
        sigs)
-      ))
+      ;; )
+      )
 
 ;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
@@ -1151,7 +1298,7 @@
     (if pkg-modules
         (begin
           (newline)
-          (format #t "~A~%" (bgblue "emitting pkg-modules"))
+          (format #t "~A: ~A~%" (bgblue "emitting pkg-modules") pkg-modules)
           (-emit-modules outp ws pkg pkg-modules)))
 
     (if pkg-structs
@@ -1163,11 +1310,11 @@
     ;; (if (equal? (car pkg :ocamlc))
     ;;       (-emit-modules outp ws pkg pkg-structs)))
 
-    (if (or pkg-sigs *build-dyads*)
+    (if pkg-sigs ;;(or pkg-sigs *build-dyads*)
         (begin
           (newline)
-          (format #t "~A~%" (bgblue "emitting pkg-sigs"))
-          (-emit-signatures outp pkg pkg-sigs pkg-modules)))
+          (format #t "~A: ~A~%" (bgblue "emitting pkg-sigs") pkg-sigs)
+          (-emit-signatures outp ws pkg pkg-sigs pkg-modules)))
     ))
 
 ;;(format #t "loaded starlark/singletons.scm\n")

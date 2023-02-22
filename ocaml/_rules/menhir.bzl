@@ -19,7 +19,7 @@ load("@rules_ocaml//ocaml:providers.bzl",
 ######################
 def _menhir_impl(ctx):
 
-    debug = True
+    debug = False
     if debug:
         print("MENHIR TARGET: %s" % ctx.label.name)
         print("menhir tool: %s" % ctx.file.tool)
@@ -106,17 +106,28 @@ def _menhir_impl(ctx):
     if hasattr(ctx.attr, "_ns_resolver"):
         nsrfiles = ctx.files._ns_resolver
 
-    infer_inputs = mock_outputs + nsrfiles + [mock_ml] + ctx.files.deps
+    infer_inputs = mock_outputs + nsrfiles + [mock_ml]
+    for dep in ctx.attr.deps:
+        infer_inputs.extend(dep[OcamlProvider].sigs.to_list())
+        infer_inputs.extend(dep[OcamlProvider].structs.to_list())
+        infer_inputs.extend(dep[OcamlProvider].ofiles.to_list())
 
     infer_outputs = [inferred_mli]
 
     dep_dirs = [d.dirname for d in ctx.files.deps]
     if ctx.attr.token:
+        tok = ctx.attr.token[OcamlProvider]
+        if debug: print("TOK: %s" % tok)
+        # fail()
         infer_inputs.extend(ctx.files.token)
+        infer_inputs.append(tok.cmi)
+        infer_inputs.extend(tok.structs.to_list())
+        infer_inputs.extend(tok.ofiles.to_list())
         dep_dirs.extend([d.dirname for d in ctx.files.token])
 
     # if OcamlNsResolverProvider in ctx.attr._ns_resolver:
-    if hasattr(nsrp, "cmi"):
+    # if hasattr(nsrp, "cmi"):
+    if nsrp.cmi:
         nsrp = ctx.attr._ns_resolver[OcamlNsResolverProvider]
         dep_dirs.append(nsrp.cmi.dirname)
         infer_inputs.append(nsrp.cmi)
@@ -146,7 +157,8 @@ def _menhir_impl(ctx):
     ## 3. emit parser.ml, parser.mli
     ## 'menhir parser.mly --infer-read-reply parser.inferred.mli'
 
-    gen_parser_inputs  = infer_outputs + ctx.files.grammars
+    gen_parser_inputs  = infer_outputs + ctx.files.grammars + ctx.files.deps
+
     gen_parser_outputs = ctx.outputs.outs
 
     args = ctx.actions.args()
@@ -158,7 +170,14 @@ def _menhir_impl(ctx):
 
     dep_dirs = [d.dirname for d in ctx.files.deps]
     if ctx.attr.token:
+        tok = ctx.attr.token[OcamlProvider]
+        if debug:
+            print("TOK: %s" % tok)
+        # fail()
         gen_parser_inputs.extend(ctx.files.token)
+        gen_parser_inputs.append(tok.cmi)
+        gen_parser_inputs.extend(tok.structs.to_list())
+        gen_parser_inputs.extend(tok.ofiles.to_list())
         dep_dirs.extend([d.dirname for d in ctx.files.token])
 
     if ctx.attr.token:

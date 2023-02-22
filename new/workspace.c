@@ -39,56 +39,64 @@ void new_workspace(char *pgm)
 
     chdir(ws_dir);
     if (debug) log_debug("CWD: %s", getcwd(NULL, 0));
+
+    system("touch BUILD.bazel");
+
     while (runfiles[i].key != NULL) {
-        if (prefix_matches("obazl/templates/", runfiles[i].key)) {
-            printf(RED "entry %d:" CRESET " %s -> %s\n", i,
-                   runfiles[i].key, runfiles[i].val);
-            char *rp = realpath(runfiles[i].val, NULL);
-            printf("realpath %d: %s\n", i, rp);
-            free(rp);
+        if (prefix_matches("obazl/templates/BUILD.bazel", runfiles[i].key)) {
+            ;
+        } else {
+            if (prefix_matches("obazl/templates/", runfiles[i].key)) {
+                /* printf(RED "entry %d:" CRESET " %s -> %s\n", i, */
+                /*        runfiles[i].key, runfiles[i].val); */
+                char *rp = realpath(runfiles[i].val, NULL);
+                /* printf("realpath %d: %s\n", i, rp); */
+                free(rp);
 
-            dest = strndup(runfiles[i].key + pfx_len,
-                           strlen(runfiles[i].key) - pfx_len);
-            if (prefix_matches("dot/", dest)) {
-                dest = strndup(dest + 3, strlen(dest) - 3);
-                dest[0] = '.';
-                printf(BLU "dest:" CRESET " %s\n", dest);
-                path = dirname(dest);
-                printf(BLU "dest dir:" CRESET " %s\n", path);
-                int rc = access(path, R_OK);
-                if (rc == 0) {
-                    printf("dir accessible: %s\n", path);
+                dest = strndup(runfiles[i].key + pfx_len,
+                               strlen(runfiles[i].key) - pfx_len);
+                if (prefix_matches("dot/", dest)) {
+                    dest = strndup(dest + 3, strlen(dest) - 3);
+                    dest[0] = '.';
+                    /* printf(BLU "dest:" CRESET " %s\n", dest); */
+                    path = dirname(dest);
+                    /* printf(BLU "dest dir:" CRESET " %s\n", path); */
+                    int rc = access(path, R_OK);
+                    if (rc == 0) {
+                        ;
+                        /* printf("dir accessible: %s\n", path); */
+                    } else {
+                        /* printf("dir inaccessible: %s\n", path); */
+                        mkdir_r(path);
+                    }
                 } else {
-                    printf("dir inaccessible: %s\n", path);
-                    mkdir_r(path);
+                    /*     printf(BLU "dest:" CRESET " %s\n", dest); */
+                    /* } */
+                    /* if (prefix_matches("bzl/", dest)) { */
+                    /* dest = strndup(dest + 3, strlen(dest) - 3); */
+                    /* dest[0] = '.'; */
+                    /* printf(BLU "dest:" CRESET " %s\n", dest); */
+                    path = dirname(dest);
+                    /* printf(BLU "dest dir:" CRESET " %s\n", path); */
+                    int rc = access(path, R_OK);
+                    if (rc == 0) {
+                        ;/* printf("dir accessible: %s\n", path); */
+                    } else {
+                        /* printf("dir inaccessible: %s\n", path); */
+                        mkdir_r(path);
+                    }
+                    /* } else { */
+                    /* } */
                 }
-            } else {
-            /*     printf(BLU "dest:" CRESET " %s\n", dest); */
-            /* } */
-                /* if (prefix_matches("bzl/", dest)) { */
-                /* dest = strndup(dest + 3, strlen(dest) - 3); */
-                /* dest[0] = '.'; */
-                printf(BLU "dest:" CRESET " %s\n", dest);
-                path = dirname(dest);
-                printf(BLU "dest dir:" CRESET " %s\n", path);
-                int rc = access(path, R_OK);
-                if (rc == 0) {
-                    printf("dir accessible: %s\n", path);
-                } else {
-                    printf("dir inaccessible: %s\n", path);
-                    mkdir_r(path);
-                }
-                /* } else { */
-                /* } */
-            }
-            copyfile(rp, dest);
-            free(dest);
+                copyfile(rp, dest);
+                free(dest);
 
-            int rc = access(runfiles[i].val, R_OK);
-            if (rc == 0) {
-                printf("accessible: %s\n", runfiles[i].val);
-            } else {
-                printf("inaccessible: %s\n", runfiles[i].val);
+                int rc = access(runfiles[i].val, R_OK);
+                if (rc == 0) {
+                    /* printf("accessible: %s\n", runfiles[i].val); */
+                } else {
+                    /* printf("inaccessible: %s\n", runfiles[i].val); */
+                }
             }
         }
         i++;
@@ -139,9 +147,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    char *cwd = getcwd(NULL, 0);
-    printf("cwd: %s\n", cwd);
-    printf("argv[0]: %s\n", argv[0]);
+    /* char *cwd = getcwd(NULL, 0); */
+    /* printf("cwd: %s\n", cwd); */
+    /* printf("argv[0]: %s\n", argv[0]); */
 
     ws_dir = getenv("BUILD_WORKSPACE_DIRECTORY");
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
@@ -149,6 +157,7 @@ int main(int argc, char *argv[])
     optind = 1;
     new_workspace(argv[0]);
 
-    printf("workspace exit...\n");
+    if (debug)
+        log_debug("workspace exit...");
     return 0;
 }

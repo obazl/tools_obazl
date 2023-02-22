@@ -91,6 +91,12 @@ int main(int argc, char *argv[])
     }
     log_debug("argc: %d", argc);
     log_debug("optind: %d", optind);
+    log_debug("argv[0]: %s", argv[0]);
+    char *launch_cwd = getcwd(NULL, 0);
+    log_debug("launch cwd: %s", launch_cwd);
+    char *current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
+    log_debug("BAZEL_CURRENT_REPOSITORY: %s", current_repo);
+    log_debug("BAZEL_CURRENT_REPOSITORYx: %s", BAZEL_CURRENT_REPOSITORY);
 
     if (argc != optind) {
         log_error("non-opt argument");
@@ -112,8 +118,15 @@ int main(int argc, char *argv[])
 
     /* config in this order: first bazel, then mibl, then s7 */
     bazel_configure(); // getcwd(NULL, 0));
+
     mibl_configure();
+
+    current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
+    log_debug("BAZEL_CURRENT_REPOSITORY 2: %s", BAZEL_CURRENT_REPOSITORY);
+
     s7_scheme *s7 = s7_configure();
+
+    /* now starlark stuff */
 
     if (emit_starlark) {
         s7_define_variable(s7, "*emit-starlark*", s7_t(s7));
@@ -138,7 +151,7 @@ int main(int argc, char *argv[])
     log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
     s7_load(s7, "starlark.scm");
 
-    s7_load(s7, "convert.scm");
+    s7_load(s7, "convert_dune.scm");
 
     s7_pointer _main = s7_name_to_value(s7, "dune->obazl");
 
@@ -172,8 +185,12 @@ int main(int argc, char *argv[])
 
     /* s7_gc_on(s7, s7_f(s7)); */
 
+
     /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
+
+    /* this does the actual conversion: */
     s7_pointer result = s7_apply_function(s7, _main, _s7_args);
+
     /* log_info("RESULT: %s\n", TO_STR(result)); */
     s7_gc_unprotect_at(s7, _main);
 

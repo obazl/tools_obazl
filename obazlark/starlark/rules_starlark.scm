@@ -282,7 +282,9 @@
 
          (cmd-args (cdr (assoc-in '(:actions :cmd :args) stanza)))
          (_ (format #t "~A: ~A~%" (uwhite "cmd-args") cmd-args))
-         (src-arg (assoc-val (car cmd-args) deps))
+         (src-arg (if (equal? :deps (car cmd-args))
+                      deps
+                      (assoc-val (car cmd-args) deps)))
          (_ (format #t "~A: ~A~%" (ured "src-arg") src-arg))
 
          (in-pkg (assoc-val :pkg src-arg))

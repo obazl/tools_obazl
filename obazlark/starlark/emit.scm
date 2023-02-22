@@ -16,8 +16,10 @@
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :dune pkg)))
     (format #t "~A: ~A~%" (uwhite "dune") dunefile)
-    (format #t "~A: ~A~%" (uwhite "(cdr dune)") (cdr dunefile))
-    (format #t "~A: ~A~%" (uwhite "(alist? (cdr dune)") (alist? (cdr dunefile)))
+    (if dunefile
+        (begin
+          (format #t "~A: ~A~%" (uwhite "(cdr dune)") (cdr dunefile))
+          (format #t "~A: ~A~%" (uwhite "(alist? (cdr dune)") (alist? (cdr dunefile)))))
     (if (and dunefile (not (null? (cdr dunefile))))
         (let* ((stanzas (cadr dunefile))
                    (obazl-rules (pkg->obazl-rules pkg))
@@ -35,7 +37,7 @@
               (format #t "~%~A: ~A~%"
                       (bgred "Emitting buildfile") build-file)
 
-              (starlark-emit-buildfile-hdr outp obazl-rules)
+              (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
               ;; (newline outp)
 
               (format #t "emitting exports_files\n")
@@ -104,18 +106,22 @@
 
               )
         ;; no :dune, emit filegroups
-        (let* ((build-file (string-append pkg-path "/BUILD.bazel"))
-               (_ (format #t "~A: ~A~%" (uwhite "build-file") build-file))
-               (outp
-                (catch #t
-                       (lambda ()
-                         (open-output-file build-file))
-                       (lambda args
-                         (format #t "OPEN ERROR"))
-                       )))
-          (format #t "emitting filegroups\n")
-          (starlark-emit-filegroups outp ws pkg)
-          (close-output-port outp)))))
+        (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+              (pkg-filegroups (assoc :filegroups pkg)))
+          (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups)
+          (if pkg-filegroups
+              (let* ((build-file (string-append pkg-path "/BUILD.bazel"))
+                     (_ (format #t "~A: ~A~%" (uwhite "build-file") build-file))
+                     (outp
+                      (catch #t
+                             (lambda ()
+                               (open-output-file build-file))
+                             (lambda args
+                               (format #t "OPEN ERROR"))
+                             )))
+                (format #t "emitting filegroups\n")
+                (starlark-emit-filegroups outp ws pkg)
+                (close-output-port outp)))))))
 
 ;; (define (-emit-import settings ws)
 ;;   ;; emit one //bzl/import structure per workspace

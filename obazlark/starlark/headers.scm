@@ -14,16 +14,29 @@
                                 (rule (case dune-rule
                                         ((:archive
                                           :library
-                                          :module
-                                          :ns-archive
                                           :ns-library
                                           :ocamllex
                                           :ocamlyacc
                                           :sig
+                                          :struct
                                           :executable
                                           :test
                                           :cc-deps)
                                          (list dune-rule))
+                                        ((:ns-archive)
+                                         (let* ((ns (assoc-val :ns stanza-alist))
+                                                (submodules (if-let ((submods (assoc-in '(:manifest :modules)
+                                                                                        stanza-alist)))
+                                                                    (cdr submods) '()))
+                                                (singleton (and (= (length submodules) 1)
+                                                                (equal? (normalize-module-name ns)
+                                                                        (submodules 0)))))
+                                           (if singleton
+                                               (list :library)
+                                               (list dune-rule))))
+                                        ((:module)
+                                         (format #t "~A: ~A~%" (green "module") stanza)
+                                         (error 'X "x"))
                                         ((:rule)
                                          (let* ((actions (assoc :actions stanza-alist))
                                                 (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
@@ -66,35 +79,55 @@
                                 ;;            accum))
                                 (accum (if (alist? stanza-alist)
                                            (if (assoc :ppx stanza-alist)
-                                               (cons :ppx accum)
+                                               (cons :ppx-executable accum)
                                                (if (assoc :ppxes stanza-alist)
-                                                   (cons :ppx accum)
+                                                   (cons :ppx-executable accum)
                                                    accum))
                                            accum))
+                                (accum (if (alist? stanza-alist)
+                                           (if (assoc :ppx-rewriter stanza-alist)
+                                               (cons :ppx-module accum)
+                                               (if (assoc :ppx-deriver stanza-alist)
+                                                   (cons :ppx-module accum)
+                                                   accum))))
                                 )
                            accum))
                        '() stanzas)))
     (format #t "~A: ~A~%" (bgred "-rules ct") (length -rules))
-    (let* ((rules (if (assoc :modules pkg) (cons :module -rules) -rules))
-           (rules (if (assoc :structures pkg) (cons :module rules) rules))
+    (let* ((rules (if (assoc :modules pkg)
+                      `(:struct :sig ,@-rules)
+                      -rules))
+           (rules (if (assoc :structures pkg) (cons :struct rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules))
            (rules (if (assoc :cc pkg)  (cons :cc-deps rules) rules))
            (_ (format #t "~A: ~A~%" (red "obazlrules") rules))
            ;; dedup
            (rules (fold (lambda (x accum)
-                          (if (member x accum) accum
-                              (cons x accum)))
+                          (if (eq? x :struct)
+                              (if (member :module rules)
+                                  accum
+                                  (if (member x accum)
+                                      accum
+                                      (cons x accum)))
+                              (if (member x accum)
+                                  accum
+                                  (cons x accum))))
                         '() rules))
            )
       (format #t "~A: ~A~%" (red "obazlrules") rules)
-      rules)))
+      (sort! rules sym<?)
+      ;;rules
+      )))
 
-(define (starlark-emit-buildfile-hdr outp obazl-rules)
+(define (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
   (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules)
 
   (format outp "package(default_visibility = [\"//visibility:public\"])")
   (newline outp)
   (newline outp)
+
+  (if (string-contains pkg-path "test")
+        (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")\n"))
 
   (if (member :write-file obazl-rules)
       (begin
@@ -120,6 +153,7 @@
                                 :ocamllex
                                 :ocamlyacc
                                 :sig
+                                :struct
                                 :executable
                                 :test
                                 :cc-deps)))
@@ -144,7 +178,7 @@
         ;; 'library' with wrapped true:
         (if (member :ns-archive obazl-rules)
             (begin
-              (format outp "     \"ocaml_archive\",\n")
+              ;; (format outp "     \"ocaml_archive\",\n")
               (format outp "     \"ocaml_ns_archive\",\n")))
 
         (if (or (member :ns-library obazl-rules)
@@ -176,8 +210,14 @@
         (if (member :executable obazl-rules)
             (format outp "     \"ocaml_exec_module\",\n"))
 
-        (if (member :module obazl-rules)
-            (format outp "     \"ocaml_module\",\n"))
+        ;; (if (member :module obazl-rules)
+        ;;     (begin
+        ;;       (format outp "     \"ocaml_module\",\n")
+        ;;       (format outp "     \"ocaml_signature\",\n")))
+
+        (if (member :struct obazl-rules)
+            ;; (if *build-dyads*
+            (format outp "     \"ocaml_module\",\n")) ;;)
 
         (if (member :sig obazl-rules)
             ;; (if *build-dyads*
@@ -197,10 +237,11 @@
         (if (member :ocamlyacc obazl-rules)
             (format outp "     \"ocamlyacc\",\n"))
 
-        (if (member :ppx obazl-rules)
-            (begin
-              (format outp "     \"ppx_executable\",\n")
-              (format outp "     \"ppx_module\",\n")))
+        (if (member :ppx-executable obazl-rules)
+            (format outp "     \"ppx_executable\",\n"))
+
+        (if (member :ppx-module obazl-rules)
+            (format outp "     \"ppx_module\",\n"))
 
         (if (member :cc-deps obazl-rules)
             (format outp "     \"cc_selection_proxy\",\n"))
@@ -479,6 +520,9 @@
 
 (define (starlark-emit-global-vars outp pkg)
   (format #t "~A: ~A\n" (bgred "starlark-emit-global-vars") pkg)
+         ;; (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
+         ;;                     (cadr shppx) #f))
+
   (for-each
    (lambda (stanza)
      (format #t "~A: ~A~%" (uwhite "stanza") stanza)
@@ -762,6 +806,9 @@
                             ;; (format outp "]~%")))
                             (cadr stanza))))
 
+             ((:shared-ppx)
+              (format outp "PPX_ARGS = []~%"))
+
              ((:ocamlc) (values))
              ;; (format outp "## :ocamlc") (newline outp))
              ((:node) (values))
@@ -769,7 +816,7 @@
 
              ((:env :ocamllex :ocamlyacc :menhir
                     :cppo
-                    :tuareg :sh-test :shared-ppx
+                    :tuareg :sh-test
                     :diff :alias :exec-libs)
               (values))
 

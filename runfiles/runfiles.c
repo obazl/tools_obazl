@@ -25,7 +25,8 @@ struct runfiles_s {
 
 EXPORT struct runfiles_s *runfiles_new(char *argv0)
 {
-    printf("runfiles_new\n");
+    if (debug)
+        log_debug("runfiles_new");
 
     /* env vars: RUNFILES_MANIFEST_FILE, RUNFILES_DIR */
     /* at launch: argv[0] is pgmname path,
@@ -53,49 +54,59 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
     launch_dir = getcwd(NULL, 0);
 
     runfiles_manifest_file = getenv("RUNFILES_MANIFEST_FILE");
-    printf("RUNFILES_MANIFEST_FILE: %s\n", runfiles_manifest_file);
+    if (debug)
+        log_debug("RUNFILES_MANIFEST_FILE: %s", runfiles_manifest_file);
     if (runfiles_manifest_file) {
         utstring_printf(manifest_file, "%s", runfiles_manifest_file);
         int rc = access(utstring_body(manifest_file), R_OK);
         if (rc == 0) {
-            printf("using RUNFILES_MANIFEST_FILE\n");
+            if (debug)
+                log_debug("using RUNFILES_MANIFEST_FILE");
             goto found_manifest;
         }
     }
 
     /* $TEST_SRCDIR =? $RUNFILES_DIR - see https://github.com/bazelbuild/bazel/issues/6093 */
     char *test_srcdir = getenv("TEST_SRCDIR");
-    printf("TEST_SRCDIR: %s\n", test_srcdir);
+    if (debug)
+        log_debug("TEST_SRCDIR: %s", test_srcdir);
 
     runfiles_dir = getenv("RUNFILES_DIR");
-    printf("RUNFILES_DIR: %s\n", runfiles_dir);
+    if (debug)
+        log_debug("RUNFILES_DIR: %s", runfiles_dir);
     if (runfiles_dir) {
         utstring_renew(manifest_file);
         utstring_printf(manifest_file, "%s/MANIFEST", runfiles_dir);
-        printf("accessing %s\n", utstring_body(manifest_file));
+        if (debug)
+            log_debug("accessing %s", utstring_body(manifest_file));
         int rc = access(utstring_body(manifest_file), R_OK);
         if (rc == 0) {
-            printf("using RUNFILES_DIR: %s\n", utstring_body(manifest_file));
+            if (debug)
+                log_debug("using RUNFILES_DIR: %s", utstring_body(manifest_file));
             goto found_manifest;
         }
     }
 
     utstring_renew(manifest_file);
     utstring_printf(manifest_file, "%s/../MANIFEST", launch_dir);
-    printf("accessing launch_dir: %s\n", utstring_body(manifest_file));
+    if (debug)
+        log_debug("accessing launch_dir: %s", utstring_body(manifest_file));
     int rc = access(utstring_body(manifest_file), R_OK);
     if (rc == 0) {
-        printf("using launch_dir: %s\n", launch_dir);
+        if (debug)
+            log_debug("using launch_dir: %s", launch_dir);
         goto found_manifest;
     }
 
     printf("argv0: %s\n", argv0);
     utstring_renew(manifest_file);
     utstring_printf(manifest_file, "%s/MANIFEST", argv0);
-    printf("accessing launch_dir: %s\n", utstring_body(manifest_file));
+    if (debug)
+        log_debug("accessing launch_dir: %s", utstring_body(manifest_file));
     rc = access(utstring_body(manifest_file), R_OK);
     if (rc == 0) {
-        printf("using argv0: %s\n", launch_dir);
+        if (debug)
+            log_debug("using argv0: %s", launch_dir);
         goto found_manifest;
     }
 
@@ -114,7 +125,8 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
 
     for (ch = getc(fpManifest); ch != EOF; ch = getc(fpManifest))
         if (ch == '\n') line_ct++;
-    printf(RED "line ct:" CRESET " %d\n", line_ct);
+    if (debug)
+        log_debug(RED "line ct:" CRESET " %d", line_ct);
 
     struct runfiles_s *runfiles = calloc(sizeof(struct runfiles_s),
                                          line_ct + 1);
@@ -128,7 +140,7 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
 
         /* two tokens per line, first is path relative to exec dir,
            second is corresponding absolute path */
-        char *token;
+        /* char *token; */
         const char *sep = " ";
 
         char **ap, *kv[2];
@@ -136,15 +148,17 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
             if (**ap != '\0')
                 if (++ap >= &kv[2])
                     break;
-        printf(RED "kv[0]:" CRESET " %s\n", kv[0]);
-        printf(RED "kv[1]:     %s\n", kv[1]);
-
+        if (debug) {
+            printf(RED "kv[0]:" CRESET " %s\n", kv[0]);
+            printf(RED "kv[1]:     %s\n", kv[1]);
+        }
         runfiles[i].key = strdup(kv[0]);
         runfiles[i].val = strdup(kv[1]);
         i++;
     }
     fclose(fpManifest);
-    printf(BLU "DONE" CRESET "\n");
+    if (debug)
+        log_debug(BLU "DONE" CRESET);
 
     return runfiles;
 }

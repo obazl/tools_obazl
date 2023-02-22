@@ -1,12 +1,9 @@
 (define (emit-cc-target outp cc)
-  (format #t "~A: ~A~%" (ublue "emit-cc-target") emit-cc-target)
-  (format outp "## cc: ~A~%" cc)
   (format #t "~A: ~A~%" (ublue "emit-cc-target") cc)
-
   (format outp "################ ################")
   (newline outp)
 
-  (let ((nm (assoc-val :name cc)))
+  (let ((nm (car (assoc-val :name cc))))
 
     (format outp "cc_selection_proxy(\n")
     (format outp "    name = \"__lib~A__\",~%" nm)
@@ -19,18 +16,18 @@
 
     (newline outp)
     (format outp "cc_binary(\n")
-    (format outp "    name = \"dll~A.stubs.so\",~%" (assoc-val :name cc))
+    (format outp "    name = \"dll~A.stubs.so\",~%" (car (assoc-val :name cc)))
     (format outp "    linkshared = True,~%")
-    (format outp "    srcs = [~{\"~A.c\"~^, ~}],~%" (assoc-val :srcs cc))
+    (format outp "    srcs = [~{\"~A.c\"~^, ~}],~%" (car (assoc-val :c-srcs cc)))
     (format outp "    deps = [\"@ocaml//c\"],~%")
     (format outp "    copts = [\"-I\", \"external/ocaml/c\"]~%")
     (format outp ")~%")
 
     (newline outp)
     (format outp "cc_library(\n")
-    (format outp "    name = \"~A.stubs\",~%" (assoc-val :name cc))
+    (format outp "    name = \"~A.stubs\",~%" (car (assoc-val :name cc)))
     (format outp "    linkstatic = True,~%")
-    (format outp "    srcs = [~{\"~A.c\"~^, ~}],~%" (assoc-val :srcs cc))
+    (format outp "    srcs = [~{\"~A.c\"~^, ~}],~%" (car (assoc-val :c-srcs cc)))
     (format outp "    deps = [\"@ocaml//c\"],~%")
     (format outp "    copts = [\"-I\", \"external/ocaml/c\"]~%")
     (format outp ")~%"))

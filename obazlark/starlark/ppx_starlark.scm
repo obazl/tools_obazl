@@ -1,17 +1,30 @@
-(define (-get-ppx-id ws stanza-alist)
-  (if-let ((ppx (assoc-val :ppx stanza-alist)))
+(define (get-ppx-id ws stanza-alist)
+  (format #t "~A: ~A, ~A\n" (blue "get-ppx-id") ws stanza-alist)
+  (if-let ((ppx-nbr (assoc-val :ppx stanza-alist)))
           (begin
-            (format #t "~A: ~A~%" (ucyan "ppx") ppx)
-            (let* ((ppx-key (assoc-val :manifest (cdr ppx)))
+            (format #t "~A: ~A~%" (ucyan "ppx nbr") ppx-nbr)
+            (let* ((ppx-key ppx-nbr)
+                            ;; (assoc-val :manifest ppx-nbr)) ;; (cdr ppx)))
                    (_ (format #t "~A: ~A~%" (green "ppx-key") ppx-key))
                    (ppx-tbl (car (assoc-val :shared-ppx
                                             (assoc-val ws -mibl-ws-table))))
+                   (_ (format #t "~A: ~A~%" (green "ppx-tbl") ppx-tbl))
                    (ppx-ct (length (hash-table-keys ppx-tbl))))
               (if-let ((ppx-id (hash-table-ref ppx-tbl ppx-key)))
                       ppx-id
                       (begin
+                        (format #t "~A: ~A~%" (green "mibl-ws-tbl")
+                                ;; (assoc :shared-ppx
+                                ;;(hash-table-keys
+                                (assoc-val ws -mibl-ws-table)
+                                ;;)
+                                )
+                                ;; -mibl-ws-table)
+                        ;; (error 'stop "STOP ppx id")
+                      (begin
                         (hash-table-set! ppx-tbl ppx-key (+ 1 ppx-ct))
-                        (+ 1 ppx-ct)))))
+                        (+ 1 ppx-ct)))
+                      )))
           #f))
 
 (define (ppx-args->string-list ppx-args)
@@ -78,12 +91,13 @@
 ;;     (sort! deps string<?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-ppx-target outp ppx) ;;pkg stanza)
-  (format #t "~A: ~A\n" (blue "starlark-emit-ppx-target") ppx)
+(define (starlark-emit-ppx-target outp ppx ppx-ct) ;;pkg stanza)
+  (format #t "~A\n" (blue "starlark-emit-ppx-target"))
 
   (let* ((ppx-id (car ppx))
          (ppx-alist (cdr ppx))
          (args #f)
+         ;; manifest == prologue deps
          (manifest (assoc-val :manifest ppx-alist))
          )
 
@@ -91,11 +105,12 @@
     (newline outp)
     (format outp "###############\n")
     (format outp "ppx_executable(\n")
-    (format outp "    name    = \"ppx_~A.exe\",\n" ppx-id)
-
+    (if (> ppx-ct 1)
+        (format outp "    name    = \"ppx_~A.exe\",\n" ppx-id)
+        (format outp "    name    = \"ppx.exe\",\n"))
     ;; main    = "@obazl//ppx:Driver",
-    (format outp "    main    = \"~A\",\n"
-            (if *local-ppx-driver* ":Ppx_driver" "//ppx:Driver"))
+    (format outp "    main    = \"~A\",\n" "@ppxlib//lib/runner")
+    ;; (if *local-ppx-driver* ":Ppx_driver" "//ppx:Driver"))
 
     (if args
         (begin
@@ -108,7 +123,7 @@
     ;; (if (not (null? deps))
     (if manifest
         (begin
-          (format outp "    deps = [\n")
+          (format outp "    prologue = [\n")
           (format outp "~{        \"~A\"~^,\n~}\n" manifest)
           (format outp "    ],\n")))
     (if (assoc :inline-tests ppx-alist)
@@ -117,27 +132,28 @@
     (format outp ")\n")
 
     ;;;;;;;;;;;;;;;;
-    (newline outp)
-    (format outp "#############\n")
-    (format outp "ppx_module(\n")
-    (format outp "    name       = \"Ppx_driver\",\n")
-    (format outp "    struct     = \":ppx_driver.ml\",\n")
-    (format outp "    visibility = [\"//visibility:public\"],\n")
-    (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
-    (format outp ")\n")
-    (newline outp)
+    ;; (newline outp)
+    ;; (format outp "#############\n")
+    ;; (format outp "ppx_module(\n")
+    ;; (format outp "    name       = \"Ppx_driver\",\n")
+    ;; (format outp "    struct     = \":ppx_driver.ml\",\n")
+    ;; (format outp "    visibility = [\"//visibility:public\"],\n")
+    ;; (format outp "    deps       = [\"@ppxlib//lib/ppxlib\"],\n")
+    ;; (format outp ")\n")
+    ;; (newline outp)
 
-    (format outp "########\n")
-    (format outp "genrule(\n")
-    (format outp "    name = \"__ppx_driver__\",\n")
-    (format outp "    outs = [\"ppx_driver.ml\"],\n")
-    (format outp "    cmd = \"\\n\".join([\n");
-    (format outp "        \"echo \\\"(* GENERATED FILE - DO NOT EDIT *)\\\" > \\\"$@\\\"\",\n")
-    (format outp "        \"echo \\\"let () = Ppxlib.Driver.standalone ()\\\" >> \\\"$@\\\"\",\n")
-    (format outp "    ])\n")
-    (format outp ")~%")
-    (newline outp)
-    ))
+    ;; (format outp "########\n")
+    ;; (format outp "genrule(\n")
+    ;; (format outp "    name = \"__ppx_driver__\",\n")
+    ;; (format outp "    outs = [\"ppx_driver.ml\"],\n")
+    ;; (format outp "    cmd = \"\\n\".join([\n");
+    ;; (format outp "        \"echo \\\"(* GENERATED FILE - DO NOT EDIT *)\\\" > \\\"$@\\\"\",\n")
+    ;; (format outp "        \"echo \\\"let () = Ppxlib.Driver.standalone ()\\\" >> \\\"$@\\\"\",\n")
+    ;; (format outp "    ])\n")
+    ;; (format outp ")~%")
+    ;; (newline outp)
+    )
+  )
 
 ;; (define (Xstarlark-emit-ppx-target outp pkg stanza) ;; fs-path ppx-alist stanza-alist)
 ;;   (format #t "~A: ~A\n" (blue "starlark-emit-ppx-target") stanza)
@@ -275,10 +291,10 @@
 (define (ppx-hdr outp)
   ;; (if flag
   ;;     (begin
-        ;; (format outp "###########################\n")
-        ;; (format outp "####  PPX Executables  ####\n")
-        (format outp
-                "load(\"@rules_ocaml//build:rules.bzl\", \"ppx_executable\", \"ppx_module\")~%"))
+  ;; (format outp "###########################\n")
+  ;; (format outp "####  PPX Executables  ####\n")
+  (format outp
+          "load(\"@rules_ocaml//build:rules.bzl\", \"ppx_executable\", \"ppx_module\")~%"))
 
 ;; emit all ppxes in :shared-ppx of pkg
 (define (starlark-emit-pkg-ppxes outp ws pkg) ;; fs-path stanzas)
@@ -289,12 +305,11 @@
             (format #t "~A: ~A~%" (blue "shared ppx-tbl") ppx-tbl)
             (for-each (lambda (ppx)
                         (format #t "~A: ~A~%" (bgyellow "emitting ppx") ppx)
-                        (starlark-emit-ppx-target outp ppx) ;; pkg stanza)
+                        (starlark-emit-ppx-target outp ppx ppx-ct) ;; pkg stanza)
                         (if *local-ppx-driver*
                             (starlark-emit-ppx-driver outp ppx) ;;pkg stanza)))
                             ))
-                        ppx-tbl)
-
+                      ppx-tbl)
             ;; (for-each (lambda (stanza)
             ;;             (format #t "ppx stanza? ~A\n" stanza)
             ;;             (case (car stanza)
@@ -362,7 +377,7 @@
                   ;; (if (not (null? deps))
                   ;; (if manifest
                   ;;     (begin
-                  (format outp "    deps = [\n")
+                  (format outp "    prologue = [\n")
                   (format outp "~{        \"~A\"~^,\n~}\n" (car ppx))
                   (format outp "    ],\n")
 

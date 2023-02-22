@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
         }
     }
     log_debug("argc: %d", argc);
+    log_debug("argv[0]: %s", argv[0]);
     log_debug("optind: %d", optind);
 
     if (argc != optind) {
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
     /* config in this order: first bazel, then mibl, then s7 */
     bazel_configure(); // getcwd(NULL, 0));
     mibl_configure();
-    s7_scheme *s7 = s7_configure();
+    s7_scheme *s7 = s7_configure(); /* in @mibl//src:config_s7_dune.c */
 
     if (exit_on_error) {
         s7_define_variable(s7, "*exit-on-error*", s7_t(s7));

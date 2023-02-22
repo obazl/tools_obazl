@@ -24,27 +24,31 @@
                           (char-upcase (string-ref s2 0))))))))
 
 (define (-emit-topdown-aggregate outp kind ns privname submodules link-opts cc-deps)
-  (begin
+  (let ((singleton (and (= (length submodules) 1)
+                        (equal? (normalize-module-name ns)
+                                (submodules 0)))))
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
-    (format #t " linkpopts: ~A\n" link-opts)
-    (format outp "#################~%")
+    (format #t " link-opts: ~A\n" link-opts)
     (if (eq? kind :ns-archive)
-        (if (and (= (length submodules) 1)
-                 (equal? (normalize-module-name ns) (submodules 0)))
-            ;;FIXME: can't do this, clients may depend on ns
-            ;; (format outp "ocaml_archive(  ##\n")
-            (format outp "ocaml_ns_archive(  #0\n")
-            (format outp "ocaml_ns_archive(  #1\n"))
+        (if singleton
+            (begin
+              ;; (format outp "##############~%")
+              ;; (format outp "ocaml_ns_archive(  #0\n")
+              (format outp "ocaml_library(\n"))
+            (begin
+              ;; (format outp "#################~%")
+              (format outp "ocaml_ns_archive(\n")))
         (if (and (= (length submodules) 1)
                  (equal? ns (submodules 0)))
             ;; (format outp "ocaml_library(  ##\n")
-            (format outp "ocaml_ns_library(  #2\n")
-            (format outp "ocaml_ns_library(  #3\n")))
+            (format outp "ocaml_ns_library(\n")
+            (format outp "ocaml_ns_library(\n")))
     (format outp "    name       = \"~A\",\n" ns)
     ;; (if (or (> (length submodules) 1)
     ;;         (not (equal? (normalize-module-name ns) (submodules 0))))
     (if ns
-        (format outp "    ns         = \"~A\",\n" ns)) ;; privname))
+        (if (not singleton)
+            (format outp "    ns_name    = \"~A\",\n" ns))) ;; privname))
     (format outp "    manifest = [\n")
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],")
@@ -53,7 +57,8 @@
     (if cc-deps
         (begin
           (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
-          (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
+          (format outp "    cc_deps    = [\"__lib~A__\"],"
+                  (car (cdadr cc-deps)))
           (newline outp)))
 
     (if (truthy? link-opts)
@@ -96,7 +101,7 @@
   (format outp "#################\n")
   (format outp "ocaml_ns_resolver(\n")
   (format outp "    name       = \"ns.~A\",\n" pubname)
-  (format outp "    ns         = \"~A\",\n" ns)
+  (format outp "    ns_name    = \"~A\",\n" ns)
   (format outp "    manifest = [~{\"~A\"~^, ~}],\n" submodules)
   (format outp ")\n\n")
   )
@@ -200,7 +205,7 @@
       ;;    (format outp "    name       = \"~A\",\n" pubname)
 
       ;;    (if (use-ns-attr? modname pubname)
-      ;;        (format outp "    ns         = \"~A\",\n" modname))
+      ;;        (format outp "    ns_name    = \"~A\",\n" modname))
       ;;    (format outp "    visibility = [\"//visibility:public\"],\n")
 
       ;;    ;; "null libs" contain no submodules, e.g. tezos:src/tooling
@@ -235,10 +240,7 @@
                        stanzas)))
     (format #t "AGGREGATES: ~A\n" aggs)
     (if (not (null? aggs))
-        (begin
-          (format outp "#############################\n")
-          (format outp "####  Aggregate Targets  ####\n")
-          (format outp "\n")))
+        (format outp "############################# Aggregates #############################\n"))
 
     (for-each (lambda (stanza)
                 (format #t "stanza: ~A\n" stanza)

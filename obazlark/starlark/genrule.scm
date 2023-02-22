@@ -99,10 +99,13 @@
     (for-each
      (lambda (cmd)
        (if (eq? :cmd (car cmd))
-           (format #t "GENRULE ACTION (A): ~A~%" cmd)
-           (if (eq? :stdout (car cmd))
-               (format #t "GENRULE STDOUT (A): ~A~%" cmd)
-               (error 'fixme (format #f "unknown genrule cmd: ~A" cmd)))))
+           (begin
+             (format #t "GENRULE ACTION (A): ~A~%" cmd)
+             (if (eq? :stdout (car cmd))
+                 (format #t "GENRULE STDOUT (A): ~A~%" cmd)
+                 (format #t "GENRULE UNHANDLED (A): ~A~%" cmd)
+                 ;;(error 'fixme (format #f "unknown genrule cmd: ~A" cmd))
+                 ))))
      action)
 
     (if-let ((ctx (assoc-in '(:actions :ctx) stanza)))
