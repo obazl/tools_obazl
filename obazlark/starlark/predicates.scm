@@ -30,7 +30,8 @@
           #f))
 
 (define (dunefile? f)
-  (display (format #f "DUNEFILE? ~A" f)) (newline)
+  (if *debugging*
+      (format #t "DUNEFILE? ~A" f))
   (or (string=? "dune" f)
       (any (lambda (sfx) (string-suffix? sfx f))
             dunefile-ext-list)))

@@ -102,6 +102,8 @@
 
   (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*)
 
+  ;; (set! *debugging* #t)
+
   (set! *build-dyads* #t)
   (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
@@ -134,18 +136,18 @@
     (if *emit-starlark*
         (ws->starlark :@))
 
-    (ws->opam-bundles :@)
+    ;; (ws->opam-bundles :@)
 
-    (debug-print-pkgs :@)
+    ;; (debug-print-pkgs :@)
 
-    (format #t "~A: ~A~%" (green "selectors")
-            (remove-duplicates *select-protases*))
+    ;; (format #t "~A: ~A~%" (green "selectors")
+    ;;         (remove-duplicates *select-protases*))
 
-    (debug-print-exports-table :@)
+    ;; (debug-print-exports-table :@)
 
-    (-dump-ppx :@)
+    ;; (-dump-ppx :@)
 
-    (debug-print-filegroups :@)
+    ;; (debug-print-filegroups :@)
 
     ;; (-dump-opam :@)
 

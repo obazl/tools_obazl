@@ -1,4 +1,5 @@
-(format #t "loading starlark/aggregates.scm\n")
+(if *debugging*
+    (format #t "loading starlark/aggregates.scm\n"))
 
 ;;FIXME: get this from cmdline or ini file
 (define *ns-topdown* #t)
@@ -31,8 +32,10 @@
                        (string-contains (format #f "~A" privname) "test")))
          (tgt-name (if is-test (format #f "~A_test" privname) privname)))
 
-    (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
-    (format #t " link-opts: ~A\n" link-opts)
+    (if *debugging*
+        (begin
+          (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
+          (format #t " link-opts: ~A\n" link-opts)))
     (if is-test
         (format outp "fail(\"FIXME: verify build_test target\")\n"))
 
@@ -65,7 +68,8 @@
 
     (if cc-deps
         (begin
-          (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+          (if *debugging*
+              (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
           (format outp "    cc_deps    = [\"__lib~A__\"],"
                   (car (cdadr cc-deps)))
           (newline outp)))
@@ -88,7 +92,8 @@
     (newline outp)))
 
 (define (-emit-bottomup-aggregate outp kind ns pubname submodules flags cc-deps)
-  (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind)
+  (if *debugging*
+      (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind))
   (format outp "#################\n")
   (if (eq? kind :ns-archive)
       (format outp "ocaml_archive( #4\n")
@@ -101,7 +106,8 @@
   ;; (format outp "    opts       = ~A_OPTS,\n" libname)
   (if cc-deps
       (begin
-        (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+        (if *debugging*
+            (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
         (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
         (newline outp)))
 
@@ -117,11 +123,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-target outp pkg-path stanza) ;; typ fs-path stanza)
-  (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza))
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
          (ns (assoc-val :ns stanza-alist))
-         (_ (format #t "~A: ~A~%" (blue "ns") ns))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "ns") ns)))
          (privname (assoc-val :privname stanza-alist))
          (pubname (if ns ns
                       (if-let ((pubname (assoc-val :pubname stanza-alist)))
@@ -129,18 +136,20 @@
                               privname)))
          (tgtname (if privname privname pubname))
          (modname (normalize-module-name (if privname privname pubname)))
-         (_ (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname))
+         (_ (if *debugging*
+                (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname)))
          (libname (string-upcase (stringify modname)))
 
          (link-opts (if-let ((opts (assoc-val :link-opts (cdr stanza))))
                        opts '()))
-         (_ (format #t "~A: ~A\n" (uwhite "link-opts") link-opts))
+         (_ (if *debugging*
+                (format #t "~A: ~A\n" (uwhite "link-opts") link-opts)))
          ;; skip :opens, '-open' not relevant for aggregates
          ;; (flags (if-let ((flags (assoc-val :flags opts)))
          ;;                (list (apply string-append
          ;;                             (map stringify flags)))
          ;;                '()))
-         ;; (_ (format #t "~A: ~A\n" (uwhite "flags") flags))
+         ;; (_ (if *debugging*(format #t "~A: ~A\n" (uwhite "flags") flags)))
          ;; skip :standard, handled by hidden attributes
          ;; (standard-opts? (if (assoc :standard opts) #t #f))
 
@@ -151,16 +160,18 @@
          (deps (assoc :deps stanza-alist))
          (cc-deps (assoc :cc-stubs stanza-alist)))
 
-    (begin
-      (format #t "kind: ~A\n" kind)
-      (format #t "DEPS: ~A\n" deps)
-      (format #t "SUBMs: ~A\n" submodules))
+    (if *debugging*
+        (begin
+          (format #t "kind: ~A\n" kind)
+          (format #t "DEPS: ~A\n" deps)
+          (format #t "SUBMs: ~A\n" submodules)))
 
     ;; (format outp "######## ~A ########\n" pubname)
 
     (case kind
       ((:ns-archive :ns-library)
-       (format #t "~A: ~A~%" (ured "NS") ns)
+       (if *debugging*
+           (format #t "~A: ~A~%" (ured "NS") ns))
        (if *ns-topdown*
            (-emit-topdown-aggregate outp pkg-path kind ns tgtname submodules link-opts cc-deps)
            ;; aggregated bottomup, needs archive or lib w/o ns
@@ -168,7 +179,8 @@
 
       ((:archive :library)
        (begin
-         (format #t "EMITTING NON-NS AGGREGATE: ~A\n" kind)
+         (if *debugging*
+             (format #t "EMITTING NON-NS AGGREGATE: ~A\n" kind))
          (format outp "##############\n")
          (if (eq? kind :library)
              (format outp "ocaml_library( #6\n")
@@ -180,7 +192,8 @@
          (format outp "    ],~%")
          (if cc-deps
              (begin
-               (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps)
+               (if *debugging*
+                   (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
                (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
                (newline outp)))
          (format outp ")\n\n")))
@@ -237,7 +250,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-targets outp pkg) ;; fs-path stanzas)
-  (format #t "~A: ~A\n" (bgblue "starlark-emit-aggregate-targets") pkg)
+  (if *debugging*
+      (format #t "~A: ~A\n" (bgblue "starlark-emit-aggregate-targets") pkg))
 
   ;; only emit header if aggregators
   (let* ((stanzas (assoc-val :dune pkg))
@@ -248,12 +262,14 @@
                           (car stanza)
                           '(:archive :library :ns-archive :ns-library)))
                        stanzas)))
-    (format #t "AGGREGATES: ~A\n" aggs)
+    (if *debugging*
+        (format #t "AGGREGATES: ~A\n" aggs))
     (if (not (null? aggs))
         (format outp "############################# Aggregates #############################\n"))
 
     (for-each (lambda (stanza)
-                (format #t "stanza: ~A\n" stanza)
+                (if *debugging*
+                    (format #t "stanza: ~A\n" stanza))
                 (case (car stanza)
                   ((:ns-archive :ns-library) ;; dune library, wrapped
                    (starlark-emit-aggregate-target outp pkg-path stanza))

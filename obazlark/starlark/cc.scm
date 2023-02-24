@@ -1,5 +1,6 @@
 (define (emit-cc-target outp cc)
-  (format #t "~A: ~A~%" (ublue "emit-cc-target") cc)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "emit-cc-target") cc))
   (format outp "################ ################")
   (newline outp)
 
@@ -34,11 +35,13 @@
     )
 
 (define (starlark-emit-cc-targets outp ws pkg)
-  (format #t "~A: ~A\n" (bgblue "starlark-emit-cc-targets") pkg)
+  (if *debugging*
+      (format #t "~A: ~A\n" (bgblue "starlark-emit-cc-targets") pkg))
   (let ((stanzas (assoc-val :dune pkg)))
     (for-each
      (lambda (stanza)
-       (format #t "~A: ~A\n" (uwhite "stanza") stanza)
+       (if *debugging*
+           (format #t "~A: ~A\n" (uwhite "stanza") stanza))
        (let ((cc (assoc-val :cc-stubs (cdr stanza))))
          (if cc
              (emit-cc-target outp cc))))

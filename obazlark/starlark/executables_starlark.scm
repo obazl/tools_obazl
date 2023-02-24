@@ -1,16 +1,19 @@
-;; (format #t "loading starlark/executables.scm\n")
+(if *debugging*
+    (format #t "loading starlark/executables.scm\n"))
 
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
 
 (define (starlark-emit-executable-target outp ws kind pkg stanza exec-libs)
-  (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
-  (format #t "~A: ~A~%" (blue "kind") kind)
-  (format #t "~A: ~A~%" (blue "exec-libs") exec-libs)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
+        (format #t "~A: ~A~%" (blue "kind") kind)
+        (format #t "~A: ~A~%" (blue "exec-libs") exec-libs)))
   (let* ((stanza-alist (cdr stanza))
 
          (pkg-name (pkg->pkg-name pkg))
-         (_ (format #t "~A: ~A~%" (blue "pkg-name") pkg-name))
+         (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-name") pkg-name)))
 
          (privname (assoc-val :privname stanza-alist))
          ;; (mainname (normalize-module-name privname))
@@ -22,22 +25,22 @@
 
          ;; (modes (if-let ((ms (assoc-in '(:link :modes) stanza-alist)))
          ;;                (cdr ms) ms))
-         (_ (format #t "MODES: ~A~%" (assoc-val :modes stanza-alist)))
+         (_ (if *debugging* (format #t "MODES: ~A~%" (assoc-val :modes stanza-alist))))
          (modes (if-let ((ms (assoc-val :modes stanza-alist)))
                         ms '()))
-         (_ (format #t "~A: ~A~%" (bgred "modes") modes))
+         (_ (if *debugging* (format #t "~A: ~A~%" (bgred "modes") modes)))
          ;; (_ (if (truthy? modes) (error 'X "X")))
 
          ;; 'name', i.e. main, is required by dune so we always have it
          ;; (main (cadr (assoc-in '(:link :main) stanza-alist)))
          (main (assoc-val :main stanza-alist))
-         (_ (format #t "main: ~A~%" main))
+         (_ (if *debugging* (format #t "main: ~A~%" main)))
 
          ;; TODO: support *dune-execlib-includes-main*
          ;; (exec-lib (if *dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
          (exec-lib (if-let ((el (assoc-val :exec-lib stanza-alist)))
                            el #f))
-         (_ (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib))
+         (_ (if *debugging* (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib)))
 
         ;; we will use exec-lib-serial and pkg-name to form exec-lib name
          (exec-lib-serial (if exec-lib
@@ -48,7 +51,7 @@
                                           '(error 'FIXME
                                                   (format #f "~A: ~A~%" (red "exec-lib not found in exec-libs") exec-lib))))
                               #f))
-         (_ (format #t "~A: ~A~%" (bgred "exec-lib serial") exec-lib-serial))
+         (_ (if *debugging* (format #t "~A: ~A~%" (bgred "exec-lib serial") exec-lib-serial)))
 
          (exec-lib-name (if exec-lib-serial
                             (if (< (length exec-libs) 2)
@@ -60,36 +63,39 @@
                           (cdr deps) '()))
          (libdeps (if (number? libdeps)
                       (let ((shared-deps (assoc-in '(:dune :shared-deps) pkg)))
-                        (format #t "~A: ~A~%" (bggreen "share-deps")
-                                shared-deps)
+                        (if *debugging*
+                            (format #t "~A: ~A~%" (bggreen "share-deps")
+                                    shared-deps))
                         libdeps)
                       libdeps))
-         (_ (format #t "libdeps: ~A~%" libdeps))
+         (_ (if *debugging* (format #t "libdeps: ~A~%" libdeps)))
 
          ;; local module deps
          ;; (deps (assoc-in '(:compile :deps)))
-         ;; (_ (format #t "compile deps: ~A~%" deps))
+         ;; (_ (if *debugging* (format #t "compile deps: ~A~%" deps)))
          (deps (sort! (if-let ((deps (assoc-in '(:deps :modules) stanza-alist)))
                              ;; (assoc-in '(:link :manifest :modules)
                              ;;           stanza-alist)))
                               (cdr deps) '())
                       sym<?))
          (deps (append deps (list main)))
-         (_ (format #t "local deps: ~A~%" deps))
+         (_ (if *debugging* (format #t "local deps: ~A~%" deps)))
          ;; (deps (remove main deps))
-         ;; (_ (format #t "deps: ~A~%" deps))
+         ;; (_ (if *debugging* (format #t "deps: ~A~%" deps)))
          )
     (let-values (((link-std link-opts)
                   (link-flags->mibl stanza)))
-      (format #t "link opts: ~A~%" link-opts)
-      (format #t "link std: ~A~%" link-std)
-
-      (format #t "TARGET: ~A\n" tgtname)
-      ;; (format #t "MAIN: ~A\n" main)
-      (format #t "DEPS: ~A\n" deps)
-      ;; (format #t "SUBMs: ~A\n" submodules)
-      ;; (format #t "DEPS: ~A\n" deps)
-      ;; (error 'STOP "STOP exec linkflags")
+      (if *debugging*
+          (begin
+            (format #t "link opts: ~A~%" link-opts)
+            (format #t "link std: ~A~%" link-std)
+            (format #t "TARGET: ~A\n" tgtname)
+            ;; (format #t "MAIN: ~A\n" main)
+            (format #t "DEPS: ~A\n" deps)
+            ;; (format #t "SUBMs: ~A\n" submodules)
+            ;; (format #t "DEPS: ~A\n" deps)
+            ;; (error 'STOP "STOP exec linkflags")
+            ))
 
       ;; (let-values (((flags opens) (stanza-opts stanza-alist)))
       ;;   (if (or flags opens
@@ -217,9 +223,11 @@
         (newline outp)
 
         ;;FIXME: insert the main exec-module target here
-        (format #t "~A: ~A~%" (cyan "finding main module") main)
+        (if *debugging*
+            (format #t "~A: ~A~%" (cyan "finding main module") main))
         (let ((main-module (find-module-in-pkg main pkg)))
-          (format #t "~A: ~A~%" (cyan "## main exec module") main-module)
+          (if *debugging*
+              (format #t "~A: ~A~%" (cyan "## main exec module") main-module))
           ;; (format outp "## main: ~A~%" main)
           ;; (format outp "## main exec module: ~A~%" main-module)
           (if main-module
@@ -237,7 +245,8 @@
     ))
 
 (define (starlark-emit-executable-targets outp ws pkg) ;;fs-path stanzas)
-  (format #t "~A\n" (ublue "starlark-emit-executable-targets"))
+  (if *debugging*
+      (format #t "~A\n" (ublue "starlark-emit-executable-targets")))
 
   ;; Multiple executables may share the same execlib. for example we
   ;; may have two (executables), each with n executables and a list
@@ -279,7 +288,8 @@
            ;;                        accum))
            ;;                  '() stanzas))
            ;; (exec-libs (remove '() exec-libs)))
-      (format #t "~A: ~A~%" (bgcyan "pkg exec-libs") exec-libs)
+      (if *debugging*
+          (format #t "~A: ~A~%" (bgcyan "pkg exec-libs") exec-libs))
       ;; now process :executable stanzas, passing the exec-libs
       (let* ((flag #t))
         (for-each (lambda (stanza)
@@ -307,8 +317,10 @@
             (begin
               (format outp "############################ Exec Libs ###############################~%")
               (for-each (lambda (exec-lib)
-                          (format #t "~A: ~A~%" (ucyan "emitting exec-libs for pkg") pkg)
-                          (format #t "~A: ~A~%" (ucyan "emitting exec-lib") exec-lib)
+                          (if *debugging*
+                              (begin
+                                (format #t "~A: ~A~%" (ucyan "emitting exec-libs for pkg") pkg)
+                                (format #t "~A: ~A~%" (ucyan "emitting exec-lib") exec-lib)))
                           ;; deps must be namespaced, or at least have unique names
 
                           (format outp "ocaml_ns_library(~%")
@@ -320,7 +332,8 @@
                           ;; (if (not (null? deps))
                           ;;     (begin
                           (format outp "    manifest = [~%")
-                          (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib)
+                          (if *debugging*
+                              (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib))
                           (format outp "~{        \":~A\"~^,~%~}~%" (assoc-val :modules (cdr exec-lib)))
                           (format outp "    ],\n")
                           ;; ))
@@ -331,4 +344,5 @@
                         (remove '() exec-libs))))
         )))
 
-;; (format #t "loaded starlark/executables.scm\n")
+(if *debugging*
+    (format #t "loaded starlark/executables.scm\n"))

@@ -1,21 +1,25 @@
 (define (-expand-bash-tool tool pkg-path stanza)
-  (format #t "~A: ~A~%" (ublue "-expand-bash-tool") tool)
-  (format #t "~A: ~A~%" (uwhite "pkg-path") pkg-path)
-  (format #t "~A: ~A~%" (uwhite "stanza") stanza)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "-expand-bash-tool") tool)
+        (format #t "~A: ~A~%" (uwhite "pkg-path") pkg-path)
+        (format #t "~A: ~A~%" (uwhite "stanza") stanza)))
 
   (let ((tool (if (string? tool) tool (format #f "~A" tool))))
     (if (member (string->symbol tool) shell-tools)
         (begin
-          (format #t "~A: ~A~%" (red "FOO") tool)
+          (if *debugging*
+              (format #t "~A: ~A~%" (red "FOO") tool))
           #f)
         (let* ((key (string->keyword tool)))
           (let* ((deps (assoc-val :deps stanza))
-                 (_ (format #t "~A: ~A~%" (yellow "searching deps") deps))
+                 (_ (if *debugging*
+                        (format #t "~A: ~A~%" (yellow "searching deps") deps)))
                  (match (find-if (lambda (dep)
                                    ;; (format #t "~A: ~A~%" (yellow "dep") dep)
                                    (eq? key (car dep)))
                                  deps)))
-            (format #t "~A: ~A~%" (yellow "match") match)
+            (if *debugging* (format #t "~A: ~A~%" (yellow "match") match))
             (if match
                 (let* ((lbl (cdr match))
                        (pkg (assoc-val :pkg lbl))
@@ -24,15 +28,17 @@
                        (tgt (if-let ((t (assoc-val :tgt lbl)))
                                     (format #f "//~A:~A" pkg t)
                                     (error 'fixme "bash tool has :tgts"))))
-                  (format #t "~A: ~A~%" (yellow "RESOLVED") tgt)
+                  (if *debugging* (format #t "~A: ~A~%" (yellow "RESOLVED") tgt))
                   tgt)
                 ;; (format #t "~A~%" tool)
                 ))))))
 
 (define (-expand-bash-arg arg pkg-path stanza)
-  (format #t "~A: ~A~%" (blue "-expand-bash-arg") arg)
-  (format #t "~A: ~A~%" (white "pkg-path") pkg-path)
-  (format #t "~A: ~A~%" (white "stanza") stanza)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (blue "-expand-bash-arg") arg)
+        (format #t "~A: ~A~%" (white "pkg-path") pkg-path)
+        (format #t "~A: ~A~%" (white "stanza") stanza)))
   (let* ((key (string->keyword arg)))
     ;; search :deps
     (let* ((deps (assoc-val :deps stanza))
@@ -41,7 +47,7 @@
                            ;; (format #t "~A: ~A~%" (yellow "dep") dep)
                            (eq? key (car dep)))
                          deps)))
-      (format #t "~A: ~A~%" (yellow "match") match)
+      (if *debugging* (format #t "~A: ~A~%" (yellow "match") match))
       (if match
           (let* ((lbl (cdr match))
                  (pkg (assoc-val :pkg lbl))
@@ -52,14 +58,14 @@
                               (if-let ((t (assoc-val :tgts lbl)))
                                       (format #f "$(rootpaths ~A:~A)" pkg t)
                                       (error 'fixme "lbl missing tgt/tgs")))))
-            (format #t "~A: ~A~%" (yellow "RESOLVED") tgt)
+            (if *debugging* (format #t "~A: ~A~%" (yellow "RESOLVED") tgt))
             tgt)
           arg))))
 
 ;; handle all pct-vars: %{deps}, %{target}, etc.
 ;; also filename literals
 (define (-expand-bash-args args pkg-path stanza)
-  (format #t "~A: ~A~%" (ublue "-expand-bash-args") args)
+  (if *debugging* (format #t "~A: ~A~%" (ublue "-expand-bash-args") args))
   ;; args is either a string (the tool), a list of one string, or list of strings & syms
   ;; (bash "...cmd...")
   ;; or (run bash "foo.sh" bar ...)
@@ -77,21 +83,24 @@
                  (else (if (and (string? (car args)) (null? (cdr args)))
                            (string-tokenize (car args) char-set:graphic)
                            args)))))
-          (format #t "~A: ~A~%" (red "arg-list") arg-list)
+          (if *debugging* (format #t "~A: ~A~%" (red "arg-list") arg-list))
 
           ;; FIXME: treat first arg as tool
 
           (let* ((expanded-tool
                   (-expand-bash-tool (car arg-list) pkg-path stanza))
-                 (_ (format #t "~A: ~A~%" (yellow "expanded TOOL") expanded-tool))
+                 (_ (if *debugging*
+                        (format #t "~A: ~A~%" (yellow "expanded TOOL") expanded-tool)))
                  (expanded-args
                   (map (lambda (arg)
-                         (format #t "~%~A: ~A (~A)~%" (red "expanding ARG") arg (type-of arg))
+                         (if *debugging*
+                             (format #t "~%~A: ~A (~A)~%" (red "expanding ARG") arg (type-of arg)))
                          (let* ((arg (format #f "~A" arg))
                                 (match-ct 2)
                                 (res (regexec rgx arg match-ct 0))
-                                (_ (format #t "~A: ~A~%"
-                                           (red "regex result") res)))
+                                (_ (if *debugging*
+                                       (format #t "~A: ~A~%"
+                                           (red "regex result") res))))
                            (if (int-vector? res)
                                (let* ((rm-so (int-vector-ref res 0))
                                       (rm-eo (int-vector-ref res 1))
@@ -115,23 +124,29 @@
             (let* ((expanded-args
                     (if-let ((stdout (assoc-in '(:actions :stdout) stanza)))
                             (begin
-                              (format #t "~A: ~A~%" (yellow "stdout") stdout)
+                              (if *debugging*
+                                  (format #t "~A: ~A~%" (yellow "stdout") stdout))
                               (append expanded-args (list "> $@")))
                             (let ((outs (-expand-outputs pkg-path stanza)))
                               (append expanded-args (list (format #f "cp ~A $@" outs)))))))
-              (format #t "~A: ~A~%" (red "EXPANDED ARGS") expanded-args)
+              (if *debugging*
+                  (format #t "~A: ~A~%" (red "EXPANDED ARGS") expanded-args))
               (values expanded-tool expanded-args)))))))
 
 (define (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
-  (format #t "~A: ~A~%" (blue "emit-bash-cmd") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "emit-bash-cmd") stanza))
   (let* ((args (assoc-in '(:actions :cmd :args) stanza))
          (args (cdr args))
-         (_ (format #t "~A: ~A~%" (yellow "bash args") args))
+         (_ (if *debugging*
+                (format #t "~A: ~A~%" (yellow "bash args") args)))
          )
     (let-values (((tool parsed-args)
                   (-expand-bash-args args pkg-path stanza)))
-      (format #t "~A: ~A~%" (yellow "tool") tool)
-      (format #t "~A: ~S~%" (yellow "parsed args") parsed-args)
+      (if *debugging*
+          (begin
+            (format #t "~A: ~A~%" (yellow "tool") tool)
+            (format #t "~A: ~S~%" (yellow "parsed args") parsed-args)))
 
       (format outp "    cmd_bash   = \" \".join([\n")
       (format outp "        \"$(execpath ~A)\",~%" tool)
@@ -146,7 +161,8 @@
       )))
 
 (define (emit-bash-srcs outp srcs pkg-path stanza)
-  (format #t "~A: ~A~%" (ublue "emit-bash-srcs") srcs)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "emit-bash-srcs") srcs))
   ;; remove bash tool from srcs
 
   (let* ((args (assoc-in '(:actions :cmd :args) stanza))
@@ -154,16 +170,17 @@
     (if (truthy? args)
         (let-values (((tool parsed-args)
                       (-expand-bash-args args pkg-path stanza)))
-          (format #t "~A: ~A~%" (yellow "TOOL") tool)
+          (if *debugging*
+              (format #t "~A: ~A~%" (yellow "TOOL") tool))
           (let ((srcs (remove tool srcs)))
-            (format #t "~A: ~A~%" (red "srcs") srcs)
+            (if *debugging* (format #t "~A: ~A~%" (red "srcs") srcs))
             (format outp "    srcs  = [\n")
             (format outp "~{        \"~A\"~^,\n~}\n" srcs)
             (format outp "    ],\n")))
         (begin
-            (format #t "~A: ~A~%" (red "srcs") srcs)
-            (format outp "    srcs  = [\n")
-            (format outp "~{        \"~A\"~^,\n~}\n" srcs)
-            (format outp "    ],\n")))
-        ))
+          (if *debugging* (format #t "~A: ~A~%" (red "srcs") srcs))
+          (format outp "    srcs  = [\n")
+          (format outp "~{        \"~A\"~^,\n~}\n" srcs)
+          (format outp "    ],\n")))
+    ))
 

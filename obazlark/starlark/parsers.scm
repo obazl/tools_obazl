@@ -1,15 +1,18 @@
 (define (starlark-emit-ocamllex outp stanza)
-  (format #t "~A: ~A~%" (ublue "starlark-emit-ocamllex") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "starlark-emit-ocamllex") stanza))
 
   (for-each (lambda (ocamllex)
-              (format #t "~A: ~A~%" (uwhite "ocamllex") ocamllex)
+              (if *debugging*
+                  (format #t "~A: ~A~%" (uwhite "ocamllex") ocamllex))
               (let* ((principal-name (principal-name (cdr ocamllex)))
                      (module-name (car ocamllex))
                      (target-name (string-copy
                                    (format #f "~A" module-name))))
                 (string-set! target-name 0
                              (char-upcase (string-ref target-name 0)))
-                (format #t "emitting ocamllex: ~A\n" ocamllex)
+                (if *debugging*
+                    (format #t "emitting ocamllex: ~A\n" ocamllex))
 
                 ;; ocaml_module target emitted by aggregate emitter
                 ;; (format outp "#############\n")
@@ -31,7 +34,8 @@
             (cdr stanza)))
 
 (define (starlark-emit-ocamlyacc outp stanza)
-  (format #t "~A: ~A~%" (ublue "starlark-emit-ocamlyacc") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "starlark-emit-ocamlyacc") stanza))
 
   (for-each (lambda (ocamlyacc)
               (let* ((principal-name (principal-name (cdr ocamlyacc)))
@@ -40,7 +44,8 @@
                                    (format #f "~A" module-name))))
                 (string-set! target-name 0
                              (char-upcase (string-ref target-name 0)))
-                (format #t "emitting ocamlyacc: ~A\n" ocamlyacc)
+                (if *debugging*
+                    (format #t "emitting ocamlyacc: ~A\n" ocamlyacc))
 
                 (format outp "##########\n")
                 (format outp "ocamlyacc(\n")
@@ -52,12 +57,14 @@
             (cdr stanza)))
 
 (define (starlark-emit-menhir outp stanza)
-  (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza))
   (newline outp)
 
   (for-each (lambda (parser)
               (let ((principal-name (principal-name parser)))
-                (format #t "emitting menhir parser: ~A\n" parser)
+                (if *debugging*
+                    (format #t "emitting menhir parser: ~A\n" parser))
                 (format outp "#######\n")
                 (format outp "menhir(\n")
                 (format outp "    name     = \"menhir_~S\",\n" parser)
@@ -95,7 +102,8 @@
             (assoc-val :grammars (cdr stanza))))
 
 (define (starlark-emit-file-generators outp pkg)
-  (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg)
+  (if *debugging*
+      (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg))
   (let* ((stanzas (assoc-val :dune pkg))
          (hdr-flag #t))
     (for-each (lambda (stanza)

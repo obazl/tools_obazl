@@ -6,12 +6,14 @@
                         outputs
                         pkg-path
                         stanza)
-  (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
-  (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
-  (format #t "~A: ~A~%" (uwhite "srcs") srcs)
-  (format #t "~A: ~A~%" (uwhite "deps") deps)
-  (format #t "~A: ~A~%" (uwhite "xdeps") (dissoc '(::tools) deps))
-  (format #t "~A: ~A~%" (uwhite "outputs") outputs)
+  (if *debugging*
+      (begin
+        (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
+        (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
+        (format #t "~A: ~A~%" (uwhite "srcs") srcs)
+        (format #t "~A: ~A~%" (uwhite "deps") deps)
+        (format #t "~A: ~A~%" (uwhite "xdeps") (dissoc '(::tools) deps))
+        (format #t "~A: ~A~%" (uwhite "outputs") outputs)))
 
   (format outp "    cmd   = \" \".join([\n")
 
@@ -26,18 +28,22 @@
 
   (for-each
    (lambda (cmd)
-     (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd)
+     (if *debugging*
+         (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd))
      (if (eq? :cmd (car cmd))
          (let-values
              (((tool-dep? tool xargs)
                (derive-cmd pkg-path cmd deps outputs)))
 
-           ;; (format #t "~A:\n" (red "derived cmd"))
-           (format #t "~A: ~A~%" (magenta "tool-dep?")
-                   tool-dep?)
-           (format #t "~A: ~A~%" (magenta "tool") tool)
-           (format #t "~A: ~A~%" (magenta "XARGS") xargs)
-           ;; (error 'X "STOP shell")
+           (if *debugging*
+               (begin
+                 ;; (format #t "~A:\n" (red "derived cmd"))
+                 (format #t "~A: ~A~%" (magenta "tool-dep?")
+                         tool-dep?)
+                 (format #t "~A: ~A~%" (magenta "tool") tool)
+                 (format #t "~A: ~A~%" (magenta "XARGS") xargs)
+                 ;; (error 'X "STOP shell")
+                 ))
 
            ;; cmd   = " ".join([
            ;;     "$(execpath //compiler/bin-js_of_ocaml:js_of_ocaml)",
@@ -70,5 +76,6 @@
                     (format #f "unknown cmd: ~A" cmd)))
          ))
    action)
-  (format #t "~A~%" (red "emitted cmd attrib"))
+  (if *debugging*
+      (format #t "~A~%" (red "emitted cmd attrib")))
   (format outp "    ]),\n"))

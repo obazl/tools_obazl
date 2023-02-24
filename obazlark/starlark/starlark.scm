@@ -1,4 +1,5 @@
-(format #t "loading obazl/starlark.scm\n")
+(if *debugging*
+    (format #t "loading obazl/starlark.scm\n"))
 
 (load "dune.scm")
 (load "opam.scm")
@@ -1031,8 +1032,8 @@
                                               aggregator-stanza)))
                               #f))
                          )
-                    (format #t "namespace: ~A\n"
-                            namespace)
+                    (if *debugging* (format #t "namespace: ~A\n"
+                                            namespace))
                     (if (string-suffix? ".ml" srcfile)
                         (begin
                           (format outp "ocaml_module(\n")
@@ -1068,7 +1069,6 @@
                                 (format outp "    name     = \"~A_cmi\",\n" mname)
                                 (format outp "    src      = \"~A\",\n" srcfile)
 
-                          (format #t "YYYYYYYYYYYYYYYYy\n")
                                 (if ppx-alist
                                   (begin
                                     (format outp
@@ -1122,12 +1122,13 @@
                                              '()))
                              )
                         (if (equal? mname 'Rand)
-                            (begin
-                              (format #t "RAND:\n")
-                              (format #t "  namespace: ~A\n" namespace)
-                              (format #t "  deps: ~A\n" deps)
-                              (format #t "  dep-labels: ~A\n" dep-labels)
-                              ))
+                            (if *debugging*
+                                (begin
+                                  (format #t "RAND:\n")
+                                  (format #t "  namespace: ~A\n" namespace)
+                                  (format #t "  deps: ~A\n" deps)
+                                  (format #t "  dep-labels: ~A\n" dep-labels)
+                                  )))
                         (if namespace
                             ;; (if deps ;; (not (null? dep-labels))
                                 (format outp "    deps     = ~A + [\n"
@@ -1178,7 +1179,8 @@
     ;; ))
 
 (define (starlark-emit-null-stanzas outp fs-path stanzas)
-  (format #t "starlark-emit-null-stanzas: ~A\n" fs-path)
+  (if *debugging*
+      (format #t "starlark-emit-null-stanzas: ~A\n" fs-path))
   (format outp "exports_files(glob([\"**\"]))\n"))
 
 ;; install targets - ignore
@@ -1188,7 +1190,8 @@
   ;;       (newline outp)))
 
 (define (starlark-emit-build-files dune-pkg-tbls)
-  (format #t "starlark-emit-build-files\n")
+  (if *debugging*
+      (format #t "starlark-emit-build-files\n"))
   (for-each
    (lambda (dune-pkg-tbl)
      (for-each
@@ -1207,30 +1210,30 @@
                              (lambda ()
                                (open-output-file build-file))
                              (lambda args
-                               (format #t "OPEN ERROR"))
+                               (error 'OPEN_ERR_EMIT_BF "OPEN ERROR EMIT BF"))
                                )))
                 ;; (format #t "\nEmitting ~A, port ~A\n" build-file outp)
 
                 (starlark-emit-build-file-hdr outp pkg-kv)
                 ;; (newline outp)
 
-                ;; (format #t "emitting executables\n")
+                (if *debugging* (format #t "emitting executables\n"))
                 (starlark-emit-executable-targets outp fs-path stanzas)
 
-                (format #t "emitting aggregates\n")
+                (if *debugging* (format #t "emitting aggregates\n"))
                 (starlark-emit-aggregate-targets outp fs-path stanzas)
 
-                ;; (format #t "emitting module files\n")
+                (if *debugging* (format #t "emitting module files\n"))
                 (starlark-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
 
-                ;; (format #t "emitting file generators\n")
+                (if *debugging* (format #t "emitting file generators\n"))
                 ;; ocamllex, ocamlyacc, etc.
                 (starlark-emit-file-generators outp fs-path stanzas)
 
-                ;; (format #t "emitting ppxes\n")
+                (if *debugging* (format #t "emitting ppxes\n"))
                 (starlark-emit-ppxes outp fs-path stanzas)
 
-                ;; (format #t "emitting rules\n")
+                (if *debugging* (format #t "emitting rules\n"))
                 (starlark-emit-rule-targets outp fs-path stanzas)
 
                 (close-output-port outp)
@@ -1258,7 +1261,7 @@
                 )
               ;; else null :stanzas
               (begin
-                (format #t "NULL stanzas: ~A\n" fs-path)
+                (if *debugging* (format #t "NULL stanzas: ~A\n" fs-path))
                 (let* ((build-file (string-append fs-path "/BUILD.bazel"))
                        (outp
                         (catch #t

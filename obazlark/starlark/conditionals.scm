@@ -1,5 +1,6 @@
 (define (starlark-emit-select-flags outp ws pkg)
-  (format #t "~A: ~A\n" (ublue "starlark-emit-select-flags") pkg)
+  (if *debugging*
+      (format #t "~A: ~A\n" (ublue "starlark-emit-select-flags") pkg))
 
   (if (not (null? *select-protases*))
       (begin
@@ -9,7 +10,7 @@
                       (lambda ()
                         (open-output-file "bzl/import/BUILD.bazel"))
                       (lambda args
-                        (format #t "OPEN ERROR"))
+                        (error 'OPEN_ERR_COND "OPEN ERROR COND"))
                       )))
 
           (format outp
@@ -62,10 +63,12 @@
   ;; )
 
 (define (starlark-emit-conditionals outp ws pkg)
-  (format #t "~A: ~A\n" (bgred "starlark-emit-conditionals") pkg)
+  (if *debugging*
+      (format #t "~A: ~A\n" (bgred "starlark-emit-conditionals") pkg))
   (for-each
    (lambda (stanza)
-     (format #t "~A: ~A~%" (uwhite "stanza") stanza)
+     (if *debugging*
+         (format #t "~A: ~A~%" (uwhite "stanza") stanza))
      (case (car stanza)
        ((:archive :library :ns-archive :ns-library)
         (let* ((hdr-flag #t)
@@ -75,21 +78,25 @@
                ;; compile-options is an alist,
                ;; keys :generic, :ocamlc, :ocamlopt
                (archive-options (-get-archive-opts (cdr stanza)))
-               (_ (format #t "~A: ~A~%" (bgyellow "archive-options")
-                          archive-options))
+               (_ (if *debugging*
+                      (format #t "~A: ~A~%" (bgyellow "archive-options")
+                          archive-options)))
                (compile-options (get-compile-opts (cdr stanza) pkg))
-               (_ (format #t "~A: ~A~%" (bgyellow "compile-options")
-                          compile-options))
+               (_ (if *debugging*
+                      (format #t "~A: ~A~%" (bgyellow "compile-options")
+                              compile-options)))
                (exec-options (-get-exec-opts (cdr stanza)))
-               (_ (format #t "~A: ~A~%" (bgyellow "exec-options")
-                          exec-options))
+               (_ (if *debugging*
+                      (format #t "~A: ~A~%" (bgyellow "exec-options")
+                              exec-options)))
 
                (deps-conditional (if-let ((dc
                                            (assoc-in '(:deps :conditionals)
                                                      (cdr stanza))))
                                          dc #f))
                )
-          (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)
+          (if *debugging*
+              (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional))
 
           (if deps-conditional
               (let ((outfile (assoc-val :target (cadr deps-conditional)))
@@ -118,21 +125,21 @@
           ))
 
          ((:executable :test)
-          (format #t "exec globals\n")
+          (if *debugging* (format #t "exec globals\n"))
           (let* ((libname (string-upcase
                            ;; privname or pubname?
                            (stringify (assoc-val :privname (cdr stanza)))))
-                 (_ (format #t "libname: ~A~%" libname))
+                 (_ (if *debugging* (format #t "libname: ~A~%" libname)))
                  (opts (if-let ((opts (assoc-in '(:compile :opts)
                                                 (cdr stanza))))
                                (cdr opts) '()))
-                 (_ (format #t "opts: ~A~%" opts))
+                 (_ (if *debugging* (format #t "opts: ~A~%" opts)))
                  (opens (if-let ((opens (assoc-val :opens opts)))
                                 (apply append (map (lambda (o)
                                                      (list "-open" (stringify o)))
                                                    opens))
                                 '()))
-                 ;; (_ (format #t "opens: ~A~%" opens))
+                 ;; (_ (if *debugging* (format #t "opens: ~A~%" opens)))
                  (flags (if-let ((flags (assoc-val :flags opts)))
                                 (list (apply string-append
                                              (map stringify flags)))
@@ -142,16 +149,16 @@
                                       (list (apply string-append
                                                    (map stringify flags)))
                                       '()))
-                 (_ (format #t "g ocamlc_opts: ~A\n" ocamlc_opts))
+                 (_ (if *debugging* (format #t "g ocamlc_opts: ~A\n" ocamlc_opts)))
 
                  (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
                                         (list (apply string-append
                                                      (map stringify flags)))
                                         '()))
-                 (_ (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts))
+                 (_ (if *debugging* (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts)))
 
                  (options (apply append (list opens flags)))
-                 (_ (format #t "exe options: ~A\n" options))
+                 (_ (if *debugging* (format #t "exe options: ~A\n" options)))
                  (standard (if (assoc :standard opts) #t #f))
 
                  (deps-fixed (if-let ((df
