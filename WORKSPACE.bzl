@@ -27,17 +27,17 @@ def fetch_repos():
 
     maybe(
         git_repository,
+        name = "libs7",
+        remote = "https://github.com/obazl/libs7",
+        branch = "dev"
+    )
+
+    maybe(
+        git_repository,
         name = "mibl",
         remote = "https://github.com/obazl/mibl",
         branch = "dev"
     )
-
-    # maybe(
-    #     git_repository,
-    #     name = "libs7",
-    #     remote = "https://github.com/obazl/libs7",
-    #     branch = "dev"
-    # )
 
     ######
     maybe(
