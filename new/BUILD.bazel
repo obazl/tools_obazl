@@ -61,9 +61,9 @@ cc_binary(
         # "-lc_s7"
     ],
     data  = [
-        "//templates:all",
-        # "//templates/bzl/host:BUILD.bazel",
-        # "//templates/bzl/profile:BUILD.bazel",
+        "//new/templates:all",
+        # "//new/templates/bzl/host:BUILD.bazel",
+        # "//new/templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
     ],
     deps = [
@@ -134,9 +134,9 @@ cc_binary(
     data = [
         "//obazlark:srcs",
         "//obazlark/starlark:srcs",
-        "//templates:all",
-        # "//templates/bzl/host:BUILD.bazel",
-        # "//templates/bzl/profile:BUILD.bazel",
+        "//new/templates:all",
+        # "//new/templates/bzl/host:BUILD.bazel",
+        # "//new/templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
     ],
     deps = [
@@ -206,7 +206,7 @@ cc_library(
         # "-lc_s7"
     ],
     data  = [
-        "//templates:all",
+        "//new/templates:all",
         "//man/man1:new_workspace.1",
     ],
     deps = [

@@ -23,33 +23,42 @@
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
 
-(define (-emit-topdown-aggregate outp kind ns privname submodules link-opts cc-deps)
-  (let ((singleton (and (= (length submodules) 1)
-                        (equal? (normalize-module-name ns)
-                                (submodules 0)))))
+(define (-emit-topdown-aggregate outp pkg-path kind ns privname submodules link-opts cc-deps)
+  (let* ((singleton (and (= (length submodules) 1)
+                         (equal? (normalize-module-name ns)
+                                 (submodules 0))))
+         (is-test (and (string-contains pkg-path "test")
+                       (string-contains (format #f "~A" privname) "test")))
+         (tgt-name (if is-test (format #f "~A_test" privname) privname)))
+
     (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
     (format #t " link-opts: ~A\n" link-opts)
+    (if is-test
+        (format outp "fail(\"FIXME: verify build_test target\")\n"))
+
     (if (eq? kind :ns-archive)
         (if singleton
             (begin
               ;; (format outp "##############~%")
               ;; (format outp "ocaml_ns_archive(  #0\n")
               (format outp "ocaml_library(\n"))
-            (begin
-              ;; (format outp "#################~%")
+            (if is-test
+              (format outp "build_test(\n")
               (format outp "ocaml_ns_archive(\n")))
         (if (and (= (length submodules) 1)
                  (equal? ns (submodules 0)))
             ;; (format outp "ocaml_library(  ##\n")
             (format outp "ocaml_ns_library(\n")
             (format outp "ocaml_ns_library(\n")))
-    (format outp "    name       = \"~A\",\n" ns)
+    (format outp "    name       = \"~A\",\n" tgt-name)
     ;; (if (or (> (length submodules) 1)
     ;;         (not (equal? (normalize-module-name ns) (submodules 0))))
     (if ns
-        (if (not singleton)
-            (format outp "    ns_name    = \"~A\",\n" ns))) ;; privname))
-    (format outp "    manifest = [\n")
+        (if (and (not singleton) (not is-test))
+            (format outp "    ns_name    = \"~A\",\n" ns)))
+    (if is-test
+        (format outp "    targets  = [\n")
+        (format outp "    manifest = [\n"))
     (format outp "~{        \":~A\"~^,\n~}\n" submodules)
     (format outp "    ],")
     (newline outp)
@@ -107,7 +116,7 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-aggregate-target outp stanza) ;; typ fs-path stanza)
+(define (starlark-emit-aggregate-target outp pkg-path stanza) ;; typ fs-path stanza)
   (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza)
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
@@ -153,7 +162,7 @@
       ((:ns-archive :ns-library)
        (format #t "~A: ~A~%" (ured "NS") ns)
        (if *ns-topdown*
-           (-emit-topdown-aggregate outp kind ns tgtname submodules link-opts cc-deps)
+           (-emit-topdown-aggregate outp pkg-path kind ns tgtname submodules link-opts cc-deps)
            ;; aggregated bottomup, needs archive or lib w/o ns
            (-emit-bottomup-aggregate outp kind ns tgtname submodules link-opts cc-deps)))
 
@@ -232,6 +241,7 @@
 
   ;; only emit header if aggregators
   (let* ((stanzas (assoc-val :dune pkg))
+         (pkg-path (car (assoc-val :pkg-path pkg)))
          ;; FIXME: exclude null libs, e.g. tezos:src/tooling
          (aggs (filter (lambda (stanza)
                          (member
@@ -246,9 +256,9 @@
                 (format #t "stanza: ~A\n" stanza)
                 (case (car stanza)
                   ((:ns-archive :ns-library) ;; dune library, wrapped
-                   (starlark-emit-aggregate-target outp stanza))
+                   (starlark-emit-aggregate-target outp pkg-path stanza))
                   ((:archive :library) ;; dune library, unwrapped
-                   (starlark-emit-aggregate-target outp stanza))
+                   (starlark-emit-aggregate-target outp pkg-path stanza))
                   (else (format outp "UNCAUGHT stanza: ~A\n"
                                 stanza))))
               aggs)))

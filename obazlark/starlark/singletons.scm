@@ -167,14 +167,10 @@
 
 ;; WARNING: :modules have form (A (:ml a.ml)(:mli a.mli))
 ;; but :structures have form (A . a.ml)
+;; if *build-dyads*, first emit ocaml_module, then ocaml_signature
 (define (-emit-module outp ws module stanza pkg)
   (format #t "~A: ~A [~A]\n" (bgblue "-emit-module") module stanza)
   ;; (format #t "~A: ~A~%" (bgyellow "pkg") pkg)
-  (if *build-dyads*
-      (if (alist? (cdr module))
-          (if (assoc :mli (cdr module))
-              (-emit-sig outp ws pkg module stanza))))
-
   (let* ((pkg-name (pkg->pkg-name pkg))
          (pkg-exec-libs-ct (if-let ((pkg-exec-libs (assoc-val :exec-libs pkg)))
                                    (length pkg-exec-libs) 0))
@@ -801,6 +797,11 @@
     ;;     (error 'STOP
     ;;            (format #f "STOP cond module: ~A" stanza)))
     )
+
+  (if *build-dyads*
+      (if (alist? (cdr module))
+          (if (assoc :mli (cdr module))
+              (-emit-sig outp ws pkg module stanza))))
   stanza)
 
 (define (-emit-modules outp ws pkg modules)

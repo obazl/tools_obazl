@@ -94,10 +94,13 @@ int main(int argc, char *argv[])
     log_debug("argv[0]: %s", argv[0]);
     char *launch_cwd = getcwd(NULL, 0);
     log_debug("launch cwd: %s", launch_cwd);
+#ifdef BAZEL_CURRENT_REPOSITORY
     char *current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
-    log_debug("BAZEL_CURRENT_REPOSITORY: %s", current_repo);
-    log_debug("BAZEL_CURRENT_REPOSITORYx: %s", BAZEL_CURRENT_REPOSITORY);
-
+    if (current_repo) {
+        log_debug("BAZEL_CURRENT_REPOSITORY: %s", current_repo);
+        log_debug("BAZEL_CURRENT_REPOSITORYx: %s", BAZEL_CURRENT_REPOSITORY);
+    }
+#endif
     if (argc != optind) {
         log_error("non-opt argument");
         /* log_error("next: %s", argv[optind]); */
@@ -121,8 +124,11 @@ int main(int argc, char *argv[])
 
     mibl_configure();
 
+    /* cc tc sets this if we are being built as an external repo: */
+#ifdef BAZEL_CURRENT_REPOSITORY
     current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
     log_debug("BAZEL_CURRENT_REPOSITORY 2: %s", BAZEL_CURRENT_REPOSITORY);
+#endif
 
     s7_scheme *s7 = s7_configure();
 
@@ -190,11 +196,13 @@ int main(int argc, char *argv[])
 
     /* this does the actual conversion: */
     s7_pointer result = s7_apply_function(s7, _main, _s7_args);
+    /* FIXME: check result */
+    (void)result;
 
     /* log_info("RESULT: %s\n", TO_STR(result)); */
-    s7_gc_unprotect_at(s7, _main);
+    s7_gc_unprotect_at(s7, (s7_int)_main);
 
-    char *errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+    char *errmsg = (char*)s7_get_output_string(s7, s7_current_error_port(s7));
     if ((errmsg) && (*errmsg)) {
         log_error("[%s\n]", errmsg);
         s7_quit(s7);

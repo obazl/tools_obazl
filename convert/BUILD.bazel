@@ -57,7 +57,7 @@ cc_binary(
     deps = [
         "@mibl//src:mibl",
         # "//vendored/logc",
-        "@mibl//external/libinih:inih",
+        "@mibl//vendored/libinih:inih",
         "@libs7//src:s7",
     ],
     visibility = ["//visibility:public"]
@@ -119,7 +119,7 @@ cc_binary(
     deps = [
         "@mibl//src:mibl",
         # "//vendored/logc",
-        "@mibl//external/libinih:inih",
+        "@mibl//vendored/libinih:inih",
         "@libs7//src:s7",
     ],
     visibility = ["//visibility:public"]

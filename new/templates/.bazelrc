@@ -1,0 +1,23 @@
+build --color=yes
+
+# toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
+# with ocamlc.opt, pass --config=ocamlc.opt (sys to vm). this means:
+# cross-compile from sys platform (native code) to vm platform (bytecode).
+
+## IMPORTANT: --host_platform sets buildhost; --platforms sets targethost
+
+# default platform is sys for both buildhost and targethost
+
+common:ocamlc.byte --host_platform=@ocaml//platforms/build:vm
+common:ocamlc.byte --platforms=@ocaml//platforms/target:vm
+
+common:ocamlc.opt --host_platform=@ocaml//platforms/build:sys
+common:ocamlc.opt --platforms=@ocaml//platforms/target:vm
+
+common:ocamlopt.byte --host_platform=@ocaml//platforms/build:vm
+common:ocamlopt.byte --platforms=@ocaml//platforms/target:sys
+
+common:ocamlopt.opt --host_platform=@ocaml//platforms/build:sys
+common:ocamlopt.opt --platforms=@ocaml//platforms/target:sys
+
+try-import .config/user.bazelrc

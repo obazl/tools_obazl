@@ -1,0 +1,4 @@
+filegroup(
+    name = "uthash",
+    srcs = ["utarray.h", "uthash.h", "utstring.h"]
+)
