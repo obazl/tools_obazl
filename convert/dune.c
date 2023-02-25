@@ -9,8 +9,8 @@
 #include "libmibl.h"
 #include "dune.h"
 
+bool debug;
 #if defined(DEBUG_TRACE)
-extern bool debug;
 extern bool trace;
 #endif
 
@@ -89,18 +89,23 @@ int main(int argc, char *argv[])
             ;
         }
     }
-    log_debug("argc: %d", argc);
-    log_debug("optind: %d", optind);
-    log_debug("argv[0]: %s", argv[0]);
-    char *launch_cwd = getcwd(NULL, 0);
-    log_debug("launch cwd: %s", launch_cwd);
-#ifdef BAZEL_CURRENT_REPOSITORY
-    char *current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
-    if (current_repo) {
-        log_debug("BAZEL_CURRENT_REPOSITORY: %s", current_repo);
-        log_debug("BAZEL_CURRENT_REPOSITORYx: %s", BAZEL_CURRENT_REPOSITORY);
+    if (debug) {
+        log_debug("argc: %d", argc);
+        log_debug("optind: %d", optind);
+        log_debug("argv[0]: %s", argv[0]);
     }
-#endif
+    char *launch_cwd = getcwd(NULL, 0);
+/*     if (debug) { */
+/*         log_debug("launch cwd: %s", launch_cwd); */
+/* #ifdef BAZEL_CURRENT_REPOSITORY */
+/*     char *current_repo = getenv("BAZEL_CURRENT_REPOSITORY"); */
+/*     if (current_repo) { */
+/*         log_debug("BAZEL_CURRENT_REPOSITORY: %s", current_repo); */
+/*         log_debug("BAZEL_CURRENT_REPOSITORYx: %s", BAZEL_CURRENT_REPOSITORY); */
+/*     } */
+/* #endif */
+/*     } */
+
     if (argc != optind) {
         log_error("non-opt argument");
         /* log_error("next: %s", argv[optind]); */
@@ -125,10 +130,10 @@ int main(int argc, char *argv[])
     mibl_configure();
 
     /* cc tc sets this if we are being built as an external repo: */
-#ifdef BAZEL_CURRENT_REPOSITORY
-    current_repo = getenv("BAZEL_CURRENT_REPOSITORY");
-    log_debug("BAZEL_CURRENT_REPOSITORY 2: %s", BAZEL_CURRENT_REPOSITORY);
-#endif
+/* #ifdef BAZEL_CURRENT_REPOSITORY */
+/*     current_repo = getenv("BAZEL_CURRENT_REPOSITORY"); */
+/*     log_debug("BAZEL_CURRENT_REPOSITORY 2: %s", BAZEL_CURRENT_REPOSITORY); */
+/* #endif */
 
     s7_scheme *s7 = s7_configure();
 
@@ -154,7 +159,9 @@ int main(int argc, char *argv[])
         /* log_debug("SETTING *emit-bazel-pkg* to: %s", pkgarg); */
         s7_eval_c_string(s7, utstring_body(setter));
     }
-    log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+    if (verbose)
+        log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
+
     s7_load(s7, "starlark.scm");
 
     s7_load(s7, "convert_dune.scm");
@@ -194,6 +201,7 @@ int main(int argc, char *argv[])
 
     /* s7_int main_gc_loc = s7_gc_protect(s7, _main); */
 
+    /* log_info("calling s7: %s\n", TO_STR(_main)); */
     /* this does the actual conversion: */
     s7_pointer result = s7_apply_function(s7, _main, _s7_args);
     /* FIXME: check result */
@@ -208,6 +216,7 @@ int main(int argc, char *argv[])
         s7_quit(s7);
         exit(EXIT_FAILURE);
     }
-    log_info("convert exit...");
+    if (verbose)
+        log_info("convert exit...");
     return 0;
 }

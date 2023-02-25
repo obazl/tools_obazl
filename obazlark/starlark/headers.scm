@@ -764,8 +764,9 @@
                         deps)))
 
              ((:rule)
-              (format #t "~A: ~A~%" (bgred "FIXME")
-                      "global hdrs for :rule stanzas"))
+              ;; (format #t "~A: ~A~%" (bgred "FIXME")
+              ;;         "global hdrs for :rule stanzas")
+              (values))
 
              ((:shared-deps)
               (if *debugging*

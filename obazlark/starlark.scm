@@ -1,4 +1,5 @@
-(format #t "loading obazl/starlark.scm\n")
+(if *debugging*
+    (format #t "loading obazl/starlark.scm\n"))
 
 (define *select-protases* '())
 
@@ -24,4 +25,5 @@
 (load "starlark/filegroups.scm")
 (load "starlark/starlark.scm")
 
-(format #t "loaded obazl/starlark.scm\n")
+(if *debugging*
+    (format #t "loaded obazl/starlark.scm\n"))

@@ -1,4 +1,5 @@
-(format #t "loading convert-dune.scm~%")
+(if *debugging*
+    (format #t "loading convert-dune.scm~%"))
 
 (define arg
   "deps/literals/cwd"
@@ -38,9 +39,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-load-dune root-path pkg-path)
-  (format #t "~A~%" (ublue "-load-dune"))
-  (format #t "~A: ~A~%" (blue "root-path") root-path)
-  (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
+  (if *debugging*
+      (begin
+        (format #t "~A~%" (ublue "-load-dune"))
+        (format #t "~A: ~A~%" (blue "root-path") root-path)
+        (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
 
   ;; NB: load-dune is implemented in @mibl//src/load_dune.c
   ;; and initialized in @mibl//src/config_s7_dune.c
@@ -51,7 +54,8 @@
     _wss))
 
 (define (-miblize ws)
-  (format #t "~A: ~A~%" (blue "-miblize") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-miblize") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws)))
          (mpkg-alist (map (lambda (kv)
@@ -66,41 +70,49 @@
         ;; (_ (for-each (lambda (k)
         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
         ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist))
+    (if *debugging*
+        (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
     mpkg-alist))
 
 (define (-emit-mibl ws)
-  (format #t "~A: ~A~%" (blue "-emit-mibl") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-emit-mibl") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (blue "-emit-mibl pkg") (cdr kv))
+                (if *debugging*
+                    (format #t "~A: ~A~%" (blue "-emit-mibl pkg") (cdr kv)))
                 (if (not (null? (cdr kv)))
                     (emit-mibl-pkg (cdr kv)))
                 )
               pkgs)))
 
 (define (-emit-starlark ws)
-  (format #t "~A: ~A~%" (blue "-emit-starlark") ws)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
   (let* ((@ws (assoc-val ws -mibl-ws-table))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (format #t "~A: ~A~%" (blue "emitting") (car kv))
+                (if *debugging*
+                    (format #t "~A: ~A~%" (blue "emitting") (car kv)))
                 (if (not (null? (cdr kv)))
                     (mibl-pkg->build-bazel ws (cdr kv))
-                    (format #t "~A: ~A~%" (blue "skipping") (car kv)))
+                    (if *debugging*
+                        (format #t "~A: ~A~%" (blue "skipping") (car kv))))
                 )
               pkgs)))
 
 ;; called by @obazl//convert
 (define* (dune->obazl root-path pkg-path)
-  (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path)
+  (if *debugging*
+      (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "-mibl-ws-table: ~A~%" -mibl-ws-table)
   ;; (format #t "BYE~%"))
 
-  (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*)
+  (if *debugging*
+      (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*))
 
   ;; (set! *debugging* #t)
 
@@ -111,6 +123,7 @@
   ;; (set! *unwrapped-libs-to-archives* #f)
 
   ;; NB: :@ is key of the root workspace in -mibl-ws-table
+  ;; (set! *debugging* #t)
 
   (let* ((_wss (-load-dune root-path pkg-path))
          (mpkgs (-miblize :@))
@@ -140,7 +153,8 @@
 
     ;; (debug-print-pkgs :@)
 
-    ;; (format #t "~A: ~A~%" (green "selectors")
+    ;; (if *debugging*
+    ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
     ;; (debug-print-exports-table :@)
@@ -153,3 +167,6 @@
 
     )
   '())
+
+(if *debugging*
+    (format #t "loaded convert-dune.scm~%"))

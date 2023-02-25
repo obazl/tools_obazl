@@ -215,7 +215,8 @@
          (_ (if *debugging* (format #t "~A: ~A~%" (green "module") (car module))))
          (this-is-main (if-let ((main (assoc-val :main stanza-alist)))
                                (begin
-                                 (format #t "~A: ~A~%" (green "main") main)
+                                 (if *debugging*
+                                     (format #t "~A: ~A~%" (green "main") main))
                                  (if (string=? (format #f "~A" main) (format #f "~A" (car module)))
                                      main #f))))
          (_ (if *debugging* (format #t "~A: ~A~%" (bggreen "this-is-main") this-is-main)))
@@ -1354,16 +1355,12 @@
 
     (if pkg-modules
         (begin
-          (newline)
-          (if *debugging*
-              (format #t "~A: ~A~%" (bgblue "emitting pkg-modules") pkg-modules))
+          (if *debugging* (format #t "~A: ~A~%" (bgblue "emitting pkg-modules") pkg-modules))
           (-emit-modules outp ws pkg pkg-modules)))
 
     (if pkg-structs
         (begin
-          (newline)
-          (if *debugging*
-              (format #t "~A~%" (bgblue "emitting pkg-structs")))
+          (if *debugging* (format #t "~A~%" (bgblue "emitting pkg-structs")))
           (-emit-modules outp ws pkg pkg-structs)))
 
     ;; (if (equal? (car pkg :ocamlc))
@@ -1371,9 +1368,7 @@
 
     (if pkg-sigs ;;(or pkg-sigs *build-dyads*)
         (begin
-          (newline)
-          (if *debugging*
-              (format #t "~A: ~A~%" (bgblue "emitting pkg-sigs") pkg-sigs))
+          (if *debugging* (format #t "~A: ~A~%" (bgblue "emitting pkg-sigs") pkg-sigs))
           (-emit-signatures outp ws pkg pkg-sigs pkg-modules)))
     ))
 
