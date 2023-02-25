@@ -94,8 +94,8 @@ int main(int argc, char *argv[])
         log_debug("optind: %d", optind);
         log_debug("argv[0]: %s", argv[0]);
     }
-    char *launch_cwd = getcwd(NULL, 0);
 /*     if (debug) { */
+    /* char *launch_cwd = getcwd(NULL, 0); */
 /*         log_debug("launch cwd: %s", launch_cwd); */
 /* #ifdef BAZEL_CURRENT_REPOSITORY */
 /*     char *current_repo = getenv("BAZEL_CURRENT_REPOSITORY"); */
