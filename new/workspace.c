@@ -35,7 +35,7 @@ void new_workspace(char *pgm)
     char *path;
 
     int i = 0;
-    int pfx_len = 16; // "obazl/templates"
+    int pfx_len = 20; // "obazl/new/templates"
 
     chdir(ws_dir);
     if (debug) log_debug("CWD: %s", getcwd(NULL, 0));
@@ -43,10 +43,10 @@ void new_workspace(char *pgm)
     system("touch BUILD.bazel");
 
     while (runfiles[i].key != NULL) {
-        if (prefix_matches("obazl/templates/BUILD.bazel", runfiles[i].key)) {
+        if (prefix_matches("obazl/new/templates/BUILD.bazel", runfiles[i].key)) {
             ;
         } else {
-            if (prefix_matches("obazl/templates/", runfiles[i].key)) {
+            if (prefix_matches("obazl/new/templates/", runfiles[i].key)) {
                 /* printf(RED "entry %d:" CRESET " %s -> %s\n", i, */
                 /*        runfiles[i].key, runfiles[i].val); */
                 char *rp = realpath(runfiles[i].val, NULL);
@@ -58,7 +58,7 @@ void new_workspace(char *pgm)
                 if (prefix_matches("dot/", dest)) {
                     dest = strndup(dest + 3, strlen(dest) - 3);
                     dest[0] = '.';
-                    /* printf(BLU "dest:" CRESET " %s\n", dest); */
+                    /* printf(BLU "Dest:" CRESET " %s\n", dest); */
                     path = dirname(dest);
                     /* printf(BLU "dest dir:" CRESET " %s\n", path); */
                     int rc = access(path, R_OK);

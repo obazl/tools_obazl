@@ -24,7 +24,6 @@
                                           :sig
                                           :struct
                                           :executable
-                                          :test
                                           :cc-deps)
                                          (list dune-rule))
                                         ((:ns-archive)
@@ -70,6 +69,8 @@
                                         ;; ((:write-file) (cons :write-file accum))
                                         ((:shared-deps) #f)
                                         ((:shared-ppx) #f)
+                                        ((:test)
+                                         '(:test))
                                         (else #f
                                          ;; (list dune-rule)
                                               )))
@@ -96,7 +97,8 @@
                                                (cons :ppx-module accum)
                                                (if (assoc :ppx-deriver stanza-alist)
                                                    (cons :ppx-module accum)
-                                                   accum))))
+                                                   accum))
+                                           accum))
                                 )
                            accum))
                        '() stanzas)))
@@ -764,8 +766,8 @@
                         deps)))
 
              ((:rule)
-              ;; (format #t "~A: ~A~%" (bgred "FIXME")
-              ;;         "global hdrs for :rule stanzas")
+              (format #t "~A: ~A~%" (bgred "FIXME")
+                      "global hdrs for :rule stanzas")
               (values))
 
              ((:shared-deps)

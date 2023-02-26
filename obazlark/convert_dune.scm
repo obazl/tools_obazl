@@ -106,6 +106,7 @@
 
 ;; called by @obazl//convert
 (define* (dune->obazl root-path pkg-path)
+  ;; (set! *debugging* #t)
   (if *debugging*
       (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "-mibl-ws-table: ~A~%" -mibl-ws-table)
@@ -113,8 +114,6 @@
 
   (if *debugging*
       (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*))
-
-  ;; (set! *debugging* #t)
 
   (set! *build-dyads* #t)
   (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
@@ -125,13 +124,18 @@
   ;; NB: :@ is key of the root workspace in -mibl-ws-table
   ;; (set! *debugging* #t)
 
-  (let* ((_wss (-load-dune root-path pkg-path))
+  (-load-dune root-path pkg-path)
+  (if *dump-parsetree*
+      (begin
+        (format #t "PARSETREE~%")
+        (debug-print-pkgs :@)))
+
+  (let* (;;(_wss (-load-dune root-path pkg-path))
          (mpkgs (-miblize :@))
          (mpkgs (add-filegroups-to-pkgs :@))
          (mpkgs (normalize-manifests! :@))
          (mpkgs (normalize-rule-deps! :@))
          )
-
     ;; start dune-specific
     (miblarkize :@)
     (resolve-labels! :@)
@@ -144,14 +148,24 @@
           (handle-shared-deps :@)
           (handle-shared-opts :@)
           ))
+
+    (if *dump-mibl*
+        (begin
+          (format #t "MIBL~%")
+          (debug-print-pkgs :@)))
+
     ;; end dune-specific?
 
+    ;; (set! *debugging* #t)
     (if *emit-starlark*
         (ws->starlark :@))
 
     ;; (ws->opam-bundles :@)
 
-    ;; (debug-print-pkgs :@)
+    ;; (if *dump-starlark*
+    ;;   (begin
+    ;;     (format #t "STARLARK~%")
+    ;;     (debug-print-pkgs :@)))
 
     ;; (if *debugging*
     ;;     (format #t "~A: ~A~%" (green "selectors"))

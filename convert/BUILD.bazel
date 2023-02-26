@@ -44,6 +44,9 @@ cc_binary(
         "-Iexternal/libs7/src",
         "-Iexternal/libs7/vendored/linenoise",
         # "-Iexternal/mibl/libs7/vendored/linenoise",
+
+        "-Iobazl/vendored/gopt",
+        "-Iexternal/obazl/vendored/gopt"
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -59,6 +62,7 @@ cc_binary(
         # "//vendored/logc",
         "@mibl//vendored/libinih:inih",
         "@libs7//src:s7",
+        "//vendored/gopt"
     ],
     visibility = ["//visibility:public"]
 )
