@@ -551,10 +551,12 @@ int main(int argc, char **argv)
 
     if (verbose && verbosity > 2)
         log_info("calling s7: %s", TO_STR(_main));
+
+    /* **************************************************************** */
     /* this does the actual conversion: */
     s7_pointer result = s7_apply_function(s7, _main, _s7_args);
-    /* FIXME: check result */
-    (void)result;
+    (void)result; /* FIXME: check result */
+    /* **************************************************************** */
 
     /* log_info("RESULT: %s\n", TO_STR(result)); */
     s7_gc_unprotect_at(s7, (s7_int)_main);

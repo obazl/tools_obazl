@@ -45,17 +45,3 @@ def fetch_repos():
         remote = "https://github.com/obazl/rules_jsoo",
         branch = BRANCH
     )
-
-    maybe(
-        git_repository,
-        name = "libs7",
-        remote = "https://github.com/obazl/libs7",
-        branch = BRANCH
-    )
-
-    maybe(
-        git_repository,
-        name = "mibl",
-        remote = "https://github.com/obazl/mibl",
-        branch = BRANCH
-    )
