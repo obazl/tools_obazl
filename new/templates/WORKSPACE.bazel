@@ -1,30 +1,21 @@
-# load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-# load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
 load("//:WORKSPACE.bzl", "fetch_repos")
 fetch_repos()
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 bazel_skylib_workspace()
 
-load("@rules_ocaml//:WORKSPACE.bzl", "fetch_repos")
-fetch_repos()
+load("@rules_ocaml//:WORKSPACE.bzl", ocaml_fetch_repos = "fetch_repos")
+ocaml_fetch_repos()
 
 load("@opam//:WORKSPACE.bzl", opam_fetch_repos = "fetch_repos")
 opam_fetch_repos()
 
-load("@libs7//:WORKSPACE.bzl", libs7_fetch_repos = "fetch_repos")
-libs7_fetch_repos()
-
-load("@mibl//:WORKSPACE.bzl", mibl_fetch_repos = "fetch_repos")
-mibl_fetch_repos()
+load("@obazl//:WORKSPACE.bzl", obazl_fetch_repos = "fetch_repos")
+obazl_fetch_repos()
 
 load("@rules_foreign_cc//foreign_cc:repositories.bzl",
      "rules_foreign_cc_dependencies")
-## Assumption: build tools (make, autoconf, etc.) are already
-## installed, do not build them
-# rules_foreign_cc_dependencies()
-rules_foreign_cc_dependencies(register_built_tools=False)
+rules_foreign_cc_dependencies()
 
 ################ rules_jsoo etc. ################
 ## NB: for now we need the jsoo stuff because @obazl//coswitch writes
