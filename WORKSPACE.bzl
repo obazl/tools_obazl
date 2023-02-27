@@ -2,6 +2,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")  # buildifier: disable=load
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")  # buildifier: disable=load
 
+OBAZL_BRANCH = "alpha"
+
 all_content = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 lua_src = """filegroup(name = "src", srcs = glob(["src/**"]), visibility = ["//visibility:public"])"""
 
@@ -29,14 +31,14 @@ def fetch_repos():
         git_repository,
         name = "libs7",
         remote = "https://github.com/obazl/libs7",
-        branch = "dev"
+        branch = OBAZL_BRANCH
     )
 
     maybe(
         git_repository,
         name = "mibl",
         remote = "https://github.com/obazl/mibl",
-        branch = "dev"
+        branch = OBAZL_BRANCH
     )
 
     ######
