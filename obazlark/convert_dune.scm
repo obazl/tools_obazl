@@ -143,8 +143,9 @@
          )
     ;; start dune-specific
     (miblarkize :@)
-    (resolve-labels! :@)
     (resolve-pkg-file-deps :@)
+
+    (resolve-labels! :@)
 
     (handle-shared-ppx :@)
 
@@ -182,7 +183,8 @@
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
-    ;; (debug-print-exports-table :@)
+    (if *dump-exports*
+        (debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
 

@@ -118,9 +118,10 @@
         ;; no :dune, emit filegroups etc.
         (let ((pkg-path (car (assoc-val :pkg-path pkg)))
               (pkg-filegroups (assoc :filegroups pkg)))
-          (if #t ;; *debugging*
-              (format #t "~A: ~A~%" (uwhite "emitting non-dune pkg") pkg)
-              (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups))
+          (if (or *debugging* *debug-emit*)
+              (begin
+                (format #t "~A: ~A~%" (uwhite "emitting non-dune pkg") pkg)
+                (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups)))
           ;;FIXME: check that we have something to emit before opening BUILD.bazel
           (let* ((obazl-rules (non-dune-pkg->obazl-rules pkg))
                  (build-file (string-append pkg-path "/BUILD.bazel"))
@@ -221,6 +222,7 @@
                               )
                       )))
               pkgs)
+
     (if (not *local-ppx-driver*)
         (starlark-emit-global-ppxes ws))
     ))

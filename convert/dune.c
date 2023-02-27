@@ -31,7 +31,31 @@ bool dump_starlark  = false;
 
 bool emit_parsetree = false;
 bool emit_mibl      = false;
-bool emit_starlark  = true;
+bool emit_bazel  = true;
+
+void _print_usage()
+{
+    printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
+    printf("Flags (note that some flags require double-hyphenation):\n");
+    printf("\t-d  | --debug\t\t\tEnable all debugging flags.\n");
+    printf("\t--dx | --debug-executables\tDebug handling of Dune executable and executables stanzas.\n");
+    printf("\t--de | --debug-emit\t\tDebug emit logic.\n");
+    printf("\t--dm | --debug-mibl\t\tDebug mibl elaboration.\n");
+    printf("\t--dump-exports\t\tDebug exported syms table.\n");
+    printf("\t--em | --emit-mibl\t\tEmit BUILD.mibl files.\n");
+    printf("\t--no-emit\t\t\tDisable emitting.\n");
+    printf("\t-t  | --trace\t\t\tEnable trace flags.\n");
+    printf("\t-v  | --verbose\t\t\tEnable verbosity. Repeatable.\n");
+    printf("\t--menhir\t\t\tEmit 'menhir' targets for .mly files, instead of ocamlyacc.\n");
+
+    printf("Options:\n");
+    printf("\t-D | -dump <arg>\t\tDump <arg> (parsetree, mibl, or starlark}) to stdout.\n");
+    printf("\t-e | --emit <arg>\t\tEmit BUILD.<arg> files, where <arg> = mibl | bazel. BUILD.bazel always emitted unless --no-emit passed.\n");
+
+    printf("\t-p | --pkg | --package <arg>"
+           "\tRestrict dump ouput to <arg> (relative pkg path).\n");
+
+}
 
 int main(int argc, char **argv)
 {
@@ -48,11 +72,26 @@ int main(int argc, char **argv)
         OPT_PKG,
         OPT_PACKAGE,
         OPT_EMIT,
+        OPT_EMIT_EM,            /* = OPT_EMIT_MIBL */
+        OPT_EMIT_MIBL,
+        OPT_NO_EMIT_MIBL,
+        OPT_EMIT_EB,            /* = OPT_EMIT_BAZEL */
+        OPT_EMIT_BAZEL,
+        OPT_NO_EMIT_BAZEL,
         OPT_NOEMIT,
         OPT_MENHIR,
         OPT_DUMP,
+        OPT_DUMP_EXPORTS,
         OPT_HELP,
         OPT_DEBUG,
+        OPT_DEBUG_DE,
+        OPT_DEBUG_EMIT,
+        OPT_DEBUG_DX,
+        OPT_DEBUG_EXECUTABLES,
+        OPT_DEBUG_DM,
+        OPT_DEBUG_MIBL,
+        OPT_DEBUG_DPPX,
+        OPT_DEBUG_PPX,
         OPT_TRACE,
         OPT_VERBOSE,
         OPT_LAST
@@ -79,6 +118,18 @@ int main(int argc, char **argv)
         /* emit options: parsetree, mibl, starlark */
         [OPT_EMIT] = {.long_name="emit",.short_name='e',
                       .flags=GOPT_ARGUMENT_REQUIRED},
+        [OPT_EMIT_EM] = {.long_name="em",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_EMIT_MIBL] = {.long_name="emit-mibl",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_NO_EMIT_MIBL] = {.long_name="no-emit-mibl",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_EMIT_EB] = {.long_name="no-eb",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_EMIT_BAZEL] = {.long_name="emit-bazel",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_NO_EMIT_BAZEL] = {.long_name="no-emit-bazel",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
         [OPT_NOEMIT] = {.long_name="no-emit",.short_name='E',
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
 
@@ -90,11 +141,29 @@ int main(int argc, char **argv)
         /* only one -D allowed at a time */
         [OPT_DUMP] = {.long_name="dump",.short_name='D',
                       .flags=GOPT_ARGUMENT_REQUIRED},
+        [OPT_DUMP_EXPORTS] = {.long_name="dump-exports",
+                              .flags=GOPT_ARGUMENT_FORBIDDEN},
 
         [OPT_HELP] = {.long_name="help",.short_name='h',
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
         [OPT_DEBUG] = {.long_name="debug",.short_name='d',
                        .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+        [OPT_DEBUG_DX] = {.long_name="dx",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_EXECUTABLES] = {.long_name="debug-executables",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_DE] = {.long_name="de",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_EMIT] = {.long_name="debug-emit",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_DM] = {.long_name="dm",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_MIBL] = {.long_name="debug-mibl",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_DPPX] = {.long_name="dppx",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [OPT_DEBUG_PPX] = {.long_name="debug-ppx",
+                            .flags=GOPT_ARGUMENT_FORBIDDEN},
         [OPT_TRACE] = {.long_name="trace",.short_name='t',
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
         [OPT_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -128,16 +197,11 @@ int main(int argc, char **argv)
     }
 
     if (options[OPT_HELP].count) {
-        /* printf("help ct: %d\n", options[OPT_HELP].count); */
-        /* _print_usage(); */
-        printf("help msg ...\n");
+        _print_usage();
         exit(EXIT_SUCCESS);
     }
 
-    if (options[OPT_DEBUG].count) {
-        /* printf("debug ct: %d\n", options[OPT_DEBUG].count); */
-        debug = true;
-    }
+    if (options[OPT_DEBUG].count) { debug = true; }
 
     if (options[OPT_TRACE].count) {
         /* printf("trace ct: %d\n", options[OPT_TRACE].count); */
@@ -195,8 +259,8 @@ int main(int argc, char **argv)
     /* cmd line --pkg args augment miblrc */
     if (options[OPT_PKG].count || options[OPT_PACKAGE].count) {
         char *token, *sep = " ,\t";
-        printf("pkg ct: %d\n",
-               options[OPT_PKG].count + options[OPT_PACKAGE].count);
+        /* printf("pkg ct: %d\n", */
+        /*        options[OPT_PKG].count + options[OPT_PACKAGE].count); */
         if (options[OPT_PKG].count) {
             token = strtok((char*)options[OPT_PKG].argument, sep);
             while( token != NULL ) {
@@ -204,7 +268,7 @@ int main(int argc, char **argv)
                     log_error("-pkg values must be relative paths: %s", token);
                     return 0;
                 } else {
-                    log_debug("miblrc pushing pkg: %s", token);
+                    /* log_debug("miblrc pushing pkg: %s", token); */
                     utarray_push_back(mibl_config.pkgs, &token);
                     token = strtok(NULL, sep);
                 }
@@ -273,9 +337,25 @@ int main(int argc, char **argv)
     if (options[OPT_NOEMIT].count) {
         if (verbose && verbosity > 1)
             log_info("defaulting emit functions to #f");
-        mibl_config.emit_starlark = false;
+        mibl_config.emit_bazel = false;
         mibl_config.emit_mibl = false;
         mibl_config.emit_parsetree = false;
+    }
+
+    if ((options[OPT_EMIT_BAZEL].count)
+        || (options[OPT_EMIT_EB].count)) {
+        mibl_config.emit_bazel = true;
+    }
+    if (options[OPT_NO_EMIT_BAZEL].count) {
+        mibl_config.emit_bazel = false;
+    }
+
+    if ((options[OPT_EMIT_MIBL].count)
+        || (options[OPT_EMIT_EM].count)) {
+        mibl_config.emit_mibl = true;
+    }
+    if (options[OPT_NO_EMIT_MIBL].count) {
+        mibl_config.emit_mibl = false;
     }
 
     if (options[OPT_EMIT].count) {
@@ -284,13 +364,17 @@ int main(int argc, char **argv)
         /*        options[OPT_EMIT].argument); */
         if (strncmp(options[OPT_EMIT].argument, "starlark", 8) == 0) {
             /* printf("emitting starlark\n"); */
-            mibl_config.emit_starlark = true;
+            mibl_config.emit_bazel = true;
+        }
+        if (strncmp(options[OPT_EMIT].argument, "bazel", 5) == 0) {
+            /* printf("emitting starlark\n"); */
+            mibl_config.emit_bazel = true;
         }
         else if (strncmp(options[OPT_EMIT].argument, "mibl", 4) == 0) {
             /* printf("emitting mibl\n"); */
             /* mibl_config.emit_parsetree = false; */
             mibl_config.emit_mibl = true;
-            /* mibl_config.emit_starlark = false; */
+            /* mibl_config.emit_bazel = false; */
         }
         else if (strncmp(options[OPT_EMIT].argument, "parsetree", 9) == 0) {
             /* printf("emitting parsetree\n"); */
@@ -309,7 +393,7 @@ int main(int argc, char **argv)
         log_debug("DUMP_STARLARK: %d", mibl_config.dump_starlark);
         log_debug("EMIT_PARSETREE: %d", mibl_config.emit_parsetree);
         log_debug("EMIT_MIBL: %d", mibl_config.emit_mibl);
-        log_debug("EMIT_STARLARK: %d", mibl_config.emit_starlark);
+        log_debug("EMIT_BAZEL: %d", mibl_config.emit_bazel);
     }
 
     /* cc tc sets this if we are being built as an external repo: */
@@ -327,7 +411,42 @@ int main(int argc, char **argv)
 
     /* printf("SETTING *debugging* to %s\n", debug? "#t": "#f"); */
     utstring_printf(setter, "(set! *debugging* %s)",
-                    debug? "#t": "#f");
+                    (options[OPT_DEBUG].count)? "#t": "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *debug-emit* %s)",
+                    ((options[OPT_DEBUG_DE].count)
+                     || (options[OPT_DEBUG_EMIT].count))?
+                    "#t" : "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *debug-executables* %s)",
+                    ((options[OPT_DEBUG_DX].count)
+                     || (options[OPT_DEBUG_EXECUTABLES].count))?
+                    "#t" : "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *debug-mibl* %s)",
+                    ((options[OPT_DEBUG_DM].count)
+                     || (options[OPT_DEBUG_MIBL].count))?
+                    "#t" : "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *debug-ppx* %s)",
+                    ((options[OPT_DEBUG_DPPX].count)
+                     || (options[OPT_DEBUG_PPX].count))?
+                    "#t" : "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    /* dumps */
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *dump-exports* %s)",
+                    (options[OPT_DUMP_EXPORTS].count)?
+                    "#t" : "#f");
     s7_eval_c_string(s7, utstring_body(setter));
 
     /* printf("SETTING *dump-starlark* to %d\n", dump_starlark); */
@@ -352,7 +471,7 @@ int main(int argc, char **argv)
     /* **************************************************************** */
     utstring_new(setter);
     utstring_printf(setter, "(set! *emit-starlark* %s)",
-                    mibl_config.emit_starlark? "#t" : "#f");
+                    mibl_config.emit_bazel? "#t" : "#f");
     s7_eval_c_string(s7, utstring_body(setter));
 
     utstring_renew(setter);
@@ -380,7 +499,7 @@ int main(int argc, char **argv)
         s7_eval_c_string(s7, utstring_body(setter));
     }
 
-    printf("SETTING *menhir* to %s\n", menhir? "#t": "#f");
+    /* printf("SETTING *menhir* to %s\n", menhir? "#t": "#f"); */
     utstring_renew(setter);
     utstring_printf(setter, "(set! *menhir* %s)",
                     menhir? "#t": "#f");

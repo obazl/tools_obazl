@@ -27,16 +27,20 @@
                                           :cc-deps)
                                          (list dune-rule))
                                         ((:ns-archive)
+                                         ;; convert to :library if only one submodule
                                          (let* ((ns (assoc-val :ns stanza-alist))
                                                 (submodules (if-let ((submods (assoc-in '(:manifest :modules)
                                                                                         stanza-alist)))
                                                                     (cdr submods) '()))
                                                 (singleton (and (= (length submodules) 1)
                                                                 (equal? (normalize-module-name ns)
-                                                                        (submodules 0)))))
+                                                                        (submodules 0))))
+                                                (rules (if-let ((codeps (assoc :ppx-codeps stanza-alist)))
+                                                               '(:ppx-module)
+                                                               '())))
                                            (if singleton
-                                               (list :library)
-                                               (list dune-rule))))
+                                               `(:library ,@rules)
+                                               (cons dune-rule rules))))
                                         ((:module)
                                          (if *debugging*
                                              (format #t "~A: ~A~%" (green "module") stanza))
@@ -105,6 +109,7 @@
     (if *debugging*
         (format #t "~A: ~A~%" (bgred "-rules ct") (length -rules)))
     (let* ((rules (if (assoc :modules pkg)
+                      ;; FIXME: handle at the stanza level
                       `(:struct :sig ,@-rules)
                       -rules))
            (rules (if (assoc :structures pkg) (cons :struct rules) rules))
@@ -766,8 +771,9 @@
                         deps)))
 
              ((:rule)
-              (format #t "~A: ~A~%" (bgred "FIXME")
-                      "global hdrs for :rule stanzas")
+              (if *debugging*
+                  (format #t "~A: ~A~%" (bgred "FIXME")
+                          "global hdrs for :rule stanzas"))
               (values))
 
              ((:shared-deps)

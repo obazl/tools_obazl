@@ -1,19 +1,19 @@
 (load "bash.scm")
 
 (define (-find-match-in-stanza key pkg-path stanza)
-  (if *debugging*
+  (if (or *debug-genrules* *debugging*)
       (format #t "~A: ~A~%" (blue "-find-match-in-stanza") key))
   (let* ((key (if (keyword? key) key (string->keyword key)))
          (deps (assoc-val :deps stanza))
          (found (find-if (lambda (dep)
-                           (if *debugging*
+                           (if (or *debug-genrules* *debugging*)
                                (format #t "~A: ~A~%" (yellow "checking dep") dep))
                            (eq? key (car dep))) deps)))
-    (if *debugging*
+    (if (or *debug-genrules* *debugging*)
         (format #t "~A: ~A~%" (red "found") found))
     (if found
         (let* ((lbl (cdr found))
-               (_ (if *debugging* (format #t "~A: ~A~%" (yellow "lbl") lbl)))
+               (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (yellow "lbl") lbl)))
                (pkg (assoc-val :pkg lbl))
                (tgt (if-let ((t (assoc-val :tgt lbl)))
                             (format #f "$(rootpath ~A)" (cdr t))
@@ -25,7 +25,7 @@
           tgt)
         (let ((outputs (assoc-val :outputs stanza))
               (found (find-if (lambda (out)
-                                (if *debugging*
+                                (if (or *debug-genrules* *debugging*)
                                     (format #t "~A: ~A~%" (yellow "checking out") out))
                                 (eq? key (car out))) outputs)))
           (if found
@@ -33,7 +33,7 @@
               (error 'fixme "TODO: search exports"))))))
 
 (define (-resolve-match match pkg-path stanza)
-  (if *debugging*
+  (if (or *debug-genrules* *debugging*)
       (begin
         (format #t "~A: ~A~%" (blue "-resolve-match") match)
         (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)
@@ -43,7 +43,7 @@
       ((:deps)
        (let* ((dassoc (assoc key stanza))
               (replace (map (lambda (dep)
-                              (if *debugging*
+                              (if (or *debug-genrules* *debugging*)
                                   (format #t "~A: ~A~%" (yellow "dep") dep))
                               ;;FIXME: support :fg
                               ;;FIXME: match paths
@@ -54,17 +54,17 @@
                                               (error 'fixme
                                                      (format #f "missing tgt/tgts: ~A" dep)))))
                             (cdr dassoc))))
-         (if *debugging*
+         (if (or *debug-genrules* *debugging*)
              (format #t "~A: ~A~%" (red "replace") replace))
          (string-join replace)))
       (else
        (-find-match-in-stanza key pkg-path stanza)))))
 
 (define (-expand-outputs pkg-path stanza)
-  (if *debugging*
+  (if (or *debug-genrules* *debugging*)
       (format #t "~A: ~A~%" (blue "-expand-outputs") stanza))
   (let ((outs (assoc-val :outputs stanza)))
-    (if *debugging* (format #t "~A: ~A~%" (yellow "outs") outs))
+    (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (yellow "outs") outs))
     "FOOBAR"))
 
 ;; FIXME: account for :ctx, which is derived from (chdir ...) in dune
@@ -73,27 +73,27 @@
 ;; possible resolution: handle all :ctx rules in a separate pass?
 ;; for now just emit a comment
 (define (starlark-emit-genrule outp pkg-path stanza)
-  (if *debugging*
+  (if (or *debug-genrules* *debugging*)
       (format #t "~A: ~A\n" (bgblue "starlark-emit-genrule") stanza))
   (let* ((action (assoc-val :actions stanza))
-         (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "action") action)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (uwhite "action") action)))
          (tool (cadr (assoc-in '(:cmd :tool) action)))
-         (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "tool") tool)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (uwhite "tool") tool)))
          (bash-cmd? (eq? tool 'bash))
          (deps (assoc-val :deps stanza))
-         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "deps") deps)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (cyan "deps") deps)))
          (srcs (deps->srcs-attr pkg-path tool deps))
-         (_ (if *debugging* (format #t "~A: ~A~%" (cyan "genrule srcs") srcs)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (cyan "genrule srcs") srcs)))
          ;; (_ (error 'X "stop genrule"))
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
          (with-stdout? (assoc-in '(:actions :stdout) stanza))
-         (_ (if *debugging* (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?)))
          (outputs (assoc-val :outputs stanza))
-         (_ (if *debugging* (format #t "~A: ~A~%" (ucyan "outputs") outputs)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (ucyan "outputs") outputs)))
          (outs (if outputs (outputs->outs-attr pkg-path outputs) '()))
-         (_ (if *debugging* (format #t "~A: ~A~%" (ucyan "outs") outs)))
+         (_ (if (or *debug-genrules* *debugging*) (format #t "~A: ~A~%" (ucyan "outs") outs)))
 
          (name (if (truthy? outs) (format #f "__~A__" (outs 0))
                    (if (truthy? srcs)
@@ -106,7 +106,7 @@
          )
 
     ;; progn: list of actions. should be just one?
-    (if *debugging*
+    (if (or *debug-genrules* *debugging*)
         (for-each
          (lambda (cmd)
            (if (eq? :cmd (car cmd))
@@ -127,11 +127,11 @@
                     (cadr (assoc-in '(:actions :cmd :tool) stanza))))
             ;; else
             (begin
-              (if *debugging* (format #t "  outs: ~A~%" outs))
+              (if (or *debug-genrules* *debugging*) (format #t "  outs: ~A~%" outs))
 
               (if (list? stanza)
                   (begin
-                    (if *debugging*
+                    (if (or *debug-genrules* *debugging*)
                         (format #t "~A~%" (uwhite "emitting genrule")))
                     ;; (format outp "## ~A\n" (assoc-val 'dune (stanza)))
                     ;; (format outp "## (\n")
@@ -163,7 +163,7 @@
                             ;;   (format outp "    ],\n"))
                             ))
 
-                    (if *debugging*
+                    (if (or *debug-genrules* *debugging*)
                         (format #t "~A~%" (uwhite "emitting tool attrib")))
                     (if bash-cmd?
                         (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
@@ -182,12 +182,12 @@
                           (format outp "    exec_tools = [\n")
                           (for-each ;; fixme: don't iterate this twice
                            (lambda (cmd)
-                             (if *debugging* (format #t "Processing CMD: ~A~%" cmd))
+                             (if (or *debug-genrules* *debugging*) (format #t "Processing CMD: ~A~%" cmd))
                              (if (eq? :cmd (car cmd))
                                  (let-values
                                      (((tool-dep? tool args)
                                        (derive-cmd pkg-path cmd deps outputs)))
-                                   (if *debugging*
+                                   (if (or *debug-genrules* *debugging*)
                                        (begin
                                          (format #t "cmd Tool-Dep?: ~A~%" tool-dep?)
                                          (format #t "cmd TooL: ~A~%" tool)

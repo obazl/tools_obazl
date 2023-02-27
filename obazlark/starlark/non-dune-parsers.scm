@@ -1,5 +1,5 @@
 (define (emit-non-dune-ocamllex outp lexer)
-  (if *debugging*
+  (if (or *debug-emit* *debugging*)
       (format #t "~A: ~A~%" (ublue "emit-non-dune-ocamllex") lexer))
 
   (let* ((principal-name (principal-name (cdr lexer)))
@@ -8,7 +8,7 @@
                        (format #f "~A" module-name))))
     (string-set! target-name 0
                  (char-upcase (string-ref target-name 0)))
-    (if *debugging*
+    (if (or *debug-emit* *debugging*)
         (format #t "emitting ocamllex: ~A\n" lexer))
 
     ;; ocaml_module target emitted by aggregate emitter
@@ -30,7 +30,7 @@
     (newline outp)))
 
 (define (emit-non-dune-ocamlyacc outp yacc)
-  (if *debugging*
+  (if (or *debug-emit* *debugging*)
       (format #t "~A: ~A~%" (ublue "emit-non-dune-ocamlyacc") yacc))
 
   (let* ((principal-name (principal-name (cdr yacc)))
@@ -39,7 +39,7 @@
                        (format #f "~A" module-name))))
     (string-set! target-name 0
                  (char-upcase (string-ref target-name 0)))
-    (if *debugging*
+    (if (or *debug-emit* *debugging*)
         (format #t "emitting yacc target: ~A\n" yacc))
 
     (if *menhir*
@@ -65,11 +65,11 @@
           (newline outp)))))
 
 (define (emit-non-dune-menhir outp yacc)
-  (if *debugging*
+  (if (or *debug-emit* *debugging*)
       (format #t "~A: ~A~%" (ublue "emit-non-dune-menhir") yacc))
   (let ((principal-name (principal-name (cdr yacc)))
         (modname (car yacc)))
-    (if *debugging*
+    (if (or *debug-emit* *debugging*)
         (format #t "emitting menhir target: ~A\n" yacc))
     ;; (format outp "#######\n")
     (format outp "menhir(\n")
@@ -86,7 +86,7 @@
     (newline outp)))
 
 (define (emit-non-dune-file-generators outp pkg)
-  (if *debugging*
+  (if (or *debug-emit* *debugging*)
       (format #t "~A: ~A~%" (ublue "emit-non-dune-file-generators") pkg))
   (let* ((lexers (if-let ((lexers (assoc-in '(:lex :static) pkg)))
                          (cdr lexers) '()))
