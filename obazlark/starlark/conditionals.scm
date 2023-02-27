@@ -177,7 +177,7 @@
                   (error 'stop "STOP exec conditionals")))
             ))
 
-         ((:env :ocamllex :ocamlyacc :testsuite) (values))
+         ((:env :lex :yacc :testsuite) (values))
 
          (else
           (error 'UNHANDLED "unhandled stanza for conditionals"))

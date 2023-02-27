@@ -3,7 +3,7 @@
 
 (define (pkg->obazl-rules pkg)
   (if *debugging*
-      (format #t "~A~%" (ublue "-pkg->obazl-rules")))
+      (format #t "~A: ~A~%" (ublue "-pkg->obazl-rules") pkg))
   (let* ((stanzas (assoc-val :dune pkg))
          ;; (_ (if *debugging* (format #t "stanzas: ~A\n" stanzas)))
          (-rules (fold (lambda (stanza accum)
@@ -19,8 +19,8 @@
                                         ((:archive
                                           :library
                                           :ns-library
-                                          :ocamllex
-                                          :ocamlyacc
+                                          :lex
+                                          :yacc
                                           :sig
                                           :struct
                                           :executable
@@ -64,8 +64,8 @@
                                                  '() cmd-list)))
                                         ;; ((:diff) (cons :diff accum))
                                         ;; ((:node) (cons :js accum))
-                                        ;; ((:ocamllex) (cons :ocamllex accum))
-                                        ;; ((:ocamlyacc) (cons :ocamlyacc accum))
+                                        ;; ((:lex) (cons :lex accum))
+                                        ;; ((:yacc) (cons :yacc accum))
                                         ;; ((:write-file) (cons :write-file accum))
                                         ((:shared-deps) #f)
                                         ((:shared-ppx) #f)
@@ -139,7 +139,7 @@
   (newline outp)
 
   (if (string-contains pkg-path "test")
-        (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")\n"))
+        (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")~%~%"))
 
   (if (member :write-file obazl-rules)
       (begin
@@ -162,8 +162,8 @@
                                 :module
                                 :ns-archive
                                 :ns-library
-                                :ocamllex
-                                :ocamlyacc
+                                :lex
+                                :yacc
                                 :sig
                                 :struct
                                 :executable
@@ -213,7 +213,7 @@
 
 
 
-        (if (member :ocamllex obazl-rules)
+        (if (member :lex obazl-rules)
             (format outp "     \"ocamllex\",\n"))
 
         ;; (if (or (assoc-in '(:stanzas :executable) (cdr obazl-rules))
@@ -247,8 +247,9 @@
         (if (member :test obazl-rules)
             (format outp "     \"ocaml_test\",\n"))
 
-        (if (member :ocamlyacc obazl-rules)
-            (format outp "     \"ocamlyacc\",\n"))
+        (if (member :yacc obazl-rules)
+            (if (not *menhir*)
+                (format outp "     \"ocamlyacc\",\n")))
 
         (if (member :ppx-executable obazl-rules)
             (format outp "     \"ppx_executable\",\n"))
@@ -260,11 +261,10 @@
             (format outp "     \"cc_selection_proxy\",\n"))
 
         (format outp ")\n")
-
         (newline outp)
         ))
 
-  (if (member :menhir obazl-rules)
+  (if (and *menhir* (member :yacc obazl-rules))
       (begin
         (format outp "load(\"@obazl//build:rules_ocaml.bzl\", \"menhir\")")
         (newline outp)
@@ -849,7 +849,7 @@
              ((:node) (values))
               ;; (format outp "## :node") (newline outp))
 
-             ((:env :ocamllex :ocamlyacc :menhir
+             ((:env :lex :yacc :menhir
                     :cppo
                     :tuareg :sh-test
                     :diff :alias :exec-libs)

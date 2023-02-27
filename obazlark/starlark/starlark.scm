@@ -43,7 +43,7 @@
 ;;           (assoc-in '(:stanzas :executables) (cdr dune-pkg-tbl)))
 ;;       (format outp "     \"ocaml_executable\",\n"))
 
-;;   (if (assoc-in '(:stanzas :ocamllex) (cdr dune-pkg-tbl))
+;;   (if (assoc-in '(:stanzas :lex) (cdr dune-pkg-tbl))
 ;;       (format outp "     \"ocaml_lex\",\n"))
 
 ;;   (if (pkg-has-library? dune-pkg-tbl)

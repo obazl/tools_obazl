@@ -60,10 +60,15 @@
          (pkgs (car (assoc-val :pkgs @ws)))
          (mpkg-alist (map (lambda (kv)
                             ;; (format #t "~A: ~A~%" (red "pkg") (cdr kv))
-                            (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
-                            ;; (format #t "~A: ~A~%" (red "miblized") mibl-pkg)
-                             (hash-table-set! pkgs (car kv) mibl-pkg)
-                             mibl-pkg))
+                            (if (assoc 'dune (cdr kv))
+                                (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
+                                  ;; (format #t "~A: ~A~%" (red "miblized") mibl-pkg)
+                                  (hash-table-set! pkgs (car kv) mibl-pkg)
+                                  mibl-pkg)
+                                (begin
+                                  (format #t "~A: ~A~%" (red "miblize: no dune file") kv)
+                                  (cdr kv))
+                                ))
                          pkgs)))
         ;; (_ (format #t "~A: ~A~%" (blue "mpkg-alist")
         ;;            mpkg-alist))
@@ -156,16 +161,22 @@
 
     ;; end dune-specific?
 
-    ;; (set! *debugging* #t)
+    (if *emit-mibl*
+        (emit-mibl))
+        ;; (emit-mibl :@))
+
     (if *emit-starlark*
-        (ws->starlark :@))
+        (begin
+          ;; (set! *debugging* #t)
+          ;;FIXME: rename emit-starlark
+          (ws->starlark :@)))
 
     ;; (ws->opam-bundles :@)
 
-    ;; (if *dump-starlark*
-    ;;   (begin
-    ;;     (format #t "STARLARK~%")
-    ;;     (debug-print-pkgs :@)))
+    (if *dump-starlark*
+      (begin
+        (format #t "STARLARK~%")
+        (debug-print-pkgs :@)))
 
     ;; (if *debugging*
     ;;     (format #t "~A: ~A~%" (green "selectors"))

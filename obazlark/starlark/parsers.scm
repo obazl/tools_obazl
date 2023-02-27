@@ -108,7 +108,7 @@
          (hdr-flag #t))
     (for-each (lambda (stanza)
                 (case (car stanza)
-                  ((:ocamllex :ocamlyacc :menhir) ;; etc
+                  ((:lex :yacc :menhir) ;; etc
                    (if hdr-flag
                        (begin
                          (format outp "########################\n")
@@ -117,9 +117,9 @@
                          (set! hdr-flag #f)))))
 
                 (case (car stanza)
-                  ((:ocamllex)
+                  ((:lex)
                    (starlark-emit-ocamllex outp stanza))
-                  ((:ocamlyacc)
+                  ((:yacc)
                    (starlark-emit-ocamlyacc outp stanza))
                   ((:menhir)
                    (starlark-emit-menhir outp stanza))

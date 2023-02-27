@@ -27,20 +27,22 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl",
 rules_foreign_cc_dependencies(register_built_tools=False)
 
 ################ rules_jsoo etc. ################
-# load("@rules_jsoo//:WORKSPACE.bzl", jsoo_fetch_repos = "fetch_repos")
-# jsoo_fetch_repos()
+## NB: for now we need the jsoo stuff because @obazl//coswitch writes
+## jsoo targets into the opam pkgs - some pkgs include a jsoo runtime.
+load("@rules_jsoo//:WORKSPACE.bzl", jsoo_fetch_repos = "fetch_repos")
+jsoo_fetch_repos()
 
-# load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
-# rules_js_dependencies()
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
+rules_js_dependencies()
 
-# load("@rules_nodejs//nodejs:repositories.bzl",
-#      "DEFAULT_NODE_VERSION",
-#      "nodejs_register_toolchains")
+load("@rules_nodejs//nodejs:repositories.bzl",
+     "DEFAULT_NODE_VERSION",
+     "nodejs_register_toolchains")
 
-# nodejs_register_toolchains(
-#     name = "nodejs",
-#     node_version = DEFAULT_NODE_VERSION,
-# )
+nodejs_register_toolchains(
+    name = "nodejs",
+    node_version = DEFAULT_NODE_VERSION,
+)
 
 # load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock")
 # npm_translate_lock(

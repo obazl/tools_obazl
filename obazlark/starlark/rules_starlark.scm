@@ -791,7 +791,7 @@
                                 :test
                                 :shared-deps :shared-compile-opts
                                 :shared-ppx
-                                :ocamllex :ocamlyacc :menhir
+                                :lex :yacc :menhir
                                 :ocamlc
                                 :library :archive
                                 :ns-archive :ns-library

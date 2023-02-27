@@ -3,6 +3,7 @@
 
 (define *select-protases* '())
 
+(load "mibl.scm")
 (load "dune.scm")
 
 (load "starlark/parsers.scm")

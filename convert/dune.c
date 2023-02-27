@@ -40,6 +40,7 @@ int main(int argc, char **argv)
     char *rootpath = NULL;
     char *pkgarg = NULL;
 
+    bool menhir = false;
     bool exit_on_error = false;
 
     enum OPTS {
@@ -47,6 +48,8 @@ int main(int argc, char **argv)
         OPT_PKG,
         OPT_PACKAGE,
         OPT_EMIT,
+        OPT_NOEMIT,
+        OPT_MENHIR,
         OPT_DUMP,
         OPT_HELP,
         OPT_DEBUG,
@@ -76,6 +79,10 @@ int main(int argc, char **argv)
         /* emit options: parsetree, mibl, starlark */
         [OPT_EMIT] = {.long_name="emit",.short_name='e',
                       .flags=GOPT_ARGUMENT_REQUIRED},
+        [OPT_NOEMIT] = {.long_name="no-emit",.short_name='E',
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+        [OPT_MENHIR] = {.long_name="menhir", .flags=GOPT_ARGUMENT_FORBIDDEN},
 
         /* stdout options (stages): parsetree, mibl. starlark */
         /* i.e. we can emit starlark but print mibl to stdout */
@@ -104,6 +111,11 @@ int main(int argc, char **argv)
         verbosity = options[OPT_VERBOSE].count;
     }
 
+    if (options[OPT_MENHIR].count) {
+        /* printf("menhir ct: %d\n", options[OPT_MENHIR].count); */
+        menhir = true;
+    }
+
     if (options[OPT_ROOT].count) {
         printf("root ct: %d\n", options[OPT_ROOT].count);
         rootpath = strdup(options[OPT_ROOT].argument);
@@ -124,10 +136,7 @@ int main(int argc, char **argv)
 
     if (options[OPT_DEBUG].count) {
         /* printf("debug ct: %d\n", options[OPT_DEBUG].count); */
-#if defined(DEBUG_TRACE)
-        printf("SETTING DEBUG\n");
         debug = true;
-#endif
     }
 
     if (options[OPT_TRACE].count) {
@@ -178,7 +187,7 @@ int main(int argc, char **argv)
 
     mibl_configure();
 
-    char **p = NULL;
+    /* char **p = NULL; */
     /* while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) { */
     /*     log_info("miblrc pkg: %s", *p); */
     /* } */
@@ -261,34 +270,40 @@ int main(int argc, char **argv)
         }
     }
 
+    if (options[OPT_NOEMIT].count) {
+        if (verbose && verbosity > 1)
+            log_info("defaulting emit functions to #f");
+        mibl_config.emit_starlark = false;
+        mibl_config.emit_mibl = false;
+        mibl_config.emit_parsetree = false;
+    }
+
     if (options[OPT_EMIT].count) {
-        /* printf("emit ct: %d\n", options[OPT_EMIT].count); */
+        /* printf("emit opt: %d - %s\n", */
+        /*        options[OPT_EMIT].count, */
+        /*        options[OPT_EMIT].argument); */
         if (strncmp(options[OPT_EMIT].argument, "starlark", 8) == 0) {
-            printf("emitting starlark\n");
+            /* printf("emitting starlark\n"); */
             mibl_config.emit_starlark = true;
         }
         else if (strncmp(options[OPT_EMIT].argument, "mibl", 4) == 0) {
-            printf("emitting mibl\n");
+            /* printf("emitting mibl\n"); */
+            /* mibl_config.emit_parsetree = false; */
             mibl_config.emit_mibl = true;
+            /* mibl_config.emit_starlark = false; */
         }
         else if (strncmp(options[OPT_EMIT].argument, "parsetree", 9) == 0) {
-            printf("emitting parsetree\n");
+            /* printf("emitting parsetree\n"); */
             mibl_config.emit_parsetree = true;
         }
-        else if (strncmp(options[OPT_EMIT].argument, "none", 4) == 0) {
-            if (verbose && verbosity > 1)
-                log_info("emit function disabled");
-            mibl_config.emit_starlark = false;
-            mibl_config.emit_mibl = false;
-            mibl_config.emit_parsetree = false;
-        }
         else {
-            printf("Invalid emit arg: %s. Allowed: parsetree, mibl, starlark, none. Default: starlark\n", options[OPT_EMIT].argument);
+            printf("Invalid emit arg: %s. Allowed: parsetree, mibl, starlark. Default: starlark\n", options[OPT_EMIT].argument);
             exit(EXIT_FAILURE);
         }
     }
 
     if (verbose && verbosity > 1) {
+        log_debug("MENHIR: %d", menhir);
         log_debug("DUMP_PARSETREE: %d", mibl_config.dump_parsetree);
         log_debug("DUMP_MIBL: %d", mibl_config.dump_mibl);
         log_debug("DUMP_STARLARK: %d", mibl_config.dump_starlark);
@@ -310,7 +325,13 @@ int main(int argc, char **argv)
     UT_string *setter;
     utstring_new(setter);
 
+    /* printf("SETTING *debugging* to %s\n", debug? "#t": "#f"); */
+    utstring_printf(setter, "(set! *debugging* %s)",
+                    debug? "#t": "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
     /* printf("SETTING *dump-starlark* to %d\n", dump_starlark); */
+    utstring_renew(setter);
     utstring_printf(setter, "(set! *dump-starlark* %s)",
                     mibl_config.dump_starlark? "#t": "#f");
     s7_eval_c_string(s7, utstring_body(setter));
@@ -353,11 +374,20 @@ int main(int argc, char **argv)
     /*        (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*"))); */
 
     if (pkgarg) {
-        UT_string *setter; utstring_new(setter);
+        utstring_renew(setter);
         utstring_printf(setter, "(set! *emit-bazel-pkg* \"%s\")", pkgarg);
         /* log_debug("SETTING *emit-bazel-pkg* to: %s", pkgarg); */
         s7_eval_c_string(s7, utstring_body(setter));
     }
+
+    printf("SETTING *menhir* to %s\n", menhir? "#t": "#f");
+    utstring_renew(setter);
+    utstring_printf(setter, "(set! *menhir* %s)",
+                    menhir? "#t": "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_free(setter);
+
     if (verbose)
         log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
 

@@ -40,7 +40,9 @@
                               (cdr s)))
                  selectors))))))
 
-(define (-emit-deps outp this-is-main exec-lib deps-tag stanza agg-deps local-deps selectors testsuite)
+(define (-emit-deps outp this-is-main exec-lib deps-tag
+                    ;; stanza
+                    agg-deps local-deps selectors testsuite)
   (if *debugging*
       (begin
         (format #t "~A: ~A~%" (ublue "-emit-deps") deps-tag)
@@ -566,7 +568,9 @@
               (if *debugging*
                   (format #t "~A: ~A~%" (blue "emitting deps A") deps-tag))
               ;; (format outp "## emitting deps A: ~A~%" deps-tag)
-              (-emit-deps outp this-is-main exec-lib? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+              (-emit-deps outp this-is-main exec-lib? deps-tag
+                          ;;stanza
+                          agg-deps local-deps dep-selectors testsuite)
 
               ;; (if (not (null? local-deps))
               ;;     (format outp "    local-deps          = ~A,\n" local-deps))
@@ -658,7 +662,9 @@
                (if *debugging*
                    (format #t "~A: ~A~%" (blue "emitting deps B") deps-tag))
                ;; (format outp "## emitting deps B: ~A~%" deps-tag)
-               (-emit-deps outp this-is-main exec-lib? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+               (-emit-deps outp this-is-main exec-lib? deps-tag
+                           ;; stanza
+                           agg-deps local-deps dep-selectors testsuite)
                ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
                ;; (if (not (null? local-deps))
                ;;     (if (not (null? agg-deps))
@@ -919,7 +925,7 @@
                                                                (format #f "~A" (cdr module))))
                                                    srcs))))
 
-                               ((:install :ocamllex :ocamlyacc :menhir
+                               ((:install :lex :yacc :menhir
                                           :cppo :env
                                           :shared-compile-opts :shared-deps
                                           :diff :alias :node
@@ -947,6 +953,7 @@
                          (uwhite "Found containing aggregator for")
                          modname aggregator))
              (if-let ((main (assoc-val :main (cdr aggregator))))
+                     ;; ocaml_exec_module?
                      (if (not (equal? modname main))
                          (begin
                            (-emit-module outp ws module aggregator pkg)
@@ -955,12 +962,15 @@
                      (begin
                        (-emit-module outp ws module aggregator pkg)
                        (format outp "\n"))))
+           ;; else
            (begin
              (if *debugging*
                  (format #t "~A ~A; excluding\n"
                          (uwhite "No aggregator found for") modname))))
        ))
-   (sort! modules (lambda (a b) (sym<? (car a) (car b))))))
+   ;;(sort! modules (lambda (a b) (sym<? (car a) (car b))))
+   modules ; for-each
+   ))
 
 (define (-module-record->sigfile module)
   (if *debugging*
@@ -1123,7 +1133,9 @@
 
       (if *debugging*
           (format #t "~A: ~A~%" (blue "emitting deps A") deps-tag))
-      (-emit-deps outp this-is-main exec-lib? deps-tag stanza agg-deps local-deps dep-selectors testsuite)
+      (-emit-deps outp this-is-main exec-lib? deps-tag
+                  ;; stanza
+                  agg-deps local-deps dep-selectors testsuite)
 
       (if ppx-alist
           (begin
@@ -1238,74 +1250,74 @@
       (-emit-sigs-hdr outp ws sigs pkg-modules))
 
   ;; (if *build-dyads*
-      ;; (for-each
-      ;;  (lambda (module)
-      ;;    (format #t "dyad: : ~A\n" module)
-      ;;    (if (proper-list? module)
-      ;;        (let ((modname (car module))
-      ;;              ;; (mli (if-let ((mli (assoc-val :mli (cdr module))))
-      ;;              ;;              mli
-      ;;              ;;              (if-let ((mli (assoc-val :mli_ (cdr module))))
-      ;;              ;;                      mli
-      ;;              ;;                      #f)))
-      ;;              )
-      ;;          (format #t "sig for: ~A\n" modname)
-      ;;          (let* ((aggregator
-      ;;                  (find-if
-      ;;                   (lambda (stanza)
-      ;;                     (format #t "checking stanza for msig ~A\n" stanza)
-      ;;                     (case (car stanza)
-      ;;                       ((:archive :library :ns-archive :ns-library)
-      ;;                        ;; (if (eq? :library (car stanza))
-      ;;                        (if-let ((submods
-      ;;                                  (assoc-in '(:manifest :modules)
-      ;;                                             (cdr stanza))))
-      ;;                                (begin
-      ;;                                  (format #t "submods: ~A\n" submods)
-      ;;                                  (if (member modname (cdr submods))
-      ;;                                      #t
-      ;;                                      #f))))
-      ;;                       (else #f)))
-      ;;                   (assoc-val :dune pkg)))
-      ;;                 )
-      ;;            (if aggregator
-      ;;                (-emit-sig outp ws pkg module aggregator)))
-      ;;            ;; (format #t "aggregator: ~A\n" aggregator)
-      ;;          ;; (-emit-sig outp mli stanza)
-      ;;          )
-      ;;        ;; else improper list - ignore for *build-dyads*
-      ;;        ))
-      ;;  pkg-modules)
-      ;; else just free-standing sigs
-      (for-each
-       (lambda (sig)
-         (if *debugging*
-             (format #t "~A: ~A\n" (uwhite "free-standing sig") sig))
-         (let* ((modname (car sig))
-                (aggregator (find-if
-                             (lambda (stanza)
-                               (if *debugging*
-                                   (format #t "~A: ~A\n" (uwhite "checking stanza") stanza))
-                               (case (car stanza)
-                                 ((:archive :library)
-                                  ;; (if (eq? :library (car stanza))
-                                  (if-let ((subsigs
-                                            (assoc-val :subsigs
-                                                       (cdr stanza))))
-                                          (begin
-                                            (if *debugging*
-                                                (format #t "~A: ~A\n" (red "subsigs") subsigs))
-                                            (if (member modname subsigs)
-                                                (-emit-sig outp ws pkg sig stanza)
-                                                #f))))
-                                 (else #f)))
-                             (assoc-val :dune pkg)))
-                )
-           (if (not aggregator)
-               (-emit-sig-freestanding outp ws sig))))
-       sigs)
-      ;; )
-      )
+  ;; (for-each
+  ;;  (lambda (module)
+  ;;    (format #t "dyad: : ~A\n" module)
+  ;;    (if (proper-list? module)
+  ;;        (let ((modname (car module))
+  ;;              ;; (mli (if-let ((mli (assoc-val :mli (cdr module))))
+  ;;              ;;              mli
+  ;;              ;;              (if-let ((mli (assoc-val :mli_ (cdr module))))
+  ;;              ;;                      mli
+  ;;              ;;                      #f)))
+  ;;              )
+  ;;          (format #t "sig for: ~A\n" modname)
+  ;;          (let* ((aggregator
+  ;;                  (find-if
+  ;;                   (lambda (stanza)
+  ;;                     (format #t "checking stanza for msig ~A\n" stanza)
+  ;;                     (case (car stanza)
+  ;;                       ((:archive :library :ns-archive :ns-library)
+  ;;                        ;; (if (eq? :library (car stanza))
+  ;;                        (if-let ((submods
+  ;;                                  (assoc-in '(:manifest :modules)
+  ;;                                             (cdr stanza))))
+  ;;                                (begin
+  ;;                                  (format #t "submods: ~A\n" submods)
+  ;;                                  (if (member modname (cdr submods))
+  ;;                                      #t
+  ;;                                      #f))))
+  ;;                       (else #f)))
+  ;;                   (assoc-val :dune pkg)))
+  ;;                 )
+  ;;            (if aggregator
+  ;;                (-emit-sig outp ws pkg module aggregator)))
+  ;;            ;; (format #t "aggregator: ~A\n" aggregator)
+  ;;          ;; (-emit-sig outp mli stanza)
+  ;;          )
+  ;;        ;; else improper list - ignore for *build-dyads*
+  ;;        ))
+  ;;  pkg-modules)
+  ;; else just free-standing sigs
+  (for-each
+   (lambda (sig)
+     (if *debugging*
+         (format #t "~A: ~A\n" (uwhite "free-standing sig") sig))
+     (let* ((modname (car sig))
+            (aggregator (find-if
+                         (lambda (stanza)
+                           (if *debugging*
+                               (format #t "~A: ~A\n" (uwhite "checking stanza") stanza))
+                           (case (car stanza)
+                             ((:archive :library)
+                              ;; (if (eq? :library (car stanza))
+                              (if-let ((subsigs
+                                        (assoc-val :subsigs
+                                                   (cdr stanza))))
+                                      (begin
+                                        (if *debugging*
+                                            (format #t "~A: ~A\n" (red "subsigs") subsigs))
+                                        (if (member modname subsigs)
+                                            (-emit-sig outp ws pkg sig stanza)
+                                            #f))))
+                             (else #f)))
+                         (assoc-val :dune pkg)))
+            )
+       (if (not aggregator)
+           (-emit-sig-freestanding outp ws sig))))
+   sigs)
+  ;; )
+  )
 
 ;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
