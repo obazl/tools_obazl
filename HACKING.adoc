@@ -26,7 +26,10 @@ git_repository(
 
 4.  `$ bazel build //...`
 
-
+There is no need to run steps 1 and 2 if your project already has a
+`+WORKSPACE.bazel+' file. Step 2 replaces it; see the one for
+link:https://github.com/obazl-repository/ppx_bench/blob/bazel/main/WORKSPACE.bazel[ppx_bench]
+as an example.
 
 == Local development
 
