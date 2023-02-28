@@ -602,9 +602,10 @@
               (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
 
           (format outp ")\n")
+          (newline outp)
           )
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;; proper list but not alist: (Mytest mytest.ml Hello)
+        ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
         (let* ((_ (if (or *debug-emit* *debugging*) (format #t "emitting module (proper list): ~A\n" module)))
                (modname (car module))
                (structfile (if (proper-list? module) (cadr module)  (cdr module)))
