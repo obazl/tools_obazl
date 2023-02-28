@@ -701,7 +701,7 @@
 
                 (if ppx-args
                     (format outp
-                            "    ppx_args      = PPX_ARGS + [~{~S~^, ~}]\n" ppx-args)
+                            "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
                     )
                 ;; (if ppx-args
                 ;; ;; (if (not  ## why?
@@ -1167,7 +1167,7 @@
             ;;             "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
             (if ppx-args
                 (format outp
-                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}]\n" ppx-args)
+                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
                 )
             ;; (if (not
             ;;      (equal? :all (cadr (assoc :scope
