@@ -43,8 +43,7 @@ these repos.
 * link:https://github.com/obazl/mibl[mibl] - branch `dev`
 * link:https://github.com/obazl/libs7[libs7] - branch `dev`
 
-Clone these and checkouot branch `dev` for all except `tools_obazl`,
-which uses branch `mibl` at the moment..
+Clone these and checkouot branch `dev` for all.
 
 Recommendation: create an `obazl` toplevel directory and clone these into it.
 
@@ -62,13 +61,11 @@ containing:
 
 .WORKSPACE.bazel
 ----
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+git_repository(
     name = "obazl",  ## do not change name
-    url = "https://github.com/obazl/tools_obazl/archive/352c4a1b39f19c8f377d0dafda9e6233cf3aee52.zip",
-    strip_prefix = "tools_obazl-352c4a1b39f19c8f377d0dafda9e6233cf3aee52",
-    sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
+    remote = "https://github.com/obazl/tools_obazl",
+    branch = "alpha"
 )
 ----
 
@@ -150,7 +147,7 @@ so for now I'm using this method.
 To integrate OPAM resources (including an OCaml toolchain), set your
 OPAM switch (e.g. `$ opam switch 4.14.0`) and then run:
 
-    $ bazel run @obazl//coswitch/sys:refresh
+    $ bazel run @obazl//coswitch:refresh
 
 WARNING: This code is undergoing revisions so this command will change.
 
@@ -162,6 +159,7 @@ This command has the following effects:
 2.  Generates a new `WORKSPACE.opam.bzl` file containing a `bootstrap`
   function defining local repositories for the workspaces created in step 1.
 
+IMPORTANT: Works with local switches too.
 
 === Dune conversion
 
@@ -173,6 +171,9 @@ Edit `.config/miblrc` to taste.
 
 
 Debugging: add `+-c dbg -- -dvt+`
+
+The command has some options that are helpful for troubleshooting;
+pass `--help` to see them.
 
 == Troubleshooting
 
