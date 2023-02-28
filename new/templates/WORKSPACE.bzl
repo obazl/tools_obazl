@@ -2,7 +2,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
-BRANCH = "dev"
+OBAZL_BRANCH = "dev"
 
 all_content = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
@@ -22,26 +22,26 @@ def fetch_repos():
         git_repository,
         name = "rules_ocaml",
         remote = "https://github.com/obazl/rules_ocaml",
-        branch = BRANCH
+        branch = OBAZL_BRANCH
     )
 
     maybe(
         git_repository,
         name = "opam",
         remote = "https://github.com/obazl/tools_opam",
-        branch = BRANCH
+        branch = OBAZL_BRANCH
     )
 
     maybe(
         git_repository,
         name = "obazl",
         remote = "https://github.com/obazl/tools_obazl",
-        branch = BRANCH
+        branch = OBAZL_BRANCH
     )
 
     maybe(
         git_repository,
         name = "rules_jsoo",
         remote = "https://github.com/obazl/rules_jsoo",
-        branch = BRANCH
+        branch = OBAZL_BRANCH
     )

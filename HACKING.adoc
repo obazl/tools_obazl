@@ -1,0 +1,212 @@
+= Hacking tools_obazl
+:toc: true
+
+This documents the process I use to develop OBazl tools locally, in
+case you'd like to give it a try.
+
+
+== Getting started
+
+1. Create:
+
+.WORKSPACE.bazel
+----
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "obazl",  ## do not change name
+    remote = "https://github.com/obazl/tools_obazl",
+    branch = "alpha"
+)
+----
+
+2. `$ bazel run @obazl//new:workspace`  (or `new:ws`)
+
+3.  `$ bazel run @obazl//convert:dune`
+
+4.  `$ bazel build //...`
+
+
+
+== Local development
+
+=== Local obazl repos
+
+First set up local copies of the relevant OBazl repos. Once they're
+stable this won't be necessary, but for now, you'll use
+`--override_repository` to override the `http_archive` imports for
+these repos.
+
+* link:https://github.com/obazl/rules_ocaml[rules_ocaml] - branch `dev`
+* link:https://github.com/obazl/tools_opam[tools_opam] - branch `dev`
+* link:https://github.com/obazl/tools_obazl[tools_obazl] - branch `mibl`
+* link:https://github.com/obazl/mibl[mibl] - branch `dev`
+* link:https://github.com/obazl/libs7[libs7] - branch `dev`
+
+Clone these and checkouot branch `dev` for all except `tools_obazl`,
+which uses branch `mibl` at the moment..
+
+Recommendation: create an `obazl` toplevel directory and clone these into it.
+
+To use these locally in a project, your `WORKSPACE` will import them
+(using `http_archive` or `git_repository`), but you will override them using `--override_repository` as described below.
+
+=== Bazel initialization
+
+Step one is to initialize a Bazel environment. You can use one of your
+own OCaml projects, but to get started I recommend you run through the
+conversion process using a smallish working OCaml project like
+link:https://github.com/gildor478/ounit[ounit2]. Clone it to your
+local system and in the root dir create file WORKSPACE.bazel
+containing:
+
+.WORKSPACE.bazel
+----
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "obazl",  ## do not change name
+    url = "https://github.com/obazl/tools_obazl/archive/352c4a1b39f19c8f377d0dafda9e6233cf3aee52.zip",
+    strip_prefix = "tools_obazl-352c4a1b39f19c8f377d0dafda9e6233cf3aee52",
+    sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
+)
+----
+
+Override this by creating file `.bazelrc` in the project root directory with the following content:
+
+..bazelrc
+----
+common --override_repository=obazl=/path/to/tools_obazl
+----
+
+Then run this command from the project root:
+
+    $ bazel run @obazl//new:workspace
+
+This will create something like the following. Remember this is still
+under development so this list will change:
+
+* .bazelignore
+* .bazeliskrc
+* .bazelversion
+* .bazelrc
+* .config/gitignore
+* .config/dev.bazelrc
+* .config/miblrc
+* .config/user.bazelrc
+* .obazl.d/.gitignore
+* .obazl.d/opam/local/BOOTSTRAP.bzl
+* BUILD.bazel
+* BUILD.bzl
+* WORKSPACE.bazel
+* WORKSPACE.bzl
+* WORKSPACE.opam.bzl
+* bzl/BUILD.bazel
+* bzl/host/BUILD.bazel
+* COSWITCH.bzl ???
+
+WARNING: Existing files will be overwritten. This means the initial
+`WORKSPACE.bazel` and `.bazelrc` files you just created will be
+replaced.
+
+Edit `.config/dev.bazelrc` to make the paths in the
+`--override_repository` entries point to your local repos:
+
+----
+common --override_repository=rules_ocaml=/path/to/obazl/rules_ocaml
+common --override_repository=opam=/path/to/obazl/tools_opam
+common --override_repository=obazl=/path/to/obazl/tools_obazl
+common --override_repository=mibl=/path/to/obazl/mibl
+common --override_repository=libs7=/path/to/obazl/libs7
+----
+
+IMPORTANT: Notice the workspace names for repositories `tools_opam`
+and `tools_obazl` are `opam` and `obazl`, respectively. This makes
+targets available under `@opam` instead of `@tools_opam` and `@obazl`
+instead of `@tools_obazl`.
+
+
+
+=== OPAM integration
+
+Start by configuring an OPAM switch for the project. The OBazl tools
+can automate this but currently the focus is on Dune conversion so we
+take the path of least resistance, which is to assume that we have a
+properly configured switch.
+
+[WARNING]
+====
+The following command will create files in your OPAM repo! It
+will add `WORKSPACE.bazel` and `BUILD.bazel` files in each OPAM
+package directory. It will also create subdirectories containing
+symlinked files.
+
+The OBazl tools also support local OPAM repos, and
+can write the files and symlinks to an isolated subdirectory (using
+XDG conventions) but those methods need to be updated and documented,
+so for now I'm using this method.
+====
+
+To integrate OPAM resources (including an OCaml toolchain), set your
+OPAM switch (e.g. `$ opam switch 4.14.0`) and then run:
+
+    $ bazel run @obazl//coswitch/sys:refresh
+
+WARNING: This code is undergoing revisions so this command will change.
+
+This command has the following effects:
+
+1. Writes to the OPAM switch as described above, creating one Bazel
+  workspace for each OPAM package, and converting each `META`
+  file to a `BUILD.bazel` file;
+2.  Generates a new `WORKSPACE.opam.bzl` file containing a `bootstrap`
+  function defining local repositories for the workspaces created in step 1.
+
+
+=== Dune conversion
+
+Step 3: dune conversion
+
+Edit `.config/miblrc` to taste.
+
+`$ bazel run @obazl//convert:dune`
+
+
+Debugging: add `+-c dbg -- -dvt+`
+
+== Troubleshooting
+
+=== ppx_expect & ppx_inline_test
+
+The converter is yet not smart enough to detect usage of `ppx_expect` and
+`ppx_inline_test` extensions. Note that the former depends on the
+latter; both require that [nowrap]`-inline-test-lib <tag>` be passed
+to the ppx executable. `<tag>` can be any string; it serves as an
+identifier for the test extensions in the module, so that tests may be
+run selectively (by passing [nowrap]`inline-test-runner <tag>` at
+runtime).
+
+Code containing one of the extensions (`let%test`, `let%test_unit`,
+`let%test_module`, `let%expect_test`) will result in something like the following:
+
+----
+$ bazel test test:sexplib_test
+...
+File "bazel-out/darwin-fastbuild/bin/test/__ppx/newlines.ml", lines 51-172, characters 0-11:
+ 51 | let%expect_test _ =
+... details elided ...
+Error: ppx_expect: extension is disabled because the tests would be ignored (the build system didn't pass -inline-test-lib)
+----
+
+The fix is to add the required arguments to the `ppx_args` attribute
+of the target; for example:
+
+.test/BUILD.bazel
+----
+ocaml_module(
+    name          = "Newlines",
+    ...
+    ppx           = ":ppx.exe",
+    ppx_args      = ["-inline-test-lib", "sexplib"],
+)
+----

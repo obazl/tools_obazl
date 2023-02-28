@@ -66,7 +66,7 @@
                                   (hash-table-set! pkgs (car kv) mibl-pkg)
                                   mibl-pkg)
                                 (begin
-                                  (format #t "~A: ~A~%" (red "miblize: no dune file") kv)
+                                  ;; (format #t "~A: ~A~%" (red "miblize: no dune file") kv)
                                   (cdr kv))
                                 ))
                          pkgs)))

@@ -1,4 +1,6 @@
-build --color=yes
+common --color=yes
+common:show --subcommands=pretty_print
+common:show --verbose_failures
 
 # toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
 # with ocamlc.opt, pass --config=ocamlc.opt (sys to vm). this means:

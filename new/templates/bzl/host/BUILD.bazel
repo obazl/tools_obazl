@@ -3,6 +3,13 @@ exports_files(["BUILD.bazel"])
 package(default_visibility = ["//visibility:public"])
 
 ###############
+config_setting(name = "linux",
+               constraint_values = ["@platforms//os:linux"])
+
+config_setting(name = "macos",
+               constraint_values = ["@platforms//os:macos"])
+
+###############
 config_setting(
     name = "linux_dev",
     constraint_values = ["@platforms//os:linux"],
