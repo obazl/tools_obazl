@@ -37,13 +37,13 @@ stable this won't be necessary, but for now, you'll use
 `--override_repository` to override the `http_archive` imports for
 these repos.
 
-* link:https://github.com/obazl/rules_ocaml[rules_ocaml] - branch `dev`
-* link:https://github.com/obazl/tools_opam[tools_opam] - branch `dev`
-* link:https://github.com/obazl/tools_obazl[tools_obazl] - branch `mibl`
-* link:https://github.com/obazl/mibl[mibl] - branch `dev`
-* link:https://github.com/obazl/libs7[libs7] - branch `dev`
+* link:https://github.com/obazl/rules_ocaml[rules_ocaml]
+* link:https://github.com/obazl/tools_opam[tools_opam]
+* link:https://github.com/obazl/tools_obazl[tools_obazl]
+* link:https://github.com/obazl/mibl[mibl]
+* link:https://github.com/obazl/libs7[libs7]
 
-Clone these and checkouot branch `dev` for all.
+Clone these and checkouot branch ``dev` for all.
 
 Recommendation: create an `obazl` toplevel directory and clone these into it.
 
@@ -55,9 +55,11 @@ To use these locally in a project, your `WORKSPACE` will import them
 Step one is to initialize a Bazel environment. You can use one of your
 own OCaml projects, but to get started I recommend you run through the
 conversion process using a smallish working OCaml project like
-link:https://github.com/gildor478/ounit[ounit2]. Clone it to your
-local system and in the root dir create file WORKSPACE.bazel
-containing:
+link:https://github.com/gildor478/ounit[ounit2]. Or you can use one
+already converted, like
+link:https://github.com/obazl-repository/ppx_bench[ppx_bench]. Clone
+it to your local system and in the root dir create file
+WORKSPACE.bazel containing:
 
 .WORKSPACE.bazel
 ----
