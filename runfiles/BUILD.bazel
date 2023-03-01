@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+exports_files(["runfiles.c"])
+
 ###########
 cc_library(
     name  = "runfiles",
@@ -89,7 +91,7 @@ cc_test(
         # "-l",
     ],
     data  = [
-        "//templates:all",
+        "//new/templates:all",
     ],
     deps = [
         ":runfiles",

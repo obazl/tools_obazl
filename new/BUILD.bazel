@@ -11,6 +11,7 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "workspace.c", "workspace.h",
+        "xdg.c", "xdg.h",
         "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
@@ -62,6 +63,8 @@ cc_binary(
     ],
     data  = [
         "//new/templates:all",
+        "//new/templates/xdg/bin:all",
+        "//new/templates/xdg/data/queries:all",
         # "//new/templates/bzl/host:BUILD.bazel",
         # "//new/templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
@@ -229,18 +232,78 @@ genrule(
         "workspace.c",
         "utils.c",
         "help.c",
-        "ansi_colors.h"
+        "xdg.c",
+
+        "ansi_colors.h",
+        # "test.c",
+        # "//runfiles:runfiles.c",
     ],
     outs = [
         "package.h",
         "workspace.h",
         "utils.h",
-        "help.h"
+        "help.h",
+        "xdg.h",
+        # "test.h"
     ],
     cmd = "\n".join([
         "$(execpath //vendored/makeheaders) $(SRCS);",
         "cp `dirname $(location help.c)`/*.h $(RULEDIR)",
     ]),
     tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)
+
+################################################################
+cc_test(
+    name  = "test",
+    srcs  = [
+        "test.c", "test.h",
+        # "runfiles.h",
+        "log.c", "log.h",
+        "utstring.h"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+        "WITH_C_LOADER"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/new",
+        "-I$(GENDIR)/external/obazl/new",
+
+        "-I$(GENDIR)/runfiles",
+        "-I$(GENDIR)/external/obazl/runfiles",
+
+        "-Ivendored/unity",
+        "-Iexternal/obazl/vendored/unity",
+   ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        # "-l",
+    ],
+    data  = [
+        "//new/templates:all",
+        "//new/templates/xdg/data/queries:all",
+    ],
+    deps = [
+        "//runfiles",
+        "//vendored/unity",
+    ],
     visibility = ["//visibility:public"]
 )

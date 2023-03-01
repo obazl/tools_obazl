@@ -56,6 +56,17 @@
     (if *debugging* (format #t "dep: ~A~%" dep))
     dep))
 
+(define (-deps->args deps)
+  ;; (if *debugging*
+      (format #t "~A: ~A~%" (blue "-deps->args") deps) ;)
+  (map (lambda (dep)
+         (format #t "~A: ~A~%" (blue "dep") dep)
+         (if (eq? ::tools (car dep))
+             (values)
+             ;; FIXME: (cdr dep) is a (:pkg) (:tgt) pair. deal with it.
+             (cdr dep)))
+       deps))
+
 (define (-resolve-args cmd pkg-path deps outputs)
   (if *debugging*
       (begin
@@ -104,55 +115,63 @@
                   ;;  (error 'X "ocaml-std-pkgs"))
 
                   ((keyword? arg)
-                   (if *debugging* (format #t "KW: ~A\n" arg))
-                   (if (equal? ::pkg-dir arg)
-                       "./"
-                       ;; find args in deplist
-                       (let ((found
-                              (find-if (lambda (dep)
-                                         (if *debugging* (format #t "dep: ~A\n" dep))
-                                         (equal? arg (car dep)))
-                                       deps)))
-                         (if found
-                             (begin
-                               (if *debugging*
-                                   (format #t "~A: ~A~%" (red "FOUND arg") found))
-                               (if (equal? (cdr found) ::unresolved)
-                                   (symbol->string (keyword->symbol (car found)))
-                                   (let* ((label (cdr found))
-                                          (ws (if-let ((ws (assoc-val :ws label)))
-                                                      ws ""))
-                                          (pkg (let ((p (format #f "~A" (assoc-val :pkg label))))
-                                                 (if (string=? p "./") "." p)))
-                                          (_ (if *debugging*
-                                                 (format #t "~A: ~A~%" (bgred "pkg") pkg)))
-                                          ;; tgt tag may be :tgt, :tgts, :glob, or :fg
-                                          (_ (if *debugging*
-                                                 (format #t "~A: ~A~%" (bgyellow "getting tgt tag") label)))
-                                          (tgt-pair (dissoc '(:ws) label))
-                                          (_ (if *debugging*
-                                                 (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair)))
-                                          (tgt-pair (car (dissoc '(:pkg) tgt-pair)))
-                                          (_ (if *debugging*
-                                                 (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair)))
-                                          (tgt-tag (car tgt-pair))
-                                          (_ (if *debugging*
-                                                 (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)))
-                                          (tgt (cdr tgt-pair)))
-                                     (if (equal? pkg pkg-path)
-                                         (if (eq? tgt-tag :glob) ;; :tgts)
-                                             (format #f "`realpath $(locations :~A)`" tgt)
-                                             (format #f "$(location :~A)" tgt))
-                                         (if (eq? tgt-tag :glob) ;; :tgts)
-                                             (format #f "`realpath $(locations ~A//~A:~A)`"
-                                                     ws pkg tgt)
-                                             (format #f "$(location ~A//~A:~A)"
-                                                     ws pkg tgt))))))
-                             ;; else not found in :deps, try :outputs?
+                   (if *debugging*
+                       (begin
+                         (format #t "KW arg: ~A\n" arg)
+                         (format #t "deps: ~A\n" deps)))
+                   (if (equal? :deps arg)
+                       (begin
+                         (-deps->args deps))
+                         ;; (error 'x "x"))
+                       (if (equal? ::pkg-dir arg)
 
-                             (error 'fixme
-                                    (format #f "~A: ~A~%"
-                                            (red "kw arg unresolved") arg))))))
+                           "./"
+                           ;; find args in deplist
+                           (let ((found
+                                  (find-if (lambda (dep)
+                                             (if *debugging* (format #t "checking dep: ~A\n" dep))
+                                             (equal? arg (car dep)))
+                                           deps)))
+                             (if found
+                                 (begin
+                                   (if *debugging*
+                                       (format #t "~A: ~A~%" (red "FOUND arg") found))
+                                   (if (equal? (cdr found) ::unresolved)
+                                       (symbol->string (keyword->symbol (car found)))
+                                       (let* ((label (cdr found))
+                                              (ws (if-let ((ws (assoc-val :ws label)))
+                                                          ws ""))
+                                              (pkg (let ((p (format #f "~A" (assoc-val :pkg label))))
+                                                     (if (string=? p "./") "." p)))
+                                              (_ (if *debugging*
+                                                     (format #t "~A: ~A~%" (bgred "pkg") pkg)))
+                                              ;; tgt tag may be :tgt, :tgts, :glob, or :fg
+                                              (_ (if *debugging*
+                                                     (format #t "~A: ~A~%" (bgyellow "getting tgt tag") label)))
+                                              (tgt-pair (dissoc '(:ws) label))
+                                              (_ (if *debugging*
+                                                     (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair)))
+                                              (tgt-pair (car (dissoc '(:pkg) tgt-pair)))
+                                              (_ (if *debugging*
+                                                     (format #t "~A: ~A~%" (yellow "tgt-pair") tgt-pair)))
+                                              (tgt-tag (car tgt-pair))
+                                              (_ (if *debugging*
+                                                     (format #t "~A: ~A~%" (red "tgt-tag") tgt-tag)))
+                                              (tgt (cdr tgt-pair)))
+                                         (if (equal? pkg pkg-path)
+                                             (if (eq? tgt-tag :glob) ;; :tgts)
+                                                 (format #f "`realpath $(locations :~A)`" tgt)
+                                                 (format #f "$(location :~A)" tgt))
+                                             (if (eq? tgt-tag :glob) ;; :tgts)
+                                                 (format #f "`realpath $(locations ~A//~A:~A)`"
+                                                         ws pkg tgt)
+                                                 (format #f "$(location ~A//~A:~A)"
+                                                         ws pkg tgt))))))
+                                 ;; else not found in :deps, try :outputs?
+
+                                 (error 'fixme
+                                        (format #f "~A: ~A~%"
+                                                (red "kw arg unresolved") arg)))))))
                   ((number? arg) (format #f "~A" arg))
 
                   ((string? arg) ;; e.g. a file literal
@@ -222,7 +241,7 @@
          ;; (_ (error 'X "STOP derive-cmd"))
 
          (tool-dep? (not (member tool shell-tools))) ;;FIXME: find better way
-         ;; (_ (format #t "tool-dep?: ~A~%" tool-dep?))
+         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
 
          ;; (tool (if tool-dep?
          ;;           (let ((pkg (assoc-val :pkg (cdr tool)))
@@ -250,10 +269,10 @@
          )
     (if *debugging*
         (begin
-          ;; (format #t "TOol-dep? ~A~%" tool-dep?)
+          (format #t "TOol-dep? ~A~%" tool-dep?)
           (format #t "TOol ~A~%" tool)
-          (format #t "ARgs ~A~%" args)
-          (values tool-dep? tool args)))))
+          (format #t "ARgs ~A~%" args)))
+    (values tool-dep? tool args))) ;;))
 
 (define (starlark-emit-skylib-write-file outp cmd pkg-path stanza)
   (if *debugging*

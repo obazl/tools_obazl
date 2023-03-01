@@ -22,9 +22,11 @@ git_repository(
 
 2. `$ bazel run @obazl//new:workspace`  (or `new:ws`)
 
-3.  `$ bazel run @obazl//convert:dune`
+3.  `$ bazel run @obazl//coswitch:refresh`
 
-4.  `$ bazel build //...`
+4.  `$ bazel run @obazl//convert:dune`
+
+5.  `$ bazel build //...`
 
 There is no need to run steps 1 and 2 if your project already has a
 `+WORKSPACE.bazel+' file. Step 2 replaces it; see the one for

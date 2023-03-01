@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [[ -z "${XDG_DATA_HOME}" ]]; then
+    QRY="$HOME/.local/share/obazl/queries/obazlinfo.qry.bzl"
+else
+    QRY="${XDG_DATA_HOME}/obazl/queries/obazlinfo.qry.bzl"
+fi
+
+bazel cquery $1 --output=starlark --starlark:file="${QRY}"

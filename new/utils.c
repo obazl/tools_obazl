@@ -25,7 +25,8 @@
 UT_string *runfiles_root;
 
 void mkdir_r(const char *dir) {
-    char tmp[256];
+    /* log_debug("mkdir_r %s", dir); */
+    char tmp[512];
     char *p = NULL;
     size_t len;
 
