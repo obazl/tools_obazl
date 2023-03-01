@@ -48,7 +48,7 @@ void _check_tools(void) {
     }
 
     if (system("which ocamldep > /dev/null 2>&1")) {
-        fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool.\n");
+        fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool. If it is installed, try running 'eval $(opam env)'.\n");
         exit(EXIT_FAILURE);
     }
 
