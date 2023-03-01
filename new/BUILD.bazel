@@ -24,9 +24,12 @@ cc_binary(
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
+        "//bzl/host:linux": ["-std=gnu11",
+                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
+                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
         "//conditions:default": ["-std=c11"],
     }) + [
+        "-x", "c",
         "-Wall",
         "-Wpedantic",
         "-Wno-unused-function",
@@ -103,7 +106,9 @@ cc_binary(
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
+        "//bzl/host:linux": ["-std=gnu11",
+                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
+                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
         "//conditions:default": ["-std=c11"],
     }) + [
         "-Wall",
@@ -178,7 +183,9 @@ cc_library(
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
+        "//bzl/host:linux": ["-std=gnu11",
+                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
+                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
         "//conditions:default": ["-std=c11"],
     }) + [
         "-Wall",
@@ -274,7 +281,10 @@ cc_test(
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
+        "//bzl/host:linux": ["-std=gnu11",
+                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
+                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
+
         "//conditions:default": ["-std=c11"],
     }) + [
         "-Wall",

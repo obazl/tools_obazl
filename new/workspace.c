@@ -74,7 +74,8 @@ void new_workspace(char *pgm)
 
     int rc;
     while (strlen(*template) != 0) {
-        log_info("copy src: '%s'", *template);
+        if (verbose)
+            log_info("copy src: '%s'", *template);
         errno = 0;
         rc = access(*template, F_OK);
         if (rc == 0) {
@@ -91,10 +92,10 @@ void new_workspace(char *pgm)
 
         /* now config for dest dirs */
         if (strncmp(dest, "xdg/bin",  7) == 0) {
-            log_info("XDG bin dest: %s", dest);
+            if (debug) log_info("XDG bin dest: %s", dest);
             /* strip pfx 'xdg/bin' */
             dest = strndup(dest + 8, strlen(dest) - 8);
-            log_info("XDG bin dest: %s", dest);
+            if (debug) log_info("XDG bin dest: %s", dest);
             safe_dest = strndup(dest, strlen(dest));
             path = dirname(dest);   /* after this dest is unreliable */
             /* NB: path may be '.' but that's ok */
@@ -103,14 +104,15 @@ void new_workspace(char *pgm)
             utstring_printf(abs_dir, "%s/%s",
                             utstring_body(xdg_bin_home),
                             path);
-            log_info("xdg dest: %s", utstring_body(abs_dir));
+            if (debug) log_info("xdg dest: %s", utstring_body(abs_dir));
 
             int rc = access(utstring_body(abs_dir), R_OK);
             if (rc == 0) {
                 /* printf("dir accessible: %s\n", utstring_body(abs_dir)); */
             } else {
-                log_debug("dir " RED "inaccessible;" CRESET " creating: %s",
-                          utstring_body(abs_dir));
+                if (debug)
+                    log_warn("dir " RED "inaccessible;" CRESET " creating: %s",
+                             utstring_body(abs_dir));
                 mkdir_r(utstring_body(abs_dir));
             }
 
@@ -119,12 +121,12 @@ void new_workspace(char *pgm)
                             safe_dest);
 
             // common code
-            log_debug("copy dest: %s", utstring_body(abs_dest));
+            if (verbose) log_debug("copy dest: %s", utstring_body(abs_dest));
             copyfile(*template, utstring_body(abs_dest));
 
             rc = chmod(utstring_body(abs_dest), S_IRWXU);
 
-            log_info("");
+            if (verbose) log_info("");
             free(safe_dest);
             free(dest);
 
@@ -132,7 +134,7 @@ void new_workspace(char *pgm)
             /* strip pfx 'xdg/data/queries' */
             dest = strndup(dest + 17,
                            strlen(dest) - 17);
-            log_info("XDG data dest: %s", dest);
+            if (debug) log_info("XDG data dest: %s", dest);
             safe_dest = strndup(dest, strlen(dest));
             path = dirname(dest);   /* after this dest is unreliable */
             /* NB: path may be '.' but that's ok */
@@ -141,14 +143,15 @@ void new_workspace(char *pgm)
             utstring_printf(abs_dir, "%s/%s/obazl/queries",
                             utstring_body(xdg_data_home),
                             path);
-            log_info("xdg dest: %s", utstring_body(abs_dir));
+            if (debug) log_info("xdg dest: %s", utstring_body(abs_dir));
 
             int rc = access(utstring_body(abs_dir), R_OK);
             if (rc == 0) {
                 /* printf("dir accessible: %s\n", utstring_body(abs_dir)); */
             } else {
-                log_debug("dir " RED "inaccessible;" CRESET " creating: %s",
-                          utstring_body(abs_dir));
+                if (debug)
+                    log_debug("dir " RED "inaccessible;" CRESET " creating: %s",
+                              utstring_body(abs_dir));
                 mkdir_r(utstring_body(abs_dir));
             }
 
@@ -157,10 +160,10 @@ void new_workspace(char *pgm)
                             safe_dest);
 
             // common code
-            log_debug("copy dest: %s", utstring_body(abs_dest));
+            if (verbose) log_debug("copy dest: %s", utstring_body(abs_dest));
+            if (verbose) log_info("");
             copyfile(*template, utstring_body(abs_dest));
 
-            log_info("");
             free(safe_dest);
             free(dest);
 
@@ -176,8 +179,9 @@ void new_workspace(char *pgm)
             if (rc == 0) {
                 /* printf("dir accessible: %s\n", utstring_body(abs_dir)); */
             } else {
-                log_debug("dir " RED "inaccessible;" CRESET " creating: %s",
-                          utstring_body(abs_dir));
+                if (debug)
+                    log_debug("dir " RED "inaccessible;" CRESET " creating: %s",
+                              utstring_body(abs_dir));
                 mkdir_r(utstring_body(abs_dir));
             }
 
@@ -185,14 +189,13 @@ void new_workspace(char *pgm)
             utstring_printf(abs_dest, "%s/%s", ws_dir, safe_dest);
 
             // common code
-            log_debug("copy dest: %s", utstring_body(abs_dest));
+            if (verbose)
+                log_debug("copy dest: %s\n", utstring_body(abs_dest));
             copyfile(*template, utstring_body(abs_dest));
 
-            log_info("");
             free(safe_dest);
             free(dest);
         }
-
         template++;
     }
 }

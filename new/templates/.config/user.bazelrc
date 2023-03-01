@@ -1,0 +1,19 @@
+# try-import .config/dev.bazelrc
+
+# build --config=show
+
+# build --show_progress_rate_limit=0
+# build --show_task_finish
+# build --show_timestamps
+
+
+# query --notool_deps
+# query --noimplicit_deps
+# query --output package
+
+#build --toolchain_resolution_debug=.*
+
+#common --override_repository=foo=/path/to/foo
+
+## macos stuff
+# build --xcode_version_config=

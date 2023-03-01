@@ -33,7 +33,32 @@ bool emit_parsetree = false;
 bool emit_mibl      = false;
 bool emit_bazel  = true;
 
-void _print_usage()
+void _check_tools(void) {
+    /* is shell available? */
+    int rc = system(NULL);
+    if (rc == 0) {
+        fprintf(stderr, "No system shell available\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* FIXME: 'system' not portable.  instead, scan $PATH...? */
+    if (system("which opam > /dev/null 2>&1")) {
+        fprintf(stderr, "Cmd 'opam' not found, but it is required by the conversion tool.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (system("which ocamldep > /dev/null 2>&1")) {
+        fprintf(stderr, "Cmd 'ocamldep' not found, but it is required by the conversion tool. If it is installed, try running 'eval $(opam env)'.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* if (system("which foobar > /dev/null 2>&1")) { */
+    /*     fprintf(stderr, RED "ERROR: " CRESET "Command 'foobar' not found. Please run 'opam install ocamldep'.\n"); */
+    /*     exit(EXIT_FAILURE); */
+    /* } */
+}
+
+void _print_usage(void)
 {
     printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
     printf("Flags (note that some flags require double-hyphenation):\n");
@@ -234,10 +259,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    /* if ((argc-optind) == 1) { */
-    /*     rootpath = argv[optind]; */
-    /*     log_info("ROOTPATH: %s", rootpath); */
-    /* } */
+    _check_tools();
 
 #if defined(DEBUG_TRACE)
     if (debug) {

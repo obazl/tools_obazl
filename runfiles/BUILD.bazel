@@ -21,7 +21,9 @@ cc_library(
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
+        "//bzl/host:linux": [
+            "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup, waitpid, etc.
+            "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
         "//conditions:default": ["-std=c11"],
     }) + [
         "-Wall",
