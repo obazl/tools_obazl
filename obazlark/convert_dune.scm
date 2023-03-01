@@ -192,6 +192,7 @@
 
     ;; (-dump-opam :@)
 
+    (format #t "~A: converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)
     )
   '())
 

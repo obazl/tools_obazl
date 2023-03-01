@@ -57,10 +57,10 @@
     dep))
 
 (define (-deps->args deps)
-  ;; (if *debugging*
-      (format #t "~A: ~A~%" (blue "-deps->args") deps) ;)
-  (map (lambda (dep)
-         (format #t "~A: ~A~%" (blue "dep") dep)
+  (if *debugging*
+      (format #t "~A: ~A~%" (blue "-deps->args") deps))
+  (map (lambda (dep) 
+        (if *debugging* (format #t "~A: ~A~%" (blue "dep") dep))
          (if (eq? ::tools (car dep))
              (values)
              ;; FIXME: (cdr dep) is a (:pkg) (:tgt) pair. deal with it.
@@ -241,7 +241,7 @@
          ;; (_ (error 'X "STOP derive-cmd"))
 
          (tool-dep? (not (member tool shell-tools))) ;;FIXME: find better way
-         (_ (format #t "tool-dep?: ~A~%" tool-dep?))
+         (_ (if *debugging* (format #t "tool-dep?: ~A~%" tool-dep?)))
 
          ;; (tool (if tool-dep?
          ;;           (let ((pkg (assoc-val :pkg (cdr tool)))
