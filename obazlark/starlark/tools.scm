@@ -1,6 +1,7 @@
 (define (-tool-for-genrule pkg-path tool deps)
-  (format #t "~A: ~A~%" (ublue "-tool-for-genrule") tool)
-  (format #t "~A: ~A~%" (blue "deps") deps)
+  (if (or *debug-genrules* *debugging*)
+      (format #t "~A: ~A~%" (ublue "-tool-for-genrule") tool)
+      (format #t "~A: ~A~%" (blue "deps") deps))
   (case tool
     ((::cat) 'cat) ;; FIXME: use lookup table from constants.scm
     ((::deps) (car deps))

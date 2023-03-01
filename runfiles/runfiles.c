@@ -23,10 +23,26 @@ struct runfiles_s {
 }
 #endif
 
-EXPORT struct runfiles_s *runfiles_new(char *argv0)
+EXPORT struct runfiles_s *runfiles_create(char *argv0)
 {
-    if (debug)
+
+    if (debug) {
         log_debug("runfiles_new");
+        log_debug("BAZEL_TEST: %s", getenv("TEST"));
+        log_debug("TEST_WORKSPACE: %s", getenv("TEST_WORKSPACE"));
+        log_debug("CWD: %s", getcwd(NULL, 0));
+        log_debug("PWD: %s", getenv("PWD"));
+        log_debug("BUILD_WORKSPACE_DIRECTORY: %s", getenv("BUILD_WORKSPACE_DIRECTORY"));
+        log_debug("BUILD_WORKING_DIRECTORY: %s", getenv("BUILD_WORKING_DIRECTORY"));
+        log_debug("HOME: %s", getenv("HOME"));
+        log_debug("TEST_SRCDIR: %s", getenv("TEST_SRCDIR"));
+        log_debug("BINDIR: %s", getenv("BINDIR"));
+        log_debug("RUNFILES_MANIFEST_FILE: %s", getenv("RUNFILES_MANIFEST_FILE"));
+        log_debug("RUNFILES_MANIFEST_ONLY: %s", getenv("RUNFILES_MANIFEST_ONLY"));
+        log_debug("RUNFILES_DIR: %s", getenv("RUNFILES_DIR"));
+        log_debug("BINDIR: %s", getenv("BINDIR"));
+    }
+
 
     /* env vars: RUNFILES_MANIFEST_FILE, RUNFILES_DIR */
     /* at launch: argv[0] is pgmname path,
@@ -51,7 +67,7 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
     UT_string *manifest_file;
     utstring_new(manifest_file);
 
-    launch_dir = getcwd(NULL, 0);
+    launch_dir = getenv("TEST_SRCDIR"); // getcwd(NULL, 0);
 
     runfiles_manifest_file = getenv("RUNFILES_MANIFEST_FILE");
     if (debug)
@@ -90,7 +106,7 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
     utstring_renew(manifest_file);
     utstring_printf(manifest_file, "%s/../MANIFEST", launch_dir);
     if (debug)
-        log_debug("accessing launch_dir: %s", utstring_body(manifest_file));
+        log_debug("accessing launch_dir MANIFEST: %s", utstring_body(manifest_file));
     int rc = access(utstring_body(manifest_file), R_OK);
     if (rc == 0) {
         if (debug)
@@ -102,13 +118,15 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
     utstring_renew(manifest_file);
     utstring_printf(manifest_file, "%s/MANIFEST", argv0);
     if (debug)
-        log_debug("accessing launch_dir: %s", utstring_body(manifest_file));
+        log_debug("accessing argv MANIFEST: %s", utstring_body(manifest_file));
     rc = access(utstring_body(manifest_file), R_OK);
     if (rc == 0) {
         if (debug)
             log_debug("using argv0: %s", launch_dir);
         goto found_manifest;
     }
+
+    log_debug("XXXXXXXXXXXXXXXX NO MANIFEST ################");
 
  found_manifest: ;
 
@@ -150,7 +168,7 @@ EXPORT struct runfiles_s *runfiles_new(char *argv0)
                     break;
         if (debug) {
             printf(RED "kv[0]:" CRESET " %s\n", kv[0]);
-            printf(RED "kv[1]:     %s\n", kv[1]);
+            printf(RED "kv[1]:" CRESET "     %s\n", kv[1]);
         }
         runfiles[i].key = strdup(kv[0]);
         runfiles[i].val = strdup(kv[1]);
