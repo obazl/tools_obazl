@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <spawn.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "log.h"
