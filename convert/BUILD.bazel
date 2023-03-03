@@ -36,9 +36,10 @@ cc_binary(
 
         "-Iexternal/uthash/include",
         "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
 
-        "-Iexternal/mibl/src",  ## log.h
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
 
         "-Iexternal/libs7/src",
@@ -59,7 +60,7 @@ cc_binary(
     ],
     deps = [
         "@mibl//src:mibl",
-        # "//vendored/logc",
+        "@mibl//vendored/logc",
         "@mibl//vendored/libinih:inih",
         "@libs7//src:s7",
         "//vendored/gopt"

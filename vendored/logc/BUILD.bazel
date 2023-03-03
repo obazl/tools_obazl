@@ -12,6 +12,7 @@ cc_library(
         # "-g",
     ],
     local_defines = ["LOG_USE_COLOR"],
+    linkstatic = True,
     # alwayslink = True,
     visibility = ["//visibility:public"]
 )
