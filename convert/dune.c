@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "gopt.h"
-#include "ini.h"
+/* #include "ini.h" */
 #include "log.h"
 #include "utarray.h"
 #include "utstring.h"

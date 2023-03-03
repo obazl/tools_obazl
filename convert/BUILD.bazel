@@ -8,7 +8,7 @@ cc_binary(
         "dune.c", "dune.h",
         # "log.c", # supplied by libmibl
         # "log.h",
-        "utarray.h", "utstring.h", "uthash.h"
+        # "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -34,10 +34,9 @@ cc_binary(
         "-Iexternal/obazl/convert",
         "-I$(GENDIR)/external/obazl/convert",
 
-        "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
-
+        # "-Iexternal/mibl/vendored/libinih",
         "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/mibl/vendored/uthash",
 
         "-Iexternal/mibl/src",
         "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
@@ -46,8 +45,7 @@ cc_binary(
         "-Iexternal/libs7/vendored/linenoise",
         # "-Iexternal/mibl/libs7/vendored/linenoise",
 
-        "-Iobazl/vendored/gopt",
-        "-Iexternal/obazl/vendored/gopt"
+        "-Iexternal/mibl/vendored/gopt"
     ],
     linkopts = select({
         "//bzl/host:macos": [],
@@ -59,11 +57,12 @@ cc_binary(
         "//obazlark/starlark:srcs"
     ],
     deps = [
-        "@mibl//src:mibl",
-        "@mibl//vendored/logc",
-        "@mibl//vendored/libinih:inih",
         "@libs7//src:s7",
-        "//vendored/gopt"
+        "@mibl//src:mibl",
+        # "@mibl//vendored/libinih:inih",
+        "@mibl//vendored/logc",
+        "@mibl//vendored/uthash",
+        "@mibl//vendored/gopt"
     ],
     visibility = ["//visibility:public"]
 )
@@ -76,7 +75,7 @@ cc_binary(
         "convert.c", "convert.h",
         # "log.c", # supplied by libmibl
         # "log.h",
-        "utarray.h", "utstring.h", "uthash.h"
+        # "utarray.h", "utstring.h", "uthash.h"
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -102,7 +101,7 @@ cc_binary(
         "-I$(GENDIR)/external/obazl/convert",
 
         "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
+        # "-Iexternal/libinih",
         # "-Iexternal/logc/src",
 
         "-Iexternal/mibl/src",  ## log.h
