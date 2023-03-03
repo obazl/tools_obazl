@@ -11,7 +11,7 @@
 
 #include "dune.h"
 
-bool debug;
+extern bool debug;
 #if defined(DEBUG_TRACE)
 extern bool trace;
 #endif
