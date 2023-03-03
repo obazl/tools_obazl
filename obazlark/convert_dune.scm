@@ -130,7 +130,7 @@
   ;; (set! *debugging* #t)
 
   (-load-dune root-path pkg-path)
-  (if *dump-parsetree*
+  (if *log-parsetree*
       (begin
         (format #t "PARSETREE~%")
         (debug-print-pkgs :@)
@@ -158,7 +158,7 @@
 
     ;; (ppx-inline-tests! :@)
 
-    (if *dump-mibl*
+    (if *log-mibl*
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
           (debug-print-pkgs :@)
@@ -180,7 +180,7 @@
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *dump-starlark*
+    (if *log-starlark*
       (begin
         (format #t "STARLARK~%")
         (debug-print-pkgs :@)))
@@ -189,7 +189,7 @@
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
-    (if *dump-exports*
+    (if *log-exports*
         (debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
