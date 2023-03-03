@@ -594,7 +594,14 @@
 
                 ;;FIXME: handle :scope
                 (if ppx-args
-                    (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args))
+                    (let* ((mod (assoc-in `(:modules ,modname) pkg))
+                           (mfile (assoc-val :ml (cdr mod)))
+                           )
+                      (format outp
+                              "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+                              (append (list "-loc-filename"
+                                            (format #f "~A" mfile))
+                                      ppx-args))))
                 ;; (if-let ((codeps (assoc-val :ppx-codeps stanza-alist)))
                 ;;         (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}],\n" codeps))
                 ))
@@ -701,8 +708,22 @@
                     (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
 
                 (if ppx-args
-                    (format outp
-                            "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
+                    (begin
+                      ;; (format #t "~A: ~A~%" "pkg" pkg)
+                      ;; (format #t "~A: ~A~%" "modname" modname)
+                      ;; (format outp
+                      ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
+                    (let* ((mod (assoc-in `(:modules ,modname) pkg))
+                           (mfile (if mod
+                                      (assoc-val :ml (cdr mod))
+                                      (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
+                                        (cdr mstruct))))
+                           )
+                      (format outp
+                              "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+                              (append (list "-loc-filename"
+                                            (format #f "~A" mfile))
+                                      ppx-args))))
                     )
                 ;; (if ppx-args
                 ;; ;; (if (not  ## why?

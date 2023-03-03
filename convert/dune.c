@@ -2,13 +2,13 @@
 #include <unistd.h>
 
 #include "gopt.h"
-/* #include "ini.h" */
 #include "log.h"
 #include "utarray.h"
 #include "utstring.h"
 
 #include "s7.h"
 #include "libmibl.h"
+
 #include "dune.h"
 
 bool debug;
@@ -26,13 +26,41 @@ extern int dir_ct;
 extern int file_ct;
 extern int dunefile_ct;
 
-/* bool dump_parsetree = false; */
-/* bool dump_mibl      = false; */
-/* bool dump_starlark  = false; */
-
 bool emit_parsetree = false;
 bool emit_mibl      = false;
 bool emit_bazel  = true;
+
+enum OPTS {
+    OPT_ROOT = 0,
+    OPT_PKG,
+    OPT_PACKAGE,
+    OPT_EMIT,
+    OPT_EMIT_EM,            /* = OPT_EMIT_MIBL */
+    OPT_EMIT_MIBL,
+    OPT_NO_EMIT_MIBL,
+    OPT_EMIT_EB,            /* = OPT_EMIT_BAZEL */
+    OPT_EMIT_BAZEL,
+    OPT_NO_EMIT_BAZEL,
+    OPT_NOEMIT,
+    OPT_MENHIR,
+    OPT_DUMP_EXPORTS,
+    OPT_DUMP_MIBL,
+    OPT_DUMP_PARSETREE,
+    OPT_DUMP_STARLARK,
+    OPT_HELP,
+    OPT_DEBUG,
+    OPT_DEBUG_DE,
+    OPT_DEBUG_EMIT,
+    OPT_DEBUG_DX,
+    OPT_DEBUG_EXECUTABLES,
+    OPT_DEBUG_DM,
+    OPT_DEBUG_MIBL,
+    OPT_DEBUG_DPPX,
+    OPT_DEBUG_PPX,
+    OPT_TRACE,
+    OPT_VERBOSE,
+    OPT_LAST
+};
 
 void _check_tools(void) {
     /* is shell available? */
@@ -59,8 +87,7 @@ void _check_tools(void) {
     /* } */
 }
 
-void _print_usage(void)
-{
+void _print_usage(void) {
     printf("Usage:\t$ bazel run @obazl//convert [flags, options]\n");
     printf("Flags (note that some flags require double-hyphenation):\n");
     printf("\t-d  | --debug\t\t\tEnable all debugging flags.\n");
@@ -93,38 +120,6 @@ int main(int argc, char **argv)
 
     bool menhir = false;
     bool exit_on_error = false;
-
-    enum OPTS {
-        OPT_ROOT = 0,
-        OPT_PKG,
-        OPT_PACKAGE,
-        OPT_EMIT,
-        OPT_EMIT_EM,            /* = OPT_EMIT_MIBL */
-        OPT_EMIT_MIBL,
-        OPT_NO_EMIT_MIBL,
-        OPT_EMIT_EB,            /* = OPT_EMIT_BAZEL */
-        OPT_EMIT_BAZEL,
-        OPT_NO_EMIT_BAZEL,
-        OPT_NOEMIT,
-        OPT_MENHIR,
-        OPT_DUMP_EXPORTS,
-        OPT_DUMP_MIBL,
-        OPT_DUMP_PARSETREE,
-        OPT_DUMP_STARLARK,
-        OPT_HELP,
-        OPT_DEBUG,
-        OPT_DEBUG_DE,
-        OPT_DEBUG_EMIT,
-        OPT_DEBUG_DX,
-        OPT_DEBUG_EXECUTABLES,
-        OPT_DEBUG_DM,
-        OPT_DEBUG_MIBL,
-        OPT_DEBUG_DPPX,
-        OPT_DEBUG_PPX,
-        OPT_TRACE,
-        OPT_VERBOSE,
-        OPT_LAST
-    };
 
     /* static struct option options[9]; */
     /* struct option options[OPT_ROOT] {.long_name="root",.short_name='r',.flags=GOPT_ARGUMENT_REQUIRED}; */

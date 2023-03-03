@@ -4,6 +4,10 @@
 version = 0.1.0
 grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
 
+;; emit = ...  ; none | exports | parsetree | mibl | starlark (default)
+;; dump = ...  ; parsetree | mibl | ppx (default: null)
+;; pkg = ...
+
 [srcs]
 
 ;; 'include' is exclusive (?)
