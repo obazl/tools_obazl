@@ -110,7 +110,7 @@
               pkgs)))
 
 ;; called by @obazl//convert
-(define* (dune->obazl root-path pkg-path)
+(define* (-dune->obazl return root-path pkg-path)
   ;; (set! *debugging* #t)
   (if *debugging*
       (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
@@ -133,7 +133,8 @@
   (if *dump-parsetree*
       (begin
         (format #t "PARSETREE~%")
-        (debug-print-pkgs :@)))
+        (debug-print-pkgs :@)
+        (return)))
 
   (let* (;;(_wss (-load-dune root-path pkg-path))
          (mpkgs (-miblize :@))
@@ -155,10 +156,15 @@
           (handle-shared-opts :@)
           ))
 
+    (ppx-inline-tests! :@)
+
     (if *dump-mibl*
         (begin
-          (format #t "MIBL~%")
-          (debug-print-pkgs :@)))
+          (format #t "~A~%" (bgred "DUMP MIBL"))
+          (debug-print-pkgs :@)
+          (return)))
+
+    (return)
 
     ;; end dune-specific?
 
@@ -172,7 +178,7 @@
           ;;FIXME: rename emit-starlark
           (ws->starlark :@)))
 
-    ;; (ws->opam-bundles :@)
+    ;; ;; (ws->opam-bundles :@)
 
     (if *dump-starlark*
       (begin
@@ -195,6 +201,10 @@
     (format #t "~A: converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)
     )
   '())
+
+(define* (dune->obazl root-path pkg-path)
+  (call-with-exit (lambda (return)
+                    (-dune->obazl return root-path pkg-path))))
 
 (if *debugging*
     (format #t "loaded convert-dune.scm~%"))

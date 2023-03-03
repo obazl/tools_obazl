@@ -1,3 +1,6 @@
+## https://www.purposeful.co.uk/gopt/
+## https://github.com/thoni56/gopt
+
 cc_library(
     name  = "gopt",
     linkstatic = True,
