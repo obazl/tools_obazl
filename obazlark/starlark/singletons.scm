@@ -704,7 +704,7 @@
           (if ppx-alist
               (begin
                 (if (> (length shared-ppx) 1)
-                    (format outp "    ppx           = \"~A:Bppx_~A.exe\",\n" ppx-pkg ppx-id)
+                    (format outp "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id)
                     (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
 
                 (if ppx-args
