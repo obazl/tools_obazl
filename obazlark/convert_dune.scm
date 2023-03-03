@@ -156,7 +156,7 @@
           (handle-shared-opts :@)
           ))
 
-    (ppx-inline-tests! :@)
+    ;; (ppx-inline-tests! :@)
 
     (if *dump-mibl*
         (begin
@@ -164,7 +164,7 @@
           (debug-print-pkgs :@)
           (return)))
 
-    (return)
+    ;; (return)
 
     ;; end dune-specific?
 
