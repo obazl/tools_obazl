@@ -4,12 +4,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 cc_binary(
     name  = "dune",
     linkstatic = True,
-    srcs  = [
-        "dune.c", "dune.h",
-        # "log.c", # supplied by libmibl
-        # "log.h",
-        # "utarray.h", "utstring.h", "uthash.h"
-    ],
+    srcs  = ["dune.c", "dune.h"],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
@@ -17,7 +12,7 @@ cc_binary(
         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
         "//conditions:default":   []
     }) + [
-        "WITH_C_LOADER"
+        # "WITH_C_LOADER"
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
