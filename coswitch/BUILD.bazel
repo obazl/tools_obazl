@@ -1,9 +1,101 @@
-alias(
-    name = "coswitch",
-    actual = "@mibl//coswitch"
+CMD_FLAGS = [
+    "-std=c11",
+    "-pedantic-errors",
+] + select({
+    "//bzl/host:linux": [
+        "-D_POSIX_C_SOURCE=200809L", ## strdup, strndup
+        "-D_DEFAULT_SOURCE"],        ## DT_ constants from dirent.h
+    "//conditions:default":   []
+})
+
+cc_binary(
+    name  = "coswitch",
+    visibility = ["//visibility:public"],
+    srcs  = [
+        "coswitch.c",
+        "@mibl//src/hdrs:coswitch.h",
+    ],
+    copts = CMD_FLAGS + [
+        "-Isrc",
+        "-Icoswitch",
+        "-Iexternal/mibl/coswitch",
+        "-I$(GENDIR)/external/mibl/coswitch",
+
+        "-I$(GENDIR)/src/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+
+        "-I$(GENDIR)/src",
+        "-I$(GENDIR)/src/opam",
+        "-I$(GENDIR)/test/opam",
+
+        "-Iexternal/mibl/src",
+        "-I$(GENDIR)/external/mibl/src",
+
+        "-Iexternal/libs7/src",
+
+        "-Ivendored/gopt", "-Iexternal/mibl/vendored/gopt",
+
+        "-Ivendored/logc", "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/uthash", "-Iexternal/mibl/vendored/uthash",
+    ],
+    defines = select({
+        "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "@mibl//src/coswitch",
+        # "//src:opam_switch_converter",
+        # "//src/opam:opam_lexer"
+        "@mibl//vendored/gopt",
+        "@mibl//vendored/logc",
+        "@mibl//vendored/uthash"
+   ],
+    linkstatic = 1
 )
 
+
+# cc_binary(
+#     name  = "clean",
+#     visibility = ["//visibility:public"],
+#     srcs  = [
+#         "clean.c",
+#     ],
+#     copts = CMD_FLAGS + [
+
+#         "-Isrc",
+#         "-Icoswitch",
+#         "-Iexternal/mibl/coswitch",
+#         "-I$(GENDIR)/external/mibl/coswitch",
+
+#         "-I$(GENDIR)/src/hdrs",
+#         "-I$(GENDIR)/external/mibl/src/hdrs",
+
+#         "-I$(GENDIR)/src",
+#         "-I$(GENDIR)/src/opam",
+#         "-I$(GENDIR)/test/opam",
+
+#         "-Iexternal/mibl/src",
+#         "-I$(GENDIR)/external/mibl/src",
+
+#         "-Iexternal/libs7/src",
+#     ],
+#     defines = select({
+#         "//compilation_mode:dbg?": ["DEBUG_TRACE", "DEBUG_MIBL"],
+#         "//conditions:default":   []
+#     }),
+#     deps = [
+#         "@mibl//src:opam_switch_converter",
+#     ],
+#     linkstatic = 1
+# )
+
+# alias(
+#     name = "refresh",
+#     actual = "@mibl//coswitch"
+# )
+
 alias(
-    name = "refresh",
+    name = "coswitchX",
     actual = "@mibl//coswitch"
 )

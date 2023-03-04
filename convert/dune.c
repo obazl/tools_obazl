@@ -228,6 +228,11 @@ int main(int argc, char **argv)
     argc = gopt (argv, options);
     gopt_errors (argv[0], options);
 
+    if (options[FLAG_HELP].count) {
+        _print_usage();
+        exit(EXIT_SUCCESS);
+    }
+
     if (options[FLAG_VERBOSE].count) {
         /* printf("verbose ct: %d\n", options[FLAG_VERBOSE].count); */
         verbose = true;
@@ -249,12 +254,6 @@ int main(int argc, char **argv)
         }
         printf("ROOT: %s\n", rootpath);
     }
-
-    if (options[FLAG_HELP].count) {
-        _print_usage();
-        exit(EXIT_SUCCESS);
-    }
-
 
     if (options[FLAG_DEBUG].count) {
 #if defined(DEBUG_TRACE)
