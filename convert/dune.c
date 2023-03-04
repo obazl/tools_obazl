@@ -17,6 +17,9 @@ extern bool trace;
 #endif
 
 extern bool verbose;
+
+extern bool bzl_mode;
+
 extern struct mibl_config_s mibl_config;
 
 extern s7_scheme *s7;
@@ -295,7 +298,7 @@ int main(int argc, char **argv)
 
 #if defined(DEBUG_TRACE)
     if (debug) {
-        log_debug("rootpath: '%s'", rootpath);
+        log_debug("ROOTPATH: '%s'", rootpath);
         log_debug("pkgarg: '%s'", pkgarg);
     }
 #endif
