@@ -55,7 +55,7 @@
   (let* ((stanza-alist (cdr stanza))
          (deps (assoc-val :deps stanza-alist))
          (exports (car (assoc-val :exports
-                                  (assoc-val ws -mibl-ws-table)))))
+                                  (assoc-val ws *mibl-project*)))))
     (if *debugging*
         (begin
           (format #t "~A: ~A~%" (uwhite "deps") deps)

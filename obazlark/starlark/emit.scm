@@ -171,7 +171,7 @@
 ;;   ;; emit one //bzl/import structure per workspace
 ;;   ;; (to handle dune 'select' flds)
 ;;   ;; one string_flag/config_setting pair per selector protasis
-;;   (let* ((@ws (assoc-val ws -mibl-ws-table))
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
 ;;          (pkgs (car (assoc-val :pkgs @ws))))
 ;;     ;; 1. accumulate all select protases
 ;; g    ;; alternative: update global var as we go
@@ -184,7 +184,7 @@
 (define (ws->starlark ws)
   (if *debugging*
       (format #t "~%~A: ~A~%" (bgred "ws->starlark") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     ;; (-emit-import-settings ws)

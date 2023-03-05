@@ -12,7 +12,7 @@
   )
 
 (define (-list-pkgs ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          )
     (format #t "~A: ~A~%" (yellow "pkg ct") (length pkgs))
@@ -22,12 +22,12 @@
     pkgs))
 
 (define (-dump-ppx ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
     (format #t "~A: ~A~%" (bgcyan "shared-ppx") ppx-tbl)))
 
 (define (-dump-opam ws)
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (opam (car (assoc-val :opam @ws))))
     (format #t "~A: ~A~%" (red "opam keys") (hash-table-keys opam))
     (for-each (lambda (ws)
@@ -38,25 +38,25 @@
               opam)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (-load-dune root-path pkg-path)
+(define (-mibl-load-project root-path pkg-path)
   (if *debugging*
       (begin
-        (format #t "~A~%" (ublue "-load-dune"))
+        (format #t "~A~%" (ublue "-mibl-load-project"))
         (format #t "~A: ~A~%" (blue "root-path") root-path)
         (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
 
-  ;; NB: load-dune is implemented in @mibl//src/load_dune.c
+  ;; NB: mibl-load-project is implemented in @mibl//src/load_project.c
   ;; and initialized in @mibl//src/config_s7_dune.c
-  (let* ((_wss (load-dune root-path pkg-path))
-          ;; (if (truthy? root-path) (load-dune root-path)
-          ;;          (load-dune)))
+  (let* ((_wss (mibl-load-project root-path pkg-path))
+          ;; (if (truthy? root-path) (mibl-load-project root-path)
+          ;;          (mibl-load-project)))
          )
     _wss))
 
 (define (-miblize ws)
   (if *debugging*
       (format #t "~A: ~A~%" (blue "-miblize") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          (mpkg-alist (map (lambda (kv)
                             ;; (format #t "~A: ~A~%" (red "pkg") (cdr kv))
@@ -82,7 +82,7 @@
 (define (-emit-mibl ws)
   (if *debugging*
       (format #t "~A: ~A~%" (blue "-emit-mibl") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
@@ -96,7 +96,7 @@
 (define (-emit-starlark ws)
   (if *debugging*
       (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
@@ -114,7 +114,7 @@
   ;; (set! *debugging* #t)
   (if *debugging*
       (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
-  ;; (format #t "-mibl-ws-table: ~A~%" -mibl-ws-table)
+  ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
   (if *debugging*
@@ -126,17 +126,17 @@
   ;; (set! *wrapped-libs-to-ns-archives* #f)
   ;; (set! *unwrapped-libs-to-archives* #f)
 
-  ;; NB: :@ is key of the root workspace in -mibl-ws-table
+  ;; NB: :@ is key of the root workspace in *mibl-project*
   ;; (set! *debugging* #t)
 
-  (-load-dune root-path pkg-path)
+  (-mibl-load-project root-path pkg-path)
   (if *log-parsetree*
       (begin
         (format #t "PARSETREE~%")
         (debug-print-pkgs :@)
         (return)))
 
-  (let* (;;(_wss (-load-dune root-path pkg-path))
+  (let* (;;(_wss (-mibl-load-project root-path pkg-path))
          (mpkgs (-miblize :@))
          (mpkgs (add-filegroups-to-pkgs :@))
          (mpkgs (normalize-manifests! :@))

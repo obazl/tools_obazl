@@ -20,7 +20,7 @@
 (define (update-local-deps! ws-id)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "update-local-deps!") ws-id))
-  (let* ((@ws (assoc-val ws-id -mibl-ws-table))
+  (let* ((@ws (assoc-val ws-id *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          )
     (if *debugging*
@@ -109,7 +109,7 @@
 (define* (new-pkgs . pkgs)
   (if *debugging*
       (format #t "new.scm::new-pkgs: ~A~%" pkgs))
-  ;; (format #t "-mibl-ws-table: ~A~%" -mibl-ws-table)
+  ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
   (if *debugging*

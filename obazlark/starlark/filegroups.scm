@@ -80,7 +80,7 @@
     )
 
   (if *debugging* (format #t "~A~%" (blue "processing ws-filegroups")))
-  (let* ((-ws (if (keyword? ws) (assoc-val ws -mibl-ws-table) ws))
+  (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (ws-filegroups (car (assoc-val :filegroups -ws)))
          (pkg-path (assoc-val :pkg-path pkg)))

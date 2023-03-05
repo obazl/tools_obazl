@@ -9,7 +9,7 @@
                             ;; (assoc-val :manifest ppx-nbr)) ;; (cdr ppx)))
                    (_ (if *debugging* (format #t "~A: ~A~%" (green "ppx-key") ppx-key)))
                    (ppx-tbl (car (assoc-val :shared-ppx
-                                            (assoc-val ws -mibl-ws-table))))
+                                            (assoc-val ws *mibl-project*))))
                    (_ (if *debugging* (format #t "~A: ~A~%" (green "ppx-tbl") ppx-tbl)))
                    (ppx-ct (length (hash-table-keys ppx-tbl))))
               (if-let ((ppx-id (hash-table-ref ppx-tbl ppx-key)))
@@ -19,10 +19,10 @@
                             (format #t "~A: ~A~%" (green "mibl-ws-tbl")
                                     ;; (assoc :shared-ppx
                                     ;;(hash-table-keys
-                                    (assoc-val ws -mibl-ws-table)
+                                    (assoc-val ws *mibl-project*)
                                     ;;)
                                     ))
-                                ;; -mibl-ws-table)
+                                ;; *mibl-project*)
                         ;; (error 'stop "STOP ppx id")
                       (begin
                         (hash-table-set! ppx-tbl ppx-key (+ 1 ppx-ct))
@@ -342,7 +342,7 @@
   (if *debugging*
       (format #t "~A~%" (bgblue "starlark-emit-global-ppxes")))
 
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
     (if *debugging*
         (format #t "~A: ~A~%" (red "ppx table") ppx-tbl))

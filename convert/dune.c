@@ -38,13 +38,17 @@ enum OPTS {
     OPT_PKG,
     OPT_PACKAGE,
 
+    /* NB: no-emit flags are for overriding miblrc config */
     OPT_EMIT,
-    FLAG_EMIT_EM,            /* = FLAG_EMIT_MIBL */
-    FLAG_EMIT_MIBL,
-    FLAG_NO_EMIT_MIBL,
     FLAG_EMIT_EB,            /* = FLAG_EMIT_BAZEL */
     FLAG_EMIT_BAZEL,
     FLAG_NO_EMIT_BAZEL,
+    FLAG_EMIT_EM,            /* = FLAG_EMIT_MIBL */
+    FLAG_EMIT_MIBL,
+    FLAG_NO_EMIT_MIBL,
+    FLAG_EMIT_PT,            /* = FLAG_EMIT_PARSETREE */
+    FLAG_EMIT_PARSETREE,
+    FLAG_NO_EMIT_PARSETREE,
     FLAG_NOEMIT,
     FLAG_MENHIR,
     /* logging */
@@ -158,18 +162,27 @@ int main(int argc, char **argv)
         /* emit options: parsetree, mibl, starlark */
         [OPT_EMIT] = {.long_name="emit",.short_name='e',
                       .flags=GOPT_ARGUMENT_REQUIRED},
-        [FLAG_EMIT_EM] = {.long_name="em",
-                         .flags=GOPT_ARGUMENT_FORBIDDEN},
-        [FLAG_EMIT_MIBL] = {.long_name="emit-mibl",
-                      .flags=GOPT_ARGUMENT_FORBIDDEN},
-        [FLAG_NO_EMIT_MIBL] = {.long_name="no-emit-mibl",
-                      .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_EMIT_EB] = {.long_name="no-eb",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_EMIT_BAZEL] = {.long_name="emit-bazel",
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_NO_EMIT_BAZEL] = {.long_name="no-emit-bazel",
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+        [FLAG_EMIT_EM] = {.long_name="em",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_EMIT_MIBL] = {.long_name="emit-mibl",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_NO_EMIT_MIBL] = {.long_name="no-emit-mibl",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+        [FLAG_EMIT_PT] = {.long_name="ept",
+                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_EMIT_PARSETREE] = {.long_name="emit-parsetree",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_NO_EMIT_PARSETREE] = {.long_name="no-emit-parsetree",
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
+
         [FLAG_NOEMIT] = {.long_name="no-emit",.short_name='E',
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
 
@@ -225,8 +238,10 @@ int main(int argc, char **argv)
         [LAST] = {.flags = GOPT_LAST}
     };
 
-    argc = gopt (argv, options);
-    gopt_errors (argv[0], options);
+    argc = gopt(argv, options);
+    gopt_errors(argv[0], options);
+
+    /* **************************************************************** */
 
     if (options[FLAG_HELP].count) {
         _print_usage();
@@ -384,6 +399,14 @@ int main(int argc, char **argv)
         mibl_config.emit_mibl = true;
     }
     if (options[FLAG_NO_EMIT_MIBL].count) {
+        mibl_config.emit_mibl = false;
+    }
+
+    if ((options[FLAG_EMIT_PARSETREE].count)
+        || (options[FLAG_EMIT_PT].count)) {
+        mibl_config.emit_parsetree = true;
+    }
+    if (options[FLAG_NO_EMIT_PARSETREE].count) {
         mibl_config.emit_mibl = false;
     }
 

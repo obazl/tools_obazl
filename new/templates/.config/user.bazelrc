@@ -2,10 +2,17 @@
 
 # build --config=show
 
-# build --show_progress_rate_limit=0
-# build --show_task_finish
-# build --show_timestamps
+# build --ui_event_filters=-info
+# events: fatal, error, warning, info, progress, debug, start, finish, subcommand, stdout, stderr, pass, fail, timeout, cancelled or depchecker
 
+# build --show_make_env
+# build --noshow_progress
+# build --noshow_loading_progress
+# build --show_progress_rate_limit=0
+# build --show_result=0
+# build --show_timestamps
+# build --show_warnings
+# build --show_config_fragments
 
 # query --notool_deps
 # query --noimplicit_deps

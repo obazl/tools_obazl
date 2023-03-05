@@ -186,7 +186,7 @@
 (define (ws->opam-bundles ws)
   (if *debugging*
       (format #t "~%~A: ~A~%" (bgblue "ws->opam-bundles") ws))
-  (let* ((@ws (assoc-val ws -mibl-ws-table))
+  (let* ((@ws (assoc-val ws *mibl-project*))
          (opam (car (assoc-val :opam @ws))))
 
     (for-each (lambda (bundle)
