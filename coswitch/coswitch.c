@@ -48,6 +48,7 @@ enum OPTS {
     FLAG_DEBUG,
     FLAG_TRACE,
     FLAG_VERBOSE,
+    FLAG_QUIET,
     FLAG_HELP,
     LAST
 };
@@ -102,6 +103,8 @@ int main(int argc, char *argv[])
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
                          .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+        [FLAG_QUIET] = {.long_name="quiet",.short_name='q',
+                      .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_HELP] = {.long_name="help",.short_name='h',
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
         [LAST] = {.flags = GOPT_LAST}
@@ -172,6 +175,10 @@ int main(int argc, char *argv[])
 
     if (options[FLAG_CLEAN].count) {
         clean_coswitch();
+        if (options[FLAG_QUIET].count < 1)
+            printf(GRN "INFO: " CRESET
+                   "Cleaned and reset coswitch."
+                   " To reinitialize run 'bazel run @obazl//coswitch'\n");
     } else {
         convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs);
     }
