@@ -17,12 +17,12 @@ extern int dunefile_ct;
 s7_pointer _load_load_dune(s7_scheme *s7)
 {
     s7_pointer _load_dune;
-    _load_dune = s7_name_to_value(s7, "load-dune");
+    _load_dune = s7_name_to_value(s7, "mibl-load-project");
     if (_load_dune == s7_undefined(s7)) {
-        log_error("unbound symbol: load-dune");
+        log_error("unbound symbol: mibl-load-project");
         log_info("*load-path*: %s", TO_STR(s7_load_path(s7)));
         s7_error(s7, s7_make_symbol(s7, "unbound-symbol"),
-                 s7_list(s7, 1, s7_make_string(s7, "load-dune")));
+                 s7_list(s7, 1, s7_make_string(s7, "mibl-load-project")));
     }
     return _load_dune;
 }

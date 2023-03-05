@@ -37,6 +37,7 @@ EXPORT struct runfiles_s *runfiles_create(char *argv0)
         log_debug("HOME: %s", getenv("HOME"));
         log_debug("TEST_SRCDIR: %s", getenv("TEST_SRCDIR"));
         log_debug("BINDIR: %s", getenv("BINDIR"));
+        /* RUNFILES_* only set under test on macos. */
         log_debug("RUNFILES_MANIFEST_FILE: %s", getenv("RUNFILES_MANIFEST_FILE"));
         log_debug("RUNFILES_MANIFEST_ONLY: %s", getenv("RUNFILES_MANIFEST_ONLY"));
         log_debug("RUNFILES_DIR: %s", getenv("RUNFILES_DIR"));

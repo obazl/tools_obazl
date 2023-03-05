@@ -61,6 +61,10 @@ enum OPTS {
     FLAG_LSTARLARK,
     FLAG_LOG_STARLARK,
 
+    FLAG_ONLY_CONFIG,
+    FLAG_ONLY_PARSETREE,
+    FLAG_ONLY_MIBL,
+
     FLAG_HELP,
     FLAG_DEBUG,
     FLAG_DEBUG_DE,
@@ -130,6 +134,10 @@ void _print_usage(void) {
            "\tRestrict log ouput to <arg> (relative pkg path).\n");
 
 }
+
+/* extern bool debug_bazel; */
+/* extern bool debug_mibl; */
+/* extern bool trace_mibl; */
 
 int main(int argc, char **argv)
 {
@@ -210,6 +218,14 @@ int main(int argc, char **argv)
                               .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_LOG_STARLARK] = {.long_name="log-starlark",
                               .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+        [FLAG_ONLY_CONFIG] = {.long_name="only-config",
+                              .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_ONLY_PARSETREE] = {.long_name="only-parsetree",
+                              .flags=GOPT_ARGUMENT_FORBIDDEN},
+        [FLAG_ONLY_MIBL] = {.long_name="only-MIBL",
+                              .flags=GOPT_ARGUMENT_FORBIDDEN},
+
 
         [FLAG_HELP] = {.long_name="help",.short_name='h',
                       .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -318,9 +334,17 @@ int main(int argc, char **argv)
 #endif
 
     /* config in this order: first bazel, then mibl, then s7 */
+    /* debug_bazel = true; */
     bazel_configure(); // getcwd(NULL, 0));
 
+    /* debug_mibl = true; */
+    /* trace_mibl = true; */
     mibl_configure();
+
+    if (options[FLAG_ONLY_CONFIG].count) {
+        log_info("configuration complete, exiting");
+        exit(EXIT_SUCCESS);
+    }
 
     /* char **p = NULL; */
     /* while ( (p=(char**)utarray_next(mibl_config.pkgs, p))) { */

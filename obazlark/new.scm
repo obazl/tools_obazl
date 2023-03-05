@@ -4,15 +4,15 @@
 (load "ostdlib.scm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (-load-dune root-path pkg-path)
+(define (-mibl-load-project root-path pkg-path)
   (if *debugging*
       (begin
-        (format #t "~A~%" (ublue "-load-dune"))
+        (format #t "~A~%" (ublue "-mibl-load-project"))
         (format #t "~A: ~A~%" (blue "root-path") root-path)
         (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
-  (let* ((_wss (load-dune root-path pkg-path))
-          ;; (if (truthy? root-path) (load-dune root-path)
-          ;;          (load-dune)))
+  (let* ((_wss (mibl-load-project root-path pkg-path))
+          ;; (if (truthy? root-path) (mibl-load-project root-path)
+          ;;          (mibl-load-project)))
          )
     _wss))
 
@@ -125,11 +125,11 @@
 
   (if (truthy? pkgs)
       (for-each (lambda (pkg)
-              (let* ((_wss (-load-dune "." pkg)))
+              (let* ((_wss (-mibl-load-project "." pkg)))
                 (update-local-deps! :@)
                 ))
                 pkgs)
-      (let* ((_wss (-load-dune "." ".")))
+      (let* ((_wss (-mibl-load-project "." ".")))
         (update-local-deps! :@)
         ))
 
