@@ -77,6 +77,7 @@ enum OPTS {
     FLAG_DEBUG_PPX,
     FLAG_TRACE,
     FLAG_VERBOSE,
+    FLAG_QUIET,
     LAST
 };
 
@@ -251,6 +252,8 @@ int main(int argc, char **argv)
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
         [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
                          .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE},
+        [FLAG_QUIET] = {.long_name="quiet",.short_name='q',
+                        .flags=GOPT_ARGUMENT_FORBIDDEN},
         [LAST] = {.flags = GOPT_LAST}
     };
 
@@ -486,6 +489,11 @@ int main(int argc, char **argv)
     UT_string *setter;
     utstring_new(setter);
 
+    utstring_printf(setter, "(set! *mibl-quiet* %s)",
+                    (options[FLAG_QUIET].count)? "#t": "#f");
+    s7_eval_c_string(s7, utstring_body(setter));
+
+    utstring_renew(setter);
     /* printf("SETTING *debugging* to %s\n", debug? "#t": "#f"); */
     utstring_printf(setter, "(set! *debugging* %s)",
                     (options[FLAG_DEBUG].count)? "#t": "#f");

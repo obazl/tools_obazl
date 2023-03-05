@@ -198,8 +198,8 @@
 
     ;; (-dump-opam :@)
 
-    (format #t "~A: converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)
-    )
+    (if (not *mibl-quiet*)
+        (format #t "~A: converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
   '())
 
 (define* (dune->obazl root-path pkg-path)
