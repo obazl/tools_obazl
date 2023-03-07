@@ -1,6 +1,8 @@
 (if *debugging*
     (format #t "loading convert-dune.scm~%"))
 
+(load "starlark.scm")
+
 (define arg
   "deps/literals/cwd"
   ;; "rules/with-stdout-to/cat/literal_deps"
@@ -199,7 +201,7 @@
     ;; (-dump-opam :@)
 
     (if (not *mibl-quiet*)
-        (format #t "~A: converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
+        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
   '())
 
 (define* (dune->obazl root-path pkg-path)

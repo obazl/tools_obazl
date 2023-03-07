@@ -30,11 +30,15 @@ cc_binary(
         # "-I$(GENDIR)/src",
 
         # "-I$(GENDIR)/external/mibl/batch",
-        "-I$(GENDIR)/external/mibl/src",
+        # "-Iexternal/mibl/src",
+        # "-Iexternal/mibl/hdrs",
+        "-I$(GENDIR)/external/mibl/src/hdrs",
+        # "-I$(GENDIR)/external/mibl/hdrs",
 
         "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
-        "-Iexternal/logc/src",
+        "-Iexternal/mibl/vendored/libinih",
+        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/mibl/vendored/uthash",
 
         "-Iexternal/libs7/src",
     ],
@@ -56,10 +60,11 @@ cc_binary(
     ],
     deps = [
         "@mibl//src:mibl",
-        "@mibl//external/libinih:inih",
-        "//vendored/logc",
-        # "//external/libinih:inih",
-        # "@libs7//src:s7",
+        "@mibl//vendored/libinih:inih",
+        "@mibl//vendored/logc",
+        "@mibl//vendored/uthash",
+
+        "@libs7//src:s7",
         # "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",
     ],

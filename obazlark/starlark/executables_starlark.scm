@@ -135,7 +135,7 @@
 
       (if (member 'js modes)
           (begin
-            (if *emit-rules-js*
+            (if *js-emit-rules-js*
                 (begin
                   (format outp "#############\n")
                   (case kind
@@ -161,12 +161,15 @@
                   (format outp ")\n")
                   (newline outp))
                 ;; else
-                (if *emit-rules-swc*
+                (if *js-emit-rules-swc*
                     (begin)
-                    (if *emit-rules-closure*
+                    (if *js-emit-rules-closure*
                         (begin))))
 
-            (if (or *emit-rules-jsoo* *emit-rules-js* *emit-rules-swc* *emit-rules-closure*)
+            (if (or *js-emit-rules-jsoo*
+                    *js-emit-rules-js*
+                    *js-emit-rules-swc*
+                    *js-emit-rules-closure*)
                 (begin
                   ;; (format outp "#############\n")
                   (case kind

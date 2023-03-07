@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 
     bazel_configure();
 
-    chdir(bws_root);            /* always run from base ws root */
+    chdir(rootws);            /* always run from base ws root */
 
     // opam_configure must be run from root ws to account for local switches
     // sets global opam_switch_* vars

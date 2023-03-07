@@ -2,11 +2,18 @@
 
 #include "ini.h"
 #include "log.h"
-#include "mibl.h"
+#include "utarray.h"
+#include "utstring.h"
+
+#include "s7.h"
+#include "libmibl.h"
+
 #include "batch.h"
 
+#if defined(DEBUG_TRACE)
 extern bool debug;
 extern bool trace;
+#endif
 extern bool verbose;
 
 extern char *ews_root;
@@ -46,7 +53,9 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
             break;
         case 'd':
+#if defined(DEBUG_TRACE)
             debug = true;
+#endif
             break;
         case 'h':
             /* _print_usage(); */
@@ -63,7 +72,9 @@ int main(int argc, char *argv[])
             log_debug("package: %s\n", pkgarg);
             break;
         case 't':
+#if defined(DEBUG_TRACE)
             trace = true;
+#endif
             break;
         case 'v':
             verbose = true;
@@ -98,22 +109,42 @@ int main(int argc, char *argv[])
 
     s7_load(s7, "starlark.scm");
 
+    /* FIXME: accept driver scm file and main routine name as params */
+    /* (like clojure compiler?) */
     s7_load(s7, "mibl.scm");
 
-    s7_pointer _main = s7_name_to_value(s7, "main");
+    s7_pointer _main = s7_name_to_value(s7, "-main");
 
     if (_main == s7_undefined(s7)) {
-        log_error(RED "Could not find procedure 'main'; exiting\n");
+        log_error(RED "Could not find procedure '-main'; exiting\n");
         exit(EXIT_FAILURE);
     }
 
-    s7_pointer arg;
-    if (pkgarg)
-        arg = s7_list(s7, 1, s7_make_string(s7, pkgarg));
-    else
-        arg = s7_nil(s7);
+    s7_pointer _s7_pkgarg;
+    if (pkgarg) {
+        _s7_pkgarg = s7_make_string(s7, pkgarg);
+    } else {
+        _s7_pkgarg = s7_nil(s7);
+    }
+    /* s7_pointer arg; */
+    /* if (pkgarg) */
+    /*     arg = s7_list(s7, 1, s7_make_string(s7, pkgarg)); */
+    /* else */
+    /*     arg = s7_nil(s7); */
 
-    s7_pointer result = s7_call(s7, _main, arg);
+    s7_pointer _s7_args;
+    /* if (rootpath) { */
+    /*     _s7_args = s7_list(s7, 2, */
+    /*                        s7_make_string(s7, rootpath), */
+    /*                        _s7_pkgarg); */
+    /* } else { */
+    _s7_args = s7_list(s7, 2,
+                       s7_nil(s7),
+                       _s7_pkgarg);
+    /* } */
+
+    /* s7_pointer result = s7_call(s7, _main, arg); */
+    s7_pointer result = s7_apply_function(s7, _main, _s7_args);
 
     char *errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
     if ((errmsg) && (*errmsg)) {
