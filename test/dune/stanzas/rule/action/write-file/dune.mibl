@@ -6,7 +6,7 @@
 
  (:files (:static "dune.mibl") (:dynamic "config.mlh"))
 
- (:dune (:rule (:targets
+ (:mibl (:rule (:targets
                 (:_ ((:pkg "dune/stanzas/rule/action/write-file") (:file "config.mlh"))))
                (:action (:cmd ((:tool write-file)
                                (:args (:_ ((:pkg "dune/stanzas/rule/action/write-file")

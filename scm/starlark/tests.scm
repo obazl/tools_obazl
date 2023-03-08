@@ -322,7 +322,7 @@
   (if *debugging*
       (format #t "~A\n" (ublue "starlark-emit-test-targets")))
 
-  (let* ((stanzas (assoc-val :dune pkg))
+  (let* ((stanzas (assoc-val :mibl pkg))
          (hdr-flag #t))
     (for-each (lambda (stanza)
                 (if *debugging*

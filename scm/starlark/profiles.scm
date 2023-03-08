@@ -82,7 +82,7 @@
   (define dbg-mode? #f)
 
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-         (dunefile (assoc :dune pkg)))
+         (dunefile (assoc :mibl pkg)))
     (if dunefile
         (let* ((stanzas (cdr dunefile))
                (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "stanzas") stanzas)))

@@ -166,7 +166,7 @@
 ;; (define (Xstarlark-emit-ppx-target outp pkg stanza) ;; fs-path ppx-alist stanza-alist)
 ;;   (format #t "~A: ~A\n" (blue "starlark-emit-ppx-target") stanza)
 
-;;   (if-let ((ppx-tbl (assoc-in '(:dune :shared-ppx) pkg)))
+;;   (if-let ((ppx-tbl (assoc-in '(:mibl :shared-ppx) pkg)))
 ;;           (let* ((ppx-tbl (cadr ppx-tbl))
 ;;                  (ppx-ct (length ppx-tbl)))
 ;;             (format #t "~A: ~A~%" (bgmagenta "shared ppx-tbl") ppx-tbl)
@@ -309,7 +309,7 @@
 (define (starlark-emit-pkg-ppxes outp ws pkg) ;; fs-path stanzas)
   (if *debugging*
       (format #t "~A: ~A\n" (ublue "starlark-emit-pkg-ppxes") pkg))
-  (if-let ((ppx-tbl (assoc-in '(:dune :shared-ppx) pkg)))
+  (if-let ((ppx-tbl (assoc-in '(:mibl :shared-ppx) pkg)))
           (let* ((ppx-tbl (cadr ppx-tbl))
                  (ppx-ct (length ppx-tbl)))
             (if *debugging*
@@ -335,7 +335,7 @@
             ;;                            (if *local-ppx-driver*
             ;;                                (starlark-emit-ppx-driver outp pkg stanza)))
             ;;                          )))))
-            ;;           (assoc-val :dune pkg))
+            ;;           (assoc-val :mibl pkg))
             )))
 
 (define (starlark-emit-global-ppxes ws)

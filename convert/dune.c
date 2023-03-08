@@ -80,6 +80,7 @@ void _print_usage(void) {
     printf("\t--dm | --debug-mibl\t\tDebug mibl elaboration.\n");
     printf("\t--dppx | --debug-ppx\t\tDebug ppx stuff.\n");
 
+    printf("\t--show-config\t\t\tPrint config and exit.\n");
     printf("\t--lparsetree, --show-parsetree\n");
     printf("\t--lexports,   --show-exports\n");
     printf("\t--lmibl,      --show-mibl\n");
@@ -141,10 +142,14 @@ enum OPTS {
     FLAG_DEBUG_EMIT,
     FLAG_DEBUG_DX,
     FLAG_DEBUG_EXECUTABLES,
+    FLAG_DEBUG_LOADS,
     FLAG_DEBUG_DM,
     FLAG_DEBUG_MIBL,
     FLAG_DEBUG_DPPX,
     FLAG_DEBUG_PPX,
+
+    FLAG_SHOW_CONFIG,
+
     FLAG_TRACE,
     FLAG_VERBOSE,
     FLAG_QUIET,
@@ -239,12 +244,18 @@ static struct option options[] = {
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_DM] = {.long_name="dm",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_DEBUG_LOADS] = {.long_name="debug-loads",
+                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_MIBL] = {.long_name="debug-mibl",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_DPPX] = {.long_name="dppx",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG_PPX] = {.long_name="debug-ppx",
                         .flags=GOPT_ARGUMENT_FORBIDDEN},
+
+    [FLAG_SHOW_CONFIG] = {.long_name="show-config",
+                           .flags=GOPT_ARGUMENT_FORBIDDEN},
+
     [FLAG_TRACE] = {.long_name="trace",.short_name='t',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v',
@@ -259,8 +270,12 @@ static struct option options[] = {
 int _update_mibl_config(struct option options[],
                    struct mibl_config_s *mibl_config)
 {
-    log_debug("_update_mibl_config");
-    log_debug("options[OPT_PKG].count: %d", options[OPT_PKG].count);
+#if defined(DEBUG_TRACE)
+    if (mibl_trace) {
+        log_debug("_update_mibl_config");
+        log_debug("options[OPT_PKG].count: %d", options[OPT_PKG].count);
+    }
+#endif
     /* cmd line --pkg args augment miblrc */
     if (options[OPT_PKG].count || options[OPT_PACKAGE].count) {
         char *token, *sep = " ,\t";
@@ -385,37 +400,40 @@ int _update_mibl_config(struct option options[],
 
 void _update_s7_globals(struct option options[])
 {
-    /* mibl_set_flag("*debugging*", true); */
-    mibl_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
+    /* mibl_s7_set_flag("*debugging*", true); */
+    if (options[FLAG_DEBUG_LOADS].count)
+        mibl_s7_set_flag("*mibl-debug-loads*", true);
 
-    mibl_set_flag("*debugging*", options[FLAG_DEBUG].count);
-    mibl_set_flag("*debug-emit*",
+    mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
+
+    mibl_s7_set_flag("*debugging*", options[FLAG_DEBUG].count);
+    mibl_s7_set_flag("*debug-emit*",
                     ((options[FLAG_DEBUG_DE].count)
                      || (options[FLAG_DEBUG_EMIT].count)));
-    mibl_set_flag("*debug-executables*",
+    mibl_s7_set_flag("*debug-executables*",
                     ((options[FLAG_DEBUG_DX].count)
                      || (options[FLAG_DEBUG_EXECUTABLES].count)));
-    mibl_set_flag("*debug-mibl*",
+    mibl_s7_set_flag("*debug-mibl*",
                     ((options[FLAG_DEBUG_DM].count)
                      || (options[FLAG_DEBUG_MIBL].count)));
-    mibl_set_flag("*debug-ppx*",
+    mibl_s7_set_flag("*debug-ppx*",
                     ((options[FLAG_DEBUG_DPPX].count)
                      || (options[FLAG_DEBUG_PPX].count)));
 
     if ((options[FLAG_LEXPORTS].count)
         || (options[FLAG_SHOW_EXPORTS].count))
-        mibl_set_flag("*show-exports*", true);
+        mibl_s7_set_flag("*show-exports*", true);
     else if (mibl_config.show_exports)
-        mibl_set_flag("*show-exports*", true);
+        mibl_s7_set_flag("*show-exports*", true);
 
     if ((options[FLAG_LMIBL].count)
         || (options[FLAG_SHOW_MIBL].count))
-        mibl_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*show-mibl*", true);
     else if (mibl_config.show_mibl)
-        mibl_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*show-mibl*", true);
 
-    mibl_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
-    mibl_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0));
+    mibl_s7_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
+    mibl_s7_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0));
 
 }
 
@@ -520,15 +538,27 @@ int main(int argc, char **argv)
 
     /* **************************************************************** */
 
-    struct mibl_config_s *mibl_config = mibl_init("//obazl/scm");
+    struct mibl_config_s *mibl_config = mibl_s7_init("//obazl/scm",
+                                                     NULL);
+    log_debug("ADUNE CWD: %s", getcwd(NULL, 0));
 
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
     _update_s7_globals(options);
 
-    if (verbose) show_s7_config();
+    if (options[FLAG_SHOW_CONFIG].count) {
+        show_bazel_config();
+        show_mibl_config();
+        show_s7_config();
 
-    mibl_run("obazl_main.scm", NULL);
+        /* for (char **env = envp; *env != 0; env++) { */
+        /*     char *thisEnv = *env; */
+        /*     printf("%s\n", thisEnv); */
+        /* } */
+        exit(EXIT_SUCCESS);
+    }
+    log_debug("DUNE CWD: %s", getcwd(NULL, 0));
+    mibl_s7_run("obazl_main.scm", NULL);
 
     if (verbose)
         log_info("convert exit...");

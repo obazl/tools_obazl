@@ -1,7 +1,7 @@
 (define (starlark-emit-exports-files outp pkg)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "starlark-emit-exports-files") pkg))
-  (let ((dune (assoc-val :dune pkg)))
+  (let ((dune (assoc-val :mibl pkg)))
     (if-let ((exports (assoc-val :exports-files dune)))
             (begin
               ;; first exports-files

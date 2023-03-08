@@ -62,7 +62,7 @@
          (libdeps (if-let ((deps (assoc-in '(:deps :resolved) stanza-alist)))
                           (cdr deps) '()))
          (libdeps (if (number? libdeps)
-                      (let ((shared-deps (assoc-in '(:dune :shared-deps) pkg)))
+                      (let ((shared-deps (assoc-in '(:mibl :shared-deps) pkg)))
                         (if (or *debug-executables* *debugging*)
                             (format #t "~A: ~A~%" (bggreen "share-deps")
                                     shared-deps))
@@ -270,7 +270,7 @@
 
     ;; (format #t "~A~%" (bgcyan "collecting exec-libs"))
 
-    (let* ((stanzas (assoc-val :dune pkg))
+    (let* ((stanzas (assoc-val :mibl pkg))
            (pkg-name (pkg->pkg-name pkg))
            (exec-libs (assoc-val :exec-libs stanzas)))
            ;; (exec-libs (fold (lambda (stanza accum)

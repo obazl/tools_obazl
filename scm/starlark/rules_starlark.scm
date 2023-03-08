@@ -820,6 +820,6 @@
                    (error 'FIXME
                           (format #f "unhandled rule stanza: ~A~%" (car stanza)))
                    )))
-              (assoc-val :dune pkg))))
+              (assoc-val :mibl pkg))))
 
 

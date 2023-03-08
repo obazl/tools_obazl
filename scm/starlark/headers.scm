@@ -4,7 +4,7 @@
 (define (pkg->obazl-rules pkg)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "-pkg->obazl-rules") pkg))
-  (let* ((stanzas (assoc-val :dune pkg))
+  (let* ((stanzas (assoc-val :mibl pkg))
          ;; (_ (if *debugging* (format #t "stanzas: ~A\n" stanzas)))
          (-rules (fold (lambda (stanza accum)
                          (if *debugging*
@@ -115,7 +115,7 @@
            (rules (if (assoc :structures pkg) (cons :struct rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules))
            (rules (if (assoc :cc pkg)  (cons :cc-deps rules) rules))
-           (_ (if *debugging* (format #t "~A: ~A~%" (red "obazlrules") rules)))
+           (_ (if *debugging* (format #t "~A: ~A~%" (bgred "obazlrules") rules)))
            ;; dedup
            (rules (fold (lambda (x accum)
                           (if (eq? x :struct)
@@ -492,7 +492,7 @@
       (begin
         (format #t "~A: ~A~%" (ublue "-get-compile-opts") stanza)
         (format #t "~A: ~A~%" (ublue "pkg") pkg)))
-  (let* ((dune (assoc-val :dune pkg))
+  (let* ((dune (assoc-val :mibl pkg))
          (gopts (if-let ((opts (assoc :compile-opts (cdr stanza))))
                        (cdr opts) '()))
          (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "gopts") gopts))))
@@ -532,7 +532,7 @@
                                 (assoc-val :resolved (cdr deps)))
                               #f))
                     #f))
-                         (assoc-val :dune pkg))))
+                         (assoc-val :mibl pkg))))
     (if *debugging*
         (format #t "~A: ~A~%" (bgblue "tdeps") tdeps))
     tdeps))
@@ -544,13 +544,13 @@
   ;;  (lambda (stanza)
   ;;    (format #t "~A: ~A~%" (uwhite "stanza") stanza)
   ;;    )
-  ;;  (assoc-val :dune pkg))
+  ;;  (assoc-val :mibl pkg))
   )
 
 (define (starlark-emit-global-vars outp pkg)
   (if *debugging*
       (format #t "~A: ~A\n" (bgred "starlark-emit-global-vars") pkg))
-         ;; (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
+         ;; (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
          ;;                     (cadr shppx) #f))
 
   (for-each
@@ -865,7 +865,7 @@
               (error 'UNHANDLED
                      (format #f "unhandled stanza for hdrs: ~A" stanza))))
            )))
-   (assoc-val :dune pkg)))
+   (assoc-val :mibl pkg)))
 
 (if *debugging*
     (format #t "loaded starlark/headers.scm\n"))

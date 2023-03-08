@@ -192,7 +192,7 @@
          (stanza-alist (cdr stanza))
          (_ (if (or *debug-emit* *debugging*) (format #t "~A: ~A\n" (uwhite "stanza-alist") stanza-alist)))
 
-         (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
+         (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
                              (cadr shppx) #f))
          (_ (if (or *debug-emit* *debugging*) (format #t "~A: ~A~%" (bgyellow "shared-ppx") shared-ppx)))
 
@@ -916,7 +916,7 @@
                                     (if-let ((exec-libs (assoc-val :exec-libs (cdr stanza))))
                                             (member modname exec-libs)
                                             ;; (let* ((_ (if (or *debug-emit* *debugging*) (format #t "~A: ~A~%" (ucyan "stanza-exec-libs") exec-libs)))
-                                            ;;        (pkg-exec-libs (assoc-in '(:dune :exec-libs) pkg))
+                                            ;;        (pkg-exec-libs (assoc-in '(:mibl :exec-libs) pkg))
                                             ;;        ;; FIXME: pkg exec-libs?  meaning shared across stanzas?
                                             ;;        (_ (if (or *debug-emit* *debugging*) (format #t "~A: ~A~%" (ucyan "pkg") pkg)))
                                             ;;        (_ (if (or *debug-emit* *debugging*) (format #t "~A: ~A~%" (ucyan "pkg-exec-libs") pkg-exec-libs)))
@@ -973,7 +973,7 @@
                                (else
                                 (error 'UNHANDLED
                                        (format #f "emit-modules, unhandled kind: ~A" stanza))))))
-                         (assoc-val :dune pkg)))
+                         (assoc-val :mibl pkg)))
             )
        ;; (if (equal? modname 'Pb_codegen_backend)
        ;;     (begin
@@ -1131,7 +1131,7 @@
          (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
                          ppx #f))
 
-         (shared-ppx (if-let ((shppx (assoc-in '(:dune :shared-ppx) pkg)))
+         (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
                              (cadr shppx) #f))
 
          (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx) #f))
@@ -1311,7 +1311,7 @@
   ;;                                      #t
   ;;                                      #f))))
   ;;                       (else #f)))
-  ;;                   (assoc-val :dune pkg)))
+  ;;                   (assoc-val :mibl pkg)))
   ;;                 )
   ;;            (if aggregator
   ;;                (-emit-sig outp ws pkg module aggregator)))
@@ -1344,7 +1344,7 @@
                                             (-emit-sig outp ws pkg sig stanza)
                                             #f))))
                              (else #f)))
-                         (assoc-val :dune pkg)))
+                         (assoc-val :mibl pkg)))
             )
        (if (not aggregator)
            (-emit-sig-freestanding outp ws sig))))

@@ -37,7 +37,7 @@
 (define (starlark-emit-cc-targets outp ws pkg)
   (if *debugging*
       (format #t "~A: ~A\n" (bgblue "starlark-emit-cc-targets") pkg))
-  (let ((stanzas (assoc-val :dune pkg)))
+  (let ((stanzas (assoc-val :mibl pkg)))
     (for-each
      (lambda (stanza)
        (if *debugging*

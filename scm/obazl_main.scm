@@ -55,7 +55,7 @@
         (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
 
   ;; NB: mibl-load-project is implemented in @mibl//src/load_project.c
-  ;; and initialized in @mibl//src/config_s7_dune.c
+  ;; and initialized in @mibl//src/config_s7.c
   (let* ((_wss (mibl-load-project root-path pkg-path))
           ;; (if (truthy? root-path) (mibl-load-project root-path)
           ;;          (mibl-load-project)))
@@ -142,7 +142,7 @@
   (if *show-parsetree*
       (begin
         (format #t "PARSETREE~%")
-        (debug-print-pkgs :@)
+        (mibl-debug-print-pkgs :@)
         (return)))
 
   (let* (;;(_wss (-mibl-load-project root-path pkg-path))
@@ -170,7 +170,7 @@
     (if *show-mibl*
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
-          (debug-print-pkgs :@)
+          (mibl-debug-print-pkgs :@)
           (return)))
 
     ;; (return)
@@ -192,18 +192,18 @@
     (if *show-starlark*
       (begin
         (format #t "STARLARK~%")
-        (debug-print-pkgs :@)))
+        (mibl-debug-print-pkgs :@)))
 
     ;; (if *debugging*
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
     (if *show-exports*
-        (debug-print-exports-table :@))
+        (mibl-debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
 
-    ;; (debug-print-filegroups :@)
+    ;; (mibl-debug-print-filegroups :@)
 
     ;; (-dump-opam :@)
 

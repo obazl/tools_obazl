@@ -4,7 +4,7 @@
 
  (dune (rule (deps a.ml) (action (cat a.ml))))
 
- (:dune (:rule
+ (:mibl (:rule
          (:targets)
          (:deps (:_ ((:pkg "dune/stanzas/rule/action/cat") (:file "a.ml"))))
          (:action (:cmd (:tool cat)

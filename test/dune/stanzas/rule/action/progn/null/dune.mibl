@@ -15,7 +15,7 @@
 
  (:files (:static "dune.mibl"))
 
- (:dune (:rule (:alias runtest)
+ (:mibl (:rule (:alias runtest)
                (:package tezos-stdlib)
                (:targets)
                (:deps (:alias runtest_bits)

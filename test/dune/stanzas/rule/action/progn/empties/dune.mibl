@@ -27,7 +27,7 @@
           (write-file void_for_linking-009-PsFLoren-protocol-plugin-registerer.empty "")
           (write-file void_for_linking-010-PtGRANAD-protocol-plugin-registerer.empty "")))))
 
- (:dune (:rule
+ (:mibl (:rule
          (:targets)
          (:deps)
          (:action

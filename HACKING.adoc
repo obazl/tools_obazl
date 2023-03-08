@@ -182,6 +182,44 @@ Debugging: add `+-c dbg -- -dvt+`
 The command has some options that are helpful for troubleshooting;
 pass `--help` to see them.
 
+
+== @obazl//coswitch dev workflow
+
+If you make changes to the sources, or you upgrade to a new version of
+`tools_obazl`, you will need to rerun the tool. You also need to clean
+out the old stuff; the `coswitch` command only writes, it does not
+remove stuff left over from a previous run.  So you should run:
+
+* `bazel run @obazl//coswitch -- --clean` (or `-c`) - deletes bazel
+  stuff from opam switch, resets WORKSPACE.opam.bzl
+
+and then run `bazel run @obazl//coswitch`. Maybe later I'll make
+`--clean` mean: clean the coswitch and then generate a new one, all in
+one action.
+
+== @obazl//convert:dune dev workflow
+
+You can run the tool repeatedly, but sometimes you want to start from a clean slate.
+
+To remove all the BUILD.bazel files from current project:
+
+* `fd BUILD.bazel -x rm`
+
+link:https://github.com/sharkdp/fd[fd] is nice because by default it
+excludes hidden directories from the search, and that includes
+directories starting with `_`, like `_opam` and `_build`.
+
+You can do the same with `find` but excluding directories from the
+search (or from the results?) is a PITA.
+
+To run `bazel run @obazl//convert:dune` you must have a
+BUILD.bazel file in the project root, so you may need to `touch
+BUILD.bazel`
+
+
+
+* 
+
 == Troubleshooting
 
 === ppx_expect & ppx_inline_test

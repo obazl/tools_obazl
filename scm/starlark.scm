@@ -1,4 +1,4 @@
-(if *debugging*
+(if *mibl-debug-loads*
     (format #t "loading obazl/starlark.scm\n"))
 
 (define *select-protases* '())

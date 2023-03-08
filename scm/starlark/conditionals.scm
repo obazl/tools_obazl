@@ -182,4 +182,4 @@
          (else
           (error 'UNHANDLED "unhandled stanza for conditionals"))
          ))
-   (assoc-val :dune pkg)))
+   (assoc-val :mibl pkg)))

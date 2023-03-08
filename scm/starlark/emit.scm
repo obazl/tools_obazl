@@ -7,7 +7,7 @@
 
 ;; (define (starlark-emit-tuareg outp ws pkg)
 ;;   (format #t "~A: ~A~%" (red "starlark-emit-tuareg") pkg)
-;;   (if (assoc-in '(:dune :tuareg) pkg)
+;;   (if (assoc-in '(:mibl :tuareg) pkg)
 ;;       (begin
 ;;         (format outp "fail(\"FIXME: tuareg file\")")
 ;;         (newline outp))))
@@ -18,7 +18,7 @@
       (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg))
   (load "starlark/non-dune-parsers.scm")
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
-         (dunefile (assoc :dune pkg)))
+         (dunefile (assoc :mibl pkg)))
     (if *debugging*
         (format #t "~A: ~A~%" (uwhite "dune") dunefile))
     (if *debugging*
@@ -32,7 +32,8 @@
                (_ (if *debugging*
                       (format #t "~A: ~A\n" (uwhite "obazl rules") obazl-rules)))
                (build-file (string-append pkg-path "/BUILD.bazel"))
-
+               (_ (format #t "build file: ~A~%" build-file))
+               (_ (format #t "cwd: ~A~%" ((*libc* 'pwd))))
                (outp
                 (catch #t
                        (lambda ()
@@ -40,6 +41,7 @@
                        (lambda args
                          (error 'OPEN_ERROR "OPEN ERROR"))
                        )))
+          ;; (_ (format #t "ok so"))
 
           (if *debugging*
               (format #t "~%~A: ~A~%"
@@ -208,7 +210,7 @@
                       ;; multiple (env ...) dunefiles?
                       ;; e.g. alcotest//test pkgs
                       (if (assoc 'dune-project (cdr kv))
-                          (if (assoc-in '(:dune :env) (cdr kv))
+                          (if (assoc-in '(:mibl :env) (cdr kv))
                               (emit-profiles ws (cdr kv))))
                       (if (not (null? (cdr kv)))
                           ;; (if (assoc 'dune (cdr kv))

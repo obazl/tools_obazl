@@ -9,7 +9,7 @@
 # shell script here...
     "))))
 
- (:dune (:rule
+ (:mibl (:rule
          (:targets (:_ ((:pkg "dune/stanzas/rule/action/bash") (:file "foo.txt"))))
          (:deps (:_ ((:pkg "dune/stanzas/rule/action/bash") (:file "a.txt"))))
          (:action (:cmd ((:tool bash) (:args "

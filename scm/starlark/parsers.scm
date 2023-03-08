@@ -104,7 +104,7 @@
 (define (starlark-emit-file-generators outp pkg)
   (if *debugging*
       (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg))
-  (let* ((stanzas (assoc-val :dune pkg))
+  (let* ((stanzas (assoc-val :mibl pkg))
          (hdr-flag #t))
     (for-each (lambda (stanza)
                 (case (car stanza)
