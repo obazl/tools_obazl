@@ -1,16 +1,16 @@
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loading new.scm~%"))
 
 (define *stdlib-modules* '())
 
 (define (stdlib->module-names)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A~%" (ublue "stdlib->module-names")))
   (let* ((cmd (format #f "opam var lib"))
          ;; (_ (format #t "~A: ~A~%" (green "cmd") cmd))
          (opam-lib (string-trim '(#\newline) (system cmd #t)))
          (ocaml-lib (format #f "~A/ocaml" opam-lib)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (green "ocaml-lib") ocaml-lib))
     (let* ((stdlib-modules (system (format #f "ls ~A/stdlib__*.cmi" ocaml-lib) #t))
            (stdlib-ms (string-split stdlib-modules #\newline))
@@ -27,7 +27,7 @@
 
 ;; precondition: *stdlib-modules* has been populated
 (define* (srcfile->local-deps pkg tgt)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A: ~A/~A~%" (ublue "get-local-deps") pkg tgt)
         (format #t "~A: ~A~%" (green "*stdlib-modules*") *stdlib-modules*)))
@@ -39,14 +39,14 @@
            ;; (_ (format #t "~A: ~A~%" (green "cmd") cmd))
            (deps (string-trim '(#\newline) (system cmd #t)))
            (deps (string-split deps #\newline)))
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~A: ~A~%" (green "deps") deps))
       ;; (error 'x "x")
 
-      (if *debugging*
+      (if *mibl-debugging*
           (format #t "~%~A: ~A~%" (uyellow "iter over ocamldeps") deps))
       (let ((segs (string-split (car deps) #\:)))
-        (if *debugging*
+        (if *mibl-debugging*
             (format #t "~A: ~A~%" (yellow "segs") segs))
         (if (null? (cdr segs))
             (begin)
@@ -75,7 +75,7 @@
                                     (not (member dep *stdlib-modules*))) mdeps))
                    )
               ;; (format #t "~A: ~A~%" (ugreen "stdlib modules") *stdlib-modules*)
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (ugreen "filtered mdeps, excluding stdlib modules") mdeps))
               ;; (format #t "~A: ~A~%" (red "mdeps") mdeps)
               ;; (format #t "~A: ~A~%" (red "fname") fname)

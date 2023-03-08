@@ -1,4 +1,4 @@
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loading obazl_main.scm~%"))
 
 ;; (set! *load-path* (cons ((*libc* 'pwd)) *load-path*))
@@ -48,7 +48,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root-path pkg-path)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A~%" (ublue "-mibl-load-project"))
         (format #t "~A: ~A~%" (blue "root-path") root-path)
@@ -63,7 +63,7 @@
     _wss))
 
 (define (-miblize ws)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-miblize") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
@@ -84,18 +84,18 @@
         ;; (_ (for-each (lambda (k)
         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
         ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
     mpkg-alist))
 
 (define (-emit-mibl ws)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-emit-mibl") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (blue "-emit-mibl pkg") (cdr kv)))
                 (if (not (null? (cdr kv)))
                     (emit-mibl-pkg (cdr kv)))
@@ -103,43 +103,43 @@
               pkgs)))
 
 (define (-emit-starlark ws)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     (for-each (lambda (kv)
-                (if *debugging*
+                (if *mibl-debugging*
                     (format #t "~A: ~A~%" (blue "emitting") (car kv)))
                 (if (not (null? (cdr kv)))
                     (mibl-pkg->build-bazel ws (cdr kv))
-                    (if *debugging*
+                    (if *mibl-debugging*
                         (format #t "~A: ~A~%" (blue "skipping") (car kv))))
                 )
               pkgs)))
 
 ;; called by @obazl//convert
 (define* (-dune->obazl return root-path pkg-path)
-  ;; (set! *debugging* #t)
-  (if *debugging*
+  ;; (set! *mibl-debugging* #t)
+  (if *mibl-debugging*
       (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  (if *debugging*
-      (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*))
+  (if *mibl-debugging*
+      (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*") *mibl-emit-bazel-pkg*))
 
-  (set! *build-dyads* #t)
-  (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
+  (set! *mibl-build-dyads* #t)
+  (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
-  ;; (set! *wrapped-libs-to-ns-archives* #f)
-  ;; (set! *unwrapped-libs-to-archives* #f)
+  ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
+  ;; (set! *mibl-unwrapped-libs-to-archives\* #f)
 
   ;; NB: :@ is key of the root workspace in *mibl-project*
-  ;; (set! *debugging* #t)
+  ;; (set! *mibl-debugging* #t)
 
   (-mibl-load-project root-path pkg-path)
-  (if *show-parsetree*
+  (if *mibl-show-parsetree*
       (begin
         (format #t "PARSETREE~%")
         (mibl-debug-print-pkgs :@)
@@ -159,7 +159,7 @@
 
     (handle-shared-ppx :@)
 
-    (if *shared-deps*
+    (if *mibl-shared-deps*
         (begin
           (handle-shared-deps :@)
           (handle-shared-opts :@)
@@ -167,7 +167,7 @@
 
     ;; (ppx-inline-tests! :@)
 
-    (if *show-mibl*
+    (if *mibl-show-mibl*
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
           (mibl-debug-print-pkgs :@)
@@ -177,28 +177,28 @@
 
     ;; end dune-specific?
 
-    (if *emit-mibl*
+    (if *mibl-emit-mibl*
         (emit-mibl))
         ;; (emit-mibl :@))
 
-    (if *emit-starlark*
+    (if *mibl-emit-starlark*
         (begin
-          ;; (set! *debugging* #t)
+          ;; (set! *mibl-debugging* #t)
           ;;FIXME: rename emit-starlark
           (ws->starlark :@)))
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *show-starlark*
+    (if *mibl-show-starlark*
       (begin
         (format #t "STARLARK~%")
         (mibl-debug-print-pkgs :@)))
 
-    ;; (if *debugging*
+    ;; (if *mibl-debugging*
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
-    (if *show-exports*
+    (if *mibl-show-exports*
         (mibl-debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
@@ -208,12 +208,12 @@
     ;; (-dump-opam :@)
 
     (if (not *mibl-quiet*)
-        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
+        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*)))
   '())
 
 (define* (-main root-path pkg-path)
   (call-with-exit (lambda (return)
                     (-dune->obazl return root-path pkg-path))))
 
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loaded obazl_main.scm~%"))

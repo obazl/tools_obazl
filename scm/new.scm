@@ -1,11 +1,11 @@
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loading new.scm~%"))
 
 (load "ostdlib.scm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-mibl-load-project root-path pkg-path)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A~%" (ublue "-mibl-load-project"))
         (format #t "~A: ~A~%" (blue "root-path") root-path)
@@ -18,36 +18,36 @@
 
 
 (define (update-local-deps! ws-id)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "update-local-deps!") ws-id))
   (let* ((@ws (assoc-val ws-id *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws)))
          )
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (green "*new-pkg-paths*") *new-pkg-paths*))
     (for-each (lambda (pkg-path)
                 (if (find-if (lambda (path)
                                (string-prefix? path pkg-path)) *new-pkg-paths*)
                     (begin
-                      (if *debugging*
+                      (if *mibl-debugging*
                           (format #t "~A: ~A (t: ~A)~%" (blue "pkg key") pkg-path (type-of pkg-path)))
                       (let* ((pkg (hash-table-ref pkgs pkg-path))
                              (pkg-modules (if-let ((elts (assoc-val :modules pkg))) elts '()))
                                (pkg-structs-static (if-let ((structs (assoc-in '(:structures :static) pkg)))
                                                        (cdr structs) '()))
-                               (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-structs-static") pkg-structs-static)))
+                               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "pkg-structs-static") pkg-structs-static)))
                                (pkg-structs-dynamic (if-let ((structs (assoc-in '(:structures :dynamic) pkg)))
                                                             (cdr structs) '()))
-                               (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-structs-dynamic") pkg-structs-dynamic)))
+                               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "pkg-structs-dynamic") pkg-structs-dynamic)))
                                (pkg-structs (append (or pkg-structs-static '()) (or pkg-structs-dynamic '())))
-                               (_ (if *debugging* (format #t "~A: ~A~%" (blue "pkg-structs") pkg-structs)))
+                               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "pkg-structs") pkg-structs)))
                                (-all (append pkg-modules pkg-structs))
-                               (_ (if *debugging* (format #t "~A: ~A~%" (blue "-all") -all)))
+                               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "-all") -all)))
                                (pkg-module-names (map car -all)))
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: ~A~%" (blue "pkg-module-names") pkg-module-names))
                           (for-each (lambda (module)
-                                      (if *debugging*
+                                      (if *mibl-debugging*
                                           (format #t "~%  ~A: ~A~%" (ugreen "module") module))
                                       (let* ((ml-static (assoc-val :ml (cdr module)))
                                              (ml-dynamic (assoc-val :ml_ (cdr module)))
@@ -55,7 +55,7 @@
                                              (mli-static (assoc-val :mli (cdr module)))
                                              (mli-dynamic (assoc-val :mli_ (cdr module)))
                                              (mli (cons (or mli-static '()) (or mli-dynamic '()))))
-                                        (if *debugging*
+                                        (if *mibl-debugging*
                                             (begin
                                               (format #t "~A: ~A~%" (green "    ml") ml)
                                               (format #t "~A: ~A~%" (green "    mli") mli)))
@@ -65,7 +65,7 @@
                                                                      (member dep pkg-module-names)
                                                                      )
                                                                    local-deps)))
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "~A: ~A~%" (bggreen "local-deps") local-deps))
                                           (if (truthy? local-deps)
                                               (set-cdr! module (append (cdr module) `((:ml-deps ,@local-deps))))))
@@ -75,7 +75,7 @@
                                                                      (member dep pkg-module-names)
                                                                      )
                                                                    local-deps)))
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "~A: ~A~%" (bggreen "local-deps") local-deps))
                                           (if (truthy? local-deps)
                                               (set-cdr! module (append (cdr module) `((:mli-deps ,@local-deps))))))
@@ -83,17 +83,17 @@
                                     pkg-modules)
 
                           (for-each (lambda (struct)
-                                      (if *debugging*
+                                      (if *mibl-debugging*
                                           (format #t "~%  ~A: ~A~%" (ugreen "struct") struct))
                                       (let* ((ml (cdr struct)))
-                                        (if *debugging*
+                                        (if *mibl-debugging*
                                             (format #t "~A: ~A~%" (green "    ml") ml))
                                         (let* ((local-deps (srcfile->local-deps pkg-path ml))
-                                               (_ (if *debugging* (format #t "~A: ~A~%" (ugreen "struct locals") local-deps)))
+                                               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (ugreen "struct locals") local-deps)))
                                                (local-deps (filter (lambda (dep)
                                                                      (member dep pkg-module-names))
                                                                    local-deps)))
-                                          (if *debugging*
+                                          (if *mibl-debugging*
                                               (format #t "~A: ~A~%" (bggreen "local-deps") local-deps))
                                           (if (truthy? local-deps)
                                               (set-cdr! struct (list (cdr struct) `,@local-deps))))))
@@ -107,19 +107,19 @@
 
 ;; called by @obazl//convert
 (define* (new-pkgs . pkgs)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "new.scm::new-pkgs: ~A~%" pkgs))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (green "*new-pkg-paths") *new-pkg-paths*))
 
-  (set! *build-dyads* #f)
-  (set! *shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
+  (set! *mibl-build-dyads* #f)
+  (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
-  ;; (set! *wrapped-libs-to-ns-archives* #f)
-  ;; (set! *unwrapped-libs-to-archives* #f)
+  ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
+  ;; (set! *mibl-unwrapped-libs-to-archives\* #f)
 
   (stdlib->module-names!)
 
@@ -147,7 +147,7 @@
 
     ;; (handle-shared-ppx :@)
 
-    ;; (if *shared-deps*
+    ;; (if *mibl-shared-deps*
     ;;     (begin
     ;;       (handle-shared-deps :@)
     ;;       (handle-shared-opts :@)

@@ -1,21 +1,21 @@
 (define (outputs->outs-attr pkg-path outputs)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "outputs->outs-attr") outputs))
   (let* ((outs (map (lambda (out-tlbl)
-                      (if *debugging*
+                      (if *mibl-debugging*
                           (format #t "output item: ~A\n" out-tlbl))
                       (let* ((tag (car out-tlbl))
-                             (_ (if *debugging*
+                             (_ (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (yellow "tag") tag)))
                              (label (cdr out-tlbl))
-                             (_ (if *debugging*
+                             (_ (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (yellow "label") label)))
                              (pkg (assoc-val :pkg label))
-                             (_ (if *debugging*
+                             (_ (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (yellow "pkg") pkg)))
                              (tgt (if-let ((t (assoc-val :tgt label)))
                                           t (assoc-val :fg label)))
-                             (_ (if *debugging*
+                             (_ (if *mibl-debugging*
                                     (format #t "~A: ~A~%" (yellow "tgt") tgt)))
                              )
                         (if (or (equal? pkg pkg-path)
@@ -28,12 +28,12 @@
                        (if (string? src) (append accum (list src))
                            (append accum src)))
                      '() outs)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "OUTPUTS: ~A\n" outs))
     outs))
 
 (define (deps->srcs-attr pkg-path tool deps)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (ublue "deps->srcs-attr") deps))
   ;; deps is a list of alists; key :maps to list of (:pkg :file) pairs
   ;; key :_ (anonymous) may map to multiple pairs
@@ -41,7 +41,7 @@
 
   (if deps
       (let* ((srcs (map (lambda (dep)
-                          (if *debugging* (format #t "dep: ~A~%" dep))
+                          (if *mibl-debugging* (format #t "dep: ~A~%" dep))
                           (cond
                            ((equal? (car dep) tool) (begin)) ;; skip, it goes in tools attr
                            ((eq? (car dep) ::tools) ;; form: (::tools (:foo (:pkg x) (:tgt y)) (:bar (:pkg a)(:tgt b)))
@@ -51,9 +51,9 @@
                             (format #f "//~A:~A" (assoc-val :pkg (cdr dep)) (assoc-val :glob (cdr dep))))
                            (else
                             (let* ((tag (car dep))
-                                   (_ (if *debugging* (format #t "~A: ~A~%" (yellow "tag") tag)))
+                                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "tag") tag)))
                                    (label (cdr dep))
-                                   (_ (if *debugging* (format #t "~A: ~A~%" (yellow "label") label))))
+                                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "label") label))))
                               (cond
                                ((alist? label)
                                 (let* ((pkg (cdr (assoc :pkg label)))
@@ -82,7 +82,7 @@
                                ((keyword? label)
                                 (if (equal? ::unresolved label)
                                     (begin
-                                      (if *debugging*
+                                      (if *mibl-debugging*
                                           (format #t "~A: ~A for ~A~%" (bgred "omitting unresolved src lbl") label tag))
                                       (values))
                                     (error 'FIXME (format #f "dunno how to handle this dep: ~A" dep))))
@@ -91,11 +91,11 @@
                                 (begin
                                   (case (car label)
                                     ((::import)
-                                     (if *debugging*
+                                     (if *mibl-debugging*
                                          (format #t "~A: ~A~%" (uyellow "::import") tag))
                                      (format #f "~A" tag))
                                     ((::pkg)
-                                     (if *debugging*
+                                     (if *mibl-debugging*
                                          (format #t "~A: ~A~%" (uyellow "::pkg") tag))
                                      (format #f "~A" tag))
                                     (else
@@ -105,7 +105,7 @@
                                 (error 'FIXME
                                        (format #f "unrecognized form ~A" label))))))))
                         deps))
-             (_ (if *debugging* (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs)))
+             (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "prelim srcs") srcs)))
 
              ;; srcs list may contain mix of strings and sublists
              (srcs (fold (lambda (src accum)
@@ -114,7 +114,7 @@
                             ((symbol? src) (append accum (list src)))
                             (else (append accum src))))
                          '() srcs)))
-        (if *debugging*
+        (if *mibl-debugging*
             (format #t "SRCS ATTR: ~A\n" srcs))
         srcs)
       #f))

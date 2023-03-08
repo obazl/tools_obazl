@@ -1,4 +1,4 @@
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loading starlark/conversions.scm\n"))
 
 (load "starlark/headers.scm")
@@ -14,14 +14,14 @@
 
 ;; FIXME: rename emit-starlark
 (define (mibl-pkg->build-bazel ws pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg))
   (load "starlark/non-dune-parsers.scm")
   (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
          (dunefile (assoc :mibl pkg)))
-    (if *debugging*
+    (if *mibl-debugging*
         (format #t "~A: ~A~%" (uwhite "dune") dunefile))
-    (if *debugging*
+    (if *mibl-debugging*
         (if dunefile
             (begin
               (format #t "~A: ~A~%" (uwhite "(cdr dune)") (cdr dunefile))
@@ -29,7 +29,7 @@
     (if (and dunefile (not (null? (cdr dunefile))))
         (let* ((stanzas (cadr dunefile))
                (obazl-rules (pkg->obazl-rules pkg))
-               (_ (if *debugging*
+               (_ (if *mibl-debugging*
                       (format #t "~A: ~A\n" (uwhite "obazl rules") obazl-rules)))
                (build-file (string-append pkg-path "/BUILD.bazel"))
                (_ (format #t "build file: ~A~%" build-file))
@@ -43,52 +43,52 @@
                        )))
           ;; (_ (format #t "ok so"))
 
-          (if *debugging*
+          (if *mibl-debugging*
               (format #t "~%~A: ~A~%"
                       (bgred "Emitting buildfile") build-file))
 
           (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
           ;; (newline outp)
 
-          (if *debugging* (format #t "emitting exports_files\n"))
+          (if *mibl-debugging* (format #t "emitting exports_files\n"))
           (starlark-emit-exports-files outp pkg)
 
           (starlark-emit-global-vars outp pkg)
 
-          (if *debugging* (format #t "emitting executables\n"))
+          (if *mibl-debugging* (format #t "emitting executables\n"))
           (starlark-emit-executable-targets outp ws pkg)
 
-          (if *debugging*
+          (if *mibl-debugging*
               (format #t "emitting aggregate targets (archive, library)\n"))
           (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
 
-          (if *debugging* (format #t "emitting singleton targets\n"))
+          (if *mibl-debugging* (format #t "emitting singleton targets\n"))
           (starlark-emit-singleton-targets outp ws pkg)
           ;; (starlark-emit-singleton-targets outp pkg-path stanzas
           ;;                                  (cdr pkg-kv))
 
-          (if *debugging* (format #t "emitting test targets\n"))
+          (if *mibl-debugging* (format #t "emitting test targets\n"))
           (starlark-emit-test-targets outp ws pkg)
 
-          (if *debugging* (format #t "emitting file generators\n"))
+          (if *mibl-debugging* (format #t "emitting file generators\n"))
           ;; ocamllex, ocamlyacc, etc.
           (starlark-emit-file-generators outp pkg)
 
-          (if *local-ppx-driver*
+          (if *mibl-local-ppx-driver*
               (begin
-                (if *debugging* (format #t "emitting pkg ppxes\n"))
+                (if *mibl-debugging* (format #t "emitting pkg ppxes\n"))
                 (starlark-emit-pkg-ppxes outp ws pkg)))
 
-          (if *debugging* (format #t "emitting rules\n"))
+          (if *mibl-debugging* (format #t "emitting rules\n"))
           (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
-          (if *debugging* (format #t "emitting conditional deps\n"))
+          (if *mibl-debugging* (format #t "emitting conditional deps\n"))
           (starlark-emit-select-flags outp ws pkg)
 
-          (if *debugging* (format #t "emitting filegroups\n"))
+          (if *mibl-debugging* (format #t "emitting filegroups\n"))
           (starlark-emit-filegroups outp ws pkg)
 
-          (if *debugging* (format #t "emitting cc targets\n"))
+          (if *mibl-debugging* (format #t "emitting cc targets\n"))
           (starlark-emit-cc-targets outp ws pkg)
 
           ;; ignoring local :env stanzas
@@ -120,14 +120,14 @@
         ;; no :dune, emit filegroups etc.
         (let ((pkg-path (car (assoc-val :pkg-path pkg)))
               (pkg-filegroups (assoc :filegroups pkg)))
-          (if (or *debugging* *debug-emit*)
+          (if (or *mibl-debugging* *mibl-debug-emit*)
               (begin
                 (format #t "~A: ~A~%" (uwhite "emitting non-dune pkg") pkg)
                 (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups)))
           ;;FIXME: check that we have something to emit before opening BUILD.bazel
           (let* ((obazl-rules (non-dune-pkg->obazl-rules pkg))
                  (build-file (string-append pkg-path "/BUILD.bazel"))
-                 (_ (if *debugging*
+                 (_ (if *mibl-debugging*
                         (format #t "~A: ~A~%" (uwhite "build-file") build-file)))
                  (outp
                   (catch #t
@@ -144,25 +144,25 @@
 
             (emit-non-dune-aggregate-target outp pkg)
 
-            ;; (if *debugging* (format #t "emitting exports_files\n"))
+            ;; (if *mibl-debugging* (format #t "emitting exports_files\n"))
             ;; (starlark-emit-exports-files outp pkg)
 
             ;; (starlark-emit-global-vars outp pkg)
 
             (if pkg-filegroups
                 (begin
-                  (if *debugging* (format #t "emitting filegroups\n"))
+                  (if *mibl-debugging* (format #t "emitting filegroups\n"))
                   (starlark-emit-filegroups outp ws pkg)))
             ;; emit ocaml_library
             (emit-non-dune-singletons outp ws pkg)
             ;; emit :sigs
             ;; emit :structs
 
-            (if *debugging* (format #t "emitting file generators\n"))
+            (if *mibl-debugging* (format #t "emitting file generators\n"))
             ;; ocamllex, ocamlyacc, etc.
             (emit-non-dune-file-generators outp pkg)
 
-            (if *debugging* (format #t "emitting cc targets\n"))
+            (if *mibl-debugging* (format #t "emitting cc targets\n"))
             (emit-non-dune-cc-targets outp ws pkg)
 
             (close-output-port outp)
@@ -184,25 +184,25 @@
 ;;               pkgs)))
 
 (define (ws->starlark ws)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~%~A: ~A~%" (bgred "ws->starlark") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
     ;; (-emit-import-settings ws)
 
-    (if *debugging*
-        (format #t "~A: ~A~%" (bgred "scan exlusions") *scan-exclusions*))
+    (if *mibl-debugging*
+        (format #t "~A: ~A~%" (bgred "scan exlusions") *mibl-scan-exclusions*))
 
     ;; also one //bzl/profiles per workspace
-    (if *debugging*
-        (format #t "~A: ~A~%" (bgred "*emit-bazel-pkg*") *emit-bazel-pkg*))
+    (if *mibl-debugging*
+        (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*") *mibl-emit-bazel-pkg*))
     (for-each (lambda (kv)
-                (if (or (not *emit-bazel-pkg*)
-                        (and (truthy? *emit-bazel-pkg*)
-                             (string-prefix? *emit-bazel-pkg* (car kv))))
+                (if (or (not *mibl-emit-bazel-pkg*)
+                        (and (truthy? *mibl-emit-bazel-pkg*)
+                             (string-prefix? *mibl-emit-bazel-pkg* (car kv))))
                     (begin
-                      (if *debugging*
+                      (if *mibl-debugging*
                           (format #t "~A: ~S~%" (blue "emitting pkg") (car kv)))
                       ;; if this is the root dunefile (w/sibling dune-project file)
                       ;; and we have :env stanza, emit //profiles/BUILD.bazel
@@ -214,9 +214,9 @@
                               (emit-profiles ws (cdr kv))))
                       (if (not (null? (cdr kv)))
                           ;; (if (assoc 'dune (cdr kv))
-                          (if (not (member (car kv) *scan-exclusions*))
+                          (if (not (member (car kv) *mibl-scan-exclusions*))
                                   (mibl-pkg->build-bazel ws (cdr kv))
-                                  (if *debugging*
+                                  (if *mibl-debugging*
                                       (format #t "~A: ~A~%" (blue "skipping") (car kv))))
                               ;; (begin
                               ;;   (format #t "~A: ~A~%" (blue "NON-DUNE PKG") (car kv))
@@ -225,6 +225,6 @@
                       )))
               pkgs)
 
-    (if (not *local-ppx-driver*)
+    (if (not *mibl-local-ppx-driver*)
         (starlark-emit-global-ppxes ws))
     ))

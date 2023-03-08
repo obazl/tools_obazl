@@ -26,5 +26,5 @@
 (load "starlark/filegroups.scm")
 (load "starlark/starlark.scm")
 
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loaded obazl/starlark.scm\n"))

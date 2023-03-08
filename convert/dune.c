@@ -16,6 +16,7 @@ extern bool debug;
 extern bool trace;
 #endif
 
+extern bool mibl_show_traversal;
 extern bool verbose;
 
 extern bool bzl_mode;
@@ -85,6 +86,7 @@ void _print_usage(void) {
     printf("\t--lexports,   --show-exports\n");
     printf("\t--lmibl,      --show-mibl\n");
     printf("\t--lstarlark,  --show-starlark\n");
+    printf("\t              --show-traversal\n");
 
     printf("\t--em | --emit-mibl\t\tEmit BUILD.mibl files.\n");
     printf("\t--em | --emit-parsetree\t\tEmit PARSETREE.mibl files.\n");
@@ -130,6 +132,7 @@ enum OPTS {
     FLAG_SHOW_PARSETREE,
     FLAG_LSTARLARK,
     FLAG_SHOW_STARLARK,
+    FLAG_SHOW_TRAVERSAL,
 
     FLAG_ONLY_CONFIG,
     FLAG_ONLY_PARSETREE,
@@ -219,6 +222,8 @@ static struct option options[] = {
                         .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_SHOW_STARLARK] = {.long_name="show-starlark",
                            .flags=GOPT_ARGUMENT_FORBIDDEN},
+    [FLAG_SHOW_TRAVERSAL] = {.long_name="show-traversal",
+                             .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_ONLY_CONFIG] = {.long_name="only-config",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -386,54 +391,54 @@ int _update_mibl_config(struct option options[],
         }
     }
 
-    if (verbose && verbosity > 1) {
-        log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports);
-        log_debug("SHOW_MIBL: %d", mibl_config->show_mibl);
-        log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree);
-        log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark);
-        log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree);
-        log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl);
-        log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark);
-    }
+    /* if (verbose && verbosity > 1) { */
+    /*     log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports); */
+    /*     log_debug("SHOW_MIBL: %d", mibl_config->show_mibl); */
+    /*     log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree); */
+    /*     log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark); */
+    /*     log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree); */
+    /*     log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl); */
+    /*     log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark); */
+    /* } */
     return 0;                   /* success */
 }
 
 void _update_s7_globals(struct option options[])
 {
-    /* mibl_s7_set_flag("*debugging*", true); */
+    /* mibl_s7_set_flag("*mibl-debugging*", true); */
     if (options[FLAG_DEBUG_LOADS].count)
         mibl_s7_set_flag("*mibl-debug-loads*", true);
 
     mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
 
-    mibl_s7_set_flag("*debugging*", options[FLAG_DEBUG].count);
-    mibl_s7_set_flag("*debug-emit*",
+    mibl_s7_set_flag("*mibl-debugging*", options[FLAG_DEBUG].count);
+    mibl_s7_set_flag("*mibl-debug-emit*",
                     ((options[FLAG_DEBUG_DE].count)
                      || (options[FLAG_DEBUG_EMIT].count)));
-    mibl_s7_set_flag("*debug-executables*",
+    mibl_s7_set_flag("*mibl-debug-executables*",
                     ((options[FLAG_DEBUG_DX].count)
                      || (options[FLAG_DEBUG_EXECUTABLES].count)));
-    mibl_s7_set_flag("*debug-mibl*",
+    mibl_s7_set_flag("*mibl-debug-mibl*",
                     ((options[FLAG_DEBUG_DM].count)
                      || (options[FLAG_DEBUG_MIBL].count)));
-    mibl_s7_set_flag("*debug-ppx*",
+    mibl_s7_set_flag("*mibl-debug-ppx*",
                     ((options[FLAG_DEBUG_DPPX].count)
                      || (options[FLAG_DEBUG_PPX].count)));
 
     if ((options[FLAG_LEXPORTS].count)
         || (options[FLAG_SHOW_EXPORTS].count))
-        mibl_s7_set_flag("*show-exports*", true);
+        mibl_s7_set_flag("*mibl-show-exports*", true);
     else if (mibl_config.show_exports)
-        mibl_s7_set_flag("*show-exports*", true);
+        mibl_s7_set_flag("*mibl-show-exports*", true);
 
     if ((options[FLAG_LMIBL].count)
         || (options[FLAG_SHOW_MIBL].count))
-        mibl_s7_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*mibl-show-mibl*", true);
     else if (mibl_config.show_mibl)
-        mibl_s7_set_flag("*show-mibl*", true);
+        mibl_s7_set_flag("*mibl-show-mibl*", true);
 
-    mibl_s7_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
-    mibl_s7_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0));
+    mibl_s7_set_flag("*mibl-emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
+    mibl_s7_set_flag("*mibl-menhir*", ((options[FLAG_MENHIR].count) >0));
 
 }
 
@@ -534,6 +539,10 @@ int main(int argc, char **argv)
         log_error("--debug-config only valid with -c dbg");
         exit(EXIT_FAILURE);
 #endif
+    }
+
+    if (options[FLAG_SHOW_TRAVERSAL].count) {
+        mibl_show_traversal = true;
     }
 
     /* **************************************************************** */

@@ -1,16 +1,16 @@
 (define mkdir-permissions (logior S_IRWXU S_IRWXG S_IRWXO))
 
 (define (-emit-opam-bin ws-name bundle-dir binfld)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "-emit-opam-bin") binfld))
   (for-each (lambda (bin)
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (bgyellow "bin") bin))
               (let* ((bindir (format #f "~A/bin/~A" bundle-dir (car bin)))
                      (bin-impl (cadr bin))
                      (impl-pkg (car bin-impl))
                      (impl-tgt (cdr bin-impl)))
-                (if *debugging*
+                (if *mibl-debugging*
                     (begin
                       (format #t "~A: ~A~%" (blue "bindir") bindir)
                       (format #t "~A: ~A~%" (blue "bin-impl") bin-impl)))
@@ -19,7 +19,7 @@
                     (mkdir-recursive bindir mkdir-permissions))
                 (let* ((build-file (format #f "~A/bin/~A/BUILD.bazel"
                                            bundle-dir (car bin)))
-                       (_ (if *debugging* (format #t "~A: ~A~%"
+                       (_ (if *mibl-debugging* (format #t "~A: ~A~%"
                                   (blue "emitting bld file") build-file)))
                        (outp
                         (catch #t
@@ -41,16 +41,16 @@
             (cdr binfld)))
 
 (define (-emit-opam-lib ws-name bundle-dir libfld)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "-emit-opam-lib") libfld))
   (for-each (lambda (lib)
-              (if *debugging*
+              (if *mibl-debugging*
                   (format #t "~A: ~A~%" (bgyellow "lib") lib))
               (let* ((libdir (format #f "~A/lib/~A" bundle-dir ws-name))
                      ;; (lib-impl (cadr lib))
                      (impl-pkg (car lib))
                      (impl-tgt (cdr lib)))
-                (if *debugging*
+                (if *mibl-debugging*
                     (begin
                       (format #t "~A: ~A~%" (blue "libdir") libdir)
                       (format #t "~A: ~A~%" (blue "impl-pkg") impl-pkg)
@@ -60,7 +60,7 @@
                     (mkdir-recursive libdir mkdir-permissions))
                 (let* ((build-file (format #f "~A/lib/~A/BUILD.bazel"
                                            bundle-dir ws-name))
-                       (_ (if *debugging* (format #t "~A: ~A~%"
+                       (_ (if *mibl-debugging* (format #t "~A: ~A~%"
                                   (blue "emitting bld file") build-file)))
                        (outp
                         (catch #t
@@ -88,7 +88,7 @@
     ;; ))
 
 (define (-emit-opam-bundle ws-name bundle-dir bundle)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A: ~A~%" (ugreen "-emit-opam-bundle") bundle-dir)
         (format #t "~A: ~A~%" (green "ws-name") ws-name)
@@ -105,20 +105,20 @@
                  )
                 (else
                  (if (string? (car fld))
-                     (if *debugging*
+                     (if *mibl-debugging*
                          (format #t "~A: ~A~%" (red "subdir") fld))
-                     (if *debugging*
+                     (if *mibl-debugging*
                          (format #t "~A: ~A~%" (red "other") fld))))))
             (cdr bundle))
 
   (let* ((build-file (format #f "~A/BUILD.bazel" bundle-dir))
-         (_ (if *debugging* (format #t "~A: ~A~%" (blue "emitting bld file") build-file)))
+         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "emitting bld file") build-file)))
          (outp
           (catch #t
                  (lambda ()
                    (open-output-file build-file))
                  (lambda args
-                   (if *debugging*
+                   (if *mibl-debugging*
                        (format #t (format #f "OPEN ERROR: ~A" build-file))))
                  )))
     (format outp "package(default_visibility = [\"//visibility:public\"])")
@@ -130,7 +130,7 @@
 
   ;; (format #t "~A: ~A~%" (blue "-emit-sub-bundle") sub)
   ;; (let* ((build-file (format #f "~A/~A/BUILD.bazel" path (car sub)))
-  ;;        (_ (if *debugging* (format #t "~A: ~A~%" (blue "emitting bld file") build-file)))
+  ;;        (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "emitting bld file") build-file)))
   ;;        (outp
   ;;         (catch #t
   ;;                (lambda ()
@@ -148,13 +148,13 @@
                            (string? (car x)))
                          (cdr bundle))))
           (begin
-            (if *debugging*
+            (if *mibl-debugging*
                 (format #t "~A: ~A~%" (bgyellow "subs") subs))
             (for-each (lambda (sub)
-                        (if *debugging*
+                        (if *mibl-debugging*
                             (format #t "~A: ~A~%" (red "sub bundle") sub))
                         (let ((sub-path (format #f "~A/~A" path (car sub))))
-                          (if *debugging*
+                          (if *mibl-debugging*
                               (format #t "~A: ~A~%" (red "sub-path") sub-path))
                           (if (directory? sub-path)
                               (begin)
@@ -163,14 +163,14 @@
                       subs))))
 
 (define (-emit-opam-pkgs ws-name path bundle)
-  (if *debugging*
+  (if *mibl-debugging*
       (begin
         (format #t "~A: ~A~%" (ublue "-emit-opam-pkgs") path)
         (format #t "~A: ~A~%" (ublue "ws-name") ws-name)
         (format #t "~A: ~A~%" (ublue "bundle") bundle)))
 
   (let* ((ws-file (format #f "~A/WORKSPACE.bazel" path))
-         (_ (if *debugging* (format #t "~A: ~A~%" (blue "emitting ws file") ws-file)))
+         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "emitting ws file") ws-file)))
          (outp
           (catch #t
                  (lambda ()
@@ -184,13 +184,13 @@
   (-emit-opam-bundle ws-name path (cdr bundle)))
 
 (define (ws->opam-bundles ws)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~%~A: ~A~%" (bgblue "ws->opam-bundles") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (opam (car (assoc-val :opam @ws))))
 
     (for-each (lambda (bundle)
-                (if *debugging*
+                (if *mibl-debugging*
                     (begin
                       (format #t "~A: ~S~%" (ublue "emitting opam-bundle") (car bundle))
                       (format #t "~A: ~S~%" (blue "opam-bundle") bundle)))
@@ -206,7 +206,7 @@
                   ;;         (lambda args
                   ;;           (format #t "OPEN ERROR"))
                   ;;         )))
-                  (if *debugging*
+                  (if *mibl-debugging*
                       (begin
                         (format #t "~A: ~A~%" (blue "bundle-path") bundle-path)
                         (format #t "~A: ~A~%" (red "(directory? bundle-path)") (directory? bundle-path))

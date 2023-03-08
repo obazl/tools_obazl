@@ -1,4 +1,4 @@
-(if *debugging*
+(if *mibl-debugging*
     (format #t "loading obazl/starlark.scm\n"))
 
 (load "dune.scm")
@@ -1032,7 +1032,7 @@
                                               aggregator-stanza)))
                               #f))
                          )
-                    (if *debugging* (format #t "namespace: ~A\n"
+                    (if *mibl-debugging* (format #t "namespace: ~A\n"
                                             namespace))
                     (if (string-suffix? ".ml" srcfile)
                         (begin
@@ -1122,7 +1122,7 @@
                                              '()))
                              )
                         (if (equal? mname 'Rand)
-                            (if *debugging*
+                            (if *mibl-debugging*
                                 (begin
                                   (format #t "RAND:\n")
                                   (format #t "  namespace: ~A\n" namespace)
@@ -1179,7 +1179,7 @@
     ;; ))
 
 (define (starlark-emit-null-stanzas outp fs-path stanzas)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "starlark-emit-null-stanzas: ~A\n" fs-path))
   (format outp "exports_files(glob([\"**\"]))\n"))
 
@@ -1190,7 +1190,7 @@
   ;;       (newline outp)))
 
 (define (starlark-emit-build-files dune-pkg-tbls)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "starlark-emit-build-files\n"))
   (for-each
    (lambda (dune-pkg-tbl)
@@ -1217,23 +1217,23 @@
                 (starlark-emit-build-file-hdr outp pkg-kv)
                 ;; (newline outp)
 
-                (if *debugging* (format #t "emitting executables\n"))
+                (if *mibl-debugging* (format #t "emitting executables\n"))
                 (starlark-emit-executable-targets outp fs-path stanzas)
 
-                (if *debugging* (format #t "emitting aggregates\n"))
+                (if *mibl-debugging* (format #t "emitting aggregates\n"))
                 (starlark-emit-aggregate-targets outp fs-path stanzas)
 
-                (if *debugging* (format #t "emitting module files\n"))
+                (if *mibl-debugging* (format #t "emitting module files\n"))
                 (starlark-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
 
-                (if *debugging* (format #t "emitting file generators\n"))
+                (if *mibl-debugging* (format #t "emitting file generators\n"))
                 ;; ocamllex, ocamlyacc, etc.
                 (starlark-emit-file-generators outp fs-path stanzas)
 
-                (if *debugging* (format #t "emitting ppxes\n"))
+                (if *mibl-debugging* (format #t "emitting ppxes\n"))
                 (starlark-emit-ppxes outp fs-path stanzas)
 
-                (if *debugging* (format #t "emitting rules\n"))
+                (if *mibl-debugging* (format #t "emitting rules\n"))
                 (starlark-emit-rule-targets outp fs-path stanzas)
 
                 (close-output-port outp)
@@ -1261,7 +1261,7 @@
                 )
               ;; else null :stanzas
               (begin
-                (if *debugging* (format #t "NULL stanzas: ~A\n" fs-path))
+                (if *mibl-debugging* (format #t "NULL stanzas: ~A\n" fs-path))
                 (let* ((build-file (string-append fs-path "/BUILD.bazel"))
                        (outp
                         (catch #t

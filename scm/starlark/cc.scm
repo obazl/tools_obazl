@@ -1,5 +1,5 @@
 (define (emit-cc-target outp cc)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "emit-cc-target") cc))
   (format outp "################ ################")
   (newline outp)
@@ -35,12 +35,12 @@
     )
 
 (define (starlark-emit-cc-targets outp ws pkg)
-  (if *debugging*
+  (if *mibl-debugging*
       (format #t "~A: ~A\n" (bgblue "starlark-emit-cc-targets") pkg))
   (let ((stanzas (assoc-val :mibl pkg)))
     (for-each
      (lambda (stanza)
-       (if *debugging*
+       (if *mibl-debugging*
            (format #t "~A: ~A\n" (uwhite "stanza") stanza))
        (let ((cc (assoc-val :cc-stubs (cdr stanza))))
          (if cc

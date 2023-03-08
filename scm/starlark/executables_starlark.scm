@@ -1,11 +1,11 @@
-(if (or *debug-executables* *debugging*)
+(if (or *mibl-debug-executables* *mibl-debugging*)
     (format #t "loading starlark/executables_starlark.scm\n"))
 
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
 
 (define (starlark-emit-executable-target outp ws kind pkg stanza exec-libs)
-  (if (or *debug-executables* *debugging*)
+  (if (or *mibl-debug-executables* *mibl-debugging*)
       (begin
         (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
         (format #t "~A: ~A~%" (blue "kind") kind)
@@ -13,7 +13,7 @@
   (let* ((stanza-alist (cdr stanza))
 
          (pkg-name (pkg->pkg-name pkg))
-         (_ (if (or *debug-executables* *debugging*) (format #t "~A: ~A~%" (blue "pkg-name") pkg-name)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "~A: ~A~%" (blue "pkg-name") pkg-name)))
 
          (privname (assoc-val :privname stanza-alist))
          ;; (mainname (normalize-module-name privname))
@@ -25,22 +25,22 @@
 
          ;; (modes (if-let ((ms (assoc-in '(:link :modes) stanza-alist)))
          ;;                (cdr ms) ms))
-         (_ (if (or *debug-executables* *debugging*) (format #t "MODES: ~A~%" (assoc-val :modes stanza-alist))))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "MODES: ~A~%" (assoc-val :modes stanza-alist))))
          (modes (if-let ((ms (assoc-val :modes stanza-alist)))
                         ms '()))
-         (_ (if (or *debug-executables* *debugging*) (format #t "~A: ~A~%" (bgred "modes") modes)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "~A: ~A~%" (bgred "modes") modes)))
          ;; (_ (if (truthy? modes) (error 'X "X")))
 
          ;; 'name', i.e. main, is required by dune so we always have it
          ;; (main (cadr (assoc-in '(:link :main) stanza-alist)))
          (main (assoc-val :main stanza-alist))
-         (_ (if (or *debug-executables* *debugging*) (format #t "main: ~A~%" main)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "main: ~A~%" main)))
 
-         ;; TODO: support *dune-execlib-includes-main*
-         ;; (exec-lib (if *dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
+         ;; TODO: support *mibl-dune-execlib-includes-main*
+         ;; (exec-lib (if *mibl-dune-execlib-includes-main* exec-lib (append exec-lib (list main))))
          (exec-lib (if-let ((el (assoc-val :exec-lib stanza-alist)))
                            el #f))
-         (_ (if (or *debug-executables* *debugging*) (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "~A: ~A~%" (bgred "exec-lib") exec-lib)))
 
         ;; we will use exec-lib-serial and pkg-name to form exec-lib name
          (exec-lib-serial (if exec-lib
@@ -51,7 +51,7 @@
                                           '(error 'FIXME
                                                   (format #f "~A: ~A~%" (red "exec-lib not found in exec-libs") exec-lib))))
                               #f))
-         (_ (if (or *debug-executables* *debugging*) (format #t "~A: ~A~%" (bgred "exec-lib serial") exec-lib-serial)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "~A: ~A~%" (bgred "exec-lib serial") exec-lib-serial)))
 
          (exec-lib-name (if exec-lib-serial
                             (if (< (length exec-libs) 2)
@@ -63,29 +63,29 @@
                           (cdr deps) '()))
          (libdeps (if (number? libdeps)
                       (let ((shared-deps (assoc-in '(:mibl :shared-deps) pkg)))
-                        (if (or *debug-executables* *debugging*)
+                        (if (or *mibl-debug-executables* *mibl-debugging*)
                             (format #t "~A: ~A~%" (bggreen "share-deps")
                                     shared-deps))
                         libdeps)
                       libdeps))
-         (_ (if (or *debug-executables* *debugging*) (format #t "libdeps: ~A~%" libdeps)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "libdeps: ~A~%" libdeps)))
 
          ;; local module deps
          ;; (deps (assoc-in '(:compile :deps)))
-         ;; (_ (if (or *debug-executables* *debugging*) (format #t "compile deps: ~A~%" deps)))
+         ;; (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "compile deps: ~A~%" deps)))
          (deps (sort! (if-let ((deps (assoc-in '(:deps :modules) stanza-alist)))
                              ;; (assoc-in '(:link :manifest :modules)
                              ;;           stanza-alist)))
                               (cdr deps) '())
                       sym<?))
          (deps (append deps (list main)))
-         (_ (if (or *debug-executables* *debugging*) (format #t "local deps: ~A~%" deps)))
+         (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "local deps: ~A~%" deps)))
          ;; (deps (remove main deps))
-         ;; (_ (if (or *debug-executables* *debugging*) (format #t "deps: ~A~%" deps)))
+         ;; (_ (if (or *mibl-debug-executables* *mibl-debugging*) (format #t "deps: ~A~%" deps)))
          )
     (let-values (((link-std link-opts)
                   (link-flags->mibl stanza)))
-      (if (or *debug-executables* *debugging*)
+      (if (or *mibl-debug-executables* *mibl-debugging*)
           (begin
             (format #t "link opts: ~A~%" link-opts)
             (format #t "link std: ~A~%" link-std)
@@ -135,7 +135,7 @@
 
       (if (member 'js modes)
           (begin
-            (if *js-emit-rules-js*
+            (if *mibl-js-emit-rules-js*
                 (begin
                   (format outp "#############\n")
                   (case kind
@@ -161,15 +161,15 @@
                   (format outp ")\n")
                   (newline outp))
                 ;; else
-                (if *js-emit-rules-swc*
+                (if *mibl-js-emit-rules-swc*
                     (begin)
-                    (if *js-emit-rules-closure*
+                    (if *mibl-js-emit-rules-closure*
                         (begin))))
 
-            (if (or *js-emit-rules-jsoo*
-                    *js-emit-rules-js*
-                    *js-emit-rules-swc*
-                    *js-emit-rules-closure*)
+            (if (or *mibl-js-emit-rules-jsoo*
+                    *mibl-js-emit-rules-js*
+                    *mibl-js-emit-rules-swc*
+                    *mibl-js-emit-rules-closure*)
                 (begin
                   ;; (format outp "#############\n")
                   (case kind
@@ -205,7 +205,7 @@
 
           (if (eq? kind :executable)
               (begin
-                (if *dune-execlib-includes-main* ;; default: #f
+                (if *mibl-dune-execlib-includes-main* ;; default: #f
                     (format outp "    main     = [\":__Lib_~A__\"],\n" tgtname)
                     (format outp "    main     = \":~A\",\n" main) ;;(normalize-module-name tgtname))
                     ;; else
@@ -226,10 +226,10 @@
         (newline outp)
 
         ;;FIXME: insert the main exec-module target here
-        (if (or *debug-executables* *debugging*)
+        (if (or *mibl-debug-executables* *mibl-debugging*)
             (format #t "~A: ~A~%" (cyan "finding main module") main))
         (let ((main-module (find-module-in-pkg main pkg)))
-          (if (or *debug-executables* *debugging*)
+          (if (or *mibl-debug-executables* *mibl-debugging*)
               (format #t "~A: ~A~%" (cyan "## main exec module") main-module))
           ;; (format outp "## main: ~A~%" main)
           ;; (format outp "## main exec module: ~A~%" main-module)
@@ -242,13 +242,13 @@
       )
     ;; now emit modules for compilation
     ;; (if pkg-modules (-emit-modules outp pkg pkg-modules))
-    ;; (if (or sigs *build-dyads*)
+    ;; (if (or sigs *mibl-build-dyads*)
     ;;     (-emit-signatures outp pkg sigs pkg-modules))
     ;; (starlark-emit-singleton-targets outp pkg)
     ))
 
 (define (starlark-emit-executable-targets outp ws pkg) ;;fs-path stanzas)
-  (if (or *debug-executables* *debugging*)
+  (if (or *mibl-debug-executables* *mibl-debugging*)
       (format #t "~A\n" (ublue "starlark-emit-executable-targets")))
 
   ;; Multiple executables may share the same execlib. for example we
@@ -264,7 +264,7 @@
   ;; exec-modules, we cannot use the main module names. We use the
   ;; directory name of the pkg with a suffixed serial number.
 
-  ;; FIXME: support *dune-execlib-includes-main*, wherein each each
+  ;; FIXME: support *mibl-dune-execlib-includes-main*, wherein each each
   ;; executable uses an exec-lib containing the main exec-module,
   ;; which means each gets its own exec-lib, with none shared.
 
@@ -291,7 +291,7 @@
            ;;                        accum))
            ;;                  '() stanzas))
            ;; (exec-libs (remove '() exec-libs)))
-      (if (or *debug-executables* *debugging*)
+      (if (or *mibl-debug-executables* *mibl-debugging*)
           (format #t "~A: ~A~%" (bgcyan "pkg exec-libs") exec-libs))
       ;; now process :executable stanzas, passing the exec-libs
       (let* ((flag #t))
@@ -320,7 +320,7 @@
             (begin
               (format outp "############################ Exec Libs ###############################~%")
               (for-each (lambda (exec-lib)
-                          (if (or *debug-executables* *debugging*)
+                          (if (or *mibl-debug-executables* *mibl-debugging*)
                               (begin
                                 (format #t "~A: ~A~%" (ucyan "emitting exec-libs for pkg") pkg)
                                 (format #t "~A: ~A~%" (ucyan "emitting exec-lib") exec-lib)))
@@ -335,7 +335,7 @@
                           ;; (if (not (null? deps))
                           ;;     (begin
                           (format outp "    manifest = [~%")
-                          (if (or *debug-executables* *debugging*)
+                          (if (or *mibl-debug-executables* *mibl-debugging*)
                               (format #t "~A: ~A~%" (bgcyan "exec-lib") exec-lib))
                           (format outp "~{        \":~A\"~^,~%~}~%" (assoc-val :modules (cdr exec-lib)))
                           (format outp "    ],\n")
@@ -347,5 +347,5 @@
                         (remove '() exec-libs))))
         )))
 
-(if (or *debug-executables* *debugging*)
+(if (or *mibl-debug-executables* *mibl-debugging*)
     (format #t "loaded starlark/executables_starlark.scm\n"))
