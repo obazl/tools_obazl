@@ -49,8 +49,8 @@ cc_binary(
         "//conditions:default": {}
     }) + ["-lm"],
     data = [
-        "//obazlark:srcs",
-        "//obazlark/starlark:srcs"
+        "//scm:srcs",
+        "//scm/starlark:srcs"
     ],
     deps = [
         "@mibl//src:mibl",
@@ -143,8 +143,8 @@ genrule(
 #         "@mibl//mibl/meta:srcs",
 #         "@mibl//mibl/opam:srcs",
 
-#         "//obazlark:srcs",
-#         "//obazlark/starlark:srcs"
+#         "//scm:srcs",
+#         "//scm/starlark:srcs"
 #     ],
 #     linkopts = select({
 #         "//bzl/host:macos": [],

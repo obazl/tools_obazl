@@ -51,8 +51,8 @@ cc_binary(
         # "-lc_s7"
     ],
     data = [
-        "//obazlark:srcs",
-        "//obazlark/starlark:srcs"
+        "//scm:srcs",
+        "//scm/starlark:srcs"
         # "//mibl:srcs",
         # "//mibl/dune:srcs",
         # "//mibl/meta:srcs",

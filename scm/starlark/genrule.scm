@@ -1,4 +1,8 @@
-(load "bash.scm")
+(if *debugging*
+    (format #t "loading starlark/genrule.scm\n"))
+
+
+(load "starlark/bash.scm")
 
 (define (-find-match-in-stanza key pkg-path stanza)
   (if (or *debug-genrules* *debugging*)
@@ -205,3 +209,5 @@
                     )))
             ))
 
+(if *debugging*
+    (format #t "loaded starlark/genrule.scm\n"))

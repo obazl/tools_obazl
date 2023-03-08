@@ -80,10 +80,10 @@ void _print_usage(void) {
     printf("\t--dm | --debug-mibl\t\tDebug mibl elaboration.\n");
     printf("\t--dppx | --debug-ppx\t\tDebug ppx stuff.\n");
 
-    printf("\t--lparsetree, --log-parsetree\n");
-    printf("\t--lexports,   --log-exports\n");
-    printf("\t--lmibl,      --log-mibl\n");
-    printf("\t--lstarlark,  --log-starlark\n");
+    printf("\t--lparsetree, --show-parsetree\n");
+    printf("\t--lexports,   --show-exports\n");
+    printf("\t--lmibl,      --show-mibl\n");
+    printf("\t--lstarlark,  --show-starlark\n");
 
     printf("\t--em | --emit-mibl\t\tEmit BUILD.mibl files.\n");
     printf("\t--em | --emit-parsetree\t\tEmit PARSETREE.mibl files.\n");
@@ -122,13 +122,13 @@ enum OPTS {
     FLAG_MENHIR,
     /* logging */
     FLAG_LEXPORTS,
-    FLAG_LOG_EXPORTS,
+    FLAG_SHOW_EXPORTS,
     FLAG_LMIBL,
-    FLAG_LOG_MIBL,
+    FLAG_SHOW_MIBL,
     FLAG_LPARSETREE,
-    FLAG_LOG_PARSETREE,
+    FLAG_SHOW_PARSETREE,
     FLAG_LSTARLARK,
-    FLAG_LOG_STARLARK,
+    FLAG_SHOW_STARLARK,
 
     FLAG_ONLY_CONFIG,
     FLAG_ONLY_PARSETREE,
@@ -200,19 +200,19 @@ static struct option options[] = {
     /*               .flags=GOPT_ARGUMENT_REQUIRED}, */
     [FLAG_LEXPORTS] = {.long_name="lexports",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_LOG_EXPORTS] = {.long_name="log-exports",
+    [FLAG_SHOW_EXPORTS] = {.long_name="show-exports",
                           .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_LMIBL] = {.long_name="lmibl",
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_LOG_MIBL] = {.long_name="log-mibl",
+    [FLAG_SHOW_MIBL] = {.long_name="show-mibl",
                        .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_LPARSETREE] = {.long_name="lparsetree",
                          .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_LOG_PARSETREE] = {.long_name="log-parsetree",
+    [FLAG_SHOW_PARSETREE] = {.long_name="show-parsetree",
                             .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_LSTARLARK] = {.long_name="lstarlark",
                         .flags=GOPT_ARGUMENT_FORBIDDEN},
-    [FLAG_LOG_STARLARK] = {.long_name="log-starlark",
+    [FLAG_SHOW_STARLARK] = {.long_name="show-starlark",
                            .flags=GOPT_ARGUMENT_FORBIDDEN},
 
     [FLAG_ONLY_CONFIG] = {.long_name="only-config",
@@ -372,15 +372,51 @@ int _update_mibl_config(struct option options[],
     }
 
     if (verbose && verbosity > 1) {
-        log_debug("LOG_EXPORTS: %d", mibl_config->log_exports);
-        log_debug("LOG_MIBL: %d", mibl_config->log_mibl);
-        log_debug("LOG_PARSETREE: %d", mibl_config->log_parsetree);
-        log_debug("LOG_STARLARK: %d", mibl_config->log_starlark);
+        log_debug("SHOW_EXPORTS: %d", mibl_config->show_exports);
+        log_debug("SHOW_MIBL: %d", mibl_config->show_mibl);
+        log_debug("SHOW_PARSETREE: %d", mibl_config->show_parsetree);
+        log_debug("SHOW_STARLARK: %d", mibl_config->show_starlark);
         log_debug("EMIT_PARSETREE: %d", mibl_config->emit_parsetree);
         log_debug("EMIT_MIBL: %d", mibl_config->emit_mibl);
         log_debug("EMIT_STARLARK: %d", mibl_config->emit_starlark);
     }
     return 0;                   /* success */
+}
+
+void _update_s7_globals(struct option options[])
+{
+    /* mibl_set_flag("*debugging*", true); */
+    mibl_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
+
+    mibl_set_flag("*debugging*", options[FLAG_DEBUG].count);
+    mibl_set_flag("*debug-emit*",
+                    ((options[FLAG_DEBUG_DE].count)
+                     || (options[FLAG_DEBUG_EMIT].count)));
+    mibl_set_flag("*debug-executables*",
+                    ((options[FLAG_DEBUG_DX].count)
+                     || (options[FLAG_DEBUG_EXECUTABLES].count)));
+    mibl_set_flag("*debug-mibl*",
+                    ((options[FLAG_DEBUG_DM].count)
+                     || (options[FLAG_DEBUG_MIBL].count)));
+    mibl_set_flag("*debug-ppx*",
+                    ((options[FLAG_DEBUG_DPPX].count)
+                     || (options[FLAG_DEBUG_PPX].count)));
+
+    if ((options[FLAG_LEXPORTS].count)
+        || (options[FLAG_SHOW_EXPORTS].count))
+        mibl_set_flag("*show-exports*", true);
+    else if (mibl_config.show_exports)
+        mibl_set_flag("*show-exports*", true);
+
+    if ((options[FLAG_LMIBL].count)
+        || (options[FLAG_SHOW_MIBL].count))
+        mibl_set_flag("*show-mibl*", true);
+    else if (mibl_config.show_mibl)
+        mibl_set_flag("*show-mibl*", true);
+
+    mibl_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
+    mibl_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0));
+
 }
 
 int main(int argc, char **argv)
@@ -483,34 +519,16 @@ int main(int argc, char **argv)
     }
 
     /* **************************************************************** */
-    struct mibl_config_s *mibl_config = mibl_init();
-    log_debug("mibl_init done");
 
-    if (_update_mibl_config(options, mibl_config)) {
-        log_error("mibl_config fail xxxxxxxxxxxxxxxx");
-        exit(EXIT_FAILURE);
-    }
+    struct mibl_config_s *mibl_config = mibl_init("//obazl/scm");
 
-    /* cc tc sets this if we are being built as an external repo: */
-/* #ifdef BAZEL_CURRENT_REPOSITORY */
-/*     current_repo = getenv("BAZEL_CURRENT_REPOSITORY"); */
-/*     log_debug("BAZEL_CURRENT_REPOSITORY 2: %s", BAZEL_CURRENT_REPOSITORY); */
-/* #endif */
+    if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
-    /* s7_scheme *s7 = s7_configure(); */
+    _update_s7_globals(options);
 
-    /* now starlark stuff */
+    if (verbose) show_s7_config();
 
-    mibl_set_flag("*debugging*", true);
-    mibl_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
-    mibl_set_flag("*emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
-    mibl_set_flag("*menhir*", ((options[FLAG_MENHIR].count) >0));
-
-    log_debug("AAAAAAAAAAAAAAAA");
-    log_s7_config();
-    log_debug("BBBBBBBBBBBBBBBB");
-
-    mibl_run(NULL, "convert_dune.scm");
+    mibl_run("obazl_main.scm", NULL);
 
     if (verbose)
         log_info("convert exit...");

@@ -3,8 +3,8 @@
 
 (define *select-protases* '())
 
-(load "mibl.scm")
-(load "dune.scm")
+(load "libmibl.scm")
+;; (load "dune.scm")
 
 (load "starlark/parsers.scm")
 (load "starlark/singletons.scm")

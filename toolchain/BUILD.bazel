@@ -53,8 +53,8 @@ cc_binary(
         "-lm",
     ],
     data = [
-        "//obazlark:srcs",
-        "//obazlark/starlark:srcs",
+        "//scm:srcs",
+        "//scm/starlark:srcs",
     ],
     deps = [
         # ":helper",

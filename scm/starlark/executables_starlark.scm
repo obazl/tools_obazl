@@ -1,5 +1,5 @@
 (if (or *debug-executables* *debugging*)
-    (format #t "loading starlark/executables.scm\n"))
+    (format #t "loading starlark/executables_starlark.scm\n"))
 
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
@@ -348,4 +348,4 @@
         )))
 
 (if (or *debug-executables* *debugging*)
-    (format #t "loaded starlark/executables.scm\n"))
+    (format #t "loaded starlark/executables_starlark.scm\n"))

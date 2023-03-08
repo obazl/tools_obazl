@@ -1,5 +1,12 @@
 (if *debugging*
-    (format #t "loading convert-dune.scm~%"))
+    (format #t "loading obazl_main.scm~%"))
+
+;; (set! *load-path* (cons ((*libc* 'pwd)) *load-path*))
+
+;; (let ((cwd ((*libc* 'pwd))))
+;;   (format #t "CWD: ~A~%" cwd))
+
+;; (format #t "*load-path*: ~A~%" *load-path*)
 
 (load "starlark.scm")
 
@@ -132,7 +139,7 @@
   ;; (set! *debugging* #t)
 
   (-mibl-load-project root-path pkg-path)
-  (if *log-parsetree*
+  (if *show-parsetree*
       (begin
         (format #t "PARSETREE~%")
         (debug-print-pkgs :@)
@@ -160,7 +167,7 @@
 
     ;; (ppx-inline-tests! :@)
 
-    (if *log-mibl*
+    (if *show-mibl*
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
           (debug-print-pkgs :@)
@@ -182,7 +189,7 @@
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *log-starlark*
+    (if *show-starlark*
       (begin
         (format #t "STARLARK~%")
         (debug-print-pkgs :@)))
@@ -191,7 +198,7 @@
     ;;     (format #t "~A: ~A~%" (green "selectors"))
     ;;         (remove-duplicates *select-protases*))
 
-    (if *log-exports*
+    (if *show-exports*
         (debug-print-exports-table :@))
 
     ;; (-dump-ppx :@)
@@ -204,9 +211,9 @@
         (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *dunefile-count*)))
   '())
 
-(define* (dune->obazl root-path pkg-path)
+(define* (-main root-path pkg-path)
   (call-with-exit (lambda (return)
                     (-dune->obazl return root-path pkg-path))))
 
 (if *debugging*
-    (format #t "loaded convert-dune.scm~%"))
+    (format #t "loaded obazl_main.scm~%"))

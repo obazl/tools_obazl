@@ -140,8 +140,8 @@ cc_binary(
         "-lm",
     ],
     data = [
-        "//obazlark:srcs",
-        "//obazlark/starlark:srcs",
+        "//scm:srcs",
+        "//scm/starlark:srcs",
         "//new/templates:all",
         # "//new/templates/bzl/host:BUILD.bazel",
         # "//new/templates/bzl/profile:BUILD.bazel",
