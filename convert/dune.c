@@ -549,8 +549,6 @@ int main(int argc, char **argv)
 
     struct mibl_config_s *mibl_config = mibl_s7_init("//obazl/scm",
                                                      NULL);
-    log_debug("ADUNE CWD: %s", getcwd(NULL, 0));
-
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
     _update_s7_globals(options);
@@ -566,7 +564,7 @@ int main(int argc, char **argv)
         /* } */
         exit(EXIT_SUCCESS);
     }
-    log_debug("DUNE CWD: %s", getcwd(NULL, 0));
+
     mibl_s7_run("obazl_main.scm", NULL);
 
     if (verbose)

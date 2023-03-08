@@ -32,8 +32,8 @@
                (_ (if *mibl-debugging*
                       (format #t "~A: ~A\n" (uwhite "obazl rules") obazl-rules)))
                (build-file (string-append pkg-path "/BUILD.bazel"))
-               (_ (format #t "build file: ~A~%" build-file))
-               (_ (format #t "cwd: ~A~%" ((*libc* 'pwd))))
+               ;; (_ (format #t "build file: ~A~%" build-file))
+               ;; (_ (format #t "cwd: ~A~%" ((*libc* 'pwd))))
                (outp
                 (catch #t
                        (lambda ()
