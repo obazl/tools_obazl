@@ -157,9 +157,9 @@ int main(int argc, char **argv)
     }
 
    /* initialize in this order: bazel then s7 */
-    bazel_configure(); // getcwd(NULL, 0));
+    bazel_configure(NULL); // getcwd(NULL, 0));
     mibl_configure();
-    s7_configure();
+    s7_configure(NULL, NULL);
     /* chdir(launch_dir); */
     /* if (debug) */
     /*     log_debug("Set CWD to launch dir: %s", launch_dir); */

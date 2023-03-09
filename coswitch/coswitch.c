@@ -83,6 +83,7 @@ void _mibl_s7_init(void) {
 
 int main(int argc, char *argv[])
 {
+    (void)argc;
     char *opam_switch = NULL;
 
     utarray_new(opam_include_pkgs,&ut_str_icd);
@@ -150,7 +151,7 @@ int main(int argc, char *argv[])
         /*     utarray_push_back(opam_exclude_pkgs, &optarg); */
         /*     break; */
 
-    bazel_configure();
+    bazel_configure(NULL);
 
     chdir(rootws);            /* always run from base ws root */
 

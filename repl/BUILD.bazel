@@ -23,6 +23,7 @@ cc_binary(
         "//conditions:default": ["-std=c11"],
     }) + [
         "-Wall",
+        "-Werror",
         "-Wpedantic",
         "-Wno-unused-function",
 
