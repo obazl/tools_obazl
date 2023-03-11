@@ -4,9 +4,10 @@ common --color=yes
 common:show --subcommands=pretty_print
 common:show --verbose_failures
 
-common:newtest --test_arg=-v
-common:newtest --test_arg=-d
-common:newtest --test_arg=-t
+test:dbg --test_arg=-v
+test:dbg --test_arg=-v
+test:dbg --test_arg=-d
+test:dbg --test_arg=-t
 
 # toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
 # with ocamlc.opt, pass --config=ocamlc.opt (sys to vm). this means:

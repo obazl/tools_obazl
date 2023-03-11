@@ -1,20 +1,20 @@
-(if *mibl-debugging*
+(if *mibl-debug-s7*
     (format #t "loading starlark/headers.scm\n"))
 
 (define (pkg->obazl-rules pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-pkg->obazl-rules") pkg))
   (let* ((stanzas (assoc-val :mibl pkg))
-         ;; (_ (if *mibl-debugging* (format #t "stanzas: ~A\n" stanzas)))
+         ;; (_ (if *mibl-debug-s7* (format #t "stanzas: ~A\n" stanzas)))
          (-rules (fold (lambda (stanza accum)
-                         (if *mibl-debugging*
+                         (if *mibl-debug-s7*
                              (begin
                                (format #t "  ~A: ~A\n" (blue "stanza") stanza)
                                (format #t "  ~A: ~A\n" (blue "accum") accum)))
                          (let* ((stanza-alist (cdr stanza))
-                                (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "stanza-alist") stanza-alist)))
+                                (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "stanza-alist") stanza-alist)))
                                 (dune-rule (car stanza))
-                                (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "Dune-Rule") dune-rule)))
+                                (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (yellow "Dune-Rule") dune-rule)))
                                 (rule (case dune-rule
                                         ((:archive
                                           :library
@@ -42,19 +42,19 @@
                                                `(:library ,@rules)
                                                (cons dune-rule rules))))
                                         ((:module)
-                                         (if *mibl-debugging*
+                                         (if *mibl-debug-s7*
                                              (format #t "~A: ~A~%" (green "module") stanza))
                                          (error 'X "x"))
                                         ((:rule)
                                          (let* ((actions (assoc :actions stanza-alist))
                                                 (cmd-list (assoc-in* '(:actions :cmd) stanza-alist))
-                                                (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "cmd-list") cmd-list)))
+                                                (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "cmd-list") cmd-list)))
                                                 (cmd-ct (length cmd-list)))
-                                           (if *mibl-debugging*
+                                           (if *mibl-debug-s7*
                                                (format #t "~A: ~A~%" (green "cmd-ct") cmd-ct))
                                            ;; (if (> cmd-ct 1)
                                            (fold (lambda (cmd accum)
-                                                   (if *mibl-debugging*
+                                                   (if *mibl-debug-s7*
                                                        (format #t "~A: ~A~%" (red "cmd") cmd))
                                                    (let ((tool (car (assoc-val :tool (cdr cmd)))))
                                                      (case tool
@@ -106,7 +106,7 @@
                                 )
                            accum))
                        '() stanzas)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (bgred "-rules ct") (length -rules)))
     (let* ((rules (if (assoc :modules pkg)
                       ;; FIXME: handle at the stanza level
@@ -115,7 +115,7 @@
            (rules (if (assoc :structures pkg) (cons :struct rules) rules))
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules))
            (rules (if (assoc :cc pkg)  (cons :cc-deps rules) rules))
-           (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgred "obazlrules") rules)))
+           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "obazlrules") rules)))
            ;; dedup
            (rules (fold (lambda (x accum)
                           (if (eq? x :struct)
@@ -129,21 +129,21 @@
                                   (cons x accum))))
                         '() rules))
            )
-      (if *mibl-debugging*
-          (format #t "~A: ~A~%" (red "obazlrules") rules))
+      (if *mibl-debug-s7*
+          (format #t "~A: ~A~%" (green "deduped obazlrules") rules))
       (sort! rules sym<?)
       ;;rules
       )))
 
 (define (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules))
 
   (format outp "package(default_visibility = [\"//visibility:public\"])")
   (newline outp)
   (newline outp)
 
-  (if (string-contains pkg-path "test")
+  (if (and (string? pkg-path) (string-contains pkg-path "test"))
         (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")~%~%"))
 
   (if (member :write-file obazl-rules)
@@ -176,7 +176,7 @@
                                 :cc-deps)))
                obazl-rules)
       (begin
-        (if *mibl-debugging*
+        (if *mibl-debug-s7*
             (format #t "writing buildfile header\n"))
         ;; if write_file, copy_file, etc, emit:
         ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
@@ -292,7 +292,7 @@
 ;;   exec options
 ;;   compilation: ocamlc, ocamlopt, or both (toolchain-dependent)
 (define (-get-archive-opts stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-get-archive-opts") stanza))
   ;; :archive-opts, from 'library-flags field
   (if-let ((opts (assoc-val :archive-opts stanza)))
@@ -300,7 +300,7 @@
                                 (list (apply string-append
                                              (map stringify flags)))
                                 '()))
-                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "archive flags") flags)))
+                 (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "archive flags") flags)))
 
                  (options (if-let ((options (assoc-val :options opts)))
                                   (flatten
@@ -309,25 +309,25 @@
                                                 (format #f "~A" (cdr opt))))
                                         options))
                                   '()))
-                 (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "archive options")
+                 (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "archive options")
                             options))))
             (concatenate flags options))
           '()))
 
 (define (-opts->attrs options)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-opts->attrs") options))
   (let* ((gopens (if-let ((opens (assoc-val :opens options)))
                          (apply append (map (lambda (o)
                                               (list "-open" (stringify o)))
                                             opens))
                          '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gopens") gopens)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gopens") gopens)))
 
          (gflags (if-let ((flags (assoc-val :flags options)))
                          (map stringify flags)
                          '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gflags") gflags)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gflags") gflags)))
 
          (goptions (if-let ((goptions (assoc-val :options options)))
                            (flatten
@@ -337,14 +337,14 @@
                                  goptions))
                            '()))
 
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "goptions") goptions)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "goptions") goptions)))
 
          (gexclusions (if-let ((exclusions (assoc-val :exclusions options)))
                              (map (lambda (ex)
                                     (format #f "-no~A" ex))
                                   exclusions)
                              '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gexclusions") gexclusions)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gexclusions") gexclusions)))
 
          ;; (g-all-options (apply append (list gopens gflags goptions)))
          (g-all-options (let ((opts (apply append
@@ -352,27 +352,27 @@
                           (if (null? opts)
                               '()
                               `((:standard ,@opts)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options)))
          (g-standard (if (assoc :standard options)
                          '((:standard-std))
                          '())))
     g-all-options))
 
 (define (-mibl->compile-opts gopts stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-mibl->compile-opts") gopts))
   (let* ((gopens (if-let ((opens (assoc-val :opens gopts)))
                          (apply append (map (lambda (o)
                                               (list "-open" (stringify o)))
                                             opens))
                          '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gopens") gopens)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gopens") gopens)))
 
          (gflags (if-let ((flags (assoc-val :flags gopts)))
                          (list (apply string-append
                                       (map stringify flags)))
                          '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gflags") gflags)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gflags") gflags)))
 
          (goptions (if-let ((goptions (assoc-val :options gopts)))
                            (flatten
@@ -381,7 +381,7 @@
                                          (format #f "~A" (cdr opt))))
                                  goptions))
                            '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "goptions") goptions)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "goptions") goptions)))
 
          ;; (g-all-options (apply append (list gopens gflags goptions)))
          (g-all-options (let ((opts (apply append
@@ -389,26 +389,26 @@
                           (if (null? opts)
                               '()
                               `((:standard ,@opts)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (bgcyan "standard compile options") g-all-options)))
          (g-standard (if (assoc :standard gopts)
                          '((:standard-std))
                          '()))
          ;;;;;;;;;;;;;;;; :ocamlc-opts ;;;;;;;;;;;;;;;;
          (bc-opts (if-let ((opts (assoc :ocamlc-opts (cdr stanza))))
                           (cdr opts) '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "bc-opts") bc-opts)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "bc-opts") bc-opts)))
          (bc-opens (if-let ((opens (assoc-val :opens bc-opts)))
                            (apply append (map (lambda (o)
                                                 (list "-open" (stringify o)))
                                               opens))
                            '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "bc-opens") bc-opens)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "bc-opens") bc-opens)))
 
          (bc-flags (if-let ((flags (assoc-val :flags bc-opts)))
                            (list (apply string-append
                                         (map stringify flags)))
                            '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "bc-flags") bc-flags)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "bc-flags") bc-flags)))
 
          (bc-options (if-let ((bc-options (assoc-val :options bc-opts)))
                              (flatten
@@ -417,14 +417,14 @@
                                            (format #f "~A" (cdr opt))))
                                    bc-options))
                              '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "bc-options") bc-options)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "bc-options") bc-options)))
 
          (bc-all-options (let ((opts (apply append
                                             (list bc-opens bc-flags bc-options))))
                            (if (null? opts)
                                '()
                                `((:ocamlc ,@opts)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (bgcyan "ocamlc options") bc-all-options)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (bgcyan "ocamlc options") bc-all-options)))
          (bc-standard (if (assoc :standard bc-opts)
                           '((:ocamlc-std))
                           '()))
@@ -432,19 +432,19 @@
          ;;;;;;;;;;;;;;;; :ocamlopt-opts ;;;;;;;;;;;;;;;;
          (nc-opts (if-let ((opts (assoc :ocamlopt-opts (cdr stanza))))
                           (cdr opts) '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "nc-opts") nc-opts)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "nc-opts") nc-opts)))
          (nc-opens (if-let ((opens (assoc-val :opens nc-opts)))
                            (apply append (map (lambda (o)
                                                 (list "-open" (stringify o)))
                                               opens))
                            '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "nc-opens") nc-opens)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "nc-opens") nc-opens)))
 
          (nc-flags (if-let ((flags (assoc-val :flags nc-opts)))
                            (list (apply string-append
                                         (map stringify flags)))
                            '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "nc-flags") nc-flags)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "nc-flags") nc-flags)))
 
          (nc-options (if-let ((nc-options (assoc-val :options nc-opts)))
                              (flatten
@@ -453,7 +453,7 @@
                                            (format #f "~A" (cdr opt))))
                                    nc-options))
                              '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "nc-options") nc-options)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "nc-options") nc-options)))
 
          ;; (nc-all-options (apply append (list nc-opens nc-flags nc-options)))
          (nc-all-options (let ((opts (apply append
@@ -461,7 +461,7 @@
                            (if (null? opts)
                                '()
                                `((:ocamlopt ,@opts)))))
-         (_ (if *mibl-debugging* (format #t "~A: ~A\n" (bgcyan "ocamlopt options")
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A\n" (bgcyan "ocamlopt options")
                     nc-all-options)))
          (nc-standard (if (assoc :standard nc-opts)
                           '((:ocamlopt-std))
@@ -488,19 +488,19 @@
 ;; three sets: :compile-opts (flags), :ocamlc-opts (ocamlc_flags),
 ;; and :ocamlopt_opts (ocamlopt_flags)
 (define (get-compile-opts stanza pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (begin
         (format #t "~A: ~A~%" (ublue "-get-compile-opts") stanza)
-        (format #t "~A: ~A~%" (ublue "pkg") pkg)))
+        (format #t "~A: ~A~%" (ublue "hdrs PKG") pkg)))
   (let* ((dune (assoc-val :mibl pkg))
          (gopts (if-let ((opts (assoc :compile-opts (cdr stanza))))
                        (cdr opts) '()))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "gopts") gopts))))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "gopts") gopts))))
     ;; (format #t "~A: ~A~%" (ugreen "dune") dune)
     (if (number? gopts)
         #f
         ;; (let* ((shared-compile-opts (assoc-val :shared-compile-opts dune))
-        ;;        (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bggreen "shared-compile-opts") (car shared-compile-opts)))))
+        ;;        (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bggreen "shared-compile-opts") (car shared-compile-opts)))))
         ;;   (if shared-compile-opts
         ;;       (let ((opts (assoc-val gopts (car shared-compile-opts))))
         ;;         (format #t "~A: ~A~%" (ugreen "opts") opts)
@@ -512,33 +512,33 @@
         (-mibl->compile-opts gopts stanza))))
 
 (define (-get-exec-opts stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-get-exec-opts") stanza))
   '())
 
 (define (-get-testsuite-deps name pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-get-testsuite-deps") name))
   (let ((tdeps (find-then (lambda (stanza)
                 (if (assoc :in-testsuite (cdr stanza))
                     (begin
-                      (if *mibl-debugging*
+                      (if *mibl-debug-s7*
                           (format #t "~A: ~A~%" (blue "in-testsuite") stanza))
                       (if-let ((deps (assoc-in '(:compile :deps)
                                                (cdr stanza))))
                               (begin
-                                (if *mibl-debugging*
+                                (if *mibl-debug-s7*
                                     (format #t "~A: ~A~%" (blue "deps") deps))
                                 (assoc-val :resolved (cdr deps)))
                               #f))
                     #f))
                          (assoc-val :mibl pkg))))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (bgblue "tdeps") tdeps))
     tdeps))
 
 (define (-emit-shared-deps pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "emit-shared-deps") pkg))
   ;; (for-each
   ;;  (lambda (stanza)
@@ -548,14 +548,14 @@
   )
 
 (define (starlark-emit-global-vars outp pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgred "starlark-emit-global-vars") pkg))
          ;; (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
          ;;                     (cadr shppx) #f))
 
   (for-each
    (lambda (stanza)
-     (if *mibl-debugging*
+     (if *mibl-debug-s7*
          (format #t "~A: ~A~%" (uwhite "stanza") stanza))
      (if (not (equal? :install (car stanza)))
          (let ((testsuite (assoc-val :in-testsuite (cdr stanza))))
@@ -570,14 +570,14 @@
                      ;; compile-options is an alist,
                      ;; keys :standard, :ocamlc, :ocamlopt
                      (archive-options (-get-archive-opts (cdr stanza)))
-                     (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgyellow "archive-options")
+                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgyellow "archive-options")
                                 archive-options)))
                      (compile-options (get-compile-opts (cdr stanza) pkg))
-                     (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgyellow "compile-options")
+                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgyellow "compile-options")
                                 compile-options)))
 
                      (exec-options (-get-exec-opts (cdr stanza)))
-                     (_ (if *mibl-debugging* (format #t "~A: ~A~%" (bgyellow "exec-options")
+                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (bgyellow "exec-options")
                                 exec-options)))
 
                      (deps-fixed (if-let ((df (assoc-in '(:deps :resolved) (cdr stanza))))
@@ -589,7 +589,7 @@
                                                            (cdr stanza))))
                                                dc #f))
                      )
-                (if *mibl-debugging*
+                (if *mibl-debug-s7*
                     (begin
                       (format #t "~A: ~A~%" (uwhite "deps-fixed") deps-fixed)
                       (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)))
@@ -687,22 +687,22 @@
                               ))))))
 
              ((:executable :test)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (uwhite "exec globals") (assoc-val :privname (cdr stanza))))
               (let* ((libname (string-upcase
                                ;; privname or pubname?
                                (stringify (assoc-val :privname (cdr stanza)))))
-                     (_ (if *mibl-debugging* (format #t "libname: ~A~%" libname)))
+                     (_ (if *mibl-debug-s7* (format #t "libname: ~A~%" libname)))
                      (opts (if-let ((opts (assoc-in '(:compile :opts)
                                                     (cdr stanza))))
                                    (cdr opts) '()))
-                     (_ (if *mibl-debugging* (format #t "opts: ~A~%" opts)))
+                     (_ (if *mibl-debug-s7* (format #t "opts: ~A~%" opts)))
                      (opens (if-let ((opens (assoc-val :opens opts)))
                                     (apply append (map (lambda (o)
                                                          (list "-open" (stringify o)))
                                                        opens))
                                     '()))
-                     (_ (if *mibl-debugging* (format #t "opens: ~A~%" opens)))
+                     (_ (if *mibl-debug-s7* (format #t "opens: ~A~%" opens)))
                      (flags (if-let ((flags (assoc-val :flags opts)))
                                     (list (apply string-append
                                                  (map stringify flags)))
@@ -712,16 +712,16 @@
                                           (list (apply string-append
                                                        (map stringify flags)))
                                           '()))
-                     (_ (if *mibl-debugging* (format #t "g ocamlc_opts: ~A\n" ocamlc_opts)))
+                     (_ (if *mibl-debug-s7* (format #t "g ocamlc_opts: ~A\n" ocamlc_opts)))
 
                      (ocamlopt_opts (if-let ((flags (assoc-val :ocamlopt opts)))
                                             (list (apply string-append
                                                          (map stringify flags)))
                                             '()))
-                     (_ (if *mibl-debugging* (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts)))
+                     (_ (if *mibl-debug-s7* (format #t "g ocamlopt_opts: ~A\n" ocamlopt_opts)))
 
                      (options (apply append (list opens flags)))
-                     (_ (if *mibl-debugging* (format #t "exe options: ~A\n" options)))
+                     (_ (if *mibl-debug-s7* (format #t "exe options: ~A\n" options)))
                      (standard (if (assoc :standard opts) #t #f))
 
                      (deps-fixed (if-let ((df
@@ -730,12 +730,12 @@
                                            ;; (assoc-in '(:compile :deps :resolved)
                                                      (cdr stanza))))
                                          (cdr df) #f))
-                     (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "deps-fixed") deps-fixed)))
+                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "deps-fixed") deps-fixed)))
                      (deps-conditional (if-let ((dc
                                                  (assoc-in '(:deps :conditionals)
                                                            (cdr stanza))))
                                                dc #f))
-                     (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "deps-conditional") deps-conditional)))
+                     (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "deps-conditional") deps-conditional)))
                      )
                 ;; (error 'STOP "STOP exec")
 
@@ -761,7 +761,7 @@
                 ))
 
              ((:testsuite)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (bgred "testsuite") (assoc-val :name (cdr stanza))))
               (let* ((name (assoc-val :name (cdr stanza)))
                      (deps (-get-testsuite-deps name pkg)))
@@ -771,16 +771,16 @@
                         deps)))
 
              ((:rule)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (bgred "FIXME")
                           "global hdrs for :rule stanzas"))
               (values))
 
              ((:shared-deps)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (bgred "shared-deps") stanza))
               (for-each (lambda (deplist)
-                          (if *mibl-debugging*
+                          (if *mibl-debug-s7*
                               (format #t "~A: ~A~%" (ured "deplist") deplist))
                           (format outp "DEPS_~A = [~%" (car deplist))
                           (format outp "~{    \"~A\"~^,~%~}~%" (cdr deplist))
@@ -789,14 +789,14 @@
                         (cadr stanza)))
 
              ((:shared-compile-opts)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (bgred "emitting shared-compile-opts") stanza))
               (if (truthy? (cdr stanza))
                   (for-each (lambda (optlist)
-                              (if *mibl-debugging*
+                              (if *mibl-debug-s7*
                                   (format #t "~A: ~A~%" (ured "shared optlist") optlist))
                               (let ((compile-options (-opts->attrs (cdr optlist))))
-                                (if *mibl-debugging*
+                                (if *mibl-debug-s7*
                                     (format #t "~A: ~A~%" (bggreen "compile-options") compile-options))
                                 ;; (error 'stop "STOP sharedopts")
                                 (if (assoc :standard compile-options)
@@ -858,6 +858,7 @@
              ((:env :lex :yacc :menhir
                     :cppo
                     :tuareg :sh-test
+                    :write-file
                     :diff :alias :exec-libs)
               (values))
 
@@ -867,5 +868,5 @@
            )))
    (assoc-val :mibl pkg)))
 
-(if *mibl-debugging*
+(if *mibl-debug-s7*
     (format #t "loaded starlark/headers.scm\n"))

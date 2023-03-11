@@ -1,0 +1,95 @@
+((:@ (:name "@")
+     (:path /Users/gar/obazl-repository/ppx_assert)
+     (:exports
+         (hash-table
+           'ppx_assert_test_lib ((:pkg . test) (:tgt . ppx_assert_test_lib))
+           ':ppx_assert_bench_lib ((:pkg . bench) (:tgt . ppx_assert_bench_lib))
+           ':ppx_assert ((:pkg . src) (:tgt . ppx_assert))
+           'lib:ppx_assert ((:lib . #t) (:pkg . src) (:tgt . ppx_assert))
+           ':lib:ppx_assert ((:lib . #t) (:pkg . src) (:tgt . ppx_assert))
+           ':ppx_assert_test_lib ((:pkg . test) (:tgt . ppx_assert_test_lib))
+           ':ppx_assert_lib ((:pkg . runtime-lib) (:tgt . ppx_assert_lib))
+           ':ppx_assert.runtime-lib ((:pkg . runtime-lib) (:tgt . ppx_assert_lib))
+           'lib:ppx_assert.runtime-lib ((:lib . #t) (:pkg . runtime-lib) (:tgt . ppx_assert_lib))
+           ':lib:ppx_assert.runtime-lib ((:lib . #t) (:pkg . runtime-lib) (:tgt . ppx_assert_lib))
+           'ppx_assert_bench_lib ((:pkg . bench) (:tgt . ppx_assert_bench_lib))
+           'ppx_assert ((:pkg . src) (:tgt . ppx_assert))
+           'ppx_assert_lib ((:pkg . runtime-lib) (:tgt . ppx_assert_lib))
+           'ppx_assert.runtime-lib ((:pkg . runtime-lib) (:tgt . ppx_assert_lib))))
+     (:opam
+         (hash-table
+           'ppx_assert ((:path . /Users/gar/obazl-repository/ppx_assert) (:lib ("src" . ppx_assert))
+                         ("runtime-lib"
+                          (:lib ("runtime-lib" ppx_assert_lib))))))
+     (:shared-ppx
+         (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '"bench" ((:ws-path "/Users/gar/obazl-repository/ppx_assert") (:pkg-path "bench")
+                      (:realpath "/Users/gar/obazl-repository/ppx_assert/bench")
+                      (dune (library (name ppx_assert_bench_lib) (libraries ppx_compare.runtime-lib)
+                                     (preprocess (pps ppx_assert ppx_bench))))
+                      (:structures (:static (Ppx_assert_bench . ppx_assert_bench.ml)
+                                            (Runner . runner.ml)))
+                      (:mibl (:ns-archive (:ns . ppx_assert_bench_lib)
+                                          (:privname . ppx_assert_bench_lib) (:ppx . 1)
+                                          (:deps (:resolved . 1))
+                                          (:manifest (:modules Runner Ppx_assert_bench)))
+                             (:shared-ppx ((1 (:manifest //src:ppx_assert
+                                                         @ppx_bench//lib/ppx_bench))))
+                             (:shared-deps ((1 @ppx_compare//lib/runtime-lib)))))
+           '"src" ((:ws-path "/Users/gar/obazl-repository/ppx_assert") (:pkg-path "src")
+                    (:realpath "/Users/gar/obazl-repository/ppx_assert/src")
+                    (dune (library (name ppx_assert) (public_name ppx_assert)
+                                   (ppx_runtime_libraries ppx_assert.runtime-lib)
+                                   (kind ppx_rewriter)
+                                   (libraries ppxlib ppx_sexp_conv.expander ppx_here.expander
+                                              ppx_compare.expander)
+                                   (preprocess (pps ppxlib.metaquot))))
+                    (:modules (Ppx_assert (:ml . ppx_assert.ml) (:mli . ppx_assert.mli)))
+                    (:mibl (:ns-archive (:ns . ppx_assert) (:privname . ppx_assert)
+                                        (:pubname . ppx_assert)
+                                        (:ppx-codeps //runtime-lib:ppx_assert_lib)
+                                        (:ppx-rewriter . #t) (:ppx . 1) (:deps (:resolved . 1))
+                                        (:manifest (:modules Ppx_assert)))
+                           (:shared-ppx ((1 (:manifest @ppxlib//lib/metaquot))))
+                           (:shared-deps ((1 @ppxlib//lib/ppxlib @ppx_sexp_conv//lib/expander
+                                             @ppx_here//lib/expander @ppx_compare//lib/expander)))))
+           '"test" ((:ws-path "/Users/gar/obazl-repository/ppx_assert") (:pkg-path "test")
+                     (:realpath "/Users/gar/obazl-repository/ppx_assert/test")
+                     (:files (:static "README"))
+                     (dune (library (name ppx_assert_test_lib) (libraries sexplib str)
+                                    (preprocess (pps ppx_compare ppx_sexp_conv ppx_here ppx_assert
+                                                     ppx_inline_test))))
+                     (:structures (:static (Ppx_assert_test . ppx_assert_test.ml)))
+                     (:mibl (:ns-archive (:ns . ppx_assert_test_lib)
+                                         (:privname . ppx_assert_test_lib) (:ppx . 1)
+                                         (:deps (:resolved . 1))
+                                         (:manifest (:modules Ppx_assert_test)))
+                            (:shared-ppx ((1 (:manifest @ppx_compare//lib/ppx_compare
+                                                        @ppx_sexp_conv//lib/ppx_sexp_conv
+                                                        @ppx_here//lib/ppx_here //src:ppx_assert
+                                                        @ppx_inline_test//lib/ppx_inline_test)
+                                             (:args
+                                              ("-XINLINE-test-lib" "ppx_assert_test_lib")))))
+                            (:shared-deps ((1 @sexplib//lib/sexplib @ocaml//str)))))
+           '"runtime-lib" ((:ws-path "/Users/gar/obazl-repository/ppx_assert") (:pkg-path "runtime-lib")
+                            (:realpath "/Users/gar/obazl-repository/ppx_assert/runtime-lib")
+                            (dune (library (name ppx_assert_lib)
+                                           (public_name ppx_assert.runtime-lib) (libraries base)
+                                           (preprocess (pps ppx_sexp_conv ppx_cold))))
+                            (:modules (Runtime (:ml . runtime.ml) (:mli . runtime.mli)))
+                            (:mibl (:ns-archive (:ns . ppx_assert_lib) (:privname . ppx_assert_lib)
+                                                (:pubname . ppx_assert.runtime-lib) (:ppx . 1)
+                                                (:deps (:resolved . 1))
+                                                (:manifest (:modules Runtime)))
+                                   (:shared-ppx ((1 (:manifest @ppx_sexp_conv//lib/ppx_sexp_conv
+                                                               @ppx_cold//lib/ppx_cold))))
+                                   (:shared-deps ((1 @base//lib/base)))))
+           '::wsroot ((:ws-path "/Users/gar/obazl-repository/ppx_assert") (:pkg-path ::wsroot)
+                       (:realpath "/Users/gar/obazl-repository/ppx_assert")
+                       (:files (:static "CHANGES.md" "CONTRIBUTING.md" "EXPECTED.mibl" "EXPECTED.s7"
+                                        "LICENSE.md" "Makefile" "PARSETREE.mibl" "PARSETREE.s7"
+                                        "README.md" "WORKSPACE.bazel" "WORKSPACE.bzl"
+                                        "WORKSPACE.opam.bzl" "log.convert" "mibl.scm" "obazl.mak"))
+                       (dune) (dune-project (lang dune 1.1)) (:opam "ppx_assert.opam") (:mibl))))))

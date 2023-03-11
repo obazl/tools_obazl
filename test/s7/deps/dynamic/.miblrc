@@ -1,0 +1,17 @@
+; mibl config
+
+[mibl]
+version = 0.1.0
+grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
+
+;; emit = none
+
+;; flags = *mibl-debug-ppx*, *mibl-debug-genrules*
+
+[scripts]
+
+;;dir = /foo/bar
+
+[srcs]
+;;  TODO: rename ocaml-srcs?
+

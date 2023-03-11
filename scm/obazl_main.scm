@@ -1,4 +1,4 @@
-(if *mibl-debugging*
+(if #t ;; *mibl-debugging*
     (format #t "loading obazl_main.scm~%"))
 
 ;; (set! *load-path* (cons ((*libc* 'pwd)) *load-path*))
@@ -20,15 +20,15 @@
   ;; "rules/install/run/mypgm"
   )
 
-(define (-list-pkgs ws)
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (pkgs (car (assoc-val :pkgs @ws)))
-         )
-    (format #t "~A: ~A~%" (yellow "pkg ct") (length pkgs))
-    (for-each (lambda (k)
-                (format #t "~A: ~A~%" (blue "pkg") k))
-              (sort! (hash-table-keys pkgs) string<?))
-    pkgs))
+;; (define (-list-pkgs ws)
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (pkgs (car (assoc-val :pkgs @ws)))
+;;          )
+;;     (format #t "~A: ~A~%" (yellow "pkg ct") (length pkgs))
+;;     (for-each (lambda (k)
+;;                 (format #t "~A: ~A~%" (blue "pkg") k))
+;;               (sort! (hash-table-keys pkgs) string<?))
+;;     pkgs))
 
 (define (-dump-ppx ws)
   (let* ((@ws (assoc-val ws *mibl-project*))
@@ -122,7 +122,7 @@
 (define* (-dune->obazl return root-path pkg-path)
   ;; (set! *mibl-debugging* #t)
   (if *mibl-debugging*
-      (format #t "convert_dune.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
+      (format #t "obazl_main.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
@@ -171,14 +171,15 @@
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
           (mibl-debug-print-pkgs :@)
-          (return)))
+          ;;(return)
+          ))
 
     ;; (return)
 
     ;; end dune-specific?
 
-    (if *mibl-emit-mibl*
-        (emit-mibl))
+    ;; (if *mibl-emit-mibl*
+    ;;     (emit-mibl))
         ;; (emit-mibl :@))
 
     (if *mibl-emit-starlark*
@@ -212,8 +213,16 @@
   '())
 
 (define* (-main root-path pkg-path)
+  (load "starlark.scm")
   (call-with-exit (lambda (return)
-                    (-dune->obazl return root-path pkg-path))))
+                    (-dune->obazl
+                         (lambda () ;; our return thunk
+                           (if *mibl-show-mibl*
+                               (mibl-debug-print-project))
+                           (if (not *mibl-quiet*)
+                               (format #t "~A: Returning...~%" (green "INFO")))
+                           (return))
+                         root-path pkg-path))))
 
 (if *mibl-debugging*
     (format #t "loaded obazl_main.scm~%"))
