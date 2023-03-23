@@ -1,10 +1,11 @@
 (define (-tool-for-genrule pkg-path tool deps)
-  (if (or *mibl-debug-genrules* *mibl-debugging*)
+  (if (or *mibl-debug-genrules* *mibl-debug-s7*)
       (begin
         (format #t "~A: ~A~%" (ublue "-tool-for-genrule") tool)
         (format #t "~A: ~A~%" (blue "Deps") deps)))
   (case tool
     ((::cat) 'cat) ;; FIXME: use lookup table from constants.scm
+    ((::cmp) 'cmp) ;; FIXME: use lookup table from constants.scm
     ((::deps) (car deps))
     ((::diff) 'diff)
     ((::ocamlc) 'ocamlc)
@@ -14,18 +15,19 @@
      ;; not a (builtin) shell tool
      (let* ((tool-deps (if-let ((tds (assoc-val ::tools deps)))
                                tds deps))
-            (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (blue "tool-deps") tool-deps)))
+            (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "tool-deps") tool-deps)))
             (tool (if (keyword? tool)
                       (let* ((tool-tlbl (assoc tool tool-deps))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "tool-tlbl") tool-tlbl)))
                              (tool-alist (cdr tool-tlbl))
-                             (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (red "tool-alist") tool-alist)))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "tool-alist") tool-alist)))
                              (tool-label (assoc-val :lbl tool-alist))
-                             (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (red "tool-label") tool-label)))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "tool-label") tool-label)))
                              (tool-pkg (assoc-val :pkg tool-alist))
-                             (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (red "tool-pkg") tool-pkg)))
-                             (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (red "pkg-path") pkg-path)))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "tool-pkg") tool-pkg)))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "pkg-path") pkg-path)))
                              (tool-tag (caadr tool-alist))
-                             (_ (if (or *mibl-debug-genrules* *mibl-debugging*) (format #t "~A: ~A~%" (cyan "tool-tag") tool-tag)))
+                             (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (cyan "tool-tag") tool-tag)))
                              (tool-tgt (case tool-tag
                                          ((:tgt)
                                           (assoc-val :tgt tool-alist))
@@ -36,14 +38,14 @@
                                                   (assoc-val :fg tool-alist)))
                                          (else
                                           (error 'fixme (format #f "~A: ~A~%" (red "unrecognized tool tag") tool-tag))))))
-                        (if *mibl-debugging*
+                        (if *mibl-debug-s7*
                             (format #t "~A: ~A~%" (red "tool-tgt") tool-tgt))                        (if tool-label
                             tool-label
                             (if (equal? tool-pkg pkg-path)
                                 (begin
                                   (format #f "~A" tool-tgt))
                                 (begin
-                                  (format #t "~A: ~A~%" (red "YOU") tool-tgt)
+                                  (format #t "~A: ~A~%" (red "tool-tgt") tool-tgt)
                                   (format #f "//~A:~A" tool-pkg tool-tgt)))))
                       ;; else tool must be bash or system?
                       tool

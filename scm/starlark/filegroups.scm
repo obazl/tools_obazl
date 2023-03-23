@@ -41,7 +41,7 @@
       (begin
         (format #t "~A: ~A~%" (ublue "starlark-emit-filegroups") pkg)
         (format #t "~A~%" (blue "processing pkg-filegroups"))))
-  (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let ((pkg-path (assoc-val :pkg-path pkg))
         (pkg-filegroups (assoc :filegroups pkg)))
     (if *mibl-debugging*
         (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups))

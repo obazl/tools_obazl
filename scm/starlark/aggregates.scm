@@ -255,7 +255,7 @@
 
   ;; only emit header if aggregators
   (let* ((stanzas (assoc-val :mibl pkg))
-         (pkg-path (car (assoc-val :pkg-path pkg)))
+         (pkg-path (assoc-val :pkg-path pkg))
          ;; FIXME: exclude null libs, e.g. tezos:src/tooling
          (aggs (filter (lambda (stanza)
                          (member

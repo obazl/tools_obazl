@@ -127,11 +127,15 @@
                     `(:lex ,@rules) rules))
          (rules (if (assoc :yacc pkg)
                     `(:yacc ,@rules) rules))
+         (rules (if (assoc :exported-files pkg)
+                    `(:exported-files ,@rules) rules))
          )
     (if (or *mibl-debug-emit* *mibl-debugging*)
         (format #t "~A: ~A~%" (bgred "rules ct") (length rules)))
     ;; dedup
-    rules ;;(sort! rules sym<?)
+    (if (truthy? rules)
+        rules ;;(sort! rules sym<?)
+        #f)
     ))
 
 (define (-emit-non-dune-sig outp ws pkg sig)

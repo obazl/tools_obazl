@@ -457,7 +457,7 @@ int main(int argc, char **argv)
 #endif
     }
     if (options[FLAG_DEBUG_SCM_LOADS].count) {
-        mibl_s7_set_flag("*mibl-debug-loads*", true);
+        mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
     }
 
     if (options[FLAG_TRACE].count) {

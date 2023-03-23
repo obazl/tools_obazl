@@ -129,8 +129,8 @@
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (bgred "*mibl-emit-bazel-pkg*") *mibl-emit-bazel-pkg*))
 
-  (set! *mibl-build-dyads* #t)
-  (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
+  ;; (set! *mibl-build-dyads* #t)
+  ;; (set! *mibl-shared-deps* '("compiler/tests-compiler")) ;;  "toplevel/bin"))
 
   ;; (set! *mibl-wrapped-libs-to-ns-archives* #f)
   ;; (set! *mibl-unwrapped-libs-to-archives\* #f)
@@ -138,39 +138,50 @@
   ;; NB: :@ is key of the root workspace in *mibl-project*
   ;; (set! *mibl-debugging* #t)
 
-  (-mibl-load-project root-path pkg-path)
-  (if *mibl-show-parsetree*
-      (begin
-        (format #t "PARSETREE~%")
-        (mibl-debug-print-pkgs :@)
-        (return)))
+  ;; parsetree always already produced by c code,
+  ;; either by crawling the tree or by reading .mibl/PARSETREE.s7
+  ;; (-mibl-load-project root-path ws-path)
 
-  (let* (;;(_wss (-mibl-load-project root-path pkg-path))
-         (mpkgs (-miblize :@))
-         (mpkgs (add-filegroups-to-pkgs :@))
-         (mpkgs (normalize-manifests! :@))
-         (mpkgs (normalize-rule-deps! :@))
-         )
-    ;; start dune-specific
-    (miblarkize :@)
-    (resolve-pkg-file-deps :@)
+  ;; (if *mibl-show-parsetree*
+  ;;     (begin
+  ;;       (format #t "PARSETREE~%")
+  ;;       (mibl-debug-print-pkgs :@)
+  ;;       (return)))
 
-    (resolve-labels! :@)
+  ;; (let* (;;(_wss (-mibl-load-project root-path pkg-path))
+  ;;        (mpkgs (-miblize :@))
+  ;;        (mpkgs (add-filegroups-to-pkgs :@))
+  ;;        (mpkgs (normalize-manifests! :@))
+  ;;        (mpkgs (normalize-rule-deps! :@))
+  ;;        )
 
-    (handle-shared-ppx :@)
+  (parsetree->mibl return) ;; @mibl//scm:libmibl.scm
 
-    (if *mibl-shared-deps*
-        (begin
-          (handle-shared-deps :@)
-          (handle-shared-opts :@)
-          ))
+  ;; (miblize :@)
+  ;; (add-filegroups-to-pkgs :@)
+  ;; (normalize-manifests! :@)
+  ;; (normalize-rule-deps! :@)
 
-    ;; (ppx-inline-tests! :@)
+  ;; ;; start dune-specific
+  ;; (miblarkize :@)
+  ;; ;; (resolve-pkg-file-deps :@) ;; OBSOLETE
+
+  ;; (resolve-labels! :@)
+  ;; (handle-shared-ppx :@)
+
+  ;; (if *mibl-shared-deps*
+  ;;     (begin
+  ;;       (handle-shared-deps :@)
+  ;;       (handle-shared-opts :@)
+  ;;       ))
+
+  ;;   ;; (ppx-inline-tests! :@)
 
     (if *mibl-show-mibl*
         (begin
           (format #t "~A~%" (bgred "DUMP MIBL"))
-          (mibl-debug-print-pkgs :@)
+          (mibl-debug-print-project)
+          ;; (mibl-debug-print-pkgs :@)
           ;;(return)
           ))
 
@@ -182,11 +193,14 @@
     ;;     (emit-mibl))
         ;; (emit-mibl :@))
 
-    (if *mibl-emit-starlark*
+    (if #t ;; *mibl-emit-starlark*
         (begin
           ;; (set! *mibl-debugging* #t)
           ;;FIXME: rename emit-starlark
           (ws->starlark :@)))
+
+    ;; (mibl-debug-print-project)
+    ;; (return)
 
     ;; ;; (ws->opam-bundles :@)
 
@@ -209,7 +223,7 @@
     ;; (-dump-opam :@)
 
     (if (not *mibl-quiet*)
-        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*)))
+        (format #t "~A: Converted ~A dunefiles.~%" (green "INFO") *mibl-dunefile-count*))
   '())
 
 (define* (-main root-path pkg-path)

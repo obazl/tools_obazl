@@ -17,7 +17,7 @@
     _wss))
 
 
-(define (update-local-deps! ws-id)
+(define (Xupdate-local-deps! ws-id)
   (if *mibl-debugging*
       (format #t "~A: ~A~%" (ublue "update-local-deps!") ws-id))
   (let* ((@ws (assoc-val ws-id *mibl-project*))

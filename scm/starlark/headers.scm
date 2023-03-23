@@ -135,16 +135,22 @@
       ;;rules
       )))
 
-(define (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
+(define (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
   (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules))
 
-  (format outp "package(default_visibility = [\"//visibility:public\"])")
-  (newline outp)
+  ;; (format outp "package(default_visibility = [\"//visibility:public\"])")
+  ;; (newline outp)
+
   (newline outp)
 
   (if (and (string? pkg-path) (string-contains pkg-path "test"))
         (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")~%~%"))
+
+  (if-let ((exported-files (assoc-val :exported-files pkg)))
+      (begin
+        (format outp "exports_files([~{~S~^, ~}])\n" exported-files)
+        (newline outp)))
 
   (if (member :write-file obazl-rules)
       (begin
@@ -608,11 +614,11 @@
                     ;; else deps are shared
                     ;; (begin
                     ;;   (format #t "~A: ~A~%" (bggreen "shared-deps") *mibl-shared-deps*)
-                    ;;   (if (member (car (assoc-val :pkg-path pkg))
+                    ;;   (if (member (assoc-val :pkg-path pkg)
                     ;;               *mibl-shared-deps*)
                     ;;       (begin
                     ;;         ;; do not emit if pkg in *mibl-shared-deps*, the global var will be emitted by the :shared-deps stanza
-                    ;;         (format #t "~A: ~A~%" (green "pkg in shared-deps list") (car (assoc-val :pkg-path pkg)))
+                    ;;         (format #t "~A: ~A~%" (green "pkg in shared-deps list") (assoc-val :pkg-path pkg))
                     ;;         ;; (format outp "## shared deps~%")
                     ;;         )
                     ;;       ;; (-emit-shared-deps pkg)

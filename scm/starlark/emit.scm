@@ -17,7 +17,7 @@
   (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg))
   (load "starlark/non-dune-parsers.scm")
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (dunefile (assoc :mibl pkg)))
     (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (uwhite "dune") dunefile))
@@ -49,7 +49,7 @@
               (format #t "~%~A: ~A~%"
                       (bgred "Emitting buildfile") build-file))
 
-          (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
+          (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
           ;; (newline outp)
 
           (if *mibl-debug-s7* (format #t "emitting exports_files\n"))
@@ -120,55 +120,56 @@
           )
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; no :dune, emit filegroups etc.
-        (let ((pkg-path (car (assoc-val :pkg-path pkg)))
+        (let ((pkg-path (assoc-val :pkg-path pkg))
               (pkg-filegroups (assoc :filegroups pkg)))
           (if (or *mibl-debug-s7* *mibl-debug-emit*)
               (begin
                 (format #t "~A: ~A~%" (uwhite "emitting non-dune pkg") pkg)
                 (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups)))
           ;;FIXME: check that we have something to emit before opening BUILD.bazel
-          (let* ((obazl-rules (non-dune-pkg->obazl-rules pkg))
-                 (build-file (string-append pkg-path "/BUILD.bazel"))
-                 (_ (if *mibl-debug-s7*
-                        (format #t "~A: ~A~%" (uwhite "build-file") build-file)))
-                 (outp
-                  (catch #t
-                         (lambda ()
-                           (open-output-file build-file))
-                         (lambda args
-                           (error 'OPEN_ERROR2 "OPEN ERROR2"))
-                         )))
-            (format outp "## GENERATED FILE - do not edit~%")
+          (if-let ((obazl-rules (non-dune-pkg->obazl-rules pkg)))
+                  (let* ((build-file (string-append pkg-path "/BUILD.bazel"))
+                         (_ (if *mibl-debug-s7*
+                                (format #t "~A: ~A~%" (uwhite "build-file") build-file)))
+                         (outp
+                          (catch #t
+                                 (lambda ()
+                                   (open-output-file build-file))
+                                 (lambda args
+                                   (error 'OPEN_ERROR2 "OPEN ERROR2"))
+                                 )))
+                    (format outp "## GENERATED FILE - do not edit~%")
 
-            (starlark-emit-buildfile-hdr outp pkg-path obazl-rules)
+                    (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
 
-            (emit-non-dune-global-vars outp pkg obazl-rules)
+                    (emit-non-dune-global-vars outp pkg obazl-rules)
 
-            (emit-non-dune-aggregate-target outp pkg)
+                    (emit-non-dune-aggregate-target outp pkg)
 
-            ;; (if *mibl-debug-s7* (format #t "emitting exports_files\n"))
-            ;; (starlark-emit-exports-files outp pkg)
+                    ;; (if *mibl-debug-s7* (format #t "emitting exports_files\n"))
+                    ;; (starlark-emit-exports-files outp pkg)
 
-            ;; (starlark-emit-global-vars outp pkg)
+                    ;; (starlark-emit-global-vars outp pkg)
 
-            (if pkg-filegroups
-                (begin
-                  (if *mibl-debug-s7* (format #t "emitting filegroups\n"))
-                  (starlark-emit-filegroups outp ws pkg)))
-            ;; emit ocaml_library
-            (emit-non-dune-singletons outp ws pkg)
-            ;; emit :sigs
-            ;; emit :structs
+                    (if pkg-filegroups
+                        (begin
+                          (if *mibl-debug-s7* (format #t "emitting filegroups\n"))
+                          (starlark-emit-filegroups outp ws pkg)))
+                    ;; emit ocaml_library
+                    (emit-non-dune-singletons outp ws pkg)
+                    ;; emit :sigs
+                    ;; emit :structs
 
-            (if *mibl-debug-s7* (format #t "emitting file generators\n"))
-            ;; ocamllex, ocamlyacc, etc.
-            (emit-non-dune-file-generators outp pkg)
+                    (if *mibl-debug-s7* (format #t "emitting file generators\n"))
+                    ;; ocamllex, ocamlyacc, etc.
+                    (emit-non-dune-file-generators outp pkg)
 
-            (if *mibl-debug-s7* (format #t "emitting cc targets\n"))
-            (emit-non-dune-cc-targets outp ws pkg)
+                    (if *mibl-debug-s7* (format #t "emitting cc targets\n"))
+                    ;; if pkg has cc files
+                    ;; (emit-non-dune-cc-targets outp ws pkg)
 
-            (close-output-port outp)
-            ))
+                    (close-output-port outp)
+                    )))
           )))
 
 ;; (define (-emit-import settings ws)
@@ -228,5 +229,7 @@
               pkgs)
 
     (if (not *mibl-local-ppx-driver*)
-        (starlark-emit-global-ppxes ws))
+        (call-with-exit
+         (lambda (return)
+           (starlark-emit-global-ppxes ws return))))
     ))

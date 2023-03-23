@@ -1,8 +1,18 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+alias(
+    name = "dune",
+    actual = "//obazl"
+)
+
 ##########
 cc_binary(
-    name  = "dune",
+    name  = "dunex",
+    args  = ["-m", "obazl_main.scm"],
+    data = [
+        "//scm:srcs",
+        "//scm/starlark:srcs"
+    ],
     linkstatic = True,
     srcs  = ["dune.c", "dune.h"],
     defines = select({
@@ -47,10 +57,6 @@ cc_binary(
         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
         "//conditions:default": {}
     }) + ["-lm"],
-    data = [
-        "//scm:srcs",
-        "//scm/starlark:srcs"
-    ],
     deps = [
         "@libs7//src:s7",
         "@mibl//src:mibl",
@@ -61,68 +67,6 @@ cc_binary(
     ],
     visibility = ["//visibility:public"]
 )
-
-##########
-# cc_binary(
-#     name  = "Xconvert",
-#     linkstatic = True,
-#     srcs  = [
-#         "convert.c", "convert.h",
-#         # "log.c", # supplied by libmibl
-#         # "log.h",
-#         # "utarray.h", "utstring.h", "uthash.h"
-#     ],
-#     defines = select({
-#         "//bzl/host:debug": ["DEBUG_TRACE"],
-#         "//conditions:default":   []
-#     }) + select({
-#         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-#         "//conditions:default":   []
-#     }) + [
-#         "WITH_C_LOADER"
-#     ],
-#     copts = select({
-#         "//bzl/host:macos": ["-std=c11"],
-#         "//bzl/host:linux": ["-std=gnu11"],
-#         "//conditions:default": ["-std=c11"],
-#     }) + [
-#         "-std=c11",
-#         "-Wall",
-#         "-Wpedantic",
-#         "-Wno-unused-function",
-
-#         "-Iexternal/obazl/convert",
-#         "-I$(GENDIR)/convert",
-#         "-I$(GENDIR)/external/obazl/convert",
-
-#         "-Iexternal/uthash/include",
-#         # "-Iexternal/libinih",
-#         # "-Iexternal/logc/src",
-
-#         "-Iexternal/mibl/src",  ## log.h
-#         "-I$(GENDIR)/external/mibl/src/hdrs", # mibl.h is generated
-
-#         "-Iexternal/libs7/src",
-#         "-Iexternal/libs7/vendored/linenoise",
-#         # "-Iexternal/mibl/libs7/vendored/linenoise",
-#     ],
-#     linkopts = select({
-#         "//bzl/host:macos": [],
-#         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-#         "//conditions:default": {}
-#     }) + ["-lm"],
-#     data = [
-#         "//scm:srcs",
-#         "//scm/starlark:srcs"
-#     ],
-#     deps = [
-#         "@mibl//src:mibl",
-#         # "//vendored/logc",
-#         "@mibl//vendored/libinih:inih",
-#         "@libs7//src:s7",
-#     ],
-#     visibility = ["//visibility:public"]
-# )
 
 ########
 genrule(

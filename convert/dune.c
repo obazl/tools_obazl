@@ -407,7 +407,7 @@ void _update_s7_globals(struct option options[])
 {
     /* mibl_s7_set_flag("*mibl-debugging*", true); */
     if (options[FLAG_DEBUG_LOADS].count)
-        mibl_s7_set_flag("*mibl-debug-loads*", true);
+        mibl_s7_set_flag("*mibl-debug-s7-loads*", true);
 
     mibl_s7_set_flag("*mibl-quiet*", ((options[FLAG_QUIET].count) > 0));
 
@@ -425,6 +425,8 @@ void _update_s7_globals(struct option options[])
                     ((options[FLAG_DEBUG_DPPX].count)
                      || (options[FLAG_DEBUG_PPX].count)));
 
+    mibl_s7_set_flag("*mibl-local-ppx-driver*", true);
+
     if ((options[FLAG_LEXPORTS].count)
         || (options[FLAG_SHOW_EXPORTS].count))
         mibl_s7_set_flag("*mibl-show-exports*", true);
@@ -434,8 +436,8 @@ void _update_s7_globals(struct option options[])
     if ((options[FLAG_LMIBL].count)
         || (options[FLAG_SHOW_MIBL].count))
         mibl_s7_set_flag("*mibl-show-mibl*", true);
-    else if (mibl_config.show_mibl)
-        mibl_s7_set_flag("*mibl-show-mibl*", true);
+    /* else if (mibl_config.show_mibl) */
+    /*     mibl_s7_set_flag("*mibl-show-mibl*", true); */
 
     mibl_s7_set_flag("*mibl-emit-starlark*", ((options[FLAG_EMIT_STARLARK].count) > 0));
     mibl_s7_set_flag("*mibl-menhir*", ((options[FLAG_MENHIR].count) >0));
@@ -546,9 +548,8 @@ int main(int argc, char **argv)
     }
 
     /* **************************************************************** */
-
-    struct mibl_config_s *mibl_config = mibl_s7_init("//obazl/scm",
-                                                     NULL);
+    struct mibl_config_s *mibl_config
+        = mibl_s7_init("//obazl/scm", NULL);
     if (_update_mibl_config(options, mibl_config)) exit(EXIT_FAILURE);
 
     _update_s7_globals(options);

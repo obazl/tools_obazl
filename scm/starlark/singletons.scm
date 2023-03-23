@@ -244,7 +244,7 @@
                                 mli
                                 (assoc-val :mli_ srcs)))
                (structfile (if-let ((mli (assoc-val :ml srcs)))
-                                   mli
+                                   (car mli)
                                    (assoc-val :ml_ srcs)))
                )
           ;; (error 'STOP "STOP selmod")
@@ -269,7 +269,7 @@
         ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
         (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "emitting module (proper list): ~A\n" module)))
                (modname (car module))
-               (structfile (if (proper-list? module) (cadr module)  (cdr module)))
+               (structfile (if (proper-list? module) (cadr module)  (cadr module)))
                (local-deps (if (proper-list? module) (cddr module) '())))
 
           (format outp "ocaml_module(\n")
@@ -569,8 +569,8 @@
                                 mli
                                 (assoc-val :mli_ srcs)))
                (structfile (if-let ((mli (assoc-val :ml srcs)))
-                                   mli
-                                   (assoc-val :ml_ srcs)))
+                                   (car mli)
+                                   (car (assoc-val :ml_ srcs))))
                )
           ;; (error 'STOP "STOP selmod")
           ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
@@ -704,7 +704,7 @@
                 ;;FIXME: handle :scope
                 (if ppx-args
                     (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                           (mfile (assoc-val :ml (cdr mod)))
+                           (mfile (car (assoc-val :ml (cdr mod))))
                            )
                       (format outp
                               "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
@@ -824,9 +824,9 @@
                       ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
                     (let* ((mod (assoc-in `(:modules ,modname) pkg))
                            (mfile (if mod
-                                      (assoc-val :ml (cdr mod))
+                                      (car (assoc-val :ml (cdr mod)))
                                       (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
-                                        (cdr mstruct))))
+                                        (cadr mstruct))))
                            )
                       (format outp
                               "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
@@ -1123,9 +1123,9 @@
   ;; module form: ((:mli a.mli) (:ml a.ml))
   ;; where either :mli or :ml may have trailing _
   (if-let ((sig (assoc-val :mli module)))
-          sig
+          (car sig)
           (if-let ((sig (assoc-val :mli_ module)))
-                  sig
+                  (car sig)
                   (error 'missing-mli "module record missing :mli, :mli_"))))
 
 (define (-emit-sig outp ws pkg sig stanza)
@@ -1239,7 +1239,7 @@
          (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
                             (string-upcase (format #f "~A" ts)) #f))
 
-         (ppx-pkg (car (assoc-val :pkg-path pkg)))
+         (ppx-pkg (assoc-val :pkg-path pkg))
          (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
                          ppx #f))
 

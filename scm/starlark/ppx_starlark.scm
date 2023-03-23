@@ -1,21 +1,21 @@
 (define (get-ppx-id ws stanza-alist)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A, ~A\n" (blue "get-ppx-id") ws stanza-alist))
   (if-let ((ppx-nbr (assoc-val :ppx stanza-alist)))
           (begin
-            (if *mibl-debugging*
+            (if *mibl-debug-s7*
                 (format #t "~A: ~A~%" (ucyan "ppx nbr") ppx-nbr))
             (let* ((ppx-key ppx-nbr)
                             ;; (assoc-val :manifest ppx-nbr)) ;; (cdr ppx)))
-                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "ppx-key") ppx-key)))
+                   (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "ppx-key") ppx-key)))
                    (ppx-tbl (car (assoc-val :shared-ppx
                                             (assoc-val ws *mibl-project*))))
-                   (_ (if *mibl-debugging* (format #t "~A: ~A~%" (green "ppx-tbl") ppx-tbl)))
+                   (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "ppx-tbl") ppx-tbl)))
                    (ppx-ct (length (hash-table-keys ppx-tbl))))
               (if-let ((ppx-id (hash-table-ref ppx-tbl ppx-key)))
                       ppx-id
                       (begin
-                        (if *mibl-debugging*
+                        (if *mibl-debug-s7*
                             (format #t "~A: ~A~%" (green "mibl-ws-tbl")
                                     ;; (assoc :shared-ppx
                                     ;;(hash-table-keys
@@ -42,7 +42,7 @@
 ;; find stanza with ppx whose scope includes module
 ;; return (ppx-name string . ppx-args list)
 (define (module->ppx-alist pkg-path module stanzas)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "module->ppx-alist ~A: ~A\n" pkg-path module))
   ;; (format #t "stanzas ct: ~A\n" (length stanzas))
   ;; iterate over stanzas searching for ppx whose scope includes module
@@ -53,17 +53,17 @@
             (if-let ((ppxes (assoc :ppx (cadr (car stanzas)))))
                     ;; ppxes is list of ppx-alists
                     (begin
-                      (if *mibl-debugging*
+                      (if *mibl-debug-s7*
                           (format #t "PPXes: ~A\n" ppxes))
                       (let recur2 ((ppxes (cadr ppxes)))
                         (if (null? ppxes)
                             #f
                             (begin
-                              (if *mibl-debugging*
+                              (if *mibl-debug-s7*
                                   (format #t "PPX: ~A\n" (car ppxes)))
                               (let* ((ppx-alist (car ppxes))
                                      (scope (cadr (assoc :scope ppx-alist))))
-                                (if *mibl-debugging*
+                                (if *mibl-debug-s7*
                                     (format #t "SCOPE: ~A\n" scope))
                                 (if (equal? :all scope)
                                     (car stanzas) ;; ppx-alist
@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-ppx-target outp ppx ppx-ct) ;;pkg stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A\n" (blue "starlark-emit-ppx-target")))
 
   (let* ((ppx-id (car ppx))
@@ -178,7 +178,7 @@
 ;;                              (string-upcase
 ;;                               (stringify
 ;;                                (assoc-val :privname stanza-alist)))))
-;;                    (_ (if *mibl-debugging* (format #t "em libname: ~A~%" libname)))
+;;                    (_ (if *mibl-debug-s7* (format #t "em libname: ~A~%" libname)))
 ;;                    (ppx-alist (assoc-val :ppx stanza-alist))
 ;;                    (args (if-let ((args (assoc :args ppx-alist)))
 ;;                                  (cdr args) #f))
@@ -215,7 +215,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-ppx-driver outp ppx)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (blue "starlark-emit-ppx-driver") ppx))
 
   ;; (let* ((stanza-alist (cdr stanza))
@@ -225,7 +225,7 @@
   ;;                  (string-upcase
   ;;                   (stringify
   ;;                    (assoc-val :privname stanza-alist)))))
-  ;;        (_ (if *mibl-debugging* (format #t "em libname: ~A~%" libname)))
+  ;;        (_ (if *mibl-debug-s7* (format #t "em libname: ~A~%" libname)))
   ;;        (ppx-alist (assoc-val :ppx stanza-alist))
   ;;        (args (if-let ((args (assoc :args ppx-alist)))
   ;;                      (cdr args) #f))
@@ -266,7 +266,7 @@
 ;;                    (string-upcase
 ;;                     (stringify
 ;;                      (assoc-val :privname stanza-alist)))))
-;;          (_ (if *mibl-debugging* (format #t "em libname: ~A~%" libname)))
+;;          (_ (if *mibl-debug-s7* (format #t "em libname: ~A~%" libname)))
 ;;          (ppx-alist (assoc-val :ppx stanza-alist))
 ;;          (args (if-let ((args (assoc :args ppx-alist)))
 ;;                        (cdr args) #f))
@@ -307,15 +307,15 @@
 
 ;; emit all ppxes in :shared-ppx of pkg
 (define (starlark-emit-pkg-ppxes outp ws pkg) ;; fs-path stanzas)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (ublue "starlark-emit-pkg-ppxes") pkg))
   (if-let ((ppx-tbl (assoc-in '(:mibl :shared-ppx) pkg)))
           (let* ((ppx-tbl (cadr ppx-tbl))
                  (ppx-ct (length ppx-tbl)))
-            (if *mibl-debugging*
+            (if *mibl-debug-s7*
                 (format #t "~A: ~A~%" (blue "shared ppx-tbl") ppx-tbl))
             (for-each (lambda (ppx)
-                        (if *mibl-debugging*
+                        (if *mibl-debug-s7*
                             (format #t "~A: ~A~%" (bgyellow "emitting ppx") ppx))
                         (starlark-emit-ppx-target outp ppx ppx-ct) ;; pkg stanza)
                         (if *mibl-local-ppx-driver*
@@ -338,13 +338,19 @@
             ;;           (assoc-val :mibl pkg))
             )))
 
-(define (starlark-emit-global-ppxes ws)
-  (if *mibl-debugging*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FIXME
+
+(define (starlark-emit-global-ppxes ws return)
+  (if *mibl-debug-s7*
       (format #t "~A~%" (bgblue "starlark-emit-global-ppxes")))
 
   (let* ((@ws (assoc-val ws *mibl-project*))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
-    (if *mibl-debugging*
+
+    (if (< (hash-table-entries ppx-tbl) 1) (return))
+
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (red "ppx table") ppx-tbl))
 
     (mkdir-recursive *mibl-shared-ppx-pkg* mkdir-permissions)
@@ -352,7 +358,7 @@
     ;;FIXME: deal with existing *mibl-shared-ppx-pkg*/BUILD.bazel
 
     (let* ((build-file (format #f "~A/BUILD.bazel" *mibl-shared-ppx-pkg*))
-           (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "ppx build-file") build-file)))
+           (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "ppx build-file") build-file)))
            (outp
             (catch #t
                    (lambda ()
@@ -368,7 +374,7 @@
 
       (ppx-hdr outp)
       (for-each (lambda (ppx)
-                  (if *mibl-debugging*
+                  (if *mibl-debug-s7*
                       (format #t "~A: ~A~%" (bggreen "emitting ppx") ppx))
                   ;; (format outp "~{~A, ~}" (car ppx))
                   ;; (newline outp)

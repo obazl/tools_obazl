@@ -81,7 +81,7 @@
   (define opt-mode? #f)
   (define dbg-mode? #f)
 
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (dunefile (assoc :mibl pkg)))
     (if dunefile
         (let* ((stanzas (cdr dunefile))

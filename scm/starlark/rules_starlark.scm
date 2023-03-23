@@ -437,7 +437,7 @@
 (define (starlark-emit-cppo-target outp stanza pkg)
   (if *mibl-debugging*
       (format #t "~A: ~A\n" (blue "starlark-emit-cppo-target") stanza))
-  (let* ((pkg-path (car (assoc-val :pkg-path pkg)))
+  (let* ((pkg-path (assoc-val :pkg-path pkg))
          (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "pkg path") pkg-path)))
          (outputs (assoc-val :outputs (cdr stanza)))
          (_ (if *mibl-debugging* (format #t "~A: ~A~%" (yellow "outputs") outputs)))
@@ -754,7 +754,7 @@
   ;; same code as starlark-emit-aggregate-targets, but we want to put
   ;; aggregates and rules in different locations.
   (let ((flag #t)
-        (pkg-path (car (assoc-val :pkg-path pkg))))
+        (pkg-path (assoc-val :pkg-path pkg)))
     (for-each (lambda (stanza)
                 (if *mibl-debugging*
                     (format #t "stanza tag ~A\n" (car stanza)))
