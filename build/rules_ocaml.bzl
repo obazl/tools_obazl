@@ -6,6 +6,9 @@ Definitions outside this file are private unless otherwise noted, and
 may change without notice.
 """
 
+load("//ocaml/_rules:bindiff_test.bzl",
+     _bindiff_test = "bindiff_test")
+
 load("//ocaml/_rules:menhir.bzl",
      _menhir = "menhir")
 
@@ -15,6 +18,7 @@ load("//ocaml/_rules:ppxlib_executable.bzl",
 load("//ocaml/_rules:ppx_expect_test.bzl",
      _ppx_expect_test = "ppx_expect_test")
 
+bindiff_test = _bindiff_test
 menhir = _menhir
 ppxlib_executable = _ppxlib_executable
 ppx_expect_test = _ppx_expect_test
