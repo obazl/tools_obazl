@@ -24,7 +24,7 @@
                                           :sig
                                           :struct
                                           :executable
-                                          :bindiff-test
+                                          :bindiff-test :diff-test
                                           :cc-deps)
                                          (list dune-rule))
                                         ((:ns-archive)
@@ -157,6 +157,11 @@
   (if (member :bindiff-test obazl-rules)
       (begin
         (format outp "load(\"@obazl//build:rules_ocaml.bzl\", \"bindiff_test\")\n")
+        (format outp "\n")))
+
+  (if (member :diff-test obazl-rules)
+      (begin
+        (format outp "load(\"@bazel_skylib//rules:diff_test.bzl\", \"diff_test\")~%~%")
         (format outp "\n")))
 
   (if (member :write-file obazl-rules)
@@ -872,7 +877,7 @@
                     :cppo
                     :tuareg :sh-test
                     :write-file
-                    :bindiff-test
+                    :bindiff-test :diff-test
                     :diff :alias :exec-libs)
               (values))
 

@@ -1072,7 +1072,7 @@
                                           :shared-compile-opts :shared-deps
                                           :diff :alias :node
                                           :write-file
-                                          :bindiff-test
+                                          :bindiff-test :diff-test
                                           :sh-test :testsuite :exec-libs)
                                 #f)
 

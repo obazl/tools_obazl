@@ -429,6 +429,29 @@
     ;;       (format outp "## )\n")))
     ))
 
+(define (starlark-emit-diff-test-target outp stanza pkg-path)
+  (if (or *mibl-debug-emit* *mibl-debug-s7*)
+      (format #t "~A: ~A\n" (blue "starlark-emit-diff-test-target") stanza))
+  (let* ((output (assoc-val :outputs (cdr stanza)))
+         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "output") output)))
+         (bn (basename pkg-path))
+         (args (assoc-in '(:actions :cmd :args) (cdr stanza)))
+         (arg1 (keyword->symbol (args 1)))
+         (arg2 (keyword->symbol (args 2)))
+         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "args") args)))
+         ;; (name (format #f "~A_~A_test" arg1 arg2))
+         (name (format #f "~A_diff_test" bn)))
+
+    (format outp "###########\n")
+    (format outp "diff_test(\n")
+    (format outp "    name     = \"~A\",\n" name)
+    (format outp "    file1    = \"~A\",\n" arg1)
+    (format outp "    file2    = \"~A\",\n" arg2)
+    (format outp "    timeout  = \"short\"\n")
+    (format outp ")\n")
+    (newline outp)
+    ))
+
 (define (starlark-emit-bindiff-test-target outp stanza pkg-path)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (blue "starlark-emit-bindiff-test-target") stanza))
@@ -817,6 +840,9 @@
 
                   ((:bindiff-test)
                    (starlark-emit-bindiff-test-target outp stanza (assoc-val :pkg-path pkg)))
+
+                  ((:diff-test)
+                   (starlark-emit-diff-test-target outp stanza (assoc-val :pkg-path pkg)))
 
                   ((:write-file)
                    (starlark-emit-write-file-target outp stanza))
