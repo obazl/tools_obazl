@@ -24,6 +24,7 @@
                                           :sig
                                           :struct
                                           :executable
+                                          :bindiff-test
                                           :cc-deps)
                                          (list dune-rule))
                                         ((:ns-archive)
@@ -61,7 +62,8 @@
                                                        ((:copy ::copy)
                                                         (if (member :copy accum)
                                                             accum (cons :copy accum)))
-                                                       ((:write-file)
+                                                       ;;FIXME
+                                                       ((:write-file) ;; OBSOLETE? replaced by :write-file stanza type
                                                         (if (member :write-file accum)
                                                             accum (cons :write-file accum)))
                                                        (else accum))))
@@ -151,6 +153,11 @@
       (begin
         (format outp "exports_files([~{~S~^, ~}])\n" exported-files)
         (newline outp)))
+
+  (if (member :bindiff-test obazl-rules)
+      (begin
+        (format outp "load(\"@obazl//build:rules_ocaml.bzl\", \"bindiff_test\")\n")
+        (format outp "\n")))
 
   (if (member :write-file obazl-rules)
       (begin
@@ -865,6 +872,7 @@
                     :cppo
                     :tuareg :sh-test
                     :write-file
+                    :bindiff-test
                     :diff :alias :exec-libs)
               (values))
 
