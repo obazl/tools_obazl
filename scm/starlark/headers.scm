@@ -118,7 +118,7 @@
            (rules (if (assoc :signatures pkg) (cons :sig rules) rules))
            (rules (if (assoc :cc pkg)  (cons :cc-deps rules) rules))
            (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (green "obazlrules") rules)))
-           ;; dedup
+           ;; dedup FIXME:  remove-duplicates???
            (rules (fold (lambda (x accum)
                           (if (eq? x :struct)
                               (if (member :module rules)
@@ -144,7 +144,15 @@
   ;; (format outp "package(default_visibility = [\"//visibility:public\"])")
   ;; (newline outp)
 
+  (format outp "## GENERATED FILE ##")
   (newline outp)
+  (newline outp)
+
+  (if *mibl-test-mode*
+      (begin
+        (format outp "exports_files([\"BUILD.bazel\"]) # for testing")
+        (newline outp)
+        (newline outp)))
 
   (if (and (string? pkg-path) (string-contains pkg-path "test"))
         (format outp "load(\"@bazel_skylib//rules:build_test.bzl\", \"build_test\")~%~%"))
@@ -179,72 +187,65 @@
         (format outp "load(\"@bazel_skylib//rules:diff_test.bzl\", \"diff_test\")\n")
         (format outp "\n")))
 
-  (if (find-if (lambda (rule)
-                 (member rule '(:archive
-                                :library
-                                :module
-                                :ns-archive
-                                :ns-library
-                                :lex
-                                :yacc
-                                :sig
-                                :struct
-                                :executable
-                                :test
-                                :cc-deps)))
-               obazl-rules)
-      (begin
+  ;; (if (find-if (lambda (rule)
+  ;;                (member rule '(:archive
+  ;;                               :library
+  ;;                               :module
+  ;;                               :ns-archive
+  ;;                               :ns-library
+  ;;                               :lex
+  ;;                               :yacc
+  ;;                               :sig
+  ;;                               :struct
+  ;;                               :executable
+  ;;                               :test
+  ;;                               :cc-deps)))
+  ;;              obazl-rules)
+      (let ((symbols '()))
         (if *mibl-debug-s7*
             (format #t "writing buildfile header\n"))
         ;; if write_file, copy_file, etc, emit:
         ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
 
-        (format outp "load(\"@rules_ocaml//build:rules.bzl\",\n")
+        ;;FIXME: get to minimum required loads. list of rule types no
+        ;;enough? e.g. if an executable has a prologue we need
+        ;;ocaml_ns_resolver, otherwise not.
+
+        ;; (format outp "load(\"@rules_ocaml//build:rules.bzl\",\n")
 
         (if (member :executable obazl-rules)
-            (format outp "     \"ocaml_binary\",\n"))
+            (set! symbols (cons "ocaml_binary" symbols)))
 
         ;; 'library' with wrapped false:
         (if (member :archive obazl-rules)
-            (format outp "     \"ocaml_archive\",\n"))
+            (set! symbols (cons "ocaml_archive" symbols)))
 
         (if (member :library obazl-rules)
-            (format outp "     \"ocaml_library\",\n"))
+            (set! symbols (cons "ocaml_library" symbols)))
 
         ;; 'library' with wrapped true:
         (if (member :ns-archive obazl-rules)
-            (begin
-              ;; (format outp "     \"ocaml_archive\",\n")
-              (format outp "     \"ocaml_ns_archive\",\n")))
+            (set! symbols (cons "ocaml_ns_archive" symbols)))
 
         (if (or (member :ns-library obazl-rules)
                 (member :executable obazl-rules))
             (begin
-              (format outp "     \"ocaml_library\",\n")
-              (format outp "     \"ocaml_ns_library\",\n")))
+              (set! symbols (cons "ocaml_library" symbols))
+              (set! symbols (cons "ocaml_ns_library" symbols))))
 
-        (if (not *mibl-ns-topdown*)
-            (format outp "     \"ocaml_ns_resolver\",\n"))
-
-
-        ;; obazl-style libraries not supported by dune; 'library' stanza
-        ;; always means archive.
-        ;; (if (member :library obazl-rules)
-        ;;         (format outp "     \"ocaml_library\",\n"))
-        ;; (if (member :ns-library obazl-rules)
-        ;;         (format outp "     \"ocaml_ns_library\",\n")
-
-
+        (if (or (not *mibl-ns-topdown*)
+                (member :executable obazl-rules))
+            (set! symbols (cons "ocaml_ns_resolver" symbols)))
 
         (if (member :lex obazl-rules)
-            (format outp "     \"ocamllex\",\n"))
+            (set! symbols (cons "ocamllex" symbols)))
 
         ;; (if (or (assoc-in '(:stanzas :executable) (cdr obazl-rules))
         ;;         (assoc-in '(:stanzas :executables) (cdr obazl-rules)))
         ;;     (format outp "     \"ocaml_executable\",\n"))
 
         (if (member :executable obazl-rules)
-            (format outp "     \"ocaml_exec_module\",\n"))
+            (set! symbols (cons "ocaml_exec_module" symbols)))
 
         ;; (if (member :module obazl-rules)
         ;;     (begin
@@ -253,11 +254,11 @@
 
         (if (member :struct obazl-rules)
             ;; (if *mibl-build-dyads*
-            (format outp "     \"ocaml_module\",\n")) ;;)
+            (set! symbols (cons "ocaml_module" symbols)))
 
         (if (member :sig obazl-rules)
             ;; (if *mibl-build-dyads*
-            (format outp "     \"ocaml_signature\",\n")) ;;)
+            (set! symbols (cons "ocaml_signature" symbols)))
 
         ;; (if (pkg-has-archive? obazl-rules)
         ;;     (if (pkg-namespaced? obazl-rules)
@@ -268,24 +269,32 @@
         ;;     (format outp "     \"ocaml_signature\",\n"))
 
         (if (member :test obazl-rules)
-            (format outp "     \"ocaml_test\",\n"))
+            (set! symbols (cons "ocaml_test" symbols)))
 
         (if (member :yacc obazl-rules)
             (if (not *mibl-menhir*)
-                (format outp "     \"ocamlyacc\",\n")))
+                (set! symbols (cons "ocamlyacc" symbols))))
 
         (if (member :ppx-executable obazl-rules)
-            (format outp "     \"ppx_executable\",\n"))
+            (set! symbols (cons "ppx_executable" symbols)))
 
         (if (member :ppx-module obazl-rules)
-            (format outp "     \"ppx_module\",\n"))
+            (set! symbols (cons "ppx_module" symbols)))
 
         (if (member :cc-deps obazl-rules)
-            (format outp "     \"cc_selection_proxy\",\n"))
+            (set! symbols (cons "cc_selection_proxy" symbols)))
 
-        (format outp ")\n")
-        (newline outp)
-        ))
+        ;; (format outp ")\n")
+        ;; (newline outp)
+
+        (if (truthy? symbols)
+            (begin
+              (format outp "load(\"@rules_ocaml//build:rules.bzl\",\n")
+              (format outp "~{     ~S~^,~%~}" (sort! symbols string<?))
+              (format outp ")\n")
+              (newline outp))
+            ))
+      ;; )
 
   (if (and *mibl-menhir* (member :yacc obazl-rules))
       (begin
@@ -806,9 +815,10 @@
                           (newline outp))
                         (cadr stanza)))
 
-             ((:shared-compile-opts)
+             ((:shared-link-opts :shared-ocamlc-opts :shared-ocamlopt-opts) (values))
+             ((:shared-opts)
               (if *mibl-debug-s7*
-                  (format #t "~A: ~A~%" (bgred "emitting shared-compile-opts") stanza))
+                  (format #t "~A: ~A~%" (bgred "emitting shared-opts") stanza))
               (if (truthy? (cdr stanza))
                   (for-each (lambda (optlist)
                               (if *mibl-debug-s7*
@@ -878,7 +888,7 @@
                     :tuareg :sh-test
                     :write-file
                     :bindiff-test :diff-test
-                    :diff :alias :exec-libs)
+                    :diff :alias :prologues)
               (values))
 
              (else

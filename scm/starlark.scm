@@ -15,6 +15,7 @@
 (load "starlark/aggregates.scm")
 (load "starlark/conditionals.scm")
 (load "starlark/opam.scm")
+(load "starlark/prologues.scm")
 (load "starlark/ppx_starlark.scm")
 (load "starlark/tests.scm")
 (load "starlark/genrule.scm")
@@ -26,5 +27,5 @@
 (load "starlark/filegroups.scm")
 (load "starlark/starlark.scm")
 
-(if *mibl-debugging*
+(if *mibl-debug-s7*
     (format #t "loaded obazl/starlark.scm\n"))

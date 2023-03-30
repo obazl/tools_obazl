@@ -6,7 +6,7 @@
                         outputs
                         pkg-path
                         stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (begin
         (format #t "~A: ~A~%" (ublue "emit-shell-cmd") action)
         (format #t "~A: ~A~%" (uwhite "non-bash tool") tool)
@@ -28,14 +28,14 @@
 
   (for-each
    (lambda (cmd)
-     (if *mibl-debugging*
+     (if *mibl-debug-s7*
          (format #t "~A: ~A~%" (magenta "PROCESSING cmd") cmd))
      (if (eq? :cmd (car cmd))
          (let-values
              (((tool-dep? tool xargs)
                (derive-cmd pkg-path cmd deps outputs)))
 
-           (if *mibl-debugging*
+           (if *mibl-debug-s7*
                (begin
                  ;; (format #t "~A:\n" (red "derived cmd"))
                  (format #t "~A: ~A~%" (magenta "tool-dep?")
@@ -76,6 +76,6 @@
                     (format #f "unknown cmd: ~A" cmd)))
          ))
    action)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A~%" (red "emitted cmd attrib")))
   (format outp "    ]),\n"))

@@ -30,7 +30,7 @@
           #f))
 
 (define (dunefile? f)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "DUNEFILE? ~A" f))
   (or (string=? "dune" f)
       (any (lambda (sfx) (string-suffix? sfx f))

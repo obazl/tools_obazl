@@ -1,17 +1,17 @@
 (define (starlark-emit-exports-files outp pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-exports-files") pkg))
   (let ((dune (assoc-val :mibl pkg)))
     (if-let ((exports (assoc-val :exports-files dune)))
             (begin
               ;; first exports-files
               (let ((exports (filter (lambda (export)
-                                       (if *mibl-debugging*
+                                       (if *mibl-debug-s7*
                                            (format #t "~A: ~A~%" (uwhite "export") export))
                                        (not (vector? export)))
                                      exports)))
                 (begin
-                  (if *mibl-debugging*
+                  (if *mibl-debug-s7*
                       (format #t "~A: ~A~%" (uwhite "exports") exports))
                   (format outp "exports_files([~{\"~A\"~^, ~}])\n" exports)
                   (newline outp)))
@@ -22,7 +22,7 @@
                 (for-each (lambda (export)
                             (let ((src (export 0))
                                   (dst (export 1)))
-                              (if *mibl-debugging*
+                              (if *mibl-debug-s7*
                                   (format #t "~A: ~A~%" (uwhite "genfiles") exports))
                               (format outp "FG genrule(\n")
                               (format outp "    outs = [\"~A\"],\n" dst)
@@ -37,24 +37,24 @@
               ))))
 
 (define (starlark-emit-filegroups outp ws pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (begin
         (format #t "~A: ~A~%" (ublue "starlark-emit-filegroups") pkg)
         (format #t "~A~%" (blue "processing pkg-filegroups"))))
   (let ((pkg-path (assoc-val :pkg-path pkg))
         (pkg-filegroups (assoc :filegroups pkg)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (uwhite "pkg-filegroups") pkg-filegroups))
     (if pkg-filegroups
         (begin
           (for-each (lambda (fg)
-                      (if *mibl-debugging*
+                      (if *mibl-debug-s7*
                           (format #t "~A: ~A~%" (white "pkg filegroup") fg))
                       (let* ((pattern (assoc-val :glob (cdr fg)))
                              (pattern (if pattern
                                           (format #f "glob([~S])" pattern)
                                           (format #f "[~S]" pattern))))
-                        (if *mibl-debugging*
+                        (if *mibl-debug-s7*
                             (format #t "~A: ~A~%" (white "glob") glob))
                         (format outp "##########~%")
                         (format outp "filegroup(~%")
@@ -64,7 +64,7 @@
                         (let* ((clients (assoc-val :clients (cdr fg)))
                                (clients (if clients (remove pkg-path clients) '()))
                                (clients (if (null? clients) #f clients)))
-                          (if *mibl-debugging*
+                          (if *mibl-debug-s7*
                               (begin
                                 (format #t "~A: ~A~%" (bggreen "clients") clients)
                                 (format #t "~A: ~A~%" (bggreen "pkg-path") pkg-path)))
@@ -79,24 +79,24 @@
                     (cdr pkg-filegroups))))
     )
 
-  (if *mibl-debugging* (format #t "~A~%" (blue "processing ws-filegroups")))
+  (if *mibl-debug-s7* (format #t "~A~%" (blue "processing ws-filegroups")))
   (let* ((-ws (if (keyword? ws) (assoc-val ws *mibl-project*) ws))
          ;; (_ (format #t "~A: ~A~%" (uwhite "-ws") -ws))
          (ws-filegroups (car (assoc-val :filegroups -ws)))
          (pkg-path (assoc-val :pkg-path pkg)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (begin
           (format #t "~A: ~A~%" (uwhite "ws-filegroups tbl") ws-filegroups)
           (format #t "~A: ~A~%" (uwhite "pkg-path") pkg-path)))
     (if ws-filegroups
         (begin
           (for-each (lambda (kv)
-                      (if *mibl-debugging*
+                      (if *mibl-debug-s7*
                           (format #t "~A: ~A~%" (uyellow "fg") kv))
                       (if (equal? pkg-path (car kv))
                           (let ((key (car kv))
                                 (fg (cadr kv)))
-                            (if *mibl-debugging*
+                            (if *mibl-debug-s7*
                                 (format #t "~A: ~A~%" (white "filegroup") fg))
                             (let* ((glob? (eq? :glob (caadr fg)))
                                    (name  (if (eq? ::all (car fg)) "__all__" (car fg)))
@@ -104,7 +104,7 @@
                                    (pattern (if glob?
                                                 (format #f "glob([~S])" pattern)
                                                 (format #f "[~S]" pattern))))
-                              (if *mibl-debugging*
+                              (if *mibl-debug-s7*
                                   (format #t "~A: ~A~%" (white "glob") glob))
                               (format outp "##########~%")
                               (format outp "filegroup(~%")
@@ -113,7 +113,7 @@
                               (format outp "    srcs = ~A,~%" pattern)
                               (if-let ((client (assoc :client fg)))
                                       (begin
-                                        (if *mibl-debugging*
+                                        (if *mibl-debug-s7*
                                             (begin
                                               (format #t "~A: ~A~%" (bggreen "client") (car client))
                                               (format #t "~A: ~A~%" (bggreen "pkg-path") pkg-path)))
@@ -125,6 +125,6 @@
                               (format outp ")~%")
                               (newline outp)))))
                     ws-filegroups))))
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A~%" (red "finished starlark-emit-filegroups")))
   )

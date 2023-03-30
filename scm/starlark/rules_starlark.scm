@@ -858,9 +858,10 @@
                    (starlark-emit-node-target outp pkg-path (cdr stanza)))
                   ((:diff)
                    (starlark-emit-diff-target outp pkg-path (cdr stanza)))
-                  ((:executable :exec-libs
+
+                  ((:executable :prologues
                                 :test
-                                :shared-deps :shared-compile-opts
+                                :shared-deps
                                 :shared-ppx
                                 :lex :yacc :menhir
                                 :ocamlc
@@ -868,6 +869,9 @@
                                 :ns-archive :ns-library
                                 :alias :install :env)
                    (values))
+
+                  ((:shared-opts :shared-link-opts :shared-ocamlc-opts :shared-ocamlopt-opts) (values))
+
                   (else
                    (error 'FIXME
                           (format #f "unhandled rule stanza: ~A~%" (car stanza)))

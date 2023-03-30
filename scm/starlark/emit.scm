@@ -60,6 +60,9 @@
           (if *mibl-debug-s7* (format #t "emitting executables\n"))
           (starlark-emit-executable-targets outp ws pkg)
 
+          (if *mibl-debug-s7* (format #t "emitting shared-prologues\n"))
+          (starlark-emit-shared-prologues outp ws pkg)
+
           (if *mibl-debug-s7*
               (format #t "emitting aggregate targets (archive, library)\n"))
           (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)

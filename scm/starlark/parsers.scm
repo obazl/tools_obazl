@@ -1,9 +1,9 @@
 (define (starlark-emit-ocamllex outp stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-ocamllex") stanza))
 
   (for-each (lambda (ocamllex)
-              (if *mibl-debugging*
+              (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (uwhite "ocamllex") ocamllex))
               (let* ((principal-name (principal-name (cdr ocamllex)))
                      (module-name (car ocamllex))
@@ -11,7 +11,7 @@
                                    (format #f "~A" module-name))))
                 (string-set! target-name 0
                              (char-upcase (string-ref target-name 0)))
-                (if *mibl-debugging*
+                (if *mibl-debug-s7*
                     (format #t "emitting ocamllex: ~A\n" ocamllex))
 
                 ;; ocaml_module target emitted by aggregate emitter
@@ -34,7 +34,7 @@
             (cdr stanza)))
 
 (define (starlark-emit-ocamlyacc outp stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-ocamlyacc") stanza))
 
   (for-each (lambda (ocamlyacc)
@@ -44,7 +44,7 @@
                                    (format #f "~A" module-name))))
                 (string-set! target-name 0
                              (char-upcase (string-ref target-name 0)))
-                (if *mibl-debugging*
+                (if *mibl-debug-s7*
                     (format #t "emitting ocamlyacc: ~A\n" ocamlyacc))
 
                 (format outp "##########\n")
@@ -57,13 +57,13 @@
             (cdr stanza)))
 
 (define (starlark-emit-menhir outp stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza))
   (newline outp)
 
   (for-each (lambda (parser)
               (let ((principal-name (principal-name parser)))
-                (if *mibl-debugging*
+                (if *mibl-debug-s7*
                     (format #t "emitting menhir parser: ~A\n" parser))
                 (format outp "#######\n")
                 (format outp "menhir(\n")
@@ -102,7 +102,7 @@
             (assoc-val :grammars (cdr stanza))))
 
 (define (starlark-emit-file-generators outp pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg))
   (let* ((stanzas (assoc-val :mibl pkg))
          (hdr-flag #t))

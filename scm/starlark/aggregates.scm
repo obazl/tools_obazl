@@ -1,4 +1,4 @@
-(if *mibl-debugging*
+(if *mibl-debug-s7*
     (format #t "loading starlark/aggregates.scm\n"))
 
 ;;FIXME: get this from cmdline or ini file
@@ -32,7 +32,7 @@
                        (string-contains (format #f "~A" privname) "test")))
          (tgt-name (if is-test (format #f "~A_test" privname) privname)))
 
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (begin
           (format #t "EMITTING TOPDOWN NS AGGREGATE: ~A\n" kind)
           (format #t " link-opts: ~A\n" link-opts)))
@@ -68,7 +68,7 @@
 
     (if cc-deps
         (begin
-          (if *mibl-debugging*
+          (if *mibl-debug-s7*
               (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
           (format outp "    cc_deps    = [\"__lib~A__\"],"
                   (car (cdadr cc-deps)))
@@ -92,7 +92,7 @@
     (newline outp)))
 
 (define (-emit-bottomup-aggregate outp kind ns pubname submodules flags cc-deps)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind))
   (format outp "#################\n")
   (if (eq? kind :ns-archive)
@@ -106,7 +106,7 @@
   ;; (format outp "    opts       = ~A_OPTS,\n" libname)
   (if cc-deps
       (begin
-        (if *mibl-debugging*
+        (if *mibl-debug-s7*
             (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
         (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
         (newline outp)))
@@ -123,12 +123,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-target outp pkg-path stanza) ;; typ fs-path stanza)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza))
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
          (ns (assoc-val :ns stanza-alist))
-         (_ (if *mibl-debugging* (format #t "~A: ~A~%" (blue "ns") ns)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (blue "ns") ns)))
          (privname (assoc-val :privname stanza-alist))
          (pubname (if ns ns
                       (if-let ((pubname (assoc-val :pubname stanza-alist)))
@@ -136,20 +136,20 @@
                               privname)))
          (tgtname (if privname privname pubname))
          (modname (normalize-module-name (if privname privname pubname)))
-         (_ (if *mibl-debugging*
+         (_ (if *mibl-debug-s7*
                 (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname)))
          (libname (string-upcase (stringify modname)))
 
          (link-opts (if-let ((opts (assoc-val :link-opts (cdr stanza))))
                        opts '()))
-         (_ (if *mibl-debugging*
+         (_ (if *mibl-debug-s7*
                 (format #t "~A: ~A\n" (uwhite "link-opts") link-opts)))
          ;; skip :opens, '-open' not relevant for aggregates
          ;; (flags (if-let ((flags (assoc-val :flags opts)))
          ;;                (list (apply string-append
          ;;                             (map stringify flags)))
          ;;                '()))
-         ;; (_ (if *mibl-debugging*(format #t "~A: ~A\n" (uwhite "flags") flags)))
+         ;; (_ (if *mibl-debug-s7*(format #t "~A: ~A\n" (uwhite "flags") flags)))
          ;; skip :standard, handled by hidden attributes
          ;; (standard-opts? (if (assoc :standard opts) #t #f))
 
@@ -160,7 +160,7 @@
          (deps (assoc :deps stanza-alist))
          (cc-deps (assoc :cc-stubs stanza-alist)))
 
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (begin
           (format #t "kind: ~A\n" kind)
           (format #t "DEPS: ~A\n" deps)
@@ -170,7 +170,7 @@
 
     (case kind
       ((:ns-archive :ns-library)
-       (if *mibl-debugging*
+       (if *mibl-debug-s7*
            (format #t "~A: ~A~%" (ured "NS") ns))
        (if *mibl-ns-topdown*
            (-emit-topdown-aggregate outp pkg-path kind ns tgtname submodules link-opts cc-deps)
@@ -179,7 +179,7 @@
 
       ((:archive :library)
        (begin
-         (if *mibl-debugging*
+         (if *mibl-debug-s7*
              (format #t "EMITTING NON-NS AGGREGATE: ~A\n" kind))
          (format outp "##############\n")
          (if (eq? kind :library)
@@ -192,7 +192,7 @@
          (format outp "    ],~%")
          (if cc-deps
              (begin
-               (if *mibl-debugging*
+               (if *mibl-debug-s7*
                    (format #t "~A: ~A~%" (ugreen "cc-deps") cc-deps))
                (format outp "    cc_deps    = [\"__lib~A__\"]," (cdadr cc-deps))
                (newline outp)))
@@ -250,7 +250,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (starlark-emit-aggregate-targets outp pkg) ;; fs-path stanzas)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgblue "starlark-emit-aggregate-targets") pkg))
 
   ;; only emit header if aggregators
@@ -262,13 +262,13 @@
                           (car stanza)
                           '(:archive :library :ns-archive :ns-library)))
                        stanzas)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "AGGREGATES: ~A\n" aggs))
     (if (not (null? aggs))
         (format outp "############################# Aggregates #############################\n"))
 
     (for-each (lambda (stanza)
-                (if *mibl-debugging*
+                (if *mibl-debug-s7*
                     (format #t "stanza: ~A\n" stanza))
                 (case (car stanza)
                   ((:ns-archive :ns-library) ;; dune library, wrapped

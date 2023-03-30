@@ -6,12 +6,12 @@
                         options '()))
          (all-opts (concatenate flags
                                 (flatten options))))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (format #t "~A: ~A~%" (bgred "all-opts") all-opts))
     all-opts))
 
 (define (-profile->opts opts-alist)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "-profile->opts") opts-alist))
   (let ((compile-opts (if-let ((copts (assoc-val :compile-opts opts-alist)))
                               (->compile-opts copts)
@@ -28,7 +28,7 @@
         (link-opts (if-let ((lopts (assoc-val :link-opts opts-alist)))
                            (->compile-opts lopts)
                            #f)))
-    (if *mibl-debugging*
+    (if *mibl-debug-s7*
         (begin
           (format #t "~A: ~A~%" (blue "compile-opts") compile-opts)
           (format #t "~A: ~A~%" (blue "archive-opts") link-opts)
@@ -75,7 +75,7 @@
 ;; but dev and release seem to be standard, mapping to fastbuild and opt
 
 (define (emit-profiles ws pkg)
-  (if *mibl-debugging*
+  (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgblue "emit-profiles") pkg))
   (define dev-mode? #f)
   (define opt-mode? #f)
@@ -85,13 +85,13 @@
          (dunefile (assoc :mibl pkg)))
     (if dunefile
         (let* ((stanzas (cdr dunefile))
-               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "stanzas") stanzas)))
+               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "stanzas") stanzas)))
                (env (assoc-val :env stanzas))
-               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "env") env)))
+               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "env") env)))
                (profiles-dir (format #f "~A/bzl/profile/dune" pkg-path))
                (_ (system (format #f "mkdir -p ~A" profiles-dir)))
                (build-file (format #f "~A/BUILD.bazel" profiles-dir))
-               (_ (if *mibl-debugging* (format #t "~A: ~A~%" (uwhite "build-file") build-file)))
+               (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "build-file") build-file)))
 
                (outp
                 (catch #t
@@ -127,11 +127,11 @@
           ;; IOW, this is a SNAFU. Assumption: wildcard _ only used in
           ;; isolation, not with other profile definitions.
 
-          (if *mibl-debugging*
+          (if *mibl-debug-s7*
               (format #t "~A~%" (uwhite "processing profiles")))
           (for-each
            (lambda (profile)
-             (if *mibl-debugging*
+             (if *mibl-debug-s7*
                  (format #t "~A: ~A~%" (uwhite "profile") profile))
              (let* ((name (if (eq? :_ (car profile))
                               "default"
