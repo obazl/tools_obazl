@@ -192,20 +192,35 @@ def _menhir_impl(ctx):
         args.add_all(ctx.attr.flags)
     args.add("--infer-read-reply", inferred_mli.path)
 
+    ## WARNING: menhir's output directory depends on inputs.
+    ## If only one grammar file is input, then menhir
+    ## writes its output to the directory containing the input file.
+    ## If multiple grammar files are input, it writes to CWD.
+    ## It does not seem to support any kind of -outdir option to
+    ## redirect output.  So we must copy the output(s) to the
+    ## expected output directory.
+
+    if (len(ctx.attr.grammars) > 1):
+        outsrc0 = ctx.outputs.outs[0].basename
+        outsrc1 = ctx.outputs.outs[1].basename
+    else:
+        outsrc0 = ctx.outputs.outs[0].short_path
+        outsrc1 = ctx.outputs.outs[1].short_path
+
     cmd = "\n".join([
         ctx.file.tool.path + " $@;",
         "    cp {src} {dst};".format(
-            src= ctx.outputs.outs[0].short_path,
+            src = outsrc0,
+            # src= ctx.outputs.outs[0].short_path,
+            # src= ctx.outputs.outs[0].basename,
             dst=ctx.outputs.outs[0].dirname),
         "    cp {src} {dst};".format(
-            src = ctx.outputs.outs[1].short_path,
+            src = outsrc1,
+            # src = ctx.outputs.outs[1].short_path,
+            # src = ctx.outputs.outs[1].basename,
             dst=ctx.outputs.outs[1].dirname),
     ])
 
-    ## WARNING: menhir writes its output to ${PWD} (?), and does not
-    ## seem to support any kind of -outdir option to redirect output.
-    ## Since our outfiles are relative to the pkg dir, we must copy
-    ## the output to that directory.
     ctx.actions.run_shell(
         arguments = [args],
         inputs  = gen_parser_inputs,
