@@ -41,17 +41,19 @@
                  selectors))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (-emit-deps outp this-is-main prologue deps-tag
+;;FIXME: 2 routines, emit-deps, emit-exec-module-deps?
+(define (-emit-deps outp
+                    this-is-main ;;FIXME: remove?
+                    prologue deps-tag
                     ;; stanza
                     agg-deps local-deps selectors testsuite)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A~%" (bgblue "-emit-deps") deps-tag)
-        (format #t "~A: ~A~%" (uwhite "agg-deps") agg-deps)
-        (format #t "~A: ~A~%" (uwhite "local-deps") local-deps)
-        (format #t "~A: ~A~%" (uwhite "deps-tag") deps-tag)
-        (format #t "~A: ~A~%" (uwhite "this-is-main") this-is-main)
-        (format #t "~A: ~A~%" (uwhite "prologue") prologue)))
+  (mibl-trace-entry "-emit-deps" deps-tag)
+  (mibl-trace "agg-deps" agg-deps)
+  (mibl-trace "local-deps" local-deps)
+  (mibl-trace "deps-tag" deps-tag)
+  (mibl-trace "this-is-main" this-is-main)
+  (mibl-trace "prologue" prologue)
+
   (if (or (number? deps-tag)
           (truthy? local-deps)
           (truthy? agg-deps)
@@ -62,7 +64,7 @@
 
   (if (and this-is-main (truthy? prologue))
       (begin
-        (format outp "[\":lib~A\"]" prologue))
+        (format outp "01: [\":lib~A\"]" prologue))
       ;; NB: omit trailing comma (and newline) in case select follows
       (if (null? local-deps)
           (if (null? agg-deps)
@@ -82,29 +84,28 @@
                           deps-tag agg-deps))
                   (if this-is-main ;; prologue
                       (if prologue
-                          (format outp "[\":~A_execlib\"]" prologue)
-                          (format outp "DEPS_~A" deps-tag))
-                      (format outp "DEPS_~A"
+                          (format outp "03: [\":~A_execlib\"]" prologue)
+                          (format outp "04: DEPS_~A" deps-tag))
+                      (format outp "05: DEPS_~A"
                               (if testsuite testsuite deps-tag)))))
           ;; have local-deps (note: trailing comma+newline added below)
           (if (null? agg-deps)
               (if (number? deps-tag)
                   (if this-is-main ;; prologue
-                      (format outp "[\":~A_execlib\"]1" prologue)
+                      (format outp "06: [\":~A_execlib\"]1" prologue)
                       (begin
                         (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                        ;; (format outp "        \":~A_execlib\"~%" prologue)
-                        (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                        (format outp "~{        ~S~^,~%~}\n" local-deps)
                         (format outp "    ]")))
                   ;; else
                   (begin
                     ;; (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                    (format outp " [\n")
-                    (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                    (format outp "08: [\n")
+                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
                     (format outp "    ]")))
               (begin
-                (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+                (format outp "09: DEPS_~A + [\n" (if testsuite testsuite deps-tag))
+                (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
                 (format outp "    ]")))))
 
   ;; (if (not (null? local-deps))
@@ -204,88 +205,92 @@
          ;;                   privname
          ;;                   #f))
 
-         (local-deps (if (proper-list? module)
-                         (if (alist? (cdr module))
-                             ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...) (:mli-deps...))
-                             (let* ((ml-locals (if-let ((locals (assoc :ml-deps (cdr module))))
-                                                       (cdr locals)
-                                                       '()))
-                                    (mli-locals (if-let ((locals (assoc :mli-deps (cdr module))))
-                                                        (cdr locals)
-                                                        '()))
-                                    (locals (concatenate ml-locals mli-locals)))
-                               (remove-duplicates locals))
-                             ;; else (A a.ml Foo Bar ...)
-                             (cdr module))
-                         ;; else (A . a.ml) from :structures
-                         ;; should not happen?
-                         (cdr module)))
+         ;; (local-deps (if (proper-list? module)
+         ;;                 (if (alist? (cdr module))
+         ;;                     ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...) (:mli-deps...))
+         ;;                     (let* ((ml-locals (if-let ((locals (assoc :ml-deps (cdr module))))
+         ;;                                               (cdr locals)
+         ;;                                               '()))
+         ;;                            (mli-locals (if-let ((locals (assoc :mli-deps (cdr module))))
+         ;;                                                (cdr locals)
+         ;;                                                '()))
+         ;;                            (locals (concatenate ml-locals mli-locals)))
+         ;;                       (remove-duplicates locals))
+         ;;                     ;; else (A a.ml Foo Bar ...)
+         ;;                     (cdr module))
+         ;;                 ;; else (A . a.ml) from :structures
+         ;;                 ;; should not happen?
+         ;;                 (cdr module)))
 
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "Local-deps") local-deps)))
          )
-    (if (alist? (cdr module))
-        ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
-        (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                      (format #t "~A: ~A~%" (green "emitting freestanding module (proper assoc-list)") module)))
-               (modname (car module))
-               (srcs    (cdr module))
-               (select-sigfile #f)
-               ;; (select-sigfile (assoc-val :mli_ srcs))
-               ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile)))
-               ;; (sigfile (if select-sigfile
-               ;;              (make-selector module stanza)
-               ;;              (assoc-val :mli srcs)))
-               (select-structfile #f) ;; (assoc-val :ml_ srcs))
-               ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "select-structfile") select-structfile)))
-               ;; (structfile (if select-structfile
-               ;;                 (make-selector module stanza)
-               ;;                 (assoc-val :ml srcs)))
-               ;; ;; for case deps/dynamic
-               ;; (structfile (if structfile structfile
-               ;;                 (assoc-val :ml_ srcs)))
+    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+      (mibl-trace "ml-local-deps" ml-local-deps)
+      (mibl-trace "mli-local-deps" mli-local-deps)
 
-               (sigfile (if-let ((mli (assoc-val :mli srcs)))
-                                mli
-                                (assoc-val :mli_ srcs)))
-               (structfile (if-let ((mli (assoc-val :ml srcs)))
-                                   (car mli)
-                                   (assoc-val :ml_ srcs)))
-               )
-          ;; (error 'STOP "STOP selmod")
-          ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-          ;;         ;;               (cdr opts) '())))
-          ;; (if (or *mibl-debug-emit* *mibl-debug-s7*)
-          ;;     (begin
-          ;;       (format #t "emitting module (proper): ~A: ~A\n" modname srcs)))
+      (if (alist? (cdr module))
+          ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
+          (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                        (format #t "~A: ~A~%" (green "emitting freestanding module (proper assoc-list)") module)))
+                 (modname (car module))
+                 (srcs    (cdr module))
+                 (select-sigfile #f)
+                 ;; (select-sigfile (assoc-val :mli_ srcs))
+                 ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "select-sigfile") select-sigfile)))
+                 ;; (sigfile (if select-sigfile
+                 ;;              (make-selector module stanza)
+                 ;;              (assoc-val :mli srcs)))
+                 (select-structfile #f) ;; (assoc-val :ml_ srcs))
+                 ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "select-structfile") select-structfile)))
+                 ;; (structfile (if select-structfile
+                 ;;                 (make-selector module stanza)
+                 ;;                 (assoc-val :ml srcs)))
+                 ;; ;; for case deps/dynamic
+                 ;; (structfile (if structfile structfile
+                 ;;                 (assoc-val :ml_ srcs)))
 
-          (format outp "ocaml_module(\n")
-          (format outp "    name          = \"~A\",\n" modname)
-          (format outp "    struct        = \"~A\",~%" structfile)
-          (if *mibl-build-dyads*
-              (format outp "    sig           = \":~A_cmi\",\n" modname))
+                 (sigfile (if-let ((mli (assoc-val :mli srcs)))
+                                  mli
+                                  (assoc-val :mli_ srcs)))
+                 (structfile (if-let ((mli (assoc-val :ml srcs)))
+                                     (car mli)
+                                     (assoc-val :ml_ srcs)))
+                 )
+            ;; (error 'STOP "STOP selmod")
+            ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+            ;;         ;;               (cdr opts) '())))
+            ;; (if (or *mibl-debug-emit* *mibl-debug-s7*)
+            ;;     (begin
+            ;;       (format #t "emitting module (proper): ~A: ~A\n" modname srcs)))
 
-          (format outp "    deps          = \"~A\",~%" local-deps)
+            (format outp "01: ocaml_module(\n")
+            (format outp "    name          = \"~A\",\n" modname)
+            (format outp "    struct        = \"~A\",~%" structfile)
+            (if *mibl-build-dyads*
+                (format outp "    sig           = \":~A_cmi\",\n" modname))
 
-          (format outp ")\n")
-          (newline outp))
+            (format outp "    deps          = \"~A\",~%" local-deps)
+
+            (format outp ")\n")
+            (newline outp))
 
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
-        (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "emitting module (proper list): ~A\n" module)))
-               (modname (car module))
-               (structfile (if (proper-list? module) (cadr module)  (cadr module)))
-               (local-deps (if (proper-list? module) (cddr module) '())))
+          ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
+          (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "emitting module (proper list): ~A\n" module)))
+                 (modname (car module))
+                 (structfile (if (proper-list? module) (cadr module)  (cadr module)))
+                 (local-deps (if (proper-list? module) (cddr module) '())))
 
-          (format outp "ocaml_module(\n")
-          (format outp "    name          = \"~A\",\n" modname)
-          (format outp "    struct        = \"~A\",\n" structfile)
-          (format outp "    deps          = \"~A\",~%" local-deps)
-          ;; (-emit-deps outp this-is-main prologue? deps-tag
-          ;;             ;; stanza
-          ;;             agg-deps local-deps dep-selectors testsuite)
-          (format outp ")")
-          (newline outp)))
-    )
+            (format outp "02: ocaml_module(\n")
+            (format outp "    name          = \"~A\",\n" modname)
+            (format outp "    struct        = \"~A\",\n" structfile)
+            (format outp "    deps          = \"~A\",~%" local-deps)
+            ;; (-emit-deps outp this-is-main prologue? deps-tag
+            ;;             ;; stanza
+            ;;             agg-deps local-deps dep-selectors testsuite)
+            (format outp ")")
+            (newline outp)))
+      ))
 
   (if *mibl-build-dyads*
       (if (alist? (cdr module))
@@ -295,14 +300,15 @@
   )
 
 ;;FIXME: rename to -emit-dyadic-module
-(define (-emit-proper-module outp module pkg stanza-alist ns
+(define (-emit-dyadic-module outp ws module pkg stanza ns
                              target-selector src-selectors src-default-apodosis
                              opts opts-tag prologue? deps-tag
                              agg-deps local-deps dep-selectors testsuite
-                             ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
+                             shared-ppx ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A~%" (ublue "-emit-proper-module") module))
-  (let* ((modname (car module))
+      (format #t "~A: ~A~%" (ublue "-emit-dyadic-module") module))
+  (let* ((stanza-alist (cdr stanza))
+         (modname (car module))
          (srcs    (cdr module))
          (select-sigfile #f)
          ;; (select-sigfile (assoc-val :mli_ srcs))
@@ -320,7 +326,7 @@
          ;;                 (assoc-val :ml_ srcs)))
 
          (sigfile (if-let ((mli (assoc-val :mli srcs)))
-                          mli
+                          (car mli)
                           (assoc-val :mli_ srcs)))
          (structfile (if-let ((mli (assoc-val :ml srcs)))
                              (car mli)
@@ -331,7 +337,11 @@
     ;;         ;;               (cdr opts) '())))
     (if (or *mibl-debug-emit* *mibl-debug-s7*)
         (begin
-          (format #t "emitting module (proper): ~A: ~A\n" modname srcs)))
+          (format #t "emitting module (proper): ~A: ~A\n" modname srcs)
+          (format #t "~A: ~A\n" (green "srcs") srcs)
+          (format #t "~A: ~A\n" (green "structfile") structfile)
+          (format #t "~A: ~A\n" (green "sigfile") sigfile)
+          ))
 
     ;; (format outp "## this-is-main ~A~%" this-is-main)
     (if (or (assoc :ppx-rewriter stanza-alist)
@@ -391,50 +401,15 @@
 
     ;; (format outp "    ## sig      = \":~A_cmi\",\n" modname)
     (if opts ;; (not (null? opts))
-        ;; (if this-is-main
-        ;;     (if prologue?
-        ;;         (format outp "    opts          = [\"-open\", \"~A\"] + OPTS_~A,\n"
-        ;;                 (normalize-module-name prologue?) opts-tag)
-        ;;         ;; (format outp "X0    opts          = [\"-open\", \"~A_execlib\"] + OPTS_~A,\n" this-is-main opts-tag)
-        ;;         (format outp "    opts          = OPTS_~A,\n" opts-tag))
         (if prologue?
             ;; should not happen?
             (format outp "    opts          = OPTS_~A, ## X0\n" opts-tag)
             ;; else no main-module, no prologue
             (format outp "    opts          = OPTS_~A,\n" opts-tag))
-        ;; )
-        ;; else no opts
-        ;; (if this-is-main
-        ;;     (if prologue?
-        ;;         (format outp "X1    opts          = [\"-open\", \"~A_execlib\"], ## Y0\n" this-is-main)
-        ;;         ;; else should not happen
-        ;;         ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
-        ;;         )
-        ;; no opts
-        ;; (if prologue?
-        ;;     ;; should not happen?
-        ;;     (format outp "    opts          = [\"-open\", \"~A_execlib\"], ## X1 \n" this-is-main)
-        ;;     ;; else no opts, no main-module, no prologue
-        ;;     )
-        ;; )
         )
-    ;; (if prologue?
-    ;;     (format outp "    opts          = [\"-open\", \"~A_execlib\"],\n" this-is-main)))
-
-    ;; (if (not (null? ocamlc_opts))
-    ;;     (format outp "    opts_ocamlc   = ~A_OCAMLC_OPTS,\n"
-    ;;             libname))
-
-    ;; (if (not (null? ocamlopt_opts))
-    ;;     (format outp "    opts_ocamlopt = ~A_OCAMLOPT_OPTS,\n"
-    ;;             libname))
-
-    ;; (if (not (null? agg-deps))
-    ;;     (format outp "    deps          = ~A_DEPS,\n" libname))
 
     (if (or *mibl-debug-emit* *mibl-debug-s7*)
         (format #t "~A: ~A~%" (blue "emitting deps A") deps-tag))
-    ;; (format outp "## emitting deps A: ~A~%" deps-tag)
     (-emit-deps outp
                 #f ;; this-is-main
                 prologue? deps-tag
@@ -474,6 +449,10 @@
 
     (format outp ")\n")
     (newline outp)
+
+    ;; emit sig
+    (if *mibl-build-dyads*
+        (-emit-sig outp ws pkg module stanza-alist))
     )
   )
 
@@ -484,12 +463,12 @@
                                target-selector src-selectors src-default-apodosis
                                opts opts-tag prologue? deps-tag
                                agg-deps local-deps dep-selectors testsuite
-                               ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
+                               shared-ppx ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (ublue "-emit-improper-module") module))
   (let* ((modname (car module))
          (structfile (if (proper-list? module) (cadr module)  (cdr module)))
-         (local-deps (if (proper-list? module) (cddr module) '()))
+         ;; (local-deps (if (proper-list? module) (cddr module) '()))
          (ns (case (car stanza)
                ((:executable)
                 (let ((main (assoc-val :main (cdr stanza))))
@@ -502,161 +481,172 @@
                           ;;(format #f "ns.~A" main)
                           (format #f "Exe_ns")
                           #f))))
-               ((:ns-archive :ns-library) "Bar")
+               ((:ns-archive :ns-library)
+                ;; only for bottom-up?
+                #f)
                (else #f))))
                ;; (derive-exe-ns pkg module)))
 
-    (format #t "agg kind: ~A\n" stanza)
+    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+      (mibl-trace "ml-local-deps" ml-local-deps)
+      (mibl-trace "mli-local-deps" mli-local-deps)
 
-    ;; ns:
-    ;; if aggregator is :executable
-    ;;     if module is in :main-deps of aggregator use exe ns
-    ;;     if module is in :prologue of aggregator use local-prologue ns
-    ;; if is namespaced use it
+      (format #t "agg kind: ~A\n" stanza)
 
-    ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
-    ;;               (cdr opts) '())))
+      ;; ns:
+      ;; if aggregator is :executable
+      ;;     if module is in :main-deps of aggregator use exe ns
+      ;;     if module is in :prologue of aggregator use local-prologue ns
+      ;; if is namespaced use it
 
-    (if ppx-codeps
-        (format outp "ppx_module(\n")
-        ;; (if this-is-main
-        ;;     (format outp "ocaml_exec_module(\n")
-        (format outp "ocaml_module(\n"))
+      ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
+      ;;               (cdr opts) '())))
 
-    (if ns
-        (format outp "    ns_resolver   = \":~A\",\n" ns))
+      (if ppx-codeps
+          (format outp "ppx_module(\n")
+          ;; (if this-is-main
+          ;;     (format outp "ocaml_exec_module(\n")
+          (format outp "ocaml_module(\n"))
 
-    (format outp "    name          = \"~A\",\n" modname)
+      (if ns
+          (format outp "    ns_resolver   = \":~A\",\n" ns))
 
-    ;; (if (and ns (not *mibl-ns-topdown*))
-    ;;     (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
-    ;; (format outp "    struct        = \"~A\",\n" structfile)
+      (format outp "    name          = \"~A\",\n" modname)
 
-    (if (truthy? target-selector)
-        (if (eq? (fnmatch "*.ml" (format #f "~A" (assoc-val :target target-selector)) 0) 0)
-            (begin
-              (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                  (format #t "~A: ~A~%" (uwhite "src-selectors") src-selectors))
-              (format outp "    struct        = select({~%")
-              (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
-                      src-selectors)
-              (format outp "        \"//conditions:default\": \"~A\"~%"
-                      src-default-apodosis)
-              ;; (format outp "        }, no_match_error=\"no file selected\"\n")
-              (format outp "    }),~%")
+      ;; (if (and ns (not *mibl-ns-topdown*))
+      ;;     (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+      ;; (format outp "    struct        = \"~A\",\n" structfile)
 
-              ))
-        (begin
-          (format outp "    struct        = \"~A\",~%" structfile)
-          ))
-    (if (or *mibl-debug-emit* *mibl-debug-s7*)
-        (begin
-          (format #t "~A: ~A~%" (umagenta "emitting opts") opts)
-          (format #t "~A: ~A~%" (umagenta "prologue?") prologue?)))
-    (if opts ;; (not (null? opts))
-        ;; (if this-is-main
-        ;;     (if prologue?
-        ;;         (format outp "    opts          = [\"-open\", \"~A\"] + OPTS_~A,\n"
-        ;;                 (normalize-module-name prologue?) opts-tag)
-        ;;         (format outp "    opts          = OPTS_~A,\n" opts-tag))
-        ;; (if prologue?
-        ;;     ;; should not happen?
-        ;;     (format outp "    opts          = OPTS_~A, ## X3\n" opts-tag)
-        ;;     ;; else no main-module, no prologue
-        ;;     (format outp "    opts          = OPTS_~A,\n" opts-tag))
-        ;; )
-        ;; else no opts
-        ;; (if this-is-main
-        ;;     (if prologue?
-        ;;         (format outp "    opts          = [\"-open\", \"~A\"],~%" prologue?) ;; this-is-main)
-        ;;         ;; else should not happen
-        ;;         ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
-        ;;         )
-        ;; no opts, no main-module
-        (if prologue?
-            ;; should not happen?
-            (format outp "    opts          = [\"-open\", \"~A\"], ## X4\n" prologue?)
-            ;; else no opts, no main-module, no prologue
-            )
-        ;; )
-        )
-
-    (if (or *mibl-debug-emit* *mibl-debug-s7*)
-        (format #t "~A: ~A~%" (blue "emitting deps B") deps-tag))
-    ;; (format outp "## emitting deps B: ~A~%" deps-tag)
-    (-emit-deps outp
-                #f ;; this-is-main
-                prologue? deps-tag
-                ;; stanza
-                agg-deps local-deps dep-selectors testsuite)
-    ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
-    ;; (if (not (null? local-deps))
-    ;;     (if (not (null? agg-deps))
-    ;;         (begin
-    ;;           (if (equal? :executable (car stanza))
-    ;;               (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
-    ;;               (format outp "Z    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
-    ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-    ;;           (format outp "    ],\n"))
-    ;;         (begin
-    ;;           (format outp "    deps          = [\n")
-    ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-    ;;           (format outp "    ],\n")))
-    ;;     ;; else no local deps, maybe agg deps
-    ;;     (if (not (null? agg-deps))
-    ;;           (if (equal? :executable (car stanza))
-    ;;               (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
-    ;;               (format outp "A    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
-
-    (if ppx-alist
-        (begin
-          (if (> (length shared-ppx) 1)
-              (format outp "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id)
-              (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
-
-          (if ppx-args
+      (if (truthy? target-selector)
+          (if (eq? (fnmatch "*.ml" (format #f "~A" (assoc-val :target target-selector)) 0) 0)
               (begin
-                ;; (format #t "~A: ~A~%" "pkg" pkg)
-                ;; (format #t "~A: ~A~%" "modname" modname)
-                ;; (format outp
-                ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
-                (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                       (mfile (if mod
-                                  (car (assoc-val :ml (cdr mod)))
-                                  (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
-                                    (cadr mstruct))))
-                       )
-                  (format outp
-                          "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
-                          (append (list "-loc-filename"
-                                        (format #f "~A" mfile))
-                                  ppx-args))))
+                (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                    (format #t "~A: ~A~%" (uwhite "src-selectors") src-selectors))
+                (format outp "    struct        = select({~%")
+                (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
+                        src-selectors)
+                (format outp "        \"//conditions:default\": \"~A\"~%"
+                        src-default-apodosis)
+                ;; (format outp "        }, no_match_error=\"no file selected\"\n")
+                (format outp "    }),~%")
+
+                ))
+          (begin
+            (format outp "    struct        = \"~A\",~%" structfile)
+            ))
+      (if (or *mibl-debug-emit* *mibl-debug-s7*)
+          (begin
+            (format #t "~A: ~A~%" (umagenta "emitting opts") opts)
+            (format #t "~A: ~A~%" (umagenta "prologue?") prologue?)))
+      (if opts ;; (not (null? opts))
+          ;; (if this-is-main
+          ;;     (if prologue?
+          ;;         (format outp "    opts          = [\"-open\", \"~A\"] + OPTS_~A,\n"
+          ;;                 (normalize-module-name prologue?) opts-tag)
+          ;;         (format outp "    opts          = OPTS_~A,\n" opts-tag))
+          ;; (if prologue?
+          ;;     ;; should not happen?
+          ;;     (format outp "    opts          = OPTS_~A, ## X3\n" opts-tag)
+          ;;     ;; else no main-module, no prologue
+          ;;     (format outp "    opts          = OPTS_~A,\n" opts-tag))
+          ;; )
+          ;; else no opts
+          ;; (if this-is-main
+          ;;     (if prologue?
+          ;;         (format outp "    opts          = [\"-open\", \"~A\"],~%" prologue?) ;; this-is-main)
+          ;;         ;; else should not happen
+          ;;         ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
+          ;;         )
+          ;; no opts, no main-module
+          (if prologue?
+              ;; should not happen?
+              (format outp "    opts          = [\"-open\", \"~A\"], ## X4\n" prologue?)
+              ;; else no opts, no main-module, no prologue
               )
-          ;; (if ppx-args
-          ;; ;; (if (not  ## why?
-          ;; ;;      (equal? :all (cadr (assoc :scope
-          ;; ;;                                ppx-alist))))
-          ;;     (format outp
-          ;;             "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
-          ;;             ;;(cadr (assoc :args ppx-alist))
-          ;;             ))
-          )) ;; ppx-alist
-    (if ppx-codeps
-        (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
+          ;; )
+          )
 
-    ;; (if prologue?
-    ;;     (format outp "    visibility    = [\"//visibility:private\"]~%"))
+      (if (or *mibl-debug-emit* *mibl-debug-s7*)
+          (format #t "~A: ~A~%" (blue "emitting deps B") deps-tag))
+      (-emit-deps outp
+                  #f ;; this-is-main
+                  prologue? deps-tag
+                  ;; stanza
+                  agg-deps ml-local-deps dep-selectors testsuite)
+      ;; (format #t "~A: ~A~%" (red "local-deps") local-deps)
+      ;; (if (not (null? local-deps))
+      ;;     (if (not (null? agg-deps))
+      ;;         (begin
+      ;;           (if (equal? :executable (car stanza))
+      ;;               (format outp "    deps          = ~A_EXE_DEPS + [\n" (if testsuite testsuite libname))
+      ;;               (format outp "Z    deps          = ~A_DEPS + [\n" (if testsuite testsuite libname)))
+      ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+      ;;           (format outp "    ],\n"))
+      ;;         (begin
+      ;;           (format outp "    deps          = [\n")
+      ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
+      ;;           (format outp "    ],\n")))
+      ;;     ;; else no local deps, maybe agg deps
+      ;;     (if (not (null? agg-deps))
+      ;;           (if (equal? :executable (car stanza))
+      ;;               (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite libname))
+      ;;               (format outp "A    deps          = ~A_DEPS,~%" (if testsuite testsuite libname)))))
 
-    (format outp ")\n")
-    )
+      (if ppx-alist
+          (begin
+            (if (> (length shared-ppx) 1)
+                (format outp "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id)
+                (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+
+            (if ppx-args
+                (begin
+                  ;; (format #t "~A: ~A~%" "pkg" pkg)
+                  ;; (format #t "~A: ~A~%" "modname" modname)
+                  ;; (format outp
+                  ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
+                  (let* ((mod (assoc-in `(:modules ,modname) pkg))
+                         (mfile (if mod
+                                    (car (assoc-val :ml (cdr mod)))
+                                    (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
+                                      (cadr mstruct))))
+                         )
+                    (format outp
+                            "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+                            (append (list "-loc-filename"
+                                          (format #f "~A" mfile))
+                                    ppx-args))))
+                )
+            ;; (if ppx-args
+            ;; ;; (if (not  ## why?
+            ;; ;;      (equal? :all (cadr (assoc :scope
+            ;; ;;                                ppx-alist))))
+            ;;     (format outp
+            ;;             "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
+            ;;             ;;(cadr (assoc :args ppx-alist))
+            ;;             ))
+            )) ;; ppx-alist
+      (if ppx-codeps
+          (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
+
+      ;; (if prologue?
+      ;;     (format outp "    visibility    = [\"//visibility:private\"]~%"))
+
+      (format outp ")\n")
+      ))
   )
 
 (define (-emit-module outp ws module stanza pkg)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (begin
-        (format #t "~A: ~A [~A]\n" (bgblue "-emit-module") module stanza)
-        (format #t "~A: ~A~%" (bgyellow "pkg") pkg)))
-  (let* ((pkg-name (pkg->pkg-name pkg))
+  (mibl-trace-entry "-emit-module" module)
+  (mibl-trace "stanza" stanza)
+  (mibl-trace "pkg" pkg)
+
+  (let* ((dyadic-module? (if (alist? (cdr module)) #t #f))
+          ;; (if (or (assoc :mli (cdr module))
+          ;;                        (assoc :mli_ (cdr module)))
+          ;;                    #t #f))
+         (mibl-trace-let "dyadic?" dyadic-module?)
+
+         (pkg-name (pkg->pkg-name pkg))
          ;; (_ (format #t "~A: ~A~%" (bgyellow "pkg-name") pkg-name))
 
          (stanza-alist (cdr stanza))
@@ -719,25 +709,6 @@
          ;;        (begin
          ;;          (format #t "~A: ~A~%" (uwhite "aggregtor") stanza)
          ;;          (error 'STOP "STOP emit-module"))))
-
-         (local-deps (if (proper-list? module)
-                         (if (alist? (cdr module))
-                             ;; (A (:ml a.ml) (:mli a.mli) (:ml-deps...) (:mli-deps...))
-                             (let* ((ml-locals (if-let ((locals (assoc :ml-deps (cdr module))))
-                                                       (cdr locals)
-                                                       '()))
-                                    (mli-locals (if-let ((locals (assoc :mli-deps (cdr module))))
-                                                        (cdr locals)
-                                                        '()))
-                                    (locals (concatenate ml-locals mli-locals)))
-                               (remove-duplicates locals))
-                             ;; else (A a.ml Foo Bar ...)
-                             (cdr module))
-                         ;; else (A . a.ml) from :structures
-                         ;; should not happen?
-                         (cdr module)))
-
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "Local-deps") local-deps)))
 
          (deps-conditional (assoc-in '(:deps :conditionals) stanza-alist))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)))
@@ -878,36 +849,44 @@
          (ppx-pkg (if *mibl-local-ppx-driver* "" (format #f "//~A" *mibl-shared-ppx-pkg*)))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "ppx-pkg") ppx-pkg)))
          )
-    (if (or *mibl-debug-emit* *mibl-debug-s7*)
-        (begin
-          (format #t "~A: ~A~%" (uwhite "ppx id") ppx-id)
-          (format #t "module libname: ~A~%" libname)
-          (format #t "module ns: ~A~%" ns)))
-    ;; (if ppx-id (error 'stop "STOP ppx id"))
 
-    ;; FIXME: if *mibl-build-dyads* then emit both ocaml_module and ocaml_signature
+    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+      (mibl-trace "ml-local-deps" ml-local-deps)
+      (mibl-trace "mli-local-deps" mli-local-deps)
 
-    ;; (if (proper-list? module)
-    (if (alist? (cdr module))
-        ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
-        (-emit-proper-module outp module pkg stanza-alist ns
-                             target-selector src-selectors src-default-apodosis
-                             opts opts-tag prologue? deps-tag
-                             agg-deps local-deps dep-selectors testsuite
-                             ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
-        (-emit-improper-module outp module pkg stanza ns
+      ;; (_ (error 'x "X"))
+
+      (if (or *mibl-debug-emit* *mibl-debug-s7*)
+          (begin
+            (format #t "~A: ~A~%" (uwhite "ppx id") ppx-id)
+            (format #t "module libname: ~A~%" libname)
+            (format #t "module ns: ~A~%" ns)))
+      ;; (if ppx-id (error 'stop "STOP ppx id"))
+
+      ;; FIXME: if *mibl-build-dyads* then emit both ocaml_module and ocaml_signature
+
+      ;; (if (proper-list? module)
+      (if (alist? (cdr module))
+          ;; proper alist (A (:ml a.ml)(:mli a.mli)) (or :ml_, :mli_)
+          (-emit-dyadic-module outp ws module pkg stanza ns
                                target-selector src-selectors src-default-apodosis
                                opts opts-tag prologue? deps-tag
-                               agg-deps local-deps dep-selectors testsuite
-                               ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
+                               agg-deps ml-local-deps dep-selectors testsuite
+                               shared-ppx ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
+          (-emit-improper-module outp module pkg stanza ns
+                                 target-selector src-selectors src-default-apodosis
+                                 opts opts-tag prologue? deps-tag
+                                 agg-deps ml-local-deps dep-selectors testsuite
+                                 shared-ppx ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
 
-        ))
-  (if *mibl-build-dyads*
-      (if (alist? (cdr module))
-          (if (assoc :mli (cdr module))
-              (-emit-sig outp ws pkg module stanza))))
+          )))
+  ;; FIXME: move to individual emit-X-module routines
+  ;; (if *mibl-build-dyads*
+  ;;     (if (alist? (cdr module))
+  ;;         (if (assoc :mli (cdr module))
+  ;;             (-emit-sig outp ws pkg module stanza))))
   stanza)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -976,7 +955,7 @@
                                             ;; get main module, search for it in pkg-modules, pkg-structs, check the deps
                                             ;; (let* ((main (assoc-val :main (cdr stanza)))
                                             ;;        (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "checking pkg deps of") main)))
-                                            ;;        (mx (if-let ((mdeps (find-module-in-pkg main pkg)))
+                                            ;;        (mx (if-let ((mdeps (module-name->tagged-label main pkg)))
                                             ;;                    (begin
                                             ;;                      (if (or *mibl-debug-emit* *mibl-debug-s7*)
                                             ;;                          (format #t "~A: ~A~%" (green "found") mdeps))
@@ -1065,13 +1044,12 @@
                   (car sig)
                   (error 'missing-mli "module record missing :mli, :mli_"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (-emit-sig outp ws pkg sig stanza)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (begin
-        (format #t "~A\n" (bgblue "-emit-sig"))
-        (format #t "~A: ~A\n" (blue "sig") sig)
-        (format #t "~A: ~A\n" (blue "stanza") stanza)))
+  (mibl-trace-entry "-emit-sig" sig)
+  (mibl-trace "stanza" stanza)
   (let* ((stanza-alist (cdr stanza))
+         (module-name (car sig))
          (libname (string-append
                    (string-upcase
                     (stringify
@@ -1122,10 +1100,6 @@
                        agg-deps))
 
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "Agg-deps") agg-deps)))
-
-         (local-deps (if-let ((locals (assoc :mli-deps (cdr sig))))
-                             (cdr locals)
-                             '()))
 
          (deps-conditional (assoc-in '(:deps :conditionals) stanza-alist))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)))
@@ -1196,60 +1170,64 @@
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "ppx-nme: ~A\n" ppx-name)))
          ;; (ppx-id (get-ppx-id ws (cdr stanza)))
          )
+    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps module-name pkg)))
+      (mibl-trace "ml-local-deps" ml-local-deps)
+      (mibl-trace "mli-local-deps" mli-local-deps)
+      ;; (error 'x "X")
 
-    (let* ((modname (car sig))
-           (sigfile (if (proper-list? sig)
-                        (-module-record->sigfile (cdr sig))
-                        (cdr sig))))
+      (let* ((modname (car sig))
+             (sigfile (if (proper-list? sig)
+                          (-module-record->sigfile (cdr sig))
+                          (cdr sig))))
 
-      (if (or *mibl-debug-emit* *mibl-debug-s7*)
-          (format #t "emitting signature A: ~A\n" modname))
+        (if (or *mibl-debug-emit* *mibl-debug-s7*)
+            (format #t "emitting signature A: ~A\n" modname))
 
-      (format outp "ocaml_signature(\n")
-      (format outp "    name          = \"~A_cmi\",\n" modname)
-      (if (and ns (not *mibl-ns-topdown*))
-          (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
-      (format outp "    src           = \"~A\",\n" sigfile)
-      (if opts-tag
-          (format outp "    opts          = OPTS_~A,\n" opts-tag))
+        (format outp "ocaml_signature(\n")
+        (format outp "    name          = \"~A_cmi\",\n" modname)
+        (if (and ns (not *mibl-ns-topdown*))
+            (format outp "    ns_resolver   = \":ns.~A\",\n" ns))
+        (format outp "    src           = \"~A\",\n" sigfile)
+        (if opts-tag
+            (format outp "    opts          = OPTS_~A,\n" opts-tag))
 
-      (if (or *mibl-debug-emit* *mibl-debug-s7*)
-          (format #t "~A: ~A~%" (blue "emitting deps D") deps-tag))
-      (-emit-deps outp this-is-main prologue? deps-tag
-                  ;; stanza
-                  agg-deps local-deps dep-selectors testsuite)
+        (if (or *mibl-debug-emit* *mibl-debug-s7*)
+            (format #t "~A: ~A~%" (blue "emitting deps D") deps-tag))
+        (-emit-deps outp this-is-main prologue? deps-tag
+                    ;; stanza
+                    agg-deps mli-local-deps dep-selectors testsuite)
 
-      (if ppx-alist
-          (begin
-            (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                (begin
-                  (format #t "~A: ~A~%" (red "stanza") stanza)
-                  (format #t "~A: ~A~%" (red "ppx-alist") ppx-alist)
-                  (format #t "~A: ~A~%" (red "len ppx-alist") (length ppx-alist))))
-            (if (> (length shared-ppx) 1)
-                (begin (error 'stop "SIG")
-                       (format outp "    ppx           = \":Cppx_~A.exe\",\n" ppx-id))
-                (format outp "    ppx           = \":ppx.exe\",\n"))
-                    ;; "    ppx           = \"//~A:ppx_~A.exe\", #X0 \n"
-                    ;; ppx-pkg ppx-id) ;; ppx-name)
-                    ;; (cadr (assoc :name ppx-alist)))
-            ;; (if ppx-args
-            ;;     (format outp
-            ;;             "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
-            (if ppx-args
-                (format outp
-                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
-                )
-            ;; (if (not
-            ;;      (equal? :all (cadr (assoc :scope
-            ;;                                ppx-alist))))
-            ;;     (format outp
-            ;;             "    ppx_args = [~{~S, ~}],\n"
-            ;;             (cadr (assoc :args ppx-alist))))
-            ))
-      (format outp ")~%")
-      (newline outp)
-      )))
+        (if ppx-alist
+            (begin
+              (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                  (begin
+                    (format #t "~A: ~A~%" (red "stanza") stanza)
+                    (format #t "~A: ~A~%" (red "ppx-alist") ppx-alist)
+                    (format #t "~A: ~A~%" (red "len ppx-alist") (length ppx-alist))))
+              (if (> (length shared-ppx) 1)
+                  (begin (error 'stop "SIG")
+                         (format outp "    ppx           = \":Cppx_~A.exe\",\n" ppx-id))
+                  (format outp "    ppx           = \":ppx.exe\",\n"))
+              ;; "    ppx           = \"//~A:ppx_~A.exe\", #X0 \n"
+              ;; ppx-pkg ppx-id) ;; ppx-name)
+              ;; (cadr (assoc :name ppx-alist)))
+              ;; (if ppx-args
+              ;;     (format outp
+              ;;             "    ppx_args = [~{~S, ~}], #A2 \n" ppx-args))
+              (if ppx-args
+                  (format outp
+                          "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
+                  )
+              ;; (if (not
+              ;;      (equal? :all (cadr (assoc :scope
+              ;;                                ppx-alist))))
+              ;;     (format outp
+              ;;             "    ppx_args = [~{~S, ~}],\n"
+              ;;             (cadr (assoc :args ppx-alist))))
+              ))
+        (format outp ")~%")
+        (newline outp)
+        ))))
 
 (define (-emit-sig-freestanding outp ws sig)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)

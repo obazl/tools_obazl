@@ -1,5 +1,5 @@
-(if *mibl-debug-s7-loads*
-    (format #t "loading obazl/starlark.scm\n"))
+(if (or *mibl-debug-s7-loads* *mibl-debug-s7*)
+    (format #t "loading starlark.scm\n"))
 
 (define *select-protases* '())
 
@@ -9,6 +9,7 @@
 (load "starlark/parsers.scm")
 (load "starlark/singletons.scm")
 (load "starlark/cc.scm")
+(load "starlark/deps.scm")
 (load "starlark/emit.scm")
 (load "starlark/headers.scm")
 (load "starlark/executables_starlark.scm")
@@ -28,4 +29,4 @@
 (load "starlark/starlark.scm")
 
 (if *mibl-debug-s7*
-    (format #t "loaded obazl/starlark.scm\n"))
+    (format #t "loaded starlark.scm\n"))

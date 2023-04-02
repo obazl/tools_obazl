@@ -73,7 +73,7 @@
        ((:archive :library :ns-archive :ns-library)
         (let* ((hdr-flag #t)
                (libname (string-upcase
-                         ;; privname or pubname?
+                         ;; privname or findlib-name?
                          (stringify (assoc-val :privname (cdr stanza)))))
                ;; compile-options is an alist,
                ;; keys :generic, :ocamlc, :ocamlopt
@@ -127,7 +127,7 @@
          ((:executable :test)
           (if *mibl-debug-s7* (format #t "exec globals\n"))
           (let* ((libname (string-upcase
-                           ;; privname or pubname?
+                           ;; privname or findlib-name?
                            (stringify (assoc-val :privname (cdr stanza)))))
                  (_ (if *mibl-debug-s7* (format #t "libname: ~A~%" libname)))
                  (opts (if-let ((opts (assoc-in '(:compile :opts)

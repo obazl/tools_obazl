@@ -130,9 +130,9 @@
   (if *mibl-debug-s7*
       (format #t "~A: ~A~%" (ublue "starlark-emit-sh-test-target") stanza))
   (let* ((stanza-alist (cdr stanza))
-         ;; (pubname (car (assoc-val :alias stanza-alist)))
-         (pubname (car (assoc-val :name stanza-alist)))
-         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "pubname") pubname)))
+         ;; (findlib-name (car (assoc-val :alias stanza-alist)))
+         (findlib-name (car (assoc-val :name stanza-alist)))
+         (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "findlib-name") findlib-name)))
          ;;FIXME: assuming one tool
          (tools (let* ((tool (cadr
                               (assoc-in '(:actions :cmd :tool) stanza-alist))))
@@ -167,14 +167,14 @@
          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (uwhite "Cooked args") args)))
          )
     (if *mibl-debug-s7*
-        (format #t "TARGET: ~A\n" pubname))
+        (format #t "TARGET: ~A\n" findlib-name))
     ;; (error 'fixme "STOP sh-test")
 
     ;; (format #t "MAIN: ~A\n" mainname)
     (begin
       (format outp "#############\n")
       (format outp "sh_test(\n"))
-    (format outp "    name     = \"~A\",\n" pubname)
+    (format outp "    name     = \"~A\",\n" findlib-name)
     (format outp "    srcs     = [\"~A\"],\n" tools)
     (if deps ;; (not (null? deps))
         (begin
@@ -197,10 +197,10 @@
 ;;   (let* ((stanza-alist (cdr stanza))
 ;;          (privname (assoc-val :privname stanza-alist))
 ;;          ;; (mainname (normalize-module-name privname))
-;;          (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
-;;                           pubname
+;;          (findlib-name (if-let ((findlib-name (assoc-val :findlib-name stanza-alist)))
+;;                           findlib-name
 ;;                           privname))
-;;          (tgtname (format #f "~A" pubname))
+;;          (tgtname (format #f "~A" findlib-name))
 ;;          (exename privname)
 
 ;;          ;; 'name', i.e. main, is required by dune so we always have it
@@ -236,7 +236,7 @@
 ;;       ;;         ;; (format #t "FLAGS: ~A\n" flags)
 ;;       ;;         ;; (format #t "OPENS: ~A\n" opens)
 
-;;       ;;         (format outp "~A = [\n" (name->opts-sym pubname))
+;;       ;;         (format outp "~A = [\n" (name->opts-sym findlib-name))
 ;;       ;;         (if flags
 ;;       ;;             (for-each (lambda (flag)
 ;;       ;;                         (format outp "    \"~A\",\n" flag))
@@ -256,7 +256,7 @@
 ;;       ;; 'modules' are module (src) deps
 ;;       ;; (if (not (null? deps))
 ;;       ;; (begin
-;;       ;;   (format outp "~A = [\n" (name->deps-sym pubname))
+;;       ;;   (format outp "~A = [\n" (name->deps-sym findlib-name))
 ;;       ;;   (for-each (lambda (dep)
 ;;       ;;               (format outp "    \"~A\",\n" dep)
 ;;       ;;               )

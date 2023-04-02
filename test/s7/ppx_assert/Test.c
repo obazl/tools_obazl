@@ -116,23 +116,23 @@ void test_a(void) {
     /* log_debug("after initial"); */
 
     char *sexp =
-        "(begin "
-        "(miblize :@) "
-        "(add-filegroups-to-pkgs :@) "
-        "(normalize-manifests! :@) "
-        "(normalize-rule-deps! :@) "
+        /* "(begin " */
+        /* "(miblize :@) " */
+        /* "(add-filegroups-to-pkgs :@) " */
+        /* "(normalize-manifests! :@) " */
+        /* "(normalize-rule-deps! :@) " */
+        /* /\* "(flush-output-port) " *\/ */
+        /* "(miblarkize :@) " */
+        /* "(resolve-pkg-file-deps :@) " */
+        /* "(resolve-labels! :@) " */
+        /* "(handle-shared-ppx :@) " */
+        /* "(if *mibl-shared-deps*" */
+        /* "  (begin " */
+        /* "    (handle-shared-deps :@) " */
+        /* "    (handle-shared-opts :@))) " */
+        /* /\* "(ws->starlark :@) " *\/ */
         /* "(flush-output-port) " */
-        "(miblarkize :@) "
-        "(resolve-pkg-file-deps :@) "
-        "(resolve-labels! :@) "
-        "(handle-shared-ppx :@) "
-        "(if *mibl-shared-deps*"
-        "  (begin "
-        "    (handle-shared-deps :@) "
-        "    (handle-shared-opts :@))) "
-        /* "(ws->starlark :@) " */
-        "(flush-output-port) "
-        ")"
+        /* ")" */
         ;
 
     s7_flush_output_port(s7, s7_current_output_port(s7));

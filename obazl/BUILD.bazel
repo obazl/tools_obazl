@@ -1,0 +1,25 @@
+load(":BUILD.bzl", "script", "convert")
+
+script()
+
+convert()
+
+########
+genrule(
+    name = "mkhdrs",
+    srcs = [
+        "obazl.c",
+    ],
+    outs = [
+        "obazl.h",
+    ],
+    cmd = "\n".join([
+        "SRC1=$(location obazl.c)",
+        "SRCDIR1=`dirname $$SRC1`",
+        "$(location //vendored/makeheaders) \\",
+        "    $(location obazl.c);",
+        "cp $${SRCDIR1}/*.h $(@D)",
+    ]),
+    tools = ["//vendored/makeheaders"],
+    visibility = ["//visibility:public"]
+)

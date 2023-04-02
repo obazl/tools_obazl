@@ -60,37 +60,36 @@
   (let* ((modules (fold (lambda (stanza accum)
                           (format #t "stanza: ~A\n" stanza)
                           (case (car stanza)
-
                             ((:executable)
                              (let ((main-module (assoc-val :main (cdr stanza)))
                                    (main-deps (assoc-val* :main-deps (cdr stanza)))
                                    (prologue (assoc-val* :prologue (cdr stanza))))
                                (cons main-module (append accum prologue main-deps))))
                             ((:executables) (error 'bad-arg "unexpected :executables stanza"))
-                            (else)))
-                        '() (assoc-val :mibl pkg)))
-         (modules (remove-duplicates (sort! modules sym<?)))
+                            (else accum)))
+                        '() (assoc-val :mibl pkg))))
+    (if (truthy? modules)
+        (let ((modules (remove-duplicates (sort! modules sym<?)))
+              (len (fold (lambda (m sum) (+ sum 1 (string-length (format #f "~A" m)))) 0 modules)))
 
-         (len (fold (lambda (m sum) (+ sum 1 (string-length (format #f "~A" m)))) 0 modules)))
+          ;; (format #t "modules len: ~A\n" len)
+          ;; (error 'x "X")
 
-    ;; (format #t "modules len: ~A\n" len)
-    ;; (error 'x "X")
-
-    (format outp "##################\n")
-    (format outp "# namespaces all exec modules\n")
-    (format outp "ocaml_ns_resolver(\n")
-    (format outp "    name     = \"Exe_ns\",\n")
-    (format outp "    ns       = \"Exe_ns\",\n")
-    (format outp "    manifest = [")
-    (if (> len 48)
-        (begin
-          (newline outp)
-          (format outp "~{        \"~A\"~^,~%~}\n" modules)
-          (newline outp))
-        (format outp "~{\"~A\"~^, ~}" modules))
-    (format outp "]\n")
-    (format outp ")\n")
-    (newline outp)))
+          (format outp "##################\n")
+          (format outp "# namespaces all exec modules\n")
+          (format outp "ocaml_ns_resolver(\n")
+          (format outp "    name     = \"Exe_ns\",\n")
+          (format outp "    ns       = \"Exe_ns\",\n")
+          (format outp "    manifest = [")
+          (if (> len 48)
+              (begin
+                (newline outp)
+                (format outp "~{        \"~A\"~^,~%~}\n" modules)
+                (newline outp))
+              (format outp "~{\"~A\"~^, ~}" modules))
+          (format outp "]\n")
+          (format outp ")\n")
+          (newline outp)))))
 
 ;; local-deps: direct, listed in :modules, :structures
 ;; deps-tag: id of :shared-deps entry
@@ -217,7 +216,7 @@
 
   (let* ((stanza-alist (cdr stanza))
          (main (assoc-val :main stanza-alist))
-         (module-spec (find-module-in-pkg main pkg))
+         (module-spec (module-name->tagged-label main pkg))
          ;; module-spec: (Foo (:ml foo.ml DepA) (:mli foo.mli))
          ;;   or :structure (Foo foo.ml DepA DepB)
 
@@ -676,8 +675,8 @@
 
          (privname (assoc-val :privname stanza-alist))
          ;; (mainname (normalize-module-name privname))
-         (pubname (if-let ((pubname (assoc-val :pubname stanza-alist)))
-                          pubname
+         (findlib-name (if-let ((findlib-name (assoc-val :findlib-name stanza-alist)))
+                          findlib-name
                           privname))
          (tgtname (format #f "~A" privname))
          (exename privname)
@@ -746,7 +745,7 @@
       ;;         ;; (format #t "FLAGS: ~A\n" flags)
       ;;         ;; (format #t "OPENS: ~A\n" opens)
 
-      ;;         (format outp "~A = [\n" (name->opts-sym pubname))
+      ;;         (format outp "~A = [\n" (name->opts-sym findlib-name))
       ;;         (if flags
       ;;             (for-each (lambda (flag)
       ;;                         (format outp "    \"~A\",\n" flag))
@@ -766,7 +765,7 @@
       ;; 'modules' are module (src) deps
       ;; (if (not (null? deps))
       ;; (begin
-      ;;   (format outp "~A = [\n" (name->deps-sym pubname))
+      ;;   (format outp "~A = [\n" (name->deps-sym findlib-name))
       ;;   (for-each (lambda (dep)
       ;;               (format outp "    \"~A\",\n" dep)
       ;;               )

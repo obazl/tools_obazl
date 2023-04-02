@@ -8,8 +8,9 @@
 
 ;; (format #t "*load-path*: ~A~%" *load-path*)
 
-(load "starlark.scm")
+;; (load "starlark.scm")
 
+;; FIXME: this is left-over from debugging
 (define arg
   "deps/literals/cwd"
   ;; "rules/with-stdout-to/cat/literal_deps"
@@ -30,95 +31,94 @@
 ;;               (sort! (hash-table-keys pkgs) string<?))
 ;;     pkgs))
 
-(define (-dump-ppx ws)
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (ppx-tbl (car (assoc-val :shared-ppx @ws))))
-    (format #t "~A: ~A~%" (bgcyan "shared-ppx") ppx-tbl)))
+;; (define (-dump-ppx ws)
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
+;;     (format #t "~A: ~A~%" (bgcyan "shared-ppx") ppx-tbl)))
 
-(define (-dump-opam ws)
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (opam (car (assoc-val :opam @ws))))
-    (format #t "~A: ~A~%" (red "opam keys") (hash-table-keys opam))
-    (for-each (lambda (ws)
-                (format #t "~A: ~A~%" (red "opam ws") (car ws))
-                (for-each (lambda (item)
-                            (format #t "  ~A~%" item))
-                          (cdr ws)))
-              opam)))
+;; (define (-dump-opam ws)
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (opam (car (assoc-val :opam @ws))))
+;;     (format #t "~A: ~A~%" (red "opam keys") (hash-table-keys opam))
+;;     (for-each (lambda (ws)
+;;                 (format #t "~A: ~A~%" (red "opam ws") (car ws))
+;;                 (for-each (lambda (item)
+;;                             (format #t "  ~A~%" item))
+;;                           (cdr ws)))
+;;               opam)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (-mibl-load-project root-path pkg-path)
-  (if *mibl-debug-s7*
-      (begin
-        (format #t "~A~%" (ublue "-mibl-load-project"))
-        (format #t "~A: ~A~%" (blue "root-path") root-path)
-        (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (define (-mibl-load-project root-path pkg-path)
+;;   (if *mibl-debug-s7*
+;;       (begin
+;;         (format #t "~A~%" (ublue "-mibl-load-project"))
+;;         (format #t "~A: ~A~%" (blue "root-path") root-path)
+;;         (format #t "~A: ~A~%" (blue "pkg-path") pkg-path)))
 
-  ;; NB: mibl-load-project is implemented in @mibl//src/load_project.c
-  ;; and initialized in @mibl//src/config_s7.c
-  (let* ((_wss (mibl-load-project root-path pkg-path))
-          ;; (if (truthy? root-path) (mibl-load-project root-path)
-          ;;          (mibl-load-project)))
-         )
-    _wss))
+;;   ;; NB: mibl-load-project is implemented in @mibl//src/load_project.c
+;;   ;; and initialized in @mibl//src/config_s7.c
+;;   (let* ((_wss (mibl-load-project root-path pkg-path))
+;;           ;; (if (truthy? root-path) (mibl-load-project root-path)
+;;           ;;          (mibl-load-project)))
+;;          )
+;;     _wss))
 
-(define (-miblize ws)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "-miblize") ws))
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (pkgs (car (assoc-val :pkgs @ws)))
-         (mpkg-alist (map (lambda (kv)
-                            ;; (format #t "~A: ~A~%" (red "pkg") (cdr kv))
-                            (if (assoc 'dune (cdr kv))
-                                (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
-                                  ;; (format #t "~A: ~A~%" (red "miblized") mibl-pkg)
-                                  (hash-table-set! pkgs (car kv) mibl-pkg)
-                                  mibl-pkg)
-                                (begin
-                                  ;; (format #t "~A: ~A~%" (red "miblize: no dune file") kv)
-                                  (cdr kv))
-                                ))
-                         pkgs)))
-        ;; (_ (format #t "~A: ~A~%" (blue "mpkg-alist")
-        ;;            mpkg-alist))
-        ;; (_ (for-each (lambda (k)
-        ;;                (format #t "~A: ~A~%" (blue "pkg") k))
-        ;;              (sort! (hash-table-keys pkgs) string<?)))
-    (if *mibl-debug-s7*
-        (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
-    mpkg-alist))
+;; (define (-miblize ws)
+;;   (if *mibl-debug-s7*
+;;       (format #t "~A: ~A~%" (blue "-miblize") ws))
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (pkgs (car (assoc-val :pkgs @ws)))
+;;          (mpkg-alist (map (lambda (kv)
+;;                             ;; (format #t "~A: ~A~%" (red "pkg") (cdr kv))
+;;                             (if (assoc 'dune (cdr kv))
+;;                                 (let ((mibl-pkg (dune-pkg->mibl :@ (cdr kv))))
+;;                                   ;; (format #t "~A: ~A~%" (red "miblized") mibl-pkg)
+;;                                   (hash-table-set! pkgs (car kv) mibl-pkg)
+;;                                   mibl-pkg)
+;;                                 (begin
+;;                                   ;; (format #t "~A: ~A~%" (red "miblize: no dune file") kv)
+;;                                   (cdr kv))
+;;                                 ))
+;;                          pkgs)))
+;;         ;; (_ (format #t "~A: ~A~%" (blue "mpkg-alist")
+;;         ;;            mpkg-alist))
+;;         ;; (_ (for-each (lambda (k)
+;;         ;;                (format #t "~A: ~A~%" (blue "pkg") k))
+;;         ;;              (sort! (hash-table-keys pkgs) string<?)))
+;;     (if *mibl-debug-s7*
+;;         (format #t "~A: ~A~%" (blue "mpkg ct") (length mpkg-alist)))
+;;     mpkg-alist))
 
-(define (-emit-mibl ws)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "-emit-mibl") ws))
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (pkgs (car (assoc-val :pkgs @ws))))
+;; (define (-emit-mibl ws)
+;;   (if *mibl-debug-s7*
+;;       (format #t "~A: ~A~%" (blue "-emit-mibl") ws))
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (pkgs (car (assoc-val :pkgs @ws))))
 
-    (for-each (lambda (kv)
-                (if *mibl-debug-s7*
-                    (format #t "~A: ~A~%" (blue "-emit-mibl pkg") (cdr kv)))
-                (if (not (null? (cdr kv)))
-                    (emit-mibl-pkg (cdr kv)))
-                )
-              pkgs)))
+;;     (for-each (lambda (kv)
+;;                 (if *mibl-debug-s7*
+;;                     (format #t "~A: ~A~%" (blue "-emit-mibl pkg") (cdr kv)))
+;;                 (if (not (null? (cdr kv)))
+;;                     (emit-mibl-pkg (cdr kv)))
+;;                 )
+;;               pkgs)))
 
-(define (-emit-starlark ws)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
-  (let* ((@ws (assoc-val ws *mibl-project*))
-         (pkgs (car (assoc-val :pkgs @ws))))
+;; (define (-emit-starlark ws)
+;;   (if *mibl-debug-s7*
+;;       (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
+;;   (let* ((@ws (assoc-val ws *mibl-project*))
+;;          (pkgs (car (assoc-val :pkgs @ws))))
 
-    (for-each (lambda (kv)
-                (if *mibl-debug-s7*
-                    (format #t "~A: ~A~%" (blue "emitting") (car kv)))
-                (if (not (null? (cdr kv)))
-                    (mibl-pkg->build-bazel ws (cdr kv))
-                    (if *mibl-debug-s7*
-                        (format #t "~A: ~A~%" (blue "skipping") (car kv))))
-                )
-              pkgs)))
+;;     (for-each (lambda (kv)
+;;                 (if *mibl-debug-s7*
+;;                     (format #t "~A: ~A~%" (blue "emitting") (car kv)))
+;;                 (if (not (null? (cdr kv)))
+;;                     (mibl-pkg->build-bazel ws (cdr kv))
+;;                     (if *mibl-debug-s7*
+;;                         (format #t "~A: ~A~%" (blue "skipping") (car kv))))
+;;                 )
+;;               pkgs)))
 
-;; called by @obazl//convert
 (define* (-dune->obazl return root-path pkg-path)
   ;; (set! *mibl-debug-s7* #t)
   (if *mibl-debug-s7*

@@ -14,12 +14,12 @@
           #t
           #f)))
 
-;; if pubname and privname differ, use explicit 'ns' attribute
-(define (use-ns-attr? modname pubname)
-  (if (equal? modname pubname)
+;; if findlib-name and privname differ, use explicit 'ns' attribute
+(define (use-ns-attr? modname findlib-name)
+  (if (equal? modname findlib-name)
       #f
       (let ((s1 (if (symbol? modname) (symbol->string modname) modname))
-            (s2 (if (symbol? pubname) (symbol->string pubname) pubname)))
+            (s2 (if (symbol? findlib-name) (symbol->string findlib-name) findlib-name)))
         (not (and (string=? (substring s1 1) (substring s2 1))
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
@@ -91,14 +91,14 @@
     (newline outp)
     (newline outp)))
 
-(define (-emit-bottomup-aggregate outp kind ns pubname submodules flags cc-deps)
+(define (-emit-bottomup-aggregate outp kind ns findlib-name submodules flags cc-deps)
   (if *mibl-debug-s7*
       (format #t "EMITTING BOTTOMUP NS AGGREGATE: ~A\n" kind))
   (format outp "#################\n")
   (if (eq? kind :ns-archive)
       (format outp "ocaml_archive( #4\n")
       (format outp "ocaml_library( #5\n"))
-  (format outp "    name       = \"~A\",\n" pubname)
+  (format outp "    name       = \"~A\",\n" findlib-name)
   (format outp "    manifest   = [~%")
   (format outp "~{        \":~A\"~^,~%~}~%" submodules)
   (format outp "    ],~%")
@@ -115,7 +115,7 @@
 
   (format outp "#################\n")
   (format outp "ocaml_ns_resolver(\n")
-  (format outp "    name       = \"ns.~A\",\n" pubname)
+  (format outp "    name       = \"ns.~A\",\n" findlib-name)
   (format outp "    ns_name    = \"~A\",\n" ns)
   (format outp "    manifest = [~{\"~A\"~^, ~}],\n" submodules)
   (format outp ")\n\n")
@@ -130,14 +130,14 @@
          (ns (assoc-val :ns stanza-alist))
          (_ (if *mibl-debug-s7* (format #t "~A: ~A~%" (blue "ns") ns)))
          (privname (assoc-val :privname stanza-alist))
-         (pubname (if ns ns
-                      (if-let ((pubname (assoc-val :pubname stanza-alist)))
-                              pubname
+         (findlib-name (if ns ns
+                      (if-let ((findlib-name (assoc-val :findlib-name stanza-alist)))
+                              findlib-name
                               privname)))
-         (tgtname (if privname privname pubname))
-         (modname (normalize-module-name (if privname privname pubname)))
+         (tgtname (if privname privname findlib-name))
+         (modname (normalize-module-name (if privname privname findlib-name)))
          (_ (if *mibl-debug-s7*
-                (format #t "~A: ~A, modname: ~A\n" (uwhite "name") pubname modname)))
+                (format #t "~A: ~A, modname: ~A\n" (uwhite "name") findlib-name modname)))
          (libname (string-upcase (stringify modname)))
 
          (link-opts (if-let ((opts (assoc-val :link-opts (cdr stanza))))
@@ -166,7 +166,7 @@
           (format #t "DEPS: ~A\n" deps)
           (format #t "SUBMs: ~A\n" submodules)))
 
-    ;; (format outp "######## ~A ########\n" pubname)
+    ;; (format outp "######## ~A ########\n" findlib-name)
 
     (case kind
       ((:ns-archive :ns-library)
@@ -202,7 +202,7 @@
       ;;  (begin
       ;;    (format outp "##############\n")
       ;;    (format outp "ocaml_archive(\n")
-      ;;    (format outp "    name    = \"~A\",\n" pubname)
+      ;;    (format outp "    name    = \"~A\",\n" findlib-name)
       ;;    (format outp "    visibility = [\"//visibility:public\"],\n")
 
       ;;    ;; "null libs" contain no submodules, e.g. tezos:src/tooling
@@ -224,9 +224,9 @@
       ;;  (begin
       ;;    ;; (format outp "#################\n")
       ;;    (format outp "ocaml_ns_archive(\n")
-      ;;    (format outp "    name       = \"~A\",\n" pubname)
+      ;;    (format outp "    name       = \"~A\",\n" findlib-name)
 
-      ;;    (if (use-ns-attr? modname pubname)
+      ;;    (if (use-ns-attr? modname findlib-name)
       ;;        (format outp "    ns_name    = \"~A\",\n" modname))
       ;;    (format outp "    visibility = [\"//visibility:public\"],\n")
 

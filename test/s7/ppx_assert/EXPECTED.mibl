@@ -48,7 +48,7 @@
                                    (preprocess (pps ppxlib.metaquot))))
                     (:modules (Ppx_assert (:ml . ppx_assert.ml) (:mli . ppx_assert.mli)))
                     (:mibl (:ns-archive (:ns . ppx_assert) (:privname . ppx_assert)
-                                        (:pubname . ppx_assert)
+                                        (:findlib-name . ppx_assert)
                                         (:ppx-codeps //runtime-lib:ppx_assert_lib)
                                         (:ppx-rewriter . #t) (:ppx . 1) (:deps (:resolved . 1))
                                         (:manifest (:modules Ppx_assert)))
@@ -80,7 +80,7 @@
                                            (preprocess (pps ppx_sexp_conv ppx_cold))))
                             (:modules (Runtime (:ml . runtime.ml) (:mli . runtime.mli)))
                             (:mibl (:ns-archive (:ns . ppx_assert_lib) (:privname . ppx_assert_lib)
-                                                (:pubname . ppx_assert.runtime-lib) (:ppx . 1)
+                                                (:findlib-name . ppx_assert.runtime-lib) (:ppx . 1)
                                                 (:deps (:resolved . 1))
                                                 (:manifest (:modules Runtime)))
                                    (:shared-ppx ((1 (:manifest @ppx_sexp_conv//lib/ppx_sexp_conv

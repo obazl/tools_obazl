@@ -575,24 +575,22 @@
   )
 
 (define (starlark-emit-global-vars outp pkg)
-  (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (bgred "starlark-emit-global-vars") pkg))
+  (mibl-trace-entry "starlark-emit-global-vars" pkg)
          ;; (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
          ;;                     (cadr shppx) #f))
 
   (for-each
    (lambda (stanza)
-     (if *mibl-debug-s7*
-         (format #t "~A: ~A~%" (uwhite "stanza") stanza))
+     (mibl-trace "stanza" stanza)
      (if (not (equal? :install (car stanza)))
          (let ((testsuite (assoc-val :in-testsuite (cdr stanza))))
            (case (car stanza)
              ((:archive :library :ns-archive :ns-library)
               (let* ((libname (string-upcase
-                               ;; privname or pubname?
+                               ;; privname or findlib-name?
                                (stringify (if-let ((privname (assoc-val :privname (cdr stanza))))
                                                   privname
-                                                  (assoc-val :pubname (cdr stanza))))))
+                                                  (assoc-val :findlib-name (cdr stanza))))))
 
                      ;; compile-options is an alist,
                      ;; keys :standard, :ocamlc, :ocamlopt
@@ -627,7 +625,7 @@
                 (if (null? *mibl-shared-deps*)
                     (if deps-fixed
                         (begin
-                          (format outp "DEPS_~A = [\n" libname)
+                          (format outp "01: DEPS_~A = [\n" libname)
                           (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
                           (format outp "]\n")
                           (format outp "\n")
@@ -717,7 +715,7 @@
               (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (uwhite "exec globals") (assoc-val :privname (cdr stanza))))
               (let* ((libname (string-upcase
-                               ;; privname or pubname?
+                               ;; privname or findlib-name?
                                (stringify (assoc-val :privname (cdr stanza)))))
                      (_ (if *mibl-debug-s7* (format #t "libname: ~A~%" libname)))
                      (opts (if-let ((opts (assoc-in '(:compile :opts)
@@ -771,7 +769,7 @@
                     (if (not (number? deps-fixed))
                         (if (not testsuite)
                             (begin
-                              (format outp "DEPS_~A = [~%" libname)
+                              (format outp "02: DEPS_~A = [~%" libname)
                               (format outp "~{    \"~A\"~^,~%~}~%" deps-fixed)
                               (format outp "]~%")))))
 
@@ -792,7 +790,7 @@
                   (format #t "~A: ~A~%" (bgred "testsuite") (assoc-val :name (cdr stanza))))
               (let* ((name (assoc-val :name (cdr stanza)))
                      (deps (-get-testsuite-deps name pkg)))
-                (format outp "DEPS_~A = [~{\"~A\"~^, ~}]\n\n"
+                (format outp "03: DEPS_~A = [~{\"~A\"~^, ~}]\n\n"
                         (string-upcase
                          (format #f "~A" (assoc-val :name (cdr stanza))))
                         deps)))
@@ -807,12 +805,13 @@
               (if *mibl-debug-s7*
                   (format #t "~A: ~A~%" (bgred "shared-deps") stanza))
               (for-each (lambda (deplist)
-                          (if *mibl-debug-s7*
-                              (format #t "~A: ~A~%" (ured "deplist") deplist))
-                          (format outp "DEPS_~A = [~%" (car deplist))
-                          (format outp "~{    \"~A\"~^,~%~}~%" (cdr deplist))
-                          (format outp "]~%")
-                          (newline outp))
+                          (mibl-trace "deplist" deplist)
+                          (let-values (((mldeps mlideps)
+                                        (local-deps->starlark (cdr deplist) '())))
+                            (format outp "DEPS_~A = [~%" (car deplist))
+                            (format outp "~{    \"~A\"~^,~%~}~%" mldeps)
+                            (format outp "]~%")
+                            (newline outp)))
                         (cadr stanza)))
 
              ((:shared-link-opts :shared-ocamlc-opts :shared-ocamlopt-opts) (values))

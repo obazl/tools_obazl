@@ -1,8 +1,8 @@
 (if *mibl-debug-s7*
-    (format #t "loading obazl/starlark.scm\n"))
+    (format #t "loading starlark/starlark.scm\n"))
 
-(load "dune.scm")
-(load "opam.scm")
+;; (load "dune.scm")
+;; (load "opam.scm")
 (load "string.scm")
 (load "starlark/starlark_emit_rules.scm")
 ;; (load "s7/stuff.scm")
@@ -82,7 +82,7 @@
     std))
 
 (define (match-opener opener dep-sym)
-  ;;FIXME: ns-tbl keys are pubnames, opens are module names
+  ;;FIXME: ns-tbl keys are findlib-names, opens are module names
   (if-let ((module-alist (ns-tbl opener)))
           ;;FIXME: :modules for exes, :submodules for aggs
           (if-let ((submods (assoc :submodules module-alist)
@@ -300,7 +300,7 @@
                           (if-let ((namerec (names-tbl dep)))
                                   ;; (private-name->public-name dep))))
                                   (begin
-                                    ;;(format #t "PUBNAME: ~A\n" pubname)
+                                    ;;(format #t "PUBNAME: ~A\n" findlib-name)
                                     ;; (format #t "NAMEREC: ~A\n" namerec)
                                     (cadr (assoc :label namerec))
                                     )
@@ -458,11 +458,11 @@
                ))))
     result))
 
-(define (explicit-ns? modname pubname)
-  (if (equal? modname pubname)
+(define (explicit-ns? modname findlib-name)
+  (if (equal? modname findlib-name)
       #f
       (let ((s1 (if (symbol? modname) (symbol->string modname) modname))
-            (s2 (if (symbol? pubname) (symbol->string pubname) pubname)))
+            (s2 (if (symbol? findlib-name) (symbol->string findlib-name) findlib-name)))
         (not (and (string=? (substring s1 1) (substring s2 1))
                   (char=? (char-upcase (string-ref s1 0))
                           (char-upcase (string-ref s2 0))))))))
@@ -480,10 +480,10 @@
 
 ;;   ;; (let* (;; (libname (cdadr (assoc :name stanza)))
 ;;   ;;       (modname (cadr (assoc-in '(:name :module) stanza)))
-;;   ;;       (pubname (if-let ((pn (assoc ':public_name stanza)))
+;;   ;;       (findlib-name (if-let ((pn (assoc ':public_name stanza)))
 ;;   ;;                        (cadr pn) #f))
 ;;   ;;       (opts (stanza-opts stanza))
-;;   ;;       (deps (stanza-deps->labels fs-path pubname stanza))
+;;   ;;       (deps (stanza-deps->labels fs-path findlib-name stanza))
 ;;   ;;       (submodules (stanza-submodules modname stanza))
 ;;   ;;       )
 
@@ -507,7 +507,7 @@
 ;;   ;;   (begin
 ;;   ;;     (format outp "#################\n")
 ;;   ;;     (format outp "ocaml_executable(\n")
-;;   ;;     (format outp "    name    = \"~A\",\n" pubname)
+;;   ;;     (format outp "    name    = \"~A\",\n" findlib-name)
 ;;   ;;     (format outp "    modules = [\n")
 ;;   ;;     (for-each (lambda (mod)
 ;;   ;;                 (format outp "        \":~A\",\n"
@@ -531,13 +531,13 @@
 ;;   ;;   (format #t " stanza-alist: ~A\n" stanza-alist))
 ;;   (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
 ;;          (mainname (normalize-module-name privname))
-;;          (pubname (if-let ((pn (assoc-in '(:name :public) stanza-alist)))
+;;          (findlib-name (if-let ((pn (assoc-in '(:name :public) stanza-alist)))
 ;;                           (cadr pn)
 ;;                           privname))
-;;          ;; (pubname (if-let ((pn (assoc :public_name stanza-alist)))
+;;          ;; (findlib-name (if-let ((pn (assoc :public_name stanza-alist)))
 ;;          ;;                  (cadr pn)
 ;;          ;;                  privname))
-;;          (tgtname (string-append (symbol->string pubname) ".exe"))
+;;          (tgtname (string-append (symbol->string findlib-name) ".exe"))
 ;;          (exename privname)
 ;;          (deps (stanza-deps->labels fs-path stanza-alist))
 ;;          (submodules (assoc :submodules stanza-alist))
@@ -559,7 +559,7 @@
 ;;             ;; (format #t "FLAGS: ~A\n" flags)
 ;;             ;; (format #t "OPENS: ~A\n" opens)
 
-;;             (format outp "~A = [\n" (name->opts-sym pubname))
+;;             (format outp "~A = [\n" (name->opts-sym findlib-name))
 ;;             (if flags
 ;;                 (for-each (lambda (flag)
 ;;                             (format outp "    \"~A\",\n" flag))
@@ -579,7 +579,7 @@
 ;;     ;; 'modules' are module (src) deps
 ;;     ;; (if (not (null? deps))
 ;;         (begin
-;;           (format outp "~A = [\n" (name->deps-sym pubname))
+;;           (format outp "~A = [\n" (name->deps-sym findlib-name))
 ;;           (for-each (lambda (dep)
 ;;                       (format outp "    \"~A\",\n" dep)
 ;;                       )
@@ -602,7 +602,7 @@
 ;;           (begin
 ;;             ;; (format #t "MODDEPS: ~A\n" modules)
 ;;             (if (not (null? deps))
-;;                 (format outp "    deps = ~A + [\n" (name->deps-sym pubname))
+;;                 (format outp "    deps = ~A + [\n" (name->deps-sym findlib-name))
 ;;                 (format outp "    deps = [\n"))
 ;;             (let ((mods (sort! (hash-table-keys
 ;;                                 (remove-if list
@@ -667,7 +667,7 @@
 ;;     (let-values (((flags opens) (stanza-opts stanza)))
 ;;       ;; (format #t "FLAGS: ~A\n" flags)
 ;;       ;; (format #t "OPENS: ~A\n" opens)
-;;       (format outp "~A = [\n" (name->opts-sym pubname))
+;;       (format outp "~A = [\n" (name->opts-sym findlib-name))
 ;;       (if flags
 ;;           (for-each (lambda (opt)
 ;;                       (format outp "    \"~A\",\n" opt))
@@ -683,7 +683,7 @@
 ;;       (format outp "]\n")
 ;;       (newline outp)
 
-;;       (format outp "~A = [\n" (name->deps-sym pubname))
+;;       (format outp "~A = [\n" (name->deps-sym findlib-name))
 ;;       (for-each (lambda (dep)
 ;;                   (format outp "    \"~A\",\n" dep))
 ;;                 deps)
@@ -769,10 +769,10 @@
                          ;; we could have an ns w/o modules, only resolver
                          (begin
                            (if (equal? :library (car stanza-alist))
-                               (if-let ((pubname
+                               (if-let ((findlib-name
                                          (assoc-in
-                                          '(:name :pubname) stanza-alist)))
-                                       (cadr pubname)
+                                          '(:name :findlib-name) stanza-alist)))
+                                       (cadr findlib-name)
                                        #f)
                                ;; no modules => no aggregation
                                #f))))
@@ -884,7 +884,7 @@
   ;; (modules-tbl 'Tezos_rpc) => :submodules assoc list contains RPC_context
   ;; result: Light depends on Tezos_rpc
 
-  ;;FIXME: convert dep to pubname (ns-tbl keys are pubnames)
+  ;;FIXME: convert dep to findlib-name (ns-tbl keys are findlib-names)
   (if-let ((dep-names (names-tbl dep)))
           (let* ((dep-ns (cadr (assoc :public dep-names)))
                  (result
@@ -1276,6 +1276,9 @@
       (cadr dune-pkg-tbl)))
    dune-pkg-tbls)
   )
+
+(if *mibl-debug-s7*
+    (format #t "loaded starlark/starlark.scm\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (define (starlark-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)
