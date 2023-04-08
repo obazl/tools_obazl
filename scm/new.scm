@@ -153,7 +153,7 @@
     ;;       (handle-shared-opts :@)
     ;;       ))
 
-    ;; (ws->starlark :@)
+    ;; (ws->bazel :@)
 
     ;; (ws->opam-bundles :@)
 

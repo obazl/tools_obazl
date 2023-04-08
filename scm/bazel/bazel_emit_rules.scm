@@ -1,4 +1,4 @@
-;; (format #t "loading @camlark//starlark_emit_rules.scm\n")
+;; (format #t "loading @camlark//bazel_emit_rules.scm\n")
 
 (load "dune.scm")
 (load "opam.scm")
@@ -8,8 +8,8 @@
 
 ;; (load "stuff.scm") ;; concatenate
 
-;; (define (starlark-emit-rule-target outp stanza)
-;;   (format #t "starlark-emit-rule-target: ~A\n" stanza)
+;; (define (bazel-emit-rule-target outp stanza)
+;;   (format #t "bazel-emit-rule-target: ~A\n" stanza)
 ;;   ;; (let ((libname (cdadr (assoc :name stanza)))
 ;;   ;;       (opts (stanza-opts stanza))
 ;;   ;;       (deps '("test-dep1" "test-dep2"))
@@ -51,8 +51,8 @@
             (cadr deps))
           '()))
 
-(define (starlark-emit-run-cmd-target outp fs-path stanza)
-  (format #t "starlark-EMIT-RUN-CMD-target: ~A\n" fs-path)
+(define (bazel-emit-run-cmd-target outp fs-path stanza)
+  (format #t "bazel-EMIT-RUN-CMD-target: ~A\n" fs-path)
   (format #t " stanza: ~A\n" stanza)
   ;; (let ((libname (cdadr (assoc :name stanza)))
   ;;       (opts (stanza-opts stanza))
@@ -180,7 +180,7 @@
                "        ])")))
     pgm))
 
-(define (starlark-emit-with-stdout-to-target outp fs-path stanza)
+(define (bazel-emit-with-stdout-to-target outp fs-path stanza)
   (format #t "STARLARK-EMIT-with-stdout-to-target: ~A\n" fs-path)
   ;; (format #t "  stanza: ~A\n" stanza)
   (let* ((tool (cmd-tool->label stanza))
@@ -233,10 +233,10 @@
     ;;       (format outp "## )\n")))
     ))
 
-;; (define (starlark-emit-rule-targets outp fs-path stanzas)
-;;   ;; (format #t "starlark-emit-rule-targets")
+;; (define (bazel-emit-rule-targets outp fs-path stanzas)
+;;   ;; (format #t "bazel-emit-rule-targets")
 
-;;   ;; same code as starlark-emit-aggregate-targets, but we want to put
+;;   ;; same code as bazel-emit-aggregate-targets, but we want to put
 ;;   ;; aggregates and rules in different locations.
 ;;   (let ((flag #t))
 ;;     (for-each (lambda (stanza)
@@ -251,17 +251,17 @@
 
 ;;                 (case (car stanza)
 ;;                   ((rule)
-;;                    (starlark-emit-rule-target outp (cdr stanza)))
+;;                    (bazel-emit-rule-target outp (cdr stanza)))
 ;;                   ((:run-cmd)
-;;                    (starlark-emit-run-cmd-target outp fs-path (cdr stanza)))
+;;                    (bazel-emit-run-cmd-target outp fs-path (cdr stanza)))
 ;;                   ((:with-stdout-to)
 ;;                    (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
-;;                        (starlark-emit-with-stdout-to-target outp fs-path
+;;                        (bazel-emit-with-stdout-to-target outp fs-path
 ;;                                                             (cdr stanza))
 ;;                        ;; else FIXME: deal with universe stuff
 ;;                        ))
 ;;                   ((:write-file)
-;;                    (starlark-emit-write-file-target outp (cdr stanza)))
+;;                    (bazel-emit-write-file-target outp (cdr stanza)))
 ;;                   (else
 ;;                    ;; skip
 ;;                    )))
@@ -273,8 +273,8 @@
   ;;       (format outp "## install targets\n")
   ;;       (newline outp)))
 
-(define (starlark-emit-build-files dune-pkg-tbls)
-  (format #t "starlark-emit-build-files\n")
+(define (bazel-emit-build-files dune-pkg-tbls)
+  (format #t "bazel-emit-build-files\n")
   (for-each
    (lambda (dune-pkg-tbl)
      (for-each
@@ -297,27 +297,27 @@
                                )))
                 ;; (format #t "\nEmitting ~A, port ~A\n" build-file outp)
 
-                (starlark-emit-build-file-hdr outp pkg-kv)
+                (bazel-emit-build-file-hdr outp pkg-kv)
                 ;; (newline outp)
 
                 ;; (format #t "emitting executables\n")
-                (starlark-emit-executable-targets outp fs-path stanzas)
+                (bazel-emit-executable-targets outp fs-path stanzas)
 
                 ;; (format #t "emitting aggregates\n")
-                (starlark-emit-aggregate-targets outp fs-path stanzas)
+                (bazel-emit-aggregate-targets outp fs-path stanzas)
 
                 ;; (format #t "emitting module files\n")
-                (starlark-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
+                (bazel-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
 
                 ;; (format #t "emitting file generators\n")
                 ;; ocamllex, ocamlyacc, etc.
-                (starlark-emit-file-generators outp fs-path stanzas)
+                (bazel-emit-file-generators outp fs-path stanzas)
 
                 ;; (format #t "emitting ppxes\n")
-                (starlark-emit-ppxes outp fs-path stanzas)
+                (bazel-emit-ppxes outp fs-path stanzas)
 
                 ;; (format #t "emitting rules\n")
-                (starlark-emit-rule-targets outp fs-path stanzas) ;; (cdr pkg-kv))
+                (bazel-emit-rule-targets outp fs-path stanzas) ;; (cdr pkg-kv))
 
                 (close-output-port outp)
 
@@ -347,7 +347,7 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (define (starlark-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)
+;; (define (bazel-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)
 ;;   (for-each
 ;;    (lambda (dune-pkg-tbl)
 ;;      (for-each
@@ -377,18 +377,18 @@
 ;;           (if stanzas-assoc ;; assoc returns #f if not found
 ;;               (let* ((stanzas (cadr stanzas-assoc)))
 
-;;                 (starlark-emit-build-file-hdr outp pkg-kv)
+;;                 (bazel-emit-build-file-hdr outp pkg-kv)
 ;;                 ;; (newline outp)
 
-;;                 (starlark-emit-aggregate-targets outp stanzas) ;; pkg-kv)
+;;                 (bazel-emit-aggregate-targets outp stanzas) ;; pkg-kv)
 ;;                 (newline outp)
 
 ;;                 ;; (cdr pkg-kv) == pkg
 
-;;                 (starlark-emit-file-targets outp stanzas (cdr pkg-kv))
+;;                 (bazel-emit-file-targets outp stanzas (cdr pkg-kv))
 ;;                 (newline outp)
 
-;;                 (starlark-emit-rule-targets outp stanzas) ;; (cdr pkg-kv))
+;;                 (bazel-emit-rule-targets outp stanzas) ;; (cdr pkg-kv))
 ;;                 (newline outp)
 
 ;;                 (close-output-port outp)

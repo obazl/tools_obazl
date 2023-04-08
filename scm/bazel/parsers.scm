@@ -1,6 +1,6 @@
-(define (starlark-emit-ocamllex outp stanza)
+(define (bazel-emit-ocamllex outp stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-ocamllex") stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-ocamllex") stanza))
 
   (for-each (lambda (ocamllex)
               (if *mibl-debug-s7*
@@ -33,9 +33,9 @@
                 (newline outp)))
             (cdr stanza)))
 
-(define (starlark-emit-ocamlyacc outp stanza)
+(define (bazel-emit-ocamlyacc outp stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-ocamlyacc") stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-ocamlyacc") stanza))
 
   (for-each (lambda (ocamlyacc)
               (let* ((principal-name (principal-name (cdr ocamlyacc)))
@@ -56,9 +56,9 @@
                 (newline outp)))
             (cdr stanza)))
 
-(define (starlark-emit-menhir outp stanza)
+(define (bazel-emit-menhir outp stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-menhir") stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-menhir") stanza))
   (newline outp)
 
   (for-each (lambda (parser)
@@ -101,9 +101,9 @@
                 (newline outp)))
             (assoc-val :grammars (cdr stanza))))
 
-(define (starlark-emit-file-generators outp pkg)
+(define (bazel-emit-file-generators outp pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-file-generators") pkg))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-file-generators") pkg))
   (let* ((stanzas (assoc-val :mibl pkg))
          (hdr-flag #t))
     (for-each (lambda (stanza)
@@ -118,11 +118,11 @@
 
                 (case (car stanza)
                   ((:lex)
-                   (starlark-emit-ocamllex outp stanza))
+                   (bazel-emit-ocamllex outp stanza))
                   ((:yacc)
-                   (starlark-emit-ocamlyacc outp stanza))
+                   (bazel-emit-ocamlyacc outp stanza))
                   ((:menhir)
-                   (starlark-emit-menhir outp stanza))
+                   (bazel-emit-menhir outp stanza))
                   ;; etc.
                   (else)
                    ))

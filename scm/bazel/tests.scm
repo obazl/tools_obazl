@@ -1,12 +1,12 @@
 (if *mibl-debug-s7*
     (format #t "loading bazel/executables.scm\n"))
 
-;; (define (starlark-emit-test-target outp pkg stanza)
-;;   (format #t "~A: ~A~%" (blue "starlark-emit-test-target") stanza))
+;; (define (bazel-emit-test-target outp pkg stanza)
+;;   (format #t "~A: ~A~%" (blue "bazel-emit-test-target") stanza))
 
-(define (starlark-emit-testsuite outp pkg stanza)
+(define (bazel-emit-testsuite outp pkg stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-test-target") stanza))
   (format outp "#############\n")
   (format outp "test_suite(~%")
   (format outp "    name     = \"~A\",\n" (assoc-val :name (cdr stanza)))
@@ -15,11 +15,11 @@
   (format outp "    ]~%")
   (format outp ")~%"))
 
-(define (starlark-emit-test-target outp ws pkg stanza)
+(define (bazel-emit-test-target outp ws pkg stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-test-target") stanza))
-  ;; (starlark-emit-executable-target outp ws :test pkg stanza (assoc :prologue (cdr stanza))))
-  (starlark-emit-executable-target outp ws :test pkg stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-test-target") stanza))
+  ;; (bazel-emit-executable-target outp ws :test pkg stanza (assoc :prologue (cdr stanza))))
+  (bazel-emit-executable-target outp ws :test pkg stanza))
 
 (define  (-decode-sh-test-deps deps ws pkg stanza)
   (if *mibl-debug-s7*
@@ -126,9 +126,9 @@
           args))
         ))
 
-(define (starlark-emit-sh-test-target outp ws pkg stanza)
+(define (bazel-emit-sh-test-target outp ws pkg stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-sh-test-target") stanza))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-sh-test-target") stanza))
   (let* ((stanza-alist (cdr stanza))
          ;; (findlib-name (car (assoc-val :alias stanza-alist)))
          (findlib-name (car (assoc-val :name stanza-alist)))
@@ -192,8 +192,8 @@
     (newline outp)
     ))
 
-;; (define (Xstarlark-emit-test-target outp pkg stanza)
-;;   (format #t "~A: ~A~%" (blue "starlark-emit-test-target") stanza)
+;; (define (Xbazel-emit-test-target outp pkg stanza)
+;;   (format #t "~A: ~A~%" (blue "bazel-emit-test-target") stanza)
 ;;   (let* ((stanza-alist (cdr stanza))
 ;;          (privname (assoc-val :privname stanza-alist))
 ;;          ;; (mainname (normalize-module-name privname))
@@ -318,9 +318,9 @@
 ;;         ;;(format outp "#############################\n")
 ;;         )))
 
-(define (starlark-emit-test-targets outp ws pkg) ;;fs-path stanzas)
+(define (bazel-emit-test-targets outp ws pkg) ;;fs-path stanzas)
   (if *mibl-debug-s7*
-      (format #t "~A\n" (ublue "starlark-emit-test-targets")))
+      (format #t "~A\n" (ublue "bazel-emit-test-targets")))
 
   (let* ((stanzas (assoc-val :mibl pkg))
          (hdr-flag #t))
@@ -334,7 +334,7 @@
                          (format outp "##############################\n")
                          (format outp "####  Test Suites  ####\n")
                          (set! hdr-flag #f)))
-                   (starlark-emit-testsuite outp pkg stanza))
+                   (bazel-emit-testsuite outp pkg stanza))
 
                   ((:test)
                    (if hdr-flag
@@ -342,11 +342,11 @@
                          (format outp "##############################\n")
                          (format outp "####  Test Targets  ####\n")
                          (set! hdr-flag #f)))
-                   (starlark-emit-test-target outp ws pkg stanza))
+                   (bazel-emit-test-target outp ws pkg stanza))
 
                   ((:tests)
                    (error 'bad-arg "unexpected :tests stanza")
-                   ;; (starlark-emit-tests
+                   ;; (bazel-emit-tests
                    ;;  outp fs-path stanza)
                    )
 
@@ -356,7 +356,7 @@
                          (format outp "##############################\n")
                          (format outp "####  Test Targets  ####\n")
                          (set! hdr-flag #f)))
-                   (starlark-emit-sh-test-target outp ws pkg stanza))
+                   (bazel-emit-sh-test-target outp ws pkg stanza))
 
                   (else ;; ignore others
                    ;; (error 'bad-arg "unexpected test stanza")

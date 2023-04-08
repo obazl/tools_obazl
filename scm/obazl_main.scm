@@ -8,7 +8,7 @@
 
 ;; (format #t "*load-path*: ~A~%" *load-path*)
 
-;; (load "starlark.scm")
+;; (load "bazel.scm")
 
 ;; FIXME: this is left-over from debugging
 (define arg
@@ -103,9 +103,9 @@
 ;;                 )
 ;;               pkgs)))
 
-;; (define (-emit-starlark ws)
+;; (define (-emit-bazel ws)
 ;;   (if *mibl-debug-s7*
-;;       (format #t "~A: ~A~%" (blue "-emit-starlark") ws))
+;;       (format #t "~A: ~A~%" (blue "-emit-bazel") ws))
 ;;   (let* ((@ws (assoc-val ws *mibl-project*))
 ;;          (pkgs (car (assoc-val :pkgs @ws))))
 
@@ -185,19 +185,19 @@
 
     ;; end dune-specific?
 
-    (if #t ;; *mibl-emit-starlark*
+    (if #t ;; *mibl-emit-bazel*
         (begin
-          (format #t "RUNNING ws->starlark")
+          (format #t "RUNNING ws->bazel")
           ;; (set! *mibl-debug-s7* #t)
-          ;;FIXME: rename emit-starlark
-          (ws->starlark :@)))
+          ;;FIXME: rename emit-bazel
+          (ws->bazel :@)))
 
     ;; (mibl-debug-print-project)
     ;; (return)
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *mibl-show-starlark*
+    (if *mibl-show-bazel*
       (begin
         (format #t "STARLARK~%")
         (mibl-debug-print-pkgs :@)))
@@ -220,7 +220,7 @@
   '())
 
 (define* (-main root-path pkg-path)
-  (load "starlark.scm")
+  (load "bazel.scm")
   (call-with-exit (lambda (return)
                     (-dune->obazl
                          (lambda () ;; our return thunk

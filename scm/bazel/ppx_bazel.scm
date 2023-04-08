@@ -98,9 +98,9 @@
 ;;     (sort! deps string<?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-ppx-target outp ppx ppx-ct) ;;pkg stanza)
+(define (bazel-emit-ppx-target outp ppx ppx-ct) ;;pkg stanza)
   (if *mibl-debug-s7*
-      (format #t "~A\n" (blue "starlark-emit-ppx-target")))
+      (format #t "~A\n" (blue "bazel-emit-ppx-target")))
 
   (let* ((ppx-id (car ppx))
          (ppx-alist (cdr ppx))
@@ -163,8 +163,8 @@
     )
   )
 
-;; (define (Xstarlark-emit-ppx-target outp pkg stanza) ;; fs-path ppx-alist stanza-alist)
-;;   (format #t "~A: ~A\n" (blue "starlark-emit-ppx-target") stanza)
+;; (define (Xbazel-emit-ppx-target outp pkg stanza) ;; fs-path ppx-alist stanza-alist)
+;;   (format #t "~A: ~A\n" (blue "bazel-emit-ppx-target") stanza)
 
 ;;   (if-let ((ppx-tbl (assoc-in '(:mibl :shared-ppx) pkg)))
 ;;           (let* ((ppx-tbl (cadr ppx-tbl))
@@ -214,9 +214,9 @@
 ;;                 )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-ppx-driver outp ppx)
+(define (bazel-emit-ppx-driver outp ppx)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (blue "starlark-emit-ppx-driver") ppx))
+      (format #t "~A: ~A\n" (blue "bazel-emit-ppx-driver") ppx))
 
   ;; (let* ((stanza-alist (cdr stanza))
   ;;        (privname (assoc-val ':privname stanza-alist))
@@ -256,8 +256,8 @@
   ;;       ))
   )
 
-;; (define (Xstarlark-emit-ppx-driver outp pkg stanza)
-;;   (format #t "~A: ~A\n" (blue "starlark-emit-ppx-driver") stanza)
+;; (define (Xbazel-emit-ppx-driver outp pkg stanza)
+;;   (format #t "~A: ~A\n" (blue "bazel-emit-ppx-driver") stanza)
 
 ;;   (let* ((stanza-alist (cdr stanza))
 ;;          (privname (assoc-val ':privname stanza-alist))
@@ -306,9 +306,9 @@
           "load(\"@rules_ocaml//build:rules.bzl\", \"ppx_executable\", \"ppx_module\")~%"))
 
 ;; emit all ppxes in :shared-ppx of pkg
-(define (starlark-emit-pkg-ppxes outp ws pkg) ;; fs-path stanzas)
+(define (bazel-emit-pkg-ppxes outp ws pkg) ;; fs-path stanzas)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (ublue "starlark-emit-pkg-ppxes") pkg))
+      (format #t "~A: ~A\n" (ublue "bazel-emit-pkg-ppxes") pkg))
   (if-let ((ppx-tbl (assoc-in '(:mibl :shared-ppx) pkg)))
           (let* ((ppx-tbl (cadr ppx-tbl))
                  (ppx-ct (length ppx-tbl)))
@@ -317,9 +317,9 @@
             (for-each (lambda (ppx)
                         (if *mibl-debug-s7*
                             (format #t "~A: ~A~%" (bgyellow "emitting ppx") ppx))
-                        (starlark-emit-ppx-target outp ppx ppx-ct) ;; pkg stanza)
+                        (bazel-emit-ppx-target outp ppx ppx-ct) ;; pkg stanza)
                         (if *mibl-local-ppx-driver*
-                            (starlark-emit-ppx-driver outp ppx) ;;pkg stanza)))
+                            (bazel-emit-ppx-driver outp ppx) ;;pkg stanza)))
                             ))
                       ppx-tbl)
             ;; (for-each (lambda (stanza)
@@ -331,9 +331,9 @@
             ;;                          (format #t "~A: ~A~%" (ucyan "ppx-id") ppx-id)
             ;;                          (let ((ppx (assoc ppx-id ppx-tbl)))
             ;;                            (format #t "~A: ~A~%" (bgcyan "found ppx") ppx)
-            ;;                            (starlark-emit-ppx-target outp pkg stanza)
+            ;;                            (bazel-emit-ppx-target outp pkg stanza)
             ;;                            (if *mibl-local-ppx-driver*
-            ;;                                (starlark-emit-ppx-driver outp pkg stanza)))
+            ;;                                (bazel-emit-ppx-driver outp pkg stanza)))
             ;;                          )))))
             ;;           (assoc-val :mibl pkg))
             )))
@@ -341,9 +341,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FIXME
 
-(define (starlark-emit-global-ppxes ws return)
+(define (bazel-emit-global-ppxes ws return)
   (if *mibl-debug-s7*
-      (format #t "~A~%" (bgblue "starlark-emit-global-ppxes")))
+      (format #t "~A~%" (bgblue "bazel-emit-global-ppxes")))
 
   (let* ((@ws (assoc-val ws *mibl-project*))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))

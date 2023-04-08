@@ -274,9 +274,9 @@
           (format #t "ARgs ~A~%" args)))
     (values tool-dep? tool args))) ;;))
 
-(define (starlark-emit-skylib-write-file outp cmd pkg-path stanza)
+(define (bazel-emit-skylib-write-file outp cmd pkg-path stanza)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-skylib-write-file") cmd))
+      (format #t "~A: ~A\n" (blue "bazel-emit-skylib-write-file") cmd))
   (let* ((args (assoc :args (cdr cmd)))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*)
                 (format #t "~A: ~A~%" (yellow "args") args)))
@@ -314,9 +314,9 @@
 
 ;; if target is in this pkg, then no need to copy, just alias
 ;; fully-qualified label
-(define (starlark-emit-copy-file outp pkg-path stanza)
+(define (bazel-emit-copy-file outp pkg-path stanza)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-copy-file") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-copy-file") stanza))
   (let* ((output (assoc-val :outputs (cdr stanza)))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "output") output)))
          (output-alist (cdar output))
@@ -386,9 +386,9 @@
           (newline outp)
           (newline outp)))))
 
-(define (starlark-emit-write-file-target outp stanza)
+(define (bazel-emit-write-file-target outp stanza)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-write-file-target") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-write-file-target") stanza))
   (let* ((output (assoc-val :outputs (cdr stanza)))
         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "output") output)))
         (pkg-tgt (cdar output))
@@ -429,9 +429,9 @@
     ;;       (format outp "## )\n")))
     ))
 
-(define (starlark-emit-diff-test-target outp stanza pkg-path)
+(define (bazel-emit-diff-test-target outp stanza pkg-path)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-diff-test-target") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-diff-test-target") stanza))
   (let* ((output (assoc-val :outputs (cdr stanza)))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "output") output)))
          (bn (basename pkg-path))
@@ -452,9 +452,9 @@
     (newline outp)
     ))
 
-(define (starlark-emit-bindiff-test-target outp stanza pkg-path)
+(define (bazel-emit-bindiff-test-target outp stanza pkg-path)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-bindiff-test-target") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-bindiff-test-target") stanza))
   (let* ((output (assoc-val :outputs (cdr stanza)))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "output") output)))
          (bn (basename pkg-path))
@@ -480,9 +480,9 @@
 ;;         (:monomorphic.mli (:pkg . "lib") (:tgt . "monomorphic.mli")) ... )
 ;;        (:outputs (:yojson.mli (:pkg . "lib") (:tgt . "yojson.mli")))
 ;;        (:actions (:cmd (:tool :cppo) (:args :out "-o" :outputs))))
-(define (starlark-emit-cppo-target outp stanza pkg)
+(define (bazel-emit-cppo-target outp stanza pkg)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-cppo-target") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-cppo-target") stanza))
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (yellow "pkg path") pkg-path)))
          (outputs (assoc-val :outputs (cdr stanza)))
@@ -598,9 +598,9 @@
     (newline outp)
     ))
 
-(define (starlark-emit-rule-target outp pkg-path stanza)
+(define (bazel-emit-rule-target outp pkg-path stanza)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-rule-target") stanza))
+      (format #t "~A: ~A\n" (blue "bazel-emit-rule-target") stanza))
 
   ;; FIXME: if rule is alias of test executable, skip it - the
   ;; executable will be translated to ocaml_test
@@ -613,20 +613,20 @@
                          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "tool: ~A~%" tool))))
                     (case (car tool)
                       ((:write-file)
-                       (starlark-emit-write-file-target outp stanza))
+                       (bazel-emit-write-file-target outp stanza))
                       ;; ((::cat) ;=> genrule
                       ;;  (error 'fixme "IMPLEMENT :cat"))
                       ((:copy ::copy)
-                       (starlark-emit-copy-file outp pkg-path stanza))
+                       (bazel-emit-copy-file outp pkg-path stanza))
                       ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
                       (else
                        ;; (if (is-test-executable? tool) ...
-                       (starlark-emit-genrule outp pkg-path stanza))))))
+                       (bazel-emit-genrule outp pkg-path stanza))))))
             (assoc-val :actions stanza)))
 
-(define (starlark-emit-diff-target outp pkg-path stanza-alist)
+(define (bazel-emit-diff-target outp pkg-path stanza-alist)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (bgblue "starlark-emit-diff-target") stanza-alist))
+      (format #t "~A: ~A\n" (bgblue "bazel-emit-diff-target") stanza-alist))
   (let* ((action (assoc-val :actions stanza-alist))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "action") action)))
          (tool (cadr (assoc-in '(:cmd :tool) action)))
@@ -712,9 +712,9 @@
                    (format #f "node tool arg ~A not found in deps: ~A"
                            tool-tag deps)))))
 
-(define (starlark-emit-node-target outp pkg-path stanza-alist)
+(define (bazel-emit-node-target outp pkg-path stanza-alist)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (bgblue "starlark-emit-node-target") stanza-alist))
+      (format #t "~A: ~A\n" (bgblue "bazel-emit-node-target") stanza-alist))
   (let* ((action (assoc-val :actions stanza-alist))
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "action") action)))
 
@@ -793,11 +793,11 @@
                 ))
     ))
 
-(define (starlark-emit-rule-targets outp pkg) ;;fs-path stanzas)
+(define (bazel-emit-rule-targets outp pkg) ;;fs-path stanzas)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A~%" (blue "starlark-emit-rule-targets") pkg))
+      (format #t "~A: ~A~%" (blue "bazel-emit-rule-targets") pkg))
 
-  ;; same code as starlark-emit-aggregate-targets, but we want to put
+  ;; same code as bazel-emit-aggregate-targets, but we want to put
   ;; aggregates and rules in different locations.
   (let ((flag #t)
         (pkg-path (assoc-val :pkg-path pkg)))
@@ -829,35 +829,35 @@
                                        (case tool
                                          ((:write-file)
                                           ;; rule with multiple cmds (progn)
-                                          (starlark-emit-skylib-write-file outp cmd pkg-path stanza))
+                                          (bazel-emit-skylib-write-file outp cmd pkg-path stanza))
                                          (else
-                                          (starlark-emit-rule-target outp pkg-path (cdr stanza))))))
+                                          (bazel-emit-rule-target outp pkg-path (cdr stanza))))))
                                    cmd-list)
-                         (starlark-emit-rule-target outp pkg-path (cdr stanza)))))
+                         (bazel-emit-rule-target outp pkg-path (cdr stanza)))))
 
                   ((:cppo)
-                   (starlark-emit-cppo-target outp stanza pkg))
+                   (bazel-emit-cppo-target outp stanza pkg))
 
                   ((:bindiff-test)
-                   (starlark-emit-bindiff-test-target outp stanza (assoc-val :pkg-path pkg)))
+                   (bazel-emit-bindiff-test-target outp stanza (assoc-val :pkg-path pkg)))
 
                   ((:diff-test)
-                   (starlark-emit-diff-test-target outp stanza (assoc-val :pkg-path pkg)))
+                   (bazel-emit-diff-test-target outp stanza (assoc-val :pkg-path pkg)))
 
                   ((:write-file)
-                   (starlark-emit-write-file-target outp stanza))
+                   (bazel-emit-write-file-target outp stanza))
 
                   ;;FIXME the rest are obsolete
                   ((:with-stdout-to)
                    (if (not (assoc-in '(:cmd :universe) (cdr stanza)))
-                       (starlark-emit-with-stdout-to-target outp fs-path
+                       (bazel-emit-with-stdout-to-target outp fs-path
                                                             (cdr stanza))
                        ;; else FIXME: deal with universe stuff
                        ))
                   ((:node)
-                   (starlark-emit-node-target outp pkg-path (cdr stanza)))
+                   (bazel-emit-node-target outp pkg-path (cdr stanza)))
                   ((:diff)
-                   (starlark-emit-diff-target outp pkg-path (cdr stanza)))
+                   (bazel-emit-diff-target outp pkg-path (cdr stanza)))
 
                   ((:executable :prologues
                                 :test

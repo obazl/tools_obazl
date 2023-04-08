@@ -1,6 +1,6 @@
-(define (starlark-emit-select-flags outp ws pkg)
+(define (bazel-emit-select-flags outp ws pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (ublue "starlark-emit-select-flags") pkg))
+      (format #t "~A: ~A\n" (ublue "bazel-emit-select-flags") pkg))
 
   (if (not (null? *select-protases*))
       (begin
@@ -62,9 +62,9 @@
   ;;  (remove-duplicates *select-protases*))
   ;; )
 
-(define (starlark-emit-conditionals outp ws pkg)
+(define (bazel-emit-conditionals outp ws pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (bgred "starlark-emit-conditionals") pkg))
+      (format #t "~A: ~A\n" (bgred "bazel-emit-conditionals") pkg))
   (for-each
    (lambda (stanza)
      (if *mibl-debug-s7*

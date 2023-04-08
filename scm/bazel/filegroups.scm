@@ -1,6 +1,6 @@
-(define (starlark-emit-exports-files outp pkg)
+(define (bazel-emit-exports-files outp pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A~%" (ublue "starlark-emit-exports-files") pkg))
+      (format #t "~A: ~A~%" (ublue "bazel-emit-exports-files") pkg))
   (let ((dune (assoc-val :mibl pkg)))
     (if-let ((exports (assoc-val :exports-files dune)))
             (begin
@@ -36,10 +36,10 @@
                             exports))
               ))))
 
-(define (starlark-emit-filegroups outp ws pkg)
+(define (bazel-emit-filegroups outp ws pkg)
   (if *mibl-debug-s7*
       (begin
-        (format #t "~A: ~A~%" (ublue "starlark-emit-filegroups") pkg)
+        (format #t "~A: ~A~%" (ublue "bazel-emit-filegroups") pkg)
         (format #t "~A~%" (blue "processing pkg-filegroups"))))
   (let ((pkg-path (assoc-val :pkg-path pkg))
         (pkg-filegroups (assoc :filegroups pkg)))
@@ -126,5 +126,5 @@
                               (newline outp)))))
                     ws-filegroups))))
   (if *mibl-debug-s7*
-      (format #t "~A~%" (red "finished starlark-emit-filegroups")))
+      (format #t "~A~%" (red "finished bazel-emit-filegroups")))
   )

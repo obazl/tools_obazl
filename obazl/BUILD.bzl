@@ -10,7 +10,7 @@ def script(name = "obazl", main = None, **kwargs):
         args  = args,
         data = [
             "//scm:srcs",
-            "//scm/starlark:srcs"
+            "//scm/bazel:srcs"
             # these are already in runfiles, from dep @mibl//src:mibl
             # "@mibl//scm:srcs",
             # "@mibl//scm/dune:srcs",

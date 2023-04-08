@@ -32,7 +32,7 @@
        )
     nzs))
 
-(let* ((_   (load "starlark.scm")))
+(let* ((_   (load "bazel.scm")))
   (mibl-pkg->starlark pkg)
   )
 

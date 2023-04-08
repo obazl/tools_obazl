@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     /* printf("*exit-on-error*? %d\n", */
     /*        (s7_t(s7) == s7_name_to_value(s7, "*exit-on-error*"))); */
 
-    s7_load(s7, "starlark.scm");
+    s7_load(s7, "bazel.scm");
 
     /* FIXME: accept driver scm file and main routine name as params */
     /* (like clojure compiler?) */

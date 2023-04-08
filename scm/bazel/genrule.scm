@@ -76,9 +76,9 @@
 ;; but then what if multiple rules chdir to same dir? e.g. %{workspace_root}
 ;; possible resolution: handle all :ctx rules in a separate pass?
 ;; for now just emit a comment
-(define (starlark-emit-genrule outp pkg-path stanza)
+(define (bazel-emit-genrule outp pkg-path stanza)
   (if (or *mibl-debug-genrules* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (bgblue "starlark-emit-genrule") stanza))
+      (format #t "~A: ~A\n" (bgblue "bazel-emit-genrule") stanza))
   (let* ((action (assoc-val :actions stanza))
          (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "action") action)))
          (tool (cadr (assoc-in '(:cmd :tool) action)))

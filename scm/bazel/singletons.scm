@@ -224,7 +224,7 @@
 
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "Local-deps") local-deps)))
          )
-    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+    (let-values (((ml-local-deps mli-local-deps) (module->bazel-local-deps (car module) pkg)))
       (mibl-trace "ml-local-deps" ml-local-deps)
       (mibl-trace "mli-local-deps" mli-local-deps)
 
@@ -488,7 +488,7 @@
                (else #f))))
                ;; (derive-exe-ns pkg module)))
 
-    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+    (let-values (((ml-local-deps mli-local-deps) (module->bazel-local-deps (car module) pkg)))
       (mibl-trace "ml-local-deps" ml-local-deps)
       (mibl-trace "mli-local-deps" mli-local-deps)
 
@@ -851,7 +851,7 @@
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "ppx-pkg") ppx-pkg)))
          )
 
-    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps (car module) pkg)))
+    (let-values (((ml-local-deps mli-local-deps) (module->bazel-local-deps (car module) pkg)))
       (mibl-trace "ml-local-deps" ml-local-deps)
       (mibl-trace "mli-local-deps" mli-local-deps)
 
@@ -1171,7 +1171,7 @@
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "ppx-nme: ~A\n" ppx-name)))
          ;; (ppx-id (get-ppx-id ws (cdr stanza)))
          )
-    (let-values (((ml-local-deps mli-local-deps) (module->starlark-local-deps module-name pkg)))
+    (let-values (((ml-local-deps mli-local-deps) (module->bazel-local-deps module-name pkg)))
       (mibl-trace "ml-local-deps" ml-local-deps)
       (mibl-trace "mli-local-deps" mli-local-deps)
       ;; (error 'x "X")
@@ -1380,11 +1380,11 @@
   ;; )
   )
 
-;; (define (starlark-emit-singleton-targets outp fs-path stanzas dune-pkg)
+;; (define (bazel-emit-singleton-targets outp fs-path stanzas dune-pkg)
 
-(define (starlark-emit-singleton-targets outp ws pkg)
+(define (bazel-emit-singleton-targets outp ws pkg)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "starlark-emit-singleton-targets") pkg))
+      (format #t "~A: ~A\n" (blue "bazel-emit-singleton-targets") pkg))
 
   ;; we emit targets for both static and generated source files; in
   ;; addition, we may have :indirect submodule deps (example:

@@ -1,10 +1,10 @@
 (if *mibl-debug-s7*
-    (format #t "loading bazel/starlark.scm\n"))
+    (format #t "loading bazel/bazel.scm\n"))
 
 ;; (load "dune.scm")
 ;; (load "opam.scm")
 (load "string.scm")
-(load "bazel/starlark_emit_rules.scm")
+(load "bazel/bazel_emit_rules.scm")
 ;; (load "s7/stuff.scm")
 (load "utils.scm")
 
@@ -29,7 +29,7 @@
          (nm (undash (string-upcase x))))
     (string-append nm "_DEPS")))
 
-;; (define (starlark-emit-build-file-hdr outp dune-pkg-tbl)
+;; (define (bazel-emit-build-file-hdr outp dune-pkg-tbl)
 
 ;;   ;; if write_file, copy_file, etc, emit:
 ;;   ;; load("@bazel_skylib//lib:paths.bzl", "write_file") ;; etc.
@@ -470,8 +470,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; WE SHOULD NOT HAVE 'executables' - all should be normalized to list
 ;; of 'executable'
-;; (define (starlark-emit-executables outp fs-path stanza)
-;;   ;; (format #t "starlark-emit-executables ~A\n" stanza)
+;; (define (bazel-emit-executables outp fs-path stanza)
+;;   ;; (format #t "bazel-emit-executables ~A\n" stanza)
 ;;   (error 'unexpected-stanza "ERROR: unexpected 'executables' stanza")
 
 ;;   (for-each (lambda (exe)
@@ -524,9 +524,9 @@
 ;;   ;;     ))
 ;;   )
 
-;; (define (starlark-emit-executable-target outp fs-path stanza-alist)
+;; (define (bazel-emit-executable-target outp fs-path stanza-alist)
 ;;   ;; (begin
-;;     ;; (format #t "starlark-emit-executable-target ~A :: ~A\n"
+;;     ;; (format #t "bazel-emit-executable-target ~A :: ~A\n"
 ;;     ;;         fs-path (cadr (assoc-in '(:name :private) stanza-alist)))
 ;;   ;;   (format #t " stanza-alist: ~A\n" stanza-alist))
 ;;   (let* ((privname (cadr (assoc-in '(:name :private) stanza-alist)))
@@ -631,8 +631,8 @@
 ;;       ;;(format outp "#############################\n")
 ;;       )))
 
-;; (define (starlark-emit-executable-targets outp fs-path stanzas)
-;;   ;; (format #t "starlark-emit-executable-targets ~A\n" ;; : ~A\n"
+;; (define (bazel-emit-executable-targets outp fs-path stanzas)
+;;   ;; (format #t "bazel-emit-executable-targets ~A\n" ;; : ~A\n"
 ;;   ;;         fs-path)
 ;;   ;; (format #t "stanzas: ~A\n" stanzas)
 ;;   (let ((flag #t))
@@ -645,12 +645,12 @@
 ;;                          (format outp "##############################\n")
 ;;                          (format outp "####  Executable Targets  ####\n")
 ;;                          (set! flag #f)))
-;;                    (starlark-emit-executable-target
+;;                    (bazel-emit-executable-target
 ;;                     outp fs-path (cadr stanza)))
 
 ;;                   ((:executables)
 ;;                    (error 'bad-arg "unexpected :executables stanza")
-;;                    ;; (starlark-emit-executables
+;;                    ;; (bazel-emit-executables
 ;;                    ;;  outp fs-path stanza)
 ;;                    )
 ;;                   (else ;; ignore others
@@ -658,8 +658,8 @@
 ;;                    )))
 ;;               stanzas)))
 
-;; (define (starlark-emit-stanza-deps-and-flags outp typ stanza)
-;;   (format #t "starlark-emit-stanza-deps-and-flags\n")
+;; (define (bazel-emit-stanza-deps-and-flags outp typ stanza)
+;;   (format #t "bazel-emit-stanza-deps-and-flags\n")
 ;;   ;; (format #t "    stanza: ~A\n" stanza)
 ;;   (let ((modname (cadr (assoc-in '(:name :module) stanza)))
 ;;         (deps (stanza-deps->labels fs-path stanza))
@@ -964,8 +964,8 @@
 ;;               ;; (format #t "skipping non-lib: ~A\n" (caar stanzas))
 ;;               (recur (cdr stanzas)))))))
 
-(define (starlark-emit-file-targets outp fs-path stanzas dune-pkg)
-  ;; (format #t "starlark-emit-file-targets: ~A\n" fs-path)
+(define (bazel-emit-file-targets outp fs-path stanzas dune-pkg)
+  ;; (format #t "bazel-emit-file-targets: ~A\n" fs-path)
 
   ;; we emit targets for both static and generated source files; in
   ;; addition, we may have :indirect submodule deps (example:
@@ -1087,7 +1087,7 @@
                                     srcfile))))
 
                     ;; now opts and deps
-                    ;; (starlark-emit-build-opts outp mname stanzas dune-pkg)
+                    ;; (bazel-emit-build-opts outp mname stanzas dune-pkg)
                     (if namespace
                         (if opts
                             (format outp "    opts     = ~A,\n"
@@ -1178,9 +1178,9 @@
     ;;   )
     ;; ))
 
-(define (starlark-emit-null-stanzas outp fs-path stanzas)
+(define (bazel-emit-null-stanzas outp fs-path stanzas)
   (if *mibl-debug-s7*
-      (format #t "starlark-emit-null-stanzas: ~A\n" fs-path))
+      (format #t "bazel-emit-null-stanzas: ~A\n" fs-path))
   (format outp "exports_files(glob([\"**\"]))\n"))
 
 ;; install targets - ignore
@@ -1189,9 +1189,9 @@
   ;;       (format outp "## install targets\n")
   ;;       (newline outp)))
 
-(define (starlark-emit-build-files dune-pkg-tbls)
+(define (bazel-emit-build-files dune-pkg-tbls)
   (if *mibl-debug-s7*
-      (format #t "starlark-emit-build-files\n"))
+      (format #t "bazel-emit-build-files\n"))
   (for-each
    (lambda (dune-pkg-tbl)
      (for-each
@@ -1214,27 +1214,27 @@
                                )))
                 ;; (format #t "\nEmitting ~A, port ~A\n" build-file outp)
 
-                (starlark-emit-build-file-hdr outp pkg-kv)
+                (bazel-emit-build-file-hdr outp pkg-kv)
                 ;; (newline outp)
 
                 (if *mibl-debug-s7* (format #t "emitting executables\n"))
-                (starlark-emit-executable-targets outp fs-path stanzas)
+                (bazel-emit-executable-targets outp fs-path stanzas)
 
                 (if *mibl-debug-s7* (format #t "emitting aggregates\n"))
-                (starlark-emit-aggregate-targets outp fs-path stanzas)
+                (bazel-emit-aggregate-targets outp fs-path stanzas)
 
                 (if *mibl-debug-s7* (format #t "emitting module files\n"))
-                (starlark-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
+                (bazel-emit-file-targets outp fs-path stanzas (cdr pkg-kv))
 
                 (if *mibl-debug-s7* (format #t "emitting file generators\n"))
                 ;; ocamllex, ocamlyacc, etc.
-                (starlark-emit-file-generators outp fs-path stanzas)
+                (bazel-emit-file-generators outp fs-path stanzas)
 
                 (if *mibl-debug-s7* (format #t "emitting ppxes\n"))
-                (starlark-emit-ppxes outp fs-path stanzas)
+                (bazel-emit-ppxes outp fs-path stanzas)
 
                 (if *mibl-debug-s7* (format #t "emitting rules\n"))
-                (starlark-emit-rule-targets outp fs-path stanzas)
+                (bazel-emit-rule-targets outp fs-path stanzas)
 
                 (close-output-port outp)
 
@@ -1270,7 +1270,7 @@
                                (lambda args
                                  (apply format #t (cadr args)))
                                )))
-                  (starlark-emit-null-stanzas outp fs-path pkg-kv)
+                  (bazel-emit-null-stanzas outp fs-path pkg-kv)
                   (close-output-port outp)))
               )))
       (cadr dune-pkg-tbl)))
@@ -1278,10 +1278,10 @@
   )
 
 (if *mibl-debug-s7*
-    (format #t "loaded bazel/starlark.scm\n"))
+    (format #t "loaded bazel/bazel.scm\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (define (starlark-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)
+;; (define (bazel-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)
 ;;   (for-each
 ;;    (lambda (dune-pkg-tbl)
 ;;      (for-each
@@ -1311,18 +1311,18 @@
 ;;           (if stanzas-assoc ;; assoc returns #f if not found
 ;;               (let* ((stanzas (cadr stanzas-assoc)))
 
-;;                 (starlark-emit-build-file-hdr outp pkg-kv)
+;;                 (bazel-emit-build-file-hdr outp pkg-kv)
 ;;                 ;; (newline outp)
 
-;;                 (starlark-emit-aggregate-targets outp stanzas) ;; pkg-kv)
+;;                 (bazel-emit-aggregate-targets outp stanzas) ;; pkg-kv)
 ;;                 (newline outp)
 
 ;;                 ;; (cdr pkg-kv) == pkg
 
-;;                 (starlark-emit-file-targets outp stanzas (cdr pkg-kv))
+;;                 (bazel-emit-file-targets outp stanzas (cdr pkg-kv))
 ;;                 (newline outp)
 
-;;                 (starlark-emit-rule-targets outp stanzas) ;; (cdr pkg-kv))
+;;                 (bazel-emit-rule-targets outp stanzas) ;; (cdr pkg-kv))
 ;;                 (newline outp)
 
 ;;                 (close-output-port outp)

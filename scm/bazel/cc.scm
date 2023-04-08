@@ -34,9 +34,9 @@
     (format outp ")~%"))
     )
 
-(define (starlark-emit-cc-targets outp ws pkg)
+(define (bazel-emit-cc-targets outp ws pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (bgblue "starlark-emit-cc-targets") pkg))
+      (format #t "~A: ~A\n" (bgblue "bazel-emit-cc-targets") pkg))
   (let ((stanzas (assoc-val :mibl pkg)))
     (for-each
      (lambda (stanza)

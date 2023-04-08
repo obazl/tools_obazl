@@ -1,12 +1,12 @@
 ;; bazel/mibl.scm
 
-;; routines for converting mibl model to starlark model
+;; routines for converting mibl model to bazel model
 
-(define mibl->starlark
-  (let ((+documentation+ "convert mibl data model to starlark data model")
-        (+signature+ '(mibl-starlark pkgs-list)))
+(define mibl->bazel
+  (let ((+documentation+ "convert mibl data model to bazel data model")
+        (+signature+ '(mibl-bazel pkgs-list)))
     (if *mibl-debug-s7*
-        (format #t "~A: ~A~%" (ublue "mibl->starlark")))
+        (format #t "~A: ~A~%" (ublue "mibl->bazel")))
     (lambda (pkgs)
       (let ((slark
              (map (lambda (pkg)

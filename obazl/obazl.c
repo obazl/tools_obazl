@@ -421,7 +421,7 @@ int main(int argc, char **argv, char **envp)
     /* (void)mibl_config; */
 
     /* "../obazl/scm", */
-    /* "../obazl/scm/starlark", */
+    /* "../obazl/scm/bazel", */
     /* log_debug("cwd: %s", getcwd(NULL,0)); */
     /* char *tmpdir = realpath("obazl/scm", NULL); */
     /* log_debug("tmpscm: %s", tmpdir); */

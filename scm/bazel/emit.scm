@@ -2,17 +2,17 @@
     (format #t "loading bazel/conversions.scm\n"))
 
 (load "bazel/headers.scm")
-(load "bazel/rules_starlark.scm")
+(load "bazel/rules_bazel.scm")
 (load "bazel/non_dune_emit.scm")
 
-;; (define (starlark-emit-tuareg outp ws pkg)
-;;   (format #t "~A: ~A~%" (red "starlark-emit-tuareg") pkg)
+;; (define (bazel-emit-tuareg outp ws pkg)
+;;   (format #t "~A: ~A~%" (red "bazel-emit-tuareg") pkg)
 ;;   (if (assoc-in '(:mibl :tuareg) pkg)
 ;;       (begin
 ;;         (format outp "fail(\"FIXME: tuareg file\")")
 ;;         (newline outp))))
 
-;; FIXME: rename emit-starlark
+;; FIXME: rename emit-bazel
 (define (mibl-pkg->build-bazel ws pkg)
   (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg))
@@ -49,52 +49,52 @@
               (format #t "~%~A: ~A~%"
                       (bgred "Emitting buildfile") build-file))
 
-          (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
+          (bazel-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
           ;; (newline outp)
 
           (if *mibl-debug-s7* (format #t "emitting exports_files\n"))
-          (starlark-emit-exports-files outp pkg)
+          (bazel-emit-exports-files outp pkg)
 
-          (starlark-emit-global-vars outp pkg)
+          (bazel-emit-global-vars outp pkg)
 
           (if *mibl-debug-s7* (format #t "emitting executables\n"))
-          (starlark-emit-executable-targets outp ws pkg)
+          (bazel-emit-executable-targets outp ws pkg)
 
           (if *mibl-debug-s7* (format #t "emitting shared-prologues\n"))
-          (starlark-emit-shared-prologues outp ws pkg)
+          (bazel-emit-shared-prologues outp ws pkg)
 
           (if *mibl-debug-s7*
               (format #t "emitting aggregate targets (archive, library)\n"))
-          (starlark-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
+          (bazel-emit-aggregate-targets outp pkg) ;;fs-path stanzas)
 
           (if *mibl-debug-s7* (format #t "emitting singleton targets\n"))
-          (starlark-emit-singleton-targets outp ws pkg)
-          ;; (starlark-emit-singleton-targets outp pkg-path stanzas
+          (bazel-emit-singleton-targets outp ws pkg)
+          ;; (bazel-emit-singleton-targets outp pkg-path stanzas
           ;;                                  (cdr pkg-kv))
 
           (if *mibl-debug-s7* (format #t "emitting test targets\n"))
-          (starlark-emit-test-targets outp ws pkg)
+          (bazel-emit-test-targets outp ws pkg)
 
           (if *mibl-debug-s7* (format #t "emitting file generators\n"))
           ;; ocamllex, ocamlyacc, etc.
-          (starlark-emit-file-generators outp pkg)
+          (bazel-emit-file-generators outp pkg)
 
           (if *mibl-local-ppx-driver*
               (begin
                 (if *mibl-debug-s7* (format #t "emitting pkg ppxes\n"))
-                (starlark-emit-pkg-ppxes outp ws pkg)))
+                (bazel-emit-pkg-ppxes outp ws pkg)))
 
           (if *mibl-debug-s7* (format #t "emitting rules\n"))
-          (starlark-emit-rule-targets outp pkg) ;; fs-path stanzas)
+          (bazel-emit-rule-targets outp pkg) ;; fs-path stanzas)
 
           (if *mibl-debug-s7* (format #t "emitting conditional deps\n"))
-          (starlark-emit-select-flags outp ws pkg)
+          (bazel-emit-select-flags outp ws pkg)
 
           (if *mibl-debug-s7* (format #t "emitting filegroups\n"))
-          (starlark-emit-filegroups outp ws pkg)
+          (bazel-emit-filegroups outp ws pkg)
 
           (if *mibl-debug-s7* (format #t "emitting cc targets\n"))
-          (starlark-emit-cc-targets outp ws pkg)
+          (bazel-emit-cc-targets outp ws pkg)
 
           ;; ignoring local :env stanzas
 
@@ -143,21 +143,21 @@
                                  )))
                     (format outp "## GENERATED FILE - do not edit~%")
 
-                    (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
+                    (bazel-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
 
                     (emit-non-dune-global-vars outp pkg obazl-rules)
 
                     (emit-non-dune-aggregate-target outp pkg)
 
                     ;; (if *mibl-debug-s7* (format #t "emitting exports_files\n"))
-                    ;; (starlark-emit-exports-files outp pkg)
+                    ;; (bazel-emit-exports-files outp pkg)
 
-                    ;; (starlark-emit-global-vars outp pkg)
+                    ;; (bazel-emit-global-vars outp pkg)
 
                     (if pkg-filegroups
                         (begin
                           (if *mibl-debug-s7* (format #t "emitting filegroups\n"))
-                          (starlark-emit-filegroups outp ws pkg)))
+                          (bazel-emit-filegroups outp ws pkg)))
                     ;; emit ocaml_library
                     (emit-non-dune-singletons outp ws pkg)
                     ;; emit :sigs
@@ -189,9 +189,9 @@
 ;;                 )
 ;;               pkgs)))
 
-(define (ws->starlark ws)
+(define (ws->bazel ws)
   (if *mibl-debug-s7*
-      (format #t "~%~A: ~A~%" (bgred "ws->starlark") ws))
+      (format #t "~%~A: ~A~%" (bgred "ws->bazel") ws))
   (let* ((@ws (assoc-val ws *mibl-project*))
          (pkgs (car (assoc-val :pkgs @ws))))
 
@@ -234,5 +234,5 @@
     (if (not *mibl-local-ppx-driver*)
         (call-with-exit
          (lambda (return)
-           (starlark-emit-global-ppxes ws return))))
+           (bazel-emit-global-ppxes ws return))))
     ))

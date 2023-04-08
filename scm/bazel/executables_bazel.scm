@@ -1,8 +1,8 @@
 (if (or *mibl-debug-executables* *mibl-debug-s7*)
-    (format #t "loading bazel/executables_starlark.scm\n"))
+    (format #t "loading bazel/executables_bazel.scm\n"))
 
-;; (define (starlark-emit-executable-target outp pkg stanza)
-;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
+;; (define (bazel-emit-executable-target outp pkg stanza)
+;;   (format #t "~A: ~A~%" (blue "bazel-emit-executable-target") stanza))
 
 
 ;; emit-exe-ns: exec prologues must be namespaced; we use bottom-up
@@ -662,10 +662,10 @@
                 (-emit-sig outp ws pkg module-spec stanza)))))
   stanza)
 
-(define (starlark-emit-executable-target outp ws kind pkg stanza) ;; prologue)
+(define (bazel-emit-executable-target outp ws kind pkg stanza) ;; prologue)
   (if (or *mibl-debug-executables* *mibl-debug-s7*)
       (begin
-        (format #t "~A: ~A~%" (ublue "starlark-emit-executable-target") stanza)
+        (format #t "~A: ~A~%" (ublue "bazel-emit-executable-target") stanza)
         (format #t "~A: ~A~%" (blue "kind") kind)))
         ;; (format #t "~A: ~A~%" (blue "prologue") prologue)))
   (let* ((stanza-alist (cdr stanza))
@@ -893,7 +893,7 @@
         )
       )))
 
-(define (starlark-emit-shared-prologues outp ws pkg)
+(define (bazel-emit-shared-prologues outp ws pkg)
   (let* ((stanzas (assoc-val :mibl pkg))
          (pkg-name (pkg->pkg-name pkg))
          (shared-prologues (assoc-val :shared-prologues stanzas)))
@@ -930,14 +930,14 @@
                       (newline outp))
                     shared-prologues)))))
 
-;;FIXME: rename.  emit:mibl-pkg-executables->starlark?
+;;FIXME: rename.  emit:mibl-pkg-executables->bazel?
 ;; iterate over :executable stanzas, emitting:
 ;;   a. ocaml_binary (or ocaml_test?) for :main
 ;;   b. ocaml_ns_resolver for :main-deps
 ;;   c. ocaml_ns_resolver for :prologue IF not shared
-(define (starlark-emit-executable-targets outp ws pkg) ;;fs-path stanzas)
+(define (bazel-emit-executable-targets outp ws pkg) ;;fs-path stanzas)
   (if (or *mibl-debug-executables* *mibl-debug-s7*)
-      (format #t "~A\n" (ublue "starlark-emit-executable-targets")))
+      (format #t "~A\n" (ublue "bazel-emit-executable-targets")))
 
   ;; Multiple executables may share the same prologue. for example we
   ;; may have two (executables), each with n executables and a list
@@ -981,11 +981,11 @@
                      ;;       (format outp "############  Executable Targets  ############\n")
                      ;;       (set! hdr-flag #f)))
 
-                     (starlark-emit-executable-target outp ws :executable pkg stanza))
+                     (bazel-emit-executable-target outp ws :executable pkg stanza))
 
                     ((:executables) (error 'bad-arg "unexpected :executables stanza"))
                     (else))) ;; ignore others
                 stanzas))))
 
 (if (or *mibl-debug-executables* *mibl-debug-s7*)
-    (format #t "loaded bazel/executables_starlark.scm\n"))
+    (format #t "loaded bazel/executables_bazel.scm\n"))

@@ -122,9 +122,9 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-aggregate-target outp pkg-path stanza) ;; typ fs-path stanza)
+(define (bazel-emit-aggregate-target outp pkg-path stanza) ;; typ fs-path stanza)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (ublue "starlark-emit-aggregate-target") stanza))
+      (format #t "~A: ~A\n" (ublue "bazel-emit-aggregate-target") stanza))
   (let* ((kind (car stanza))
          (stanza-alist (cdr stanza))
          (ns (assoc-val :ns stanza-alist))
@@ -249,9 +249,9 @@
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (starlark-emit-aggregate-targets outp pkg) ;; fs-path stanzas)
+(define (bazel-emit-aggregate-targets outp pkg) ;; fs-path stanzas)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (bgblue "starlark-emit-aggregate-targets") pkg))
+      (format #t "~A: ~A\n" (bgblue "bazel-emit-aggregate-targets") pkg))
 
   ;; only emit header if aggregators
   (let* ((stanzas (assoc-val :mibl pkg))
@@ -272,9 +272,9 @@
                     (format #t "stanza: ~A\n" stanza))
                 (case (car stanza)
                   ((:ns-archive :ns-library) ;; dune library, wrapped
-                   (starlark-emit-aggregate-target outp pkg-path stanza))
+                   (bazel-emit-aggregate-target outp pkg-path stanza))
                   ((:archive :library) ;; dune library, unwrapped
-                   (starlark-emit-aggregate-target outp pkg-path stanza))
+                   (bazel-emit-aggregate-target outp pkg-path stanza))
                   (else (format outp "UNCAUGHT stanza: ~A\n"
                                 stanza))))
               aggs)))
@@ -285,13 +285,13 @@
                           ;; stanza)
 
                        ;; (if (library-wrapped? stanza)
-                       ;;     (starlark-emit-aggregate-target outp 'ns-archive
+                       ;;     (bazel-emit-aggregate-target outp 'ns-archive
                        ;;                                     (cadr stanza))
                        ;;     ;; unwrapped dune libs do not get an aggregate rule,
                        ;;     ;; but they do have flags and deps that apply to their
                        ;;     ;; modules. so we need to emit those syms:
                        ;; CORRECTION: unwrapped libs are handled normally(?)
-                       ;;     (starlark-emit-stanza-deps-and-flags outp 'ns-archive
+                       ;;     (bazel-emit-stanza-deps-and-flags outp 'ns-archive
                        ;;                                          (cadr stanza)))
 
 ;; (format #t "loaded bazel/aggregates.scm\n")

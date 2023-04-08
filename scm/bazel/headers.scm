@@ -137,9 +137,9 @@
       ;;rules
       )))
 
-(define (starlark-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
+(define (bazel-emit-buildfile-hdr outp pkg-path obazl-rules pkg)
   (if *mibl-debug-s7*
-      (format #t "~A: ~A\n" (blue "starlark-emit-buildfile-hdr") obazl-rules))
+      (format #t "~A: ~A\n" (blue "bazel-emit-buildfile-hdr") obazl-rules))
 
   ;; (format outp "package(default_visibility = [\"//visibility:public\"])")
   ;; (newline outp)
@@ -574,8 +574,8 @@
   ;;  (assoc-val :mibl pkg))
   )
 
-(define (starlark-emit-global-vars outp pkg)
-  (mibl-trace-entry "starlark-emit-global-vars" pkg)
+(define (bazel-emit-global-vars outp pkg)
+  (mibl-trace-entry "bazel-emit-global-vars" pkg)
          ;; (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
          ;;                     (cadr shppx) #f))
 
@@ -807,7 +807,7 @@
               (for-each (lambda (deplist)
                           (mibl-trace "deplist" deplist)
                           (let-values (((mldeps mlideps)
-                                        (local-deps->starlark (cdr deplist) '())))
+                                        (local-deps->bazel (cdr deplist) '())))
                             (format outp "DEPS_~A = [~%" (car deplist))
                             (format outp "~{    \"~A\"~^,~%~}~%" mldeps)
                             (format outp "]~%")

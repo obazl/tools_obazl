@@ -6,7 +6,7 @@
         (vector (car dep) (cdr dep))
         (format #f "@~A//lib/~A" m m))))
 
-(define (local-deps->starlark ml-deps mli-deps)
+(define (local-deps->bazel ml-deps mli-deps)
   (let ((ml-locals (map (lambda (dep)
                           (let ((m (cdr dep)))
                             (case (car dep)
@@ -38,10 +38,10 @@
     ;; (values (sort! ml-locals string<?) (sort! mli-locals string<?))
     ))
 
-(define (module->starlark-local-deps module pkg)
-  (mibl-trace-entry "module->starlark-local-deps" module)
+(define (module->bazel-local-deps module pkg)
+  (mibl-trace-entry "module->bazel-local-deps" module)
   (let-values (((ml-deps mli-deps) (module->local-deps module pkg)))
     (mibl-trace "ml-deps" ml-deps)
     (mibl-trace "mli-deps" mli-deps)
-    (local-deps->starlark ml-deps mli-deps)))
+    (local-deps->bazel ml-deps mli-deps)))
 
