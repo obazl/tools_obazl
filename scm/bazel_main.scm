@@ -119,10 +119,10 @@
 ;;                 )
 ;;               pkgs)))
 
-(define* (-dune->obazl return root-path pkg-path)
+(define* (-mibl->obazl return root-path pkg-path)
   ;; (set! *mibl-debug-s7* #t)
   (if *mibl-debug-s7*
-      (format #t "bazel_main.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
+      (format #t "bazel_main.scm::mibl->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
@@ -171,7 +171,7 @@
                          ;; root-path ws-path
                          )))
       ;; (parsetree->mibl return) ;; @mibl//scm:libmibl.scm
-  (format #t "fini parsetree->mibl")
+  (format #t "fini parsetree->mibl\n")
 
   ;; (if *mibl-show-mibl*
   ;;     (begin
@@ -185,7 +185,12 @@
 
     ;; end dune-specific?
 
-    (if #t ;; *mibl-emit-bazel*
+  (bazel-resolve-deps!)
+  ;; (mibl-pretty-print *mibl-project*)
+  ;; (format #t "BAZEL returning...\n")
+  ;; (return)
+
+   (if #t ;; *mibl-emit-bazel*
         (begin
           (format #t "RUNNING ws->bazel")
           ;; (set! *mibl-debug-s7* #t)
@@ -222,7 +227,7 @@
 (define* (-main root-path pkg-path)
   (load "bazel.scm")
   (call-with-exit (lambda (return)
-                    (-dune->obazl
+                    (-mibl->obazl
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))

@@ -1,3 +1,9 @@
+;; ppx processing
+
+;; aggregates may have e.g. (:ppx .1) indexing to pkg shared ppx
+;; e.g. (:shared-ppx ((1 (:manifest (:opam? . ppx_jane)))))
+;; 
+
 (define (get-ppx-id ws stanza-alist)
   (if *mibl-debug-s7*
       (format #t "~A: ~A, ~A\n" (blue "get-ppx-id") ws stanza-alist))
@@ -339,8 +345,7 @@
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; FIXME
-
+;; NOT YET IMPLEMENTED in mibl
 (define (bazel-emit-global-ppxes ws return)
   (mibl-trace-entry "bazel-emit-global-ppxes" "")
   (let* ((@ws (assoc-val ws *mibl-project*))

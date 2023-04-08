@@ -1,0 +1,46 @@
+.Dd April 9, 2022
+.Dt @NEW-WORKSPACE 1
+.Os Tools-OBazl User Manual
+.Sh NAME
+.Nm @obazl//new:workspace
+.Nd Install new workspace files
+.Sh SYNOPSIS
+.Sy @obazl//new:workspace
+.Op Fl h
+.Sh OPTIONS
+.Bl -tag -width -indent
+.It Fl h
+Display this help screen.
+.El
+.Sh DESCRIPTION
+Installs files:
+.Bl -bullet -compact
+.It
+.Pa .bazelignore
+.It
+.Pa .bazelrc
+.It
+.Pa .bazelversion
+.It
+.Pa ./config/gitignore
+.It
+.Pa ./config/miblrc
+.It
+.Pa ./config/user.bazelrc
+.It
+.Pa ./bzl/host/BUILD.bazel
+.It
+.Pa ./bzl/profiles/BUILD.bazel
+.It
+.Pa WORKSPACE.bazel
+.It
+.Pa WORKSPACE.bzl
+.El
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Cm $ bazel run @obazl//new:workspace
+.Ed
+.Sh SEE ALSO
+.Xr @obazel//new:project
+.Sh AUTHORS
+.An Gregg Reynolds

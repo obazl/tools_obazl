@@ -79,10 +79,10 @@
           ;; ocamllex, ocamlyacc, etc.
           (bazel-emit-file-generators outp pkg)
 
-          (if *mibl-local-ppx-driver*
-              (begin
-                (if *mibl-debug-s7* (format #t "emitting pkg ppxes\n"))
-                (bazel-emit-pkg-ppxes outp ws pkg)))
+          ;; (if #t ;; *mibl-local-ppx-driver*
+          ;;     (begin
+          ;;       (if *mibl-debug-s7* (format #t "emitting pkg ppxes\n"))
+          (bazel-emit-pkg-ppxes outp ws pkg) ;; ))
 
           (if *mibl-debug-s7* (format #t "emitting rules\n"))
           (bazel-emit-rule-targets outp pkg) ;; fs-path stanzas)
@@ -231,8 +231,9 @@
                       )))
               pkgs)
 
-    (if (not *mibl-local-ppx-driver*)
-        (call-with-exit
-         (lambda (return)
-           (bazel-emit-global-ppxes ws return))))
+    ;; (if (not *mibl-local-ppx-driver*)
+    ;;     (call-with-exit
+    ;;      (lambda (return)
+    ;; NOT YET IMPLMENTED in mibl: workspace :shared-ppx
+    ;;        (bazel-emit-global-ppxes ws return))))
     ))

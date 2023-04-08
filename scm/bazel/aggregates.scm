@@ -52,8 +52,11 @@
                  (equal? ns (submodules 0)))
             ;; (format outp "ocaml_library(  ##\n")
             (format outp "ocaml_ns_library(\n")
-            (format outp "ocaml_ns_library(\n")))
+            (if *mibl-wrapped-libs-to-ns-archives*
+                (format outp "ocaml_ns_archive(\n")
+                (format outp "ocaml_ns_library(\n"))))
     (format outp "    name       = \"~A\",\n" tgt-name)
+    (format outp "    visibility = [\"//visibility:public\"],\n")
     ;; (if (or (> (length submodules) 1)
     ;;         (not (equal? (normalize-module-name ns) (submodules 0))))
     (if ns

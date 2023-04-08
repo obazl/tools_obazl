@@ -123,10 +123,10 @@
          (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
                          ppx #f))
 
-         (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
+         (shared-ppx-alist (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
                              (cadr shppx) #f))
 
-         (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx) #f))
+         (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx-alist) #f))
 
          ;; (ppx-alist (if-let ((ppx (assoc-val :ppx (cdr stanza))))
          ;;                    ppx #f))
@@ -166,16 +166,14 @@
                     ;; stanza
                     agg-deps mli-local-deps dep-selectors testsuite)
 
-        (if ppx-alist
+        (if (truthy? ppx-alist)
             (begin
-              (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                  (begin
-                    (format #t "~A: ~A~%" (red "stanza") stanza)
-                    (format #t "~A: ~A~%" (red "ppx-alist") ppx-alist)
-                    (format #t "~A: ~A~%" (red "len ppx-alist") (length ppx-alist))))
-              (if (> (length shared-ppx) 1)
-                  (begin (error 'stop "SIG")
-                         (format outp "    ppx           = \":Cppx_~A.exe\",\n" ppx-id))
+              (mibl-trace "stanza" stanza *mibl-debug-ppx*)
+              (mibl-trace "ppx-id" ppx-id)
+              (mibl-trace "ppx-alist" ppx-alist *mibl-debug-ppx*)
+              (if (> (length shared-ppx-alist) 1)
+                  (begin ;; (error 'stop "SIG")
+                    (format outp "    ppx           = \":ppx_~A.exe\",\n" ppx-id))
                   (format outp "    ppx           = \":ppx.exe\",\n"))
               ;; "    ppx           = \"//~A:ppx_~A.exe\", #X0 \n"
               ;; ppx-pkg ppx-id) ;; ppx-name)

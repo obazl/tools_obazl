@@ -28,7 +28,7 @@
                                           :cc-deps)
                                          (list dune-rule))
                                         ((:ns-archive)
-                                         ;; convert to :library if only one submodule
+                                         ;; convert to load ocaml_library if only one submodule
                                          (let* ((ns (assoc-val :ns stanza-alist))
                                                 (submodules (if-let ((submods (assoc-in '(:manifest :modules)
                                                                                         stanza-alist)))
@@ -614,22 +614,20 @@
                                                            (cdr stanza))))
                                                dc #f))
                      )
-                (if *mibl-debug-s7*
-                    (begin
-                      (format #t "~A: ~A~%" (uwhite "deps-fixed") deps-fixed)
-                      (format #t "~A: ~A~%" (uwhite "deps-conditional") deps-conditional)))
-                ;; (error 'stop "STOP globals")
+                (mibl-trace "deps-fixed" deps-fixed)
+                (mibl-trace "deps-conditional" deps-conditional)
 
                 ;; (format outp "## agg deps: ~A~%" (assoc-val :privname (cdr stanza)))
 
-                (if (null? *mibl-shared-deps*)
-                    (if deps-fixed
+                ;; (if (null? *mibl-shared-deps*)
+                ;;     (if deps-fixed
                         (begin
-                          (format outp "01: DEPS_~A = [\n" libname)
+                          (format outp "DEPS_~A = [\n" libname)
                           (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
                           (format outp "]\n")
                           (format outp "\n")
-                          ))
+                          )
+                        ;; )
                     ;; else deps are shared
                     ;; (begin
                     ;;   (format #t "~A: ~A~%" (bggreen "shared-deps") *mibl-shared-deps*)
@@ -655,7 +653,7 @@
                     ;;             (format outp "]\n")
                     ;;             (format outp "\n")
                     ;;             ))))
-                    )
+                    ;; )
 
                 (if (not (null? archive-options))
                     (begin
