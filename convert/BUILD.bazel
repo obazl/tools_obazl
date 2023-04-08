@@ -8,7 +8,7 @@ alias(
 ##########
 cc_binary(
     name  = "dunex",
-    args  = ["-m", "obazl_main.scm"],
+    args  = ["-m", "bazel_main.scm"],
     data = [
         "//scm:srcs",
         "//scm/starlark:srcs"

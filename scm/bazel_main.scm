@@ -1,5 +1,5 @@
 (if #t ;; *mibl-debug-s7-loads*
-    (format #t "loading obazl_main.scm~%"))
+    (format #t "loading bazel_main.scm~%"))
 
 ;; (set! *load-path* (cons ((*libc* 'pwd)) *load-path*))
 
@@ -122,7 +122,7 @@
 (define* (-dune->obazl return root-path pkg-path)
   ;; (set! *mibl-debug-s7* #t)
   (if *mibl-debug-s7*
-      (format #t "obazl_main.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
+      (format #t "bazel_main.scm::dune->obazl: ~A, ~A~%" root-path pkg-path))
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
@@ -197,10 +197,10 @@
 
     ;; ;; (ws->opam-bundles :@)
 
-    (if *mibl-show-bazel*
-      (begin
-        (format #t "STARLARK~%")
-        (mibl-debug-print-pkgs :@)))
+    ;; (if *mibl-show-bazel*
+    ;;   (begin
+    ;;     (format #t "STARLARK~%")
+    ;;     (mibl-debug-print-pkgs :@)))
 
     ;; (if *mibl-debug-s7*
     ;;     (format #t "~A: ~A~%" (green "selectors"))
@@ -232,4 +232,4 @@
                          root-path pkg-path))))
 
 (if *mibl-debug-s7-loads*
-    (format #t "loaded obazl_main.scm~%"))
+    (format #t "loaded bazel_main.scm~%"))

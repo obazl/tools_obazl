@@ -2,7 +2,7 @@ load(":BUILD.bzl", "script") # , "convert")
 
 script(name = "obazl")
 
-script(name = "convert", main = "obazl_main.scm")
+script(name = "convert", main = "bazel_main.scm")
 
 # convert()
 

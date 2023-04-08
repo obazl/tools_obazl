@@ -7,6 +7,7 @@
 ;; (load "dune.scm")
 
 (load "bazel/parsers.scm")
+(load "bazel/signatures.scm")
 (load "bazel/singletons.scm")
 (load "bazel/cc.scm")
 (load "bazel/deps.scm")

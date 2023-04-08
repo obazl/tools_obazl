@@ -342,9 +342,7 @@
 ;; FIXME
 
 (define (bazel-emit-global-ppxes ws return)
-  (if *mibl-debug-s7*
-      (format #t "~A~%" (bgblue "bazel-emit-global-ppxes")))
-
+  (mibl-trace-entry "bazel-emit-global-ppxes" "")
   (let* ((@ws (assoc-val ws *mibl-project*))
          (ppx-tbl (car (assoc-val :shared-ppx @ws))))
 

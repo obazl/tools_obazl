@@ -416,7 +416,7 @@ int main(int argc, char **argv, char **envp)
 
     /* struct mibl_config_s *mibl_config */
     mibl_s7_init2("../obazl/scm",
-                  //options[OPT_MAIN].argument,  //   obazl_main.scm
+                  //options[OPT_MAIN].argument,  //   bazel_main.scm
                   options[OPT_WS].argument);
     /* (void)mibl_config; */
 
@@ -447,8 +447,9 @@ int main(int argc, char **argv, char **envp)
         exit(EXIT_SUCCESS);
     }
 
-    log_debug("RUNNING GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
-    mibl_s7_run("obazl_main.scm", // options[OPT_MAIN].argument,
+    // if gen:bazel: bazel_main.scm
+    // if gen:buck2: buck2_main.scm
+    mibl_s7_run("bazel_main.scm", // options[OPT_MAIN].argument,
                 options[OPT_WS].argument);
 
     if (verbose)
