@@ -28,7 +28,7 @@ ln -sfv $HOME/obazl/mibl/mibl/meta/*.scm $HOME/.local/share/mibl/meta
 ln -sfv $HOME/obazl/mibl/mibl/opam/*.scm $HOME/.local/share/mibl/opam
 
 ln -sfv $HOME/obazl/tools_obazl/obazl/starlark.scm $HOME/.local/share/mibl
-ln -sfv $HOME/obazl/tools_obazl/obazl/starlark/*scm $HOME/.local/share/mibl/starlark
+ln -sfv $HOME/obazl/tools_obazl/obazl/bazel/*scm $HOME/.local/share/mibl/starlark
 
 ## copy the executable and lib (do not symlink from Bazel directories)
 cp -fv `realpath bazel-bin/repl/repl` $HOME/.local/bin/obazl

@@ -1,8 +1,8 @@
 (if *mibl-debug-s7*
-    (format #t "loading starlark/genrule.scm\n"))
+    (format #t "loading bazel/genrule.scm\n"))
 
 
-(load "starlark/bash.scm")
+(load "bazel/bash.scm")
 
 (define (-find-match-in-stanza key pkg-path stanza)
   (if (or *mibl-debug-genrules* *mibl-debug-s7*)
@@ -210,4 +210,4 @@
             ))
 
 (if *mibl-debug-s7*
-    (format #t "loaded starlark/genrule.scm\n"))
+    (format #t "loaded bazel/genrule.scm\n"))

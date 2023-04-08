@@ -1,5 +1,5 @@
 (if *mibl-debug-s7*
-    (format #t "loading starlark/aggregates.scm\n"))
+    (format #t "loading bazel/aggregates.scm\n"))
 
 ;;FIXME: get this from cmdline or ini file
 (define *mibl-ns-topdown* #t)
@@ -294,4 +294,4 @@
                        ;;     (starlark-emit-stanza-deps-and-flags outp 'ns-archive
                        ;;                                          (cadr stanza)))
 
-;; (format #t "loaded starlark/aggregates.scm\n")
+;; (format #t "loaded bazel/aggregates.scm\n")

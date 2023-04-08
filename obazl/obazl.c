@@ -415,10 +415,17 @@ int main(int argc, char **argv, char **envp)
     _update_mibl_config(options);
 
     /* struct mibl_config_s *mibl_config */
-    mibl_s7_init2("//obazl/scm",
+    mibl_s7_init2("../obazl/scm",
                   //options[OPT_MAIN].argument,  //   obazl_main.scm
                   options[OPT_WS].argument);
     /* (void)mibl_config; */
+
+    /* "../obazl/scm", */
+    /* "../obazl/scm/starlark", */
+    /* log_debug("cwd: %s", getcwd(NULL,0)); */
+    /* char *tmpdir = realpath("obazl/scm", NULL); */
+    /* log_debug("tmpscm: %s", tmpdir); */
+    /* s7_add_to_load_path(s7, tmpdir); */
 
     _update_s7_globals(options);
 
@@ -440,6 +447,7 @@ int main(int argc, char **argv, char **envp)
         exit(EXIT_SUCCESS);
     }
 
+    log_debug("RUNNING GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
     mibl_s7_run("obazl_main.scm", // options[OPT_MAIN].argument,
                 options[OPT_WS].argument);
 

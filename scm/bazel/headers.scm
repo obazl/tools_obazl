@@ -1,5 +1,5 @@
 (if *mibl-debug-s7*
-    (format #t "loading starlark/headers.scm\n"))
+    (format #t "loading bazel/headers.scm\n"))
 
 (define (pkg->obazl-rules pkg)
   (if *mibl-debug-s7*
@@ -897,4 +897,4 @@
    (assoc-val :mibl pkg)))
 
 (if *mibl-debug-s7*
-    (format #t "loaded starlark/headers.scm\n"))
+    (format #t "loaded bazel/headers.scm\n"))

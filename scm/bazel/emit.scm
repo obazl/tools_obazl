@@ -1,9 +1,9 @@
 (if *mibl-debug-s7*
-    (format #t "loading starlark/conversions.scm\n"))
+    (format #t "loading bazel/conversions.scm\n"))
 
-(load "starlark/headers.scm")
-(load "starlark/rules_starlark.scm")
-(load "starlark/non_dune_emit.scm")
+(load "bazel/headers.scm")
+(load "bazel/rules_starlark.scm")
+(load "bazel/non_dune_emit.scm")
 
 ;; (define (starlark-emit-tuareg outp ws pkg)
 ;;   (format #t "~A: ~A~%" (red "starlark-emit-tuareg") pkg)
@@ -16,7 +16,7 @@
 (define (mibl-pkg->build-bazel ws pkg)
   (if *mibl-debug-s7*
       (format #t "~A: ~A\n" (bgblue "mibl-pkg->build-bazel") pkg))
-  (load "starlark/non-dune-parsers.scm")
+  (load "bazel/non-dune-parsers.scm")
   (let* ((pkg-path (assoc-val :pkg-path pkg))
          (dunefile (assoc :mibl pkg)))
     (if *mibl-debug-s7*

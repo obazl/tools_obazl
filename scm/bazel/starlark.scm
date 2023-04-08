@@ -1,10 +1,10 @@
 (if *mibl-debug-s7*
-    (format #t "loading starlark/starlark.scm\n"))
+    (format #t "loading bazel/starlark.scm\n"))
 
 ;; (load "dune.scm")
 ;; (load "opam.scm")
 (load "string.scm")
-(load "starlark/starlark_emit_rules.scm")
+(load "bazel/starlark_emit_rules.scm")
 ;; (load "s7/stuff.scm")
 (load "utils.scm")
 
@@ -1278,7 +1278,7 @@
   )
 
 (if *mibl-debug-s7*
-    (format #t "loaded starlark/starlark.scm\n"))
+    (format #t "loaded bazel/starlark.scm\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (define (starlark-elaborate-pkg-tbls dune-pkg-tbls modules-tbl)

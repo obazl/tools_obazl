@@ -1,4 +1,4 @@
-(if *mibl-debug-s7-loads*
+(if #t ;; *mibl-debug-s7-loads*
     (format #t "loading obazl_main.scm~%"))
 
 ;; (set! *load-path* (cons ((*libc* 'pwd)) *load-path*))
@@ -155,46 +155,39 @@
   ;;        (mpkgs (normalize-rule-deps! :@))
   ;;        )
 
-  (parsetree->mibl return) ;; @mibl//scm:libmibl.scm
+  (format #t "Running parsetree->mibl")
+  (call-with-exit (lambda (return)
+                    (parsetree->mibl ;; in libmibl.scm
+                         (lambda () ;; our return thunk
+                           ;; (if *mibl-show-mibl*
+                           ;;     (begin
+                           ;;       (mibl-debug-print-project)
+                           ;;       (flush-output-port))
+                           ;;     (if *mibl-show-pkg*
+                           ;;         (mibl-debug-print-pkg)))
+                           (if (not *mibl-quiet*)
+                               (format #t "~A: mibl returning...~%" (green "INFO")))
+                           (return))
+                         ;; root-path ws-path
+                         )))
+      ;; (parsetree->mibl return) ;; @mibl//scm:libmibl.scm
+  (format #t "fini parsetree->mibl")
 
-  ;; (miblize :@)
-  ;; (add-filegroups-to-pkgs :@)
-  ;; (normalize-manifests! :@)
-  ;; (normalize-rule-deps! :@)
-
-  ;; ;; start dune-specific
-  ;; (miblarkize :@)
-  ;; ;; (resolve-pkg-file-deps :@) ;; OBSOLETE
-
-  ;; (resolve-labels! :@)
-  ;; (handle-shared-ppx :@)
-
-  ;; (if *mibl-shared-deps*
+  ;; (if *mibl-show-mibl*
   ;;     (begin
-  ;;       (handle-shared-deps :@)
-  ;;       (handle-shared-opts :@)
+  ;;       (format #t "~A~%" (bgred "DUMP MIBL"))
+  ;;       (mibl-debug-print-project)
+  ;;       ;; (mibl-debug-print-pkgs :@)
+  ;;       ;;(return)
   ;;       ))
-
-  ;;   ;; (ppx-inline-tests! :@)
-
-    (if *mibl-show-mibl*
-        (begin
-          (format #t "~A~%" (bgred "DUMP MIBL"))
-          (mibl-debug-print-project)
-          ;; (mibl-debug-print-pkgs :@)
-          ;;(return)
-          ))
 
     ;; (return)
 
     ;; end dune-specific?
 
-    ;; (if *mibl-emit-mibl*
-    ;;     (emit-mibl))
-        ;; (emit-mibl :@))
-
     (if #t ;; *mibl-emit-starlark*
         (begin
+          (format #t "RUNNING ws->starlark")
           ;; (set! *mibl-debug-s7* #t)
           ;;FIXME: rename emit-starlark
           (ws->starlark :@)))
@@ -234,7 +227,7 @@
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))
                            (if (not *mibl-quiet*)
-                               (format #t "~A: Returning...~%" (green "INFO")))
+                               (format #t "~A: obazl returning...~%" (green "INFO")))
                            (return))
                          root-path pkg-path))))
 

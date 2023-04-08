@@ -1,5 +1,5 @@
 (if (or *mibl-debug-executables* *mibl-debug-s7*)
-    (format #t "loading starlark/executables_starlark.scm\n"))
+    (format #t "loading bazel/executables_starlark.scm\n"))
 
 ;; (define (starlark-emit-executable-target outp pkg stanza)
 ;;   (format #t "~A: ~A~%" (blue "starlark-emit-executable-target") stanza))
@@ -988,4 +988,4 @@
                 stanzas))))
 
 (if (or *mibl-debug-executables* *mibl-debug-s7*)
-    (format #t "loaded starlark/executables_starlark.scm\n"))
+    (format #t "loaded bazel/executables_starlark.scm\n"))

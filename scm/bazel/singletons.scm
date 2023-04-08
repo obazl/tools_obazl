@@ -1,5 +1,5 @@
 (if (or *mibl-debug-emit* *mibl-debug-s7*)
-    (format #t "loading starlark/singletons.scm\n"))
+    (format #t "loading bazel/singletons.scm\n"))
 
 ;; FIXME FIXME FIXME FIXME FIXME
 ;; lookup label for this sym
@@ -299,16 +299,15 @@
               (-emit-sig-freestanding outp ws module))))
   )
 
-;;FIXME: rename to -emit-dyadic-module
 (define (-emit-dyadic-module outp ws module pkg stanza ns
                              target-selector src-selectors src-default-apodosis
                              opts opts-tag prologue? deps-tag
                              agg-deps local-deps dep-selectors testsuite
                              shared-ppx ppx-codeps ppx-alist ppx-pkg ppx-id ppx-args)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A~%" (ublue "-emit-dyadic-module") module))
+  (mibl-trace-entry "-emit-dyadic-module" module *mibl-debug-emit*)
   (let* ((stanza-alist (cdr stanza))
          (modname (car module))
+         (mibl-trace-let "modname" modname)
          (srcs    (cdr module))
          (select-sigfile #f)
          ;; (select-sigfile (assoc-val :mli_ srcs))
@@ -326,12 +325,14 @@
          ;;                 (assoc-val :ml_ srcs)))
 
          (sigfile (if-let ((mli (assoc-val :mli srcs)))
-                          (car mli)
+                          (if (list? mli)
+                              (car mli) mli)
                           (assoc-val :mli_ srcs)))
-         (structfile (if-let ((mli (assoc-val :ml srcs)))
-                             (car mli)
+         (structfile (if-let ((ml (assoc-val :ml srcs)))
+                             (if (list? ml) (car ml) ml)
                              (car (assoc-val :ml_ srcs))))
          )
+    (mibl-trace "XXXXXXXXXXXXXXXX" "")
     ;; (error 'STOP "STOP selmod")
     ;; (opts (if-let ((opts (assoc :opts (cdr stanza))))
     ;;         ;;               (cdr opts) '())))
@@ -1445,4 +1446,4 @@
     ))
 
 (if (or *mibl-debug-emit* *mibl-debug-s7*)
-    (format #t "loaded starlark/singletons.scm\n"))
+    (format #t "loaded bazel/singletons.scm\n"))

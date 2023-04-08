@@ -63,7 +63,4 @@ def script(name = "obazl", main = None, **kwargs):
         visibility = ["//visibility:public"]
     )
 
-################################################################
-def convert(name = "convert", main = "obazl_main.scm", **kwargs):
-    script(name = name, main = main, **kwargs)
 

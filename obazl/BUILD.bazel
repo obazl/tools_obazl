@@ -1,8 +1,10 @@
-load(":BUILD.bzl", "script", "convert")
+load(":BUILD.bzl", "script") # , "convert")
 
-script()
+script(name = "obazl")
 
-convert()
+script(name = "convert", main = "obazl_main.scm")
+
+# convert()
 
 ########
 genrule(

@@ -1,4 +1,4 @@
-;; starlark/mibl.scm
+;; bazel/mibl.scm
 
 ;; routines for converting mibl model to starlark model
 
