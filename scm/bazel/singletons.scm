@@ -418,18 +418,21 @@
     (if ppx-label
         (begin
           (mibl-trace "emitting ppx" ppx-alist *mibl-debug-emit*)
-          (format outp "    ppx           = \"~A\",\n" ppx-label)
-          (mibl-trace "emitting ppx-args" ppx-args *mibl-debug-emit*)
+          (format outp "01:    ppx           = \"~A\",\n" ppx-label)
           ;;FIXME: handle :scope
           (if (truthy? ppx-args)
-              (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                     (mfile (car (assoc-val :ml (cdr mod))))
-                     )
-                (format outp
-                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
-                        (append (list "-loc-filename"
-                                      (format #f "~A" mfile))
-                                ppx-args))))))
+              (begin
+                (mibl-trace "emitting ppx-args" ppx-args *mibl-debug-emit*)
+                (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)))))
+
+              ;; (let* ((mod (assoc-in `(:modules ,modname) pkg))
+              ;;        (mfile (car (assoc-val :ml (cdr mod))))
+              ;;        )
+              ;;   (format outp
+              ;;           "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+              ;;           (append (list "-loc-filename"
+              ;;                         (format #f "~A" mfile))
+              ;;                   ppx-args))))))
 
     ;; (if (truthy? ppx-alist)
     ;;     (begin
@@ -460,7 +463,7 @@
 
     (mibl-trace "emitting ppx-codeps" ppx-codeps *mibl-debug-emit*)
     (if ppx-codeps
-        (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
+        (format outp "    ppx_codeps    = [~{\"~A\"~^, ~}]\n" ppx-codeps))
 
     (format outp ")\n")
     (newline outp)
@@ -614,14 +617,16 @@
           (mibl-trace "emitting ppx-args" ppx-args *mibl-debug-emit*)
           ;;FIXME: handle :scope
           (if (truthy? ppx-args)
-              (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                     (mfile (car (assoc-val :ml (cdr mod))))
-                     )
-                (format outp
-                        "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
-                        (append (list "-loc-filename"
-                                      (format #f "~A" mfile))
-                                ppx-args))))))
+              (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args))))
+
+              ;; (let* ((mod (assoc-in `(:modules ,modname) pkg))
+              ;;        (mfile (car (assoc-val :ml (cdr mod))))
+              ;;        )
+              ;;   (format outp
+              ;;           "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+              ;;           (append (list "-loc-filename"
+              ;;                         (format #f "~A" mfile))
+              ;;                   ppx-args))))))
 
       ;; (if ppx-alist
       ;;     (begin

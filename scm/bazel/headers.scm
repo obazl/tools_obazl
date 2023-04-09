@@ -619,41 +619,17 @@
 
                 ;; (format outp "## agg deps: ~A~%" (assoc-val :privname (cdr stanza)))
 
-                ;; (if (null? *mibl-shared-deps*)
-                ;;     (if deps-fixed
-                        (begin
-                          (format outp "DEPS_~A = [\n" libname)
-                          (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
-                          (format outp "]\n")
-                          (format outp "\n")
-                          )
+                (if (number? deps-fixed)
+                    ;; e.g. (:deps (:resolved . 1))
+                    ;; (format outp "01: DEPS_~A = [\n" deps-fixed)
+                    (begin)
+                    (begin
+                      (format outp "01a: DEPS_~A = [\n" libname)
+                      (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
+                      (format outp "]\n")
+                      (format outp "\n")
+                      ))
                         ;; )
-                    ;; else deps are shared
-                    ;; (begin
-                    ;;   (format #t "~A: ~A~%" (bggreen "shared-deps") *mibl-shared-deps*)
-                    ;;   (if (member (assoc-val :pkg-path pkg)
-                    ;;               *mibl-shared-deps*)
-                    ;;       (begin
-                    ;;         ;; do not emit if pkg in *mibl-shared-deps*, the global var will be emitted by the :shared-deps stanza
-                    ;;         (format #t "~A: ~A~%" (green "pkg in shared-deps list") (assoc-val :pkg-path pkg))
-                    ;;         ;; (format outp "## shared deps~%")
-                    ;;         )
-                    ;;       ;; (-emit-shared-deps pkg)
-                    ;;       ;; (begin
-                    ;;       ;;   (format outp "## SHARED PPX ##")
-                    ;;       ;;   (newline outp)
-                    ;;       ;;   (format outp "## ~{~A, ~} ##" *mibl-shared-deps*)
-                    ;;       ;;   (newline outp)
-                    ;;       ;;   (newline outp))
-                    ;;       ;; else pkg not in shared-deps list
-                    ;;       (if deps-fixed
-                    ;;           (begin
-                    ;;             (format outp "DEPS_~A = [\n" libname)
-                    ;;             (format outp "~{        \"~A\"~^,\n~}\n" deps-fixed)
-                    ;;             (format outp "]\n")
-                    ;;             (format outp "\n")
-                    ;;             ))))
-                    ;; )
 
                 (if (not (null? archive-options))
                     (begin
@@ -804,12 +780,13 @@
                   (format #t "~A: ~A~%" (bgred "shared-deps") stanza))
               (for-each (lambda (deplist)
                           (mibl-trace "deplist" deplist)
-                          (let-values (((mldeps mlideps)
-                                        (local-deps->bazel (cdr deplist) '())))
+                          ;; (let-values (((mldeps mlideps)
+                          ;;               (local-deps->bazel (cdr deplist) '())))
                             (format outp "DEPS_~A = [~%" (car deplist))
-                            (format outp "~{    \"~A\"~^,~%~}~%" mldeps)
+                            (format outp "~{    \"~A\"~^,~%~}~%" (cdr deplist)) ;;mldeps)
                             (format outp "]~%")
-                            (newline outp)))
+                            (newline outp))
+                        ;;)
                         (cadr stanza)))
 
              ((:shared-link-opts :shared-ocamlc-opts :shared-ocamlopt-opts) (values))

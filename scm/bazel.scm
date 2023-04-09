@@ -23,7 +23,7 @@
 (load "bazel/genrule.scm")
 (load "bazel/profiles.scm")
 (load "bazel/rules_bazel.scm")
-(load "bazel/resolve_deps.scm")
+(load "bazel/bazel_resolvers.scm")
 (load "bazel/shell.scm")
 (load "bazel/tools.scm")
 (load "bazel/attributes.scm")

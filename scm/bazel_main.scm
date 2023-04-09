@@ -185,7 +185,8 @@
 
     ;; end dune-specific?
 
-  (bazel-resolve-deps!)
+  (bazel-resolve-labels!)
+
   ;; (mibl-pretty-print *mibl-project*)
   ;; (format #t "BAZEL returning...\n")
   ;; (return)

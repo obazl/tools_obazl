@@ -1052,7 +1052,7 @@
                           (if ppx-alist
                               (begin
                                 (format outp
-                                        "    ppx      = \":~A\",\n"
+                                        "03:    ppx      = \":~A\",\n"
                                         (cadr (assoc :name ppx-alist)))
                                 (if (not
                                      (equal? :all (cadr (assoc :scope

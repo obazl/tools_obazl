@@ -69,8 +69,10 @@
             (begin
               (mibl-trace "xxxxxxxxxxxxxxxx" "")
               ;; else must be a struct, (Foo foo.ml Dep1 ...)
-              (let ((ml-deps (cddr module-tlbl)))
-                (values ml-deps '()))))))))
+              (if (list? (cdr module-tlbl))
+                  (let ((ml-deps (cddr module-tlbl)))
+                    (values ml-deps '()))
+                  (values '() '()))))))))
 
 (define (module->bazel-local-deps module pkg)
   (mibl-trace-entry "module->bazel-local-deps" module)
