@@ -41,119 +41,6 @@
                  selectors))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;FIXME: 2 routines, emit-deps, emit-exec-module-deps?
-(define (-emit-deps outp
-                    this-is-main ;;FIXME: remove?
-                    prologue deps-tag
-                    ;; stanza
-                    agg-deps local-deps selectors testsuite)
-  (mibl-trace-entry "-emit-deps" deps-tag)
-  (mibl-trace "agg-deps" agg-deps)
-  (mibl-trace "local-deps" local-deps)
-  (mibl-trace "deps-tag" deps-tag)
-  (mibl-trace "this-is-main" this-is-main)
-  (mibl-trace "prologue" prologue)
-
-  (if (or (number? deps-tag)
-          (truthy? local-deps)
-          (truthy? agg-deps)
-          (and this-is-main (truthy? prologue))
-          selectors)
-      (format outp "    deps          = ")
-      )
-
-  (if (and this-is-main (truthy? prologue))
-      (begin
-        (format outp "01: [\":lib~A\"]" prologue))
-      ;; NB: omit trailing comma (and newline) in case select follows
-      (if (null? local-deps)
-          (if (null? agg-deps)
-              (if (number? deps-tag)
-                  (format outp "DEPS_~A" (if testsuite testsuite deps-tag))
-                  ;; (error 'FIXME
-                  ;;        (format
-                  ;;         #f "found non-numeric deps-tag ~A but no deps"
-                  ;;         deps-tag))
-                  ;; else emit nothing
-                  )
-              ;; agg-deps e.g. ((:resolved @ocaml//compiler-libs/common))
-              (if (number? deps-tag)
-                  (error 'FIXME
-                         (format
-                          #f "found both numeric deps-tag ~A and agg-deps ~A"
-                          deps-tag agg-deps))
-                  (if this-is-main ;; prologue
-                      (if prologue
-                          (format outp "03: [\":~A_execlib\"]" prologue)
-                          (format outp "04: DEPS_~A" deps-tag))
-                      (format outp "DEPS_~A"
-                              (if testsuite testsuite deps-tag)))))
-          ;; have local-deps (note: trailing comma+newline added below)
-          (if (null? agg-deps)
-              (if (number? deps-tag)
-                  (if this-is-main ;; prologue
-                      (format outp "06: [\":~A_execlib\"]1" prologue)
-                      (begin
-                        (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                        (format outp "~{        ~S~^,~%~}\n" local-deps)
-                        (format outp "    ]")))
-                  ;; else
-                  (begin
-                    ;; (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                    (format outp "08: [\n")
-                    (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-                    (format outp "    ]")))
-              (begin
-                (format outp "DEPS_~A + [\n" (if testsuite testsuite deps-tag))
-                (format outp "~{        \"~A\"~^,~%~}\n" local-deps)
-                (format outp "    ]")))))
-
-  ;; (if (not (null? local-deps))
-  ;;     (if (not (null? agg-deps))
-  ;;         (begin
-  ;;           (if (equal? :executable (car stanza))
-  ;;               (format outp " ~A_EXE_DEPS + [\n" (if testsuite testsuite deps-tag))
-  ;;               (format outp "~A_DEPS + [\n" (if testsuite testsuite deps-tag)))
-  ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-  ;;           (format outp "    ]"))
-  ;;         (begin
-  ;;           (format outp "[~%")
-  ;;           (format outp "~{        \":~A\"~^,~%~}\n" local-deps)
-  ;;           (format outp "    ]")))
-  ;;     ;; else no local-deps
-  ;;              ;;     (if (not (null? agg-deps))
-  ;;              ;;           (if (equal? :executable (car stanza))
-  ;;              ;;               (format outp "    deps          = ~A_EXE_DEPS,~%" (if testsuite testsuite deps-tag))
-  ;;              ;;               (format outp "A    deps          = ~A_DEPS,~%" (if testsuite testsuite deps-tag)))))
-  ;;     (if (not (null? agg-deps))
-  ;;         (format outp "~A_DEPS" (if testsuite testsuite deps-tag))))
-
-  (mibl-trace "selectors" selectors *mibl-debug-emit*)
-  (if selectors
-      (begin
-        (if (or *mibl-debug-emit* *mibl-debug-s7*)
-            (format #t "~A: ~A~%" (uwhite "emitting selectors") selectors))
-        (if (or (truthy? local-deps)
-                (truthy? agg-deps)
-                (truthy? deps-tag))
-            (format outp " + "))
-        (format outp " select({~%")
-        ;; (format outp "~{        \"//bzl/import:~A?\": \"~A\",~^~%~}~%"
-        ;;         src-selectors)
-        (format outp "~{        \"//bzl/import:~A?\": [\"~A\"],~^~%~}~%"
-                (flatten selectors))
-        (format outp "        \"//conditions:default\": []~%")
-        (format outp "    }),  ## ~%"))
-
-      ;; else no selectors, finish with comma
-      (if (or (number? deps-tag)
-              (truthy? local-deps)
-              (truthy? agg-deps)
-              (and this-is-main (truthy? prologue)))
-              ;; selectors)
-          (format outp ",~%"))
-      ))
-
 (define (-get-ppx-args ppx-alist libname)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (ublue "-get-ppx-args") ppx-alist))
@@ -286,7 +173,7 @@
             (format outp "    name          = \"~A\",\n" modname)
             (format outp "    struct        = \"~A\",\n" structfile)
             (format outp "    deps          = \"~A\",~%" local-deps)
-            ;; (-emit-deps outp this-is-main prologue? deps-tag
+            ;; (emit-deps outp this-is-main prologue? deps-tag
             ;;             ;; stanza
             ;;             agg-deps local-deps dep-selectors testsuite)
             (format outp ")")
@@ -406,7 +293,7 @@
         )
 
     (mibl-trace "emitting deps A" deps-tag *mibl-debug-emit*)
-    (-emit-deps outp
+    (emit-deps outp
                 #f ;; this-is-main
                 prologue? deps-tag
                 ;;stanza
@@ -586,7 +473,7 @@
 
       (if (or *mibl-debug-emit* *mibl-debug-s7*)
           (format #t "~A: ~A~%" (blue "emitting deps B") deps-tag))
-      (-emit-deps outp
+      (emit-deps outp
                   #f ;; this-is-main
                   prologue? deps-tag
                   ;; stanza
@@ -691,7 +578,7 @@
 
          (pkg-shared-ppx-alist (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
                              (cadr shppx) #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgyellow "pkg-shared-ppx-alist") pkg-shared-ppx-alist)))
+         (mibl-trace-let "pkg-shared-ppx-alist" pkg-shared-ppx-alist *mibl-debug-emit*)
 
          (privname (if-let ((privname (assoc-val :privname stanza-alist)))
                            privname
@@ -838,7 +725,7 @@
          ;; lookup ppx-alist in :shared-ppx
          ;; (ppx-id (get-ppx-id ws (cdr stanza)))
          (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist))) ppx #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uyellow "module ppx-id") ppx-id)))
+         (mibl-trace-let "module ppx-id" ppx-id *mibl-debug-emit*)
 
          ;; for now ppx-id is sufficient to construct label;
          ;; when we add ws :shared-ppx we will also need the shared-ppx package
@@ -847,6 +734,7 @@
                             (format #f ":ppx_~A.exe" ppx-id)
                             (format #f ":ppx.exe"))
                         #f))
+         (mibl-trace-let "module ppx-label" ppx-label *mibl-debug-emit*)
 
          ;; we need the ppx alist so we can extract ppx-args
          (ppx-alist (if ppx-id
@@ -859,10 +747,10 @@
          (mibl-trace-let "ppx-alist" ppx-alist *mibl-debug-emit*)
 
          (ppx-args (if ppx-id (-get-ppx-args ppx-alist libname) #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgyellow "ppx-args") ppx-args)))
+         (mibl-trace-let "ppx-args" ppx-args *mibl-debug-emit*)
 
          (ppx-codeps (if-let ((codeps (assoc-val :ppx-codeps stanza-alist))) codeps #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (bgyellow "ppx-codeps") ppx-codeps)))
+         (mibl-trace-let "ppx-codeps" ppx-codeps *mibl-debug-emit*)
 
          ;; (ppx-pkg (if *mibl-local-ppx-driver* "" (format #f "//~A" *mibl-shared-ppx-pkg*)))
          ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "ppx-pkg") ppx-pkg)))

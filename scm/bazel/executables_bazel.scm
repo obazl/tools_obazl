@@ -225,9 +225,11 @@
 
          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A\n" (blue "stanza-alist") stanza-alist)))
 
-         (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
+         ;; (shared-ppx (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
+         ;;                     (cadr shppx) #f))
+         (pkg-shared-ppx-alist (if-let ((shppx (assoc-in '(:mibl :shared-ppx) pkg)))
                              (cadr shppx) #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "shared-ppx") shared-ppx)))
+         (mibl-trace-let "pkg-shared-ppx-alist" pkg-shared-ppx-alist *mibl-debug-emit*)
 
          (privname (if-let ((privname (assoc-val :privname stanza-alist)))
                            privname
@@ -245,8 +247,8 @@
          (testsuite (if-let ((ts (assoc-val :in-testsuite (cdr stanza))))
                             (string-upcase (format #f "~A" ts)) #f))
 
-         ;; (ns (assoc-val :ns stanza-alist))
-         ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ns") ns)))
+         (ns (assoc-val :ns stanza-alist))
+         (mibl-trace-let "ns" ns *mibl-debug-emit*)
 
          ;; :deps are attached to the aggregate. may contain :conditionals.
          ;; FIXME: deps-tag and agg-deps redundant? the latter contains unresolved deps?
@@ -375,32 +377,39 @@
          ;; link-opts, ocamlc-opts, ocamlopt-opts???
 
          ;; we always use shared ppxes (pkg scope), so we have e.g. (:ppx . 1)
-         ;; lookup ppx-alist in :shared-ppx
+         ;; lookup ppx-alist in :pkg-shared-ppx-alist
          ;; (ppx-id (get-ppx-id ws (cdr stanza)))
-         (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist)))
-                         ppx #f))
+         (ppx-id (if-let ((ppx (assoc-val :ppx stanza-alist))) ppx #f))
+         (mibl-trace-let "module ppx-id" ppx-id *mibl-debug-emit*)
 
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "module ppx-id") ppx-id)))
+         (ppx-label (if ppx-id
+                        (if (> (length pkg-shared-ppx-alist) 1)
+                            (format #f ":ppx_~A.exe" ppx-id)
+                            (format #f ":ppx.exe"))
+                        #f))
+         (mibl-trace-let "main module ppx-label" ppx-label *mibl-debug-emit*)
 
-         (ppx-alist (if ppx-id (assoc-val ppx-id shared-ppx) #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-alist") ppx-alist)))
+         ;; (ppx-alist (if ppx-id (assoc-val ppx-id pkg-shared-ppx-alist) #f))
+         ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-alist") ppx-alist)))
+         ;; we need the ppx alist so we can extract ppx-args
+         (ppx-alist (if ppx-id
+                        (let ((x (assoc-val ppx-id pkg-shared-ppx-alist)))
+                          (if (number? x)
+                              (begin ;; look it up in ws :shared-ppx
+                                (error 'WS-SHARED-PPX "Not yet implmented: global :shared-ppx"))
+                              x))
+                          #f))
+         (mibl-trace-let "ppx-alist" ppx-alist *mibl-debug-emit*)
 
          (ppx-args (if ppx-id (-get-ppx-args ppx-alist libname) #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-args") ppx-args)))
+         (mibl-trace-let "main ppx-args" ppx-args *mibl-debug-emit*)
 
          (ppx-codeps (if-let ((codeps (assoc-val :ppx-codeps stanza-alist))) codeps #f))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-codeps") ppx-codeps)))
+         (mibl-trace-let "main ppx-codeps" ppx-codeps *mibl-debug-emit*)
 
-         (ppx-pkg (if *mibl-local-ppx-driver* "" (format #f "//~A" *mibl-shared-ppx-pkg*)))
-         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-pkg") ppx-pkg)))
+         ;; (ppx-pkg (if *mibl-local-ppx-driver* "" (format #f "//~A" *mibl-shared-ppx-pkg*)))
+         ;; (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (blue "ppx-pkg") ppx-pkg)))
          )
-
-    (if (or *mibl-debug-emit* *mibl-debug-s7*)
-        (begin
-          (format #t "~A: ~A~%" (uwhite "ppx id") ppx-id)
-          (format #t "module libname: ~A~%" libname)))
-
-    ;; (if ppx-id (error 'stop "STOP ppx id"))
 
     ;; FIXME: if *mibl-build-dyads* then emit both ocaml_module and ocaml_signature
 
@@ -523,12 +532,20 @@
           (-emit-main-deps outp deps-tag
                            agg-deps local-deps dep-selectors testsuite)
 
-          (if ppx-alist
+          (if ppx-label
               (begin
-                (if (> (length shared-ppx) 1)
-                    (format outp "    ppx           = \"~A:Appx_~A.exe\",\n" ;; #X2
-                            ppx-pkg ppx-id)
-                    (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+                (mibl-trace "emitting main ppx" ppx-alist *mibl-debug-emit*)
+                (format outp "    ppx           = \"~A\",\n" ppx-label)
+                (mibl-trace "emitting main ppx-args" ppx-args *mibl-debug-emit*)
+                ;;FIXME: handle :scope
+                (if (truthy? ppx-args)
+                    (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args))))
+
+                ;; (if (> (length pkg-shared-ppx-alist) 1)
+                ;;     (format outp "    ppx           = \"~A:Appx_~A.exe\",\n" ;; #X2
+                ;;             ppx-pkg ppx-id)
+                ;;     (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+
                 ;; ppx-name)
                 ;; (cadr (assoc :name ppx-alist)))
                 ;; (if (not
@@ -536,18 +553,18 @@
                 ;;                                ppx-alist))))
 
                 ;;FIXME: handle :scope
-                (if ppx-args
-                    (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                           (mfile (car (assoc-val :ml (cdr mod))))
-                           )
-                      (format outp
-                              "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
-                              (append (list "-loc-filename"
-                                            (format #f "~A" mfile))
-                                      ppx-args))))
+                ;; (if ppx-args
+                ;;     (let* ((mod (assoc-in `(:modules ,modname) pkg))
+                ;;            (mfile (car (assoc-val :ml (cdr mod))))
+                ;;            )
+                ;;       (format outp
+                ;;               "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+                ;;               (append (list "-loc-filename"
+                ;;                             (format #f "~A" mfile))
+                ;;                       ppx-args))))
                 ;; (if-let ((codeps (assoc-val :ppx-codeps stanza-alist)))
                 ;;         (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}],\n" codeps))
-                ))
+                ;; ))
           (if ppx-codeps
               (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
 
@@ -556,7 +573,7 @@
           )
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; proper list but not alist: (Mytest mytest.ml Hello) - no sig
-        (let* ((_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "emitting main module (w/o sig): ~A\n" module-spec)))
+        (let* ((mibl-trace-let "emitting main module (w/o sig)" module-spec *mibl-debug-emit*)
                (modname (car module-spec))
                (structfile (if (proper-list? module-spec) (cadr module-spec)  (cdr module-spec)))
                (local-deps (if (proper-list? module-spec) (cddr module-spec) '())))
@@ -589,64 +606,74 @@
               (begin
                 (format outp "    struct        = \"~A\",~%" structfile)
                 ))
-          (if (or *mibl-debug-emit* *mibl-debug-s7*)
-              (begin
-                (format #t "~A: ~A~%" (umagenta "emitting main opts") opts)
-                (format #t "~A: ~A~%" (umagenta "prologue-nm") prologue-nm)))
+          (mibl-trace "emitting main opts" opts *mibl-debug-emit*)
           (if opts ;; (not (null? opts))
-              (if prologue-nm
-                  (format outp "    opts          = [\"-open\", \"~A\"] + OPTS_~A,\n"
-                          (normalize-module-name prologue-nm) opts-tag)
-                  (format outp "    opts          = OPTS_~A,\n" opts-tag))
+              (format outp "    opts          = OPTS_~A,\n" opts-tag))
+
+              ;; (if prologue-nm
+              ;;     (format outp "    opts          = [\"-open\", \"~A\"] + OPTS_~A,\n"
+              ;;             (normalize-module-name prologue-nm) opts-tag)
+              ;;     (format outp "    opts          = OPTS_~A,\n" opts-tag))
               ;; else no opts
-              (if prologue-nm
-                      (format outp "    opts          = [\"-open\", \"~A\"],~%" prologue-nm) ;; this-is-main)
-                      ;; else should not happen
-                      ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
-                      ))
+              ;; (if prologue-nm
+              ;;         (format outp "    opts          = [\"-open\", \"~A\"],~%" prologue-nm) ;; this-is-main)
+              ;;         ;; else should not happen
+              ;;         ;; (format outp "    opts          = OPTS_~A,\n" opts-tag))
+              ;;         ))
 
           (if (or *mibl-debug-emit* *mibl-debug-s7*)
               (format #t "~A: ~A~%" (blue "emitting main deps B") deps-tag))
 
-          (-emit-deps outp
+          (emit-deps outp
                       #t ;; this-is-main
-                      prologue-nm deps-tag
+                      #f ;; prologue-nm
+                      deps-tag
                       ;; stanza
                       agg-deps local-deps dep-selectors testsuite)
 
-          (if ppx-alist
+          (if ppx-label
               (begin
-                (if (> (length shared-ppx) 1)
-                    (format outp "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id)
-                    (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+                (mibl-trace "emitting main ppx" ppx-alist *mibl-debug-emit*)
+                (format outp "    ppx           = \"~A\",\n" ppx-label)
+                (mibl-trace "emitting main ppx-args" ppx-args *mibl-debug-emit*)
+                ;;FIXME: handle :scope
+                (if (truthy? ppx-args)
+                    (format outp "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args))))
 
-                (if ppx-args
-                    (begin
-                      ;; (format #t "~A: ~A~%" "pkg" pkg)
-                      ;; (format #t "~A: ~A~%" "modname" modname)
-                      ;; (format outp
-                      ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
-                    (let* ((mod (assoc-in `(:modules ,modname) pkg))
-                           (mfile (if mod
-                                      (car (assoc-val :ml (cdr mod)))
-                                      (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
-                                        (cadr mstruct))))
-                           )
-                      (format outp
-                              "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
-                              (append (list "-loc-filename"
-                                            (format #f "~A" mfile))
-                                      ppx-args))))
-                    )
-                ;; (if ppx-args
-                ;; ;; (if (not  ## why?
-                ;; ;;      (equal? :all (cadr (assoc :scope
-                ;; ;;                                ppx-alist))))
-                ;;     (format outp
-                ;;             "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
-                ;;             ;;(cadr (assoc :args ppx-alist))
-                ;;             ))
-                ))
+          ;; (if ppx-alist
+          ;;     (begin
+          ;;       (if (> (length pkg-shared-ppx-alist) 1)
+          ;;           (format outp "    ppx           = \"~A:ppx_~A.exe\",\n" ppx-pkg ppx-id)
+          ;;           (format outp "    ppx           = \"~A:ppx.exe\",\n" ppx-pkg))
+
+          ;;       (if ppx-args
+          ;;           (begin
+          ;;             ;; (format #t "~A: ~A~%" "pkg" pkg)
+          ;;             ;; (format #t "~A: ~A~%" "modname" modname)
+          ;;             ;; (format outp
+          ;;             ;;       "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n" ppx-args)
+          ;;           (let* ((mod (assoc-in `(:modules ,modname) pkg))
+          ;;                  (mfile (if mod
+          ;;                             (car (assoc-val :ml (cdr mod)))
+          ;;                             (let* ((mstruct (assoc-in `(:structures :static ,modname) pkg)))
+          ;;                               (cadr mstruct))))
+          ;;                  )
+          ;;             (format outp
+          ;;                     "    ppx_args      = PPX_ARGS + [~{~S~^, ~}],\n"
+          ;;                     (append (list "-loc-filename"
+          ;;                                   (format #f "~A" mfile))
+          ;;                             ppx-args))))
+          ;;           )
+          ;;       ;; (if ppx-args
+          ;;       ;; ;; (if (not  ## why?
+          ;;       ;; ;;      (equal? :all (cadr (assoc :scope
+          ;;       ;; ;;                                ppx-alist))))
+          ;;       ;;     (format outp
+          ;;       ;;             "    ppx_args      = [~{~S, ~}], #A1\n" ppx-args
+          ;;       ;;             ;;(cadr (assoc :args ppx-alist))
+          ;;       ;;             ))
+          ;;       ))
+
           (if ppx-codeps
               (format outp "    ppx_codeps    = [~{\"~S\"~^, ~}]\n" ppx-codeps))
 

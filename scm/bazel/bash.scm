@@ -85,7 +85,7 @@
                            args)))))
           (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (red "arg-list") arg-list))
 
-          ;; FIXME: treat first arg as tool
+          ;; FIXME: treat first arg as tool???
 
           (let* ((expanded-tool
                   (-expand-bash-tool (car arg-list) pkg-path stanza))
@@ -134,13 +134,12 @@
               (values expanded-tool expanded-args)))))))
 
 (define (emit-bash-cmd outp with-stdout? outs pkg-path stanza)
-  (if (or *mibl-debug-genrules* *mibl-debug-s7*)
-      (format #t "~A: ~A~%" (blue "emit-bash-cmd") stanza))
-  (let* ((args (assoc-in '(:actions :cmd :args) stanza))
+  (mibl-trace-entry "emit-bash-cmd" stanza *mibl-debug-genrules*)
+  (let* ((args (assoc-in '(:cmd :args) stanza))
          (args (cdr args))
-         (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*)
-                (format #t "~A: ~A~%" (yellow "bash args") args)))
          )
+    (mibl-trace "bash args" args *mibl-debug-genrules*)
+
     (let-values (((tool parsed-args)
                   (-expand-bash-args args pkg-path stanza)))
       (if (or *mibl-debug-genrules* *mibl-debug-s7*)

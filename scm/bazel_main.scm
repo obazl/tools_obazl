@@ -119,10 +119,10 @@
 ;;                 )
 ;;               pkgs)))
 
-(define* (-mibl->obazl return root-path pkg-path)
-  ;; (set! *mibl-debug-s7* #t)
-  (if *mibl-debug-s7*
-      (format #t "bazel_main.scm::mibl->obazl: ~A, ~A~%" root-path pkg-path))
+(define* (-mibl->bazel return root-path pkg-path)
+  (mibl-trace-entry "mibl->bazel (bazel_main.scm)" "")
+  (mibl-trace "root-path" root-path)
+  (mibl-trace "pkg-path" pkg-path)
   ;; (format #t "*mibl-project*: ~A~%" *mibl-project*)
   ;; (format #t "BYE~%"))
 
@@ -228,7 +228,7 @@
 (define* (-main root-path pkg-path)
   (load "bazel.scm")
   (call-with-exit (lambda (return)
-                    (-mibl->obazl
+                    (-mibl->bazel
                          (lambda () ;; our return thunk
                            (if *mibl-show-mibl*
                                (mibl-debug-print-project))

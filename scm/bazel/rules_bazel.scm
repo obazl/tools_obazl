@@ -598,32 +598,6 @@
     (newline outp)
     ))
 
-(define (bazel-emit-rule-target outp pkg-path stanza)
-  (if (or *mibl-debug-emit* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (blue "bazel-emit-rule-target") stanza))
-
-  ;; FIXME: if rule is alias of test executable, skip it - the
-  ;; executable will be translated to ocaml_test
-
-  ;; FIXM: :actions may contain multiple :cmd (progn); iterate
-  (for-each (lambda (cmd)
-              (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "Rule cmd: ~A~%" cmd))
-              (if (eq? :cmd (car cmd))
-                  (let* ((tool (assoc-val :tool (cdr cmd)))
-                         (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "tool: ~A~%" tool))))
-                    (case (car tool)
-                      ((:write-file)
-                       (bazel-emit-write-file-target outp stanza))
-                      ;; ((::cat) ;=> genrule
-                      ;;  (error 'fixme "IMPLEMENT :cat"))
-                      ((:copy ::copy)
-                       (bazel-emit-copy-file outp pkg-path stanza))
-                      ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
-                      (else
-                       ;; (if (is-test-executable? tool) ...
-                       (bazel-emit-genrule outp pkg-path stanza))))))
-            (assoc-val :actions stanza)))
-
 (define (bazel-emit-diff-target outp pkg-path stanza-alist)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A\n" (bgblue "bazel-emit-diff-target") stanza-alist))
@@ -793,6 +767,29 @@
                 ))
     ))
 
+(define (bazel-emit-rule-target outp pkg-path stanza cmd)
+  (mibl-trace-entry "bazel-emit-rule-target" cmd *mibl-debug-emit*)
+  (mibl-trace "stanza" stanza)
+  ;; FIXME: if rule is alias of test executable, skip it - the
+  ;; executable will be translated to ocaml_test
+
+  (let* ((tool (assoc-val :tool cmd)))
+    (mibl-trace "tool" tool *mibl-debug-emit*)
+    (case (car tool)
+      ((:bash)
+       (mibl-trace "BASH cmd" cmd)
+       (bazel-emit-genrule outp pkg-path stanza))
+      ;; ((::cat) ;=> genrule
+      ;;  (error 'fixme "IMPLEMENT :cat"))
+      ((:copy ::copy)
+       (bazel-emit-copy-file outp pkg-path stanza))
+      ;; the rest of dune-dsl-cmds (dune_stanza_rule.scm)
+      ((:write-file)
+       (bazel-emit-write-file-target outp stanza))
+      (else
+       ;; (if (is-test-executable? tool) ...
+       (bazel-emit-genrule outp pkg-path stanza)))))
+
 (define (bazel-emit-rule-targets outp pkg) ;;fs-path stanzas)
   (if (or *mibl-debug-emit* *mibl-debug-s7*)
       (format #t "~A: ~A~%" (blue "bazel-emit-rule-targets") pkg))
@@ -802,11 +799,9 @@
   (let ((flag #t)
         (pkg-path (assoc-val :pkg-path pkg)))
     (for-each (lambda (stanza)
-                (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                    (format #t "stanza tag ~A\n" (car stanza)))
-                (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                    (if (alist? (cdr stanza))
-                        (format #t "RULE ACTION: ~A\n" (assoc :actions (cdr stanza)))))
+                (mibl-trace "stanza tag" (car stanza) *mibl-debug-emit*)
+                (if (alist? (cdr stanza))
+                    (mibl-trace "rule cmd" (assoc :cmd (cdr stanza))) *mibl-debug-emit*)
                 (case (car stanza)
                   ((:rule :genrule :with-stdout-to :write-file)
                    (if flag
@@ -817,23 +812,25 @@
 
                 (case (car stanza)
                   ((:rule)
-                   (let* ((actions (assoc :actions (cdr stanza)))
-                          (cmd-list (assoc-in* '(:actions :cmd) (cdr stanza)))
-                          (_ (if (or *mibl-debug-emit* *mibl-debug-s7*) (format #t "~A: ~A~%" (green "cmd-list") cmd-list)))
-                          (cmd-ct (length cmd-list)))
-                     (if (> cmd-ct 1)
-                         (for-each (lambda (cmd)
-                                     (if (or *mibl-debug-emit* *mibl-debug-s7*)
-                                         (format #t "~A: ~A~%" (red "cmd") cmd))
-                                     (let ((tool (car (assoc-val :tool (cdr cmd)))))
-                                       (case tool
-                                         ((:write-file)
-                                          ;; rule with multiple cmds (progn)
-                                          (bazel-emit-skylib-write-file outp cmd pkg-path stanza))
-                                         (else
-                                          (bazel-emit-rule-target outp pkg-path (cdr stanza))))))
-                                   cmd-list)
-                         (bazel-emit-rule-target outp pkg-path (cdr stanza)))))
+                   (if-let ((cmds (assoc-val :cmds (cdr stanza))))
+                           (let* ((cmd-ct (length cmds)))
+                             (mibl-trace "cmds" cmds *mibl-debug-emit*)
+                             (if (> cmd-ct 1)
+                                 (for-each (lambda (cmd)
+                                             (if (or *mibl-debug-emit* *mibl-debug-s7*)
+                                                 (format #t "~A: ~A~%" (red "cmd") cmd))
+                                             (let ((tool (car (assoc-val :tool (cdr cmd)))))
+                                               (case tool
+                                                 ((:write-file)
+                                                  ;; rule with multiple cmds (progn)
+                                                  (bazel-emit-skylib-write-file outp cmd pkg-path stanza))
+                                                 (else
+                                                  (bazel-emit-rule-target outp pkg-path (cdr stanza) cmd)))))
+                                           cmds)
+                                 (bazel-emit-rule-target outp pkg-path (cdr stanza) (car cmds))))
+                           ;; else singleton :cmd
+                           (bazel-emit-rule-target outp pkg-path (cdr stanza) (assoc-val :cmd (cdr stanza)))
+                           ))
 
                   ((:cppo)
                    (bazel-emit-cppo-target outp stanza pkg))

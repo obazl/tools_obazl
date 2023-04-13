@@ -77,13 +77,12 @@
 ;; possible resolution: handle all :ctx rules in a separate pass?
 ;; for now just emit a comment
 (define (bazel-emit-genrule outp pkg-path stanza)
-  (if (or *mibl-debug-genrules* *mibl-debug-s7*)
-      (format #t "~A: ~A\n" (bgblue "bazel-emit-genrule") stanza))
-  (let* ((action (assoc-val :actions stanza))
-         (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "action") action)))
-         (tool (cadr (assoc-in '(:cmd :tool) action)))
+  (mibl-trace-entry "bazel-emit-genrule" stanza)
+  (let* ((action (assoc :cmd stanza))
+         ;;(_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "action") action)))
+         (tool (cadr (assoc-in '(:cmd :tool) stanza)))
          (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (uwhite "tool") tool)))
-         (bash-cmd? (eq? tool 'bash))
+         (bash-cmd? (eq? tool :bash))
          (deps (assoc-val :deps stanza))
          (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (cyan "deps") deps)))
          (srcs (deps->srcs-attr pkg-path tool deps))
@@ -92,7 +91,7 @@
          ;; FIXME: derive from :args, :stdout, etc.
          ;; if %{targets} is in cmd string, ...
          ;; else if we have (:stdout ...), ...
-         (with-stdout? (assoc-in '(:actions :stdout) stanza))
+         (with-stdout? (assoc :stdout stanza))
          (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (ucyan "with-stdout?") with-stdout?)))
          (outputs (assoc-val :outputs stanza))
          (_ (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "~A: ~A~%" (ucyan "outputs") outputs)))
@@ -110,25 +109,25 @@
          )
 
     ;; progn: list of actions. should be just one?
-    (if (or *mibl-debug-genrules* *mibl-debug-s7*)
-        (for-each
-         (lambda (cmd)
-           (if (eq? :cmd (car cmd))
-               (begin
-                 (format #t "GENRULE ACTION (A): ~A~%" cmd)
-                 (if (eq? :stdout (car cmd))
-                     (format #t "GENRULE STDOUT (A): ~A~%" cmd)
-                     (format #t "GENRULE UNHANDLED (A): ~A~%" cmd)
-                     ;;(error 'fixme (format #f "unknown genrule cmd: ~A" cmd))
-                     ))))
-         action))
+    ;; (if (or *mibl-debug-genrules* *mibl-debug-s7*)
+    ;;     (for-each
+    ;;      (lambda (cmd)
+    ;;        (if (eq? :cmd (car cmd))
+    ;;            (begin
+    ;;              (format #t "GENRULE ACTION (A): ~A~%" cmd)
+    ;;              (if (eq? :stdout (car cmd))
+    ;;                  (format #t "GENRULE STDOUT (A): ~A~%" cmd)
+    ;;                  (format #t "GENRULE UNHANDLED (A): ~A~%" cmd)
+    ;;                  ;;(error 'fixme (format #f "unknown genrule cmd: ~A" cmd))
+    ;;                  ))))
+    ;;      action))
 
-    (if-let ((ctx (assoc-in '(:actions :ctx) stanza)))
+    (if-let ((ctx (assoc :ctx stanza)))
             (begin
               (format outp "## omitted:\n")
               (format outp "## (chdir ~A (run ~A ...))\n\n"
                     (cadr ctx)
-                    (cadr (assoc-in '(:actions :cmd :tool) stanza))))
+                    (cadr (assoc-in '(:cmd :tool) stanza))))
             ;; else
             (begin
               (if (or *mibl-debug-genrules* *mibl-debug-s7*) (format #t "  outs: ~A~%" outs))

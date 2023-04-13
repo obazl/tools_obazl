@@ -162,7 +162,7 @@
 
         (if (or *mibl-debug-emit* *mibl-debug-s7*)
             (format #t "~A: ~A~%" (blue "emitting deps D") deps-tag))
-        (-emit-deps outp this-is-main prologue? deps-tag
+        (emit-deps outp this-is-main prologue? deps-tag
                     ;; stanza
                     agg-deps mli-local-deps dep-selectors testsuite)
 
