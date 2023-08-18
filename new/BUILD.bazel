@@ -1,8 +1,156 @@
-# load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("//config/cc:CONFIG.bzl",
+     COPTS   = "BASE_COPTS",
+     DEFINES = "BASE_DEFINES")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+
+TOOLCHAINS = ["//:repo_paths"]
 
 alias(
     name = "ws",
     actual = ":workspace"
+)
+
+##########
+cc_binary(
+    name  = "coswitch",
+    visibility = ["//visibility:public"],
+    srcs  = [
+        "coswitch.c",
+        ":mkhdrs",
+        # "//src/hdrs:coswitch.h",
+    ],
+    deps = [
+        # "//src/coswitch",
+        "@findlibc//src:findlibc",
+        "@opamc//src:opamc",
+        "@xdgc//src:xdgc",
+        "@gopt//src:gopt",
+        "@libs7//src:s7",
+        "@liblogc//src:logc",
+        "@uthash//src:uthash"
+   ],
+    copts = COPTS + [
+        "-I$(GENDIR)/$(@findlibc)/src",
+        "-I$(GENDIR)/$(@opamc)/src",
+        "-I$(GENDIR)/$(@xdgc)/src",
+        "-I$(@libs7)/src",
+        "-I$(GENDIR)/$(@libs7)/src",
+        "-I$(@)/src",
+        "-I$(GENDIR)/$(@)/new",
+        # "-Isrc",
+        # "-Icoswitch",
+        # "-Iexternal/mibl/coswitch",
+        # "-I$(GENDIR)/external/mibl/coswitch",
+
+        # "-I$(GENDIR)/$(@)/src/hdrs",
+
+        # "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(
+        #     MIBL_VERSION),
+
+        "-I$(GENDIR)/$(@)/src",
+        "-I$(GENDIR)/$(@)/src/opam",
+        "-I$(GENDIR)/$(@)/test/opam",
+
+        # "-Iexternal/mibl/src",
+        # "-I$(GENDIR)/external/mibl/src",
+
+        "-I$(@libs7)/src",
+        # "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+
+        "-I$(@gopt)/src",
+        # "-Iexternal/gopt~{}".format(GOPT_VERSION),
+
+        "-I$(@liblogc)/src",
+        # "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
+
+        "-I$(@uthash)/src",
+        # "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
+    ],
+    local_defines = DEFINES + select({
+        "//compilation_mode:dbg?": ["TRACING", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    linkstatic = 1,
+    toolchains = TOOLCHAINS,
+)
+
+##########
+cc_binary(
+    name  = "module",
+    linkstatic = True,
+    srcs  = [
+        "module.c", "module.h",
+        "xdg.c", "xdg.h",
+        "utarray.h", "utstring.h", "uthash.h"
+    ],
+    deps = [
+        ":helper",
+        "@runfiles//src:runfiles",
+        # "@uthash//:include"
+    ],
+    copts = select({
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11",
+                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
+                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-x", "c",
+        "-Wall",
+        "-Wpedantic",
+        "-Wno-unused-function",
+
+        "-I.",
+        "-Iobazl/new",
+        "-I$(GENDIR)/new",
+        "-I$(GENDIR)/external/obazl/new",
+
+        "-I$(GENDIR)",
+
+        "-I$(@runfiles)/src",
+        # "-I$(GENDIR)/runfiles",
+        # "-I$(GENDIR)/external/runfiles~{}/src".format(
+        #     RUNFILES_VERSION),
+
+        # "-I$(GENDIR)/external/mibl/new",
+        # "-I$(GENDIR)/external/mibl/src",
+
+        # "-Iexternal/uthash/include",
+        # "-Iexternal/libinih",
+        # "-Iexternal/logc/src",
+
+        # "-Iexternal/libs7/src",
+
+        # "-Iexternal/uthash",
+        # "-Iexternal/uthash/include",
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
+        "//conditions:default": {}
+    }) + [
+        "-lm",
+        # "-lc_s7"
+    ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
+        "//conditions:default":   []
+    }) + [
+    ],
+    data  = [
+        "//new/templates:all",
+        "//new/templates/xdg/bin:all",
+        "//new/templates/xdg/data/queries:all",
+        # "//new/templates/bzl/host:BUILD.bazel",
+        # "//new/templates/bzl/profile:BUILD.bazel",
+        "//man/man1:new_workspace.1",
+    ],
+    toolchains = TOOLCHAINS,
+    visibility = ["//visibility:public"]
 )
 
 ##########
@@ -41,8 +189,11 @@ cc_binary(
 
         "-I$(GENDIR)",
 
-        "-I$(GENDIR)/runfiles",
-        "-I$(GENDIR)/external/obazl/runfiles",
+        "-I$(@runfiles)/src",
+        # "-I$(GENDIR)/external/runfiles~{}/src".format(
+        #     RUNFILES_VERSION),
+        # "-I$(GENDIR)/runfiles",
+        # "-I$(GENDIR)/external/obazl/runfiles",
 
         # "-I$(GENDIR)/external/mibl/new",
         # "-I$(GENDIR)/external/mibl/src",
@@ -74,9 +225,10 @@ cc_binary(
     ],
     deps = [
         ":helper",
-        "//runfiles",
+        "@runfiles//src:runfiles",
         # "@uthash//:include"
     ],
+    toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
 )
 
@@ -149,11 +301,11 @@ cc_binary(
     ],
     deps = [
         ":helper",
-        "//runfiles",
         "//vendored/logc",
         "@mibl//src:mibl",
         "@mibl//external/libinih:inih",
     ],
+    toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
 )
 
@@ -228,37 +380,41 @@ cc_library(
         # "@libs7//src:c_s7",
         # "@libs7//vendored/linenoise",
     ],
+    toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
 )
 
 ########
-genrule(
+makeheaders(
     name = "mkhdrs",
-    srcs = [
+    hdrs_srcs = [
+        "coswitch.c",
+        "module.c",
         "package.c",
         "workspace.c",
         "utils.c",
         "help.c",
-        "xdg.c",
-
-        "ansi_colors.h",
+        # "xdg.c",
         # "test.c",
-        # "//runfiles:runfiles.c",
     ],
-    outs = [
-        "package.h",
-        "workspace.h",
-        "utils.h",
-        "help.h",
-        "xdg.h",
-        # "test.h"
+    additional_srcs = [
+        "ansi_colors.h",
     ],
-    cmd = "\n".join([
-        "$(execpath //vendored/makeheaders) $(SRCS);",
-        "cp `dirname $(location help.c)`/*.h $(RULEDIR)",
-    ]),
-    tools = ["//vendored/makeheaders"],
-    visibility = ["//visibility:public"]
+    # outs = [
+    #     "module.h",
+    #     "package.h",
+    #     "workspace.h",
+    #     "utils.h",
+    #     "help.h",
+    #     "xdg.h",
+    #     # "test.h"
+    # ],
+    # cmd = "\n".join([
+    #     "$(execpath //vendored/makeheaders) $(SRCS);",
+    #     "cp `dirname $(location help.c)`/*.h $(RULEDIR)",
+    # ]),
+    # tools = ["//vendored/makeheaders"],
+    # visibility = ["//visibility:public"]
 )
 
 ################################################################
@@ -266,7 +422,6 @@ cc_test(
     name  = "test",
     srcs  = [
         "test.c", "test.h",
-        # "runfiles.h",
         "log.c", "log.h",
         "utstring.h"
     ],
@@ -294,8 +449,8 @@ cc_test(
         "-I$(GENDIR)/new",
         "-I$(GENDIR)/external/obazl/new",
 
-        "-I$(GENDIR)/runfiles",
-        "-I$(GENDIR)/external/obazl/runfiles",
+        # "-I$(GENDIR)/runfiles",
+        # "-I$(GENDIR)/external/obazl/runfiles",
 
         "-Ivendored/unity",
         "-Iexternal/obazl/vendored/unity",
@@ -312,8 +467,27 @@ cc_test(
         "//new/templates/xdg/data/queries:all",
     ],
     deps = [
-        "//runfiles",
         "//vendored/unity",
     ],
+    toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
 )
+
+################
+# makeheaders(
+#     name = "mkhdrs",
+#     srcs = ["coswitch.c"]
+#     # additional_srcs = [
+#     # ] + select({
+#     #     "//config/profile:dev?": [
+#     #     "//src:ansi_colors.h",
+#     #     "//src:trace_dev.h",
+#     #     ],
+#     #     "//conditions:default":   [
+#     #         "//src:ansi_colors.h",
+#     #         "//src:trace_prod.h",
+#     #     ]
+#     # }),
+#     # visibility = ["//visibility:public"]
+# )
+
