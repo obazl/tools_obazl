@@ -14,6 +14,7 @@ bazel_dep(name = "libs7", version = "1.0.0")
 bazel_dep(name = "opamc", version = "1.0.0")
 bazel_dep(name = "findlibc", version = "1.0.0")
 bazel_dep(name = "xdgc", version = "1.0.0")
+bazel_dep(name = "semverc", version = "1.0.1")
 
 bazel_dep(name = "gopt", version = "10.0.0")
 bazel_dep(name = "inih",  version = "57.0.0")

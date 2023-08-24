@@ -16,11 +16,12 @@
 
 #include "gopt.h"
 #include "log.h"
+#include "semver.h"
 #include "utarray.h"
 #include "utstring.h"
 
 #include "libs7.h"
-#include "findlib.h"
+#include "findlibc.h"
 #include "opamc.h"
 #include "xdgc.h"
 
@@ -40,8 +41,6 @@ extern bool mibl_trace;
 bool verbose;
 int  verbosity;
 /* extern */ bool enable_jsoo;
-
-/* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
 
 char *pkg_path = NULL;
 
@@ -164,11 +163,22 @@ void _mkdir_r(const char *dir) {
 }
 
 /* **************** **************** */
-void pkg_handler(char *site_lib, char *pkg_dir)
+void pkg_handler(char *site_lib, char *pkg_dir,
+                 void *_modules_dir)
 {
-    if (verbosity > 1)
+    UT_string *modules_dir = (UT_string*)_modules_dir;
+    if (verbosity > 1) {
         log_debug("pkg_handler: %s", pkg_dir);
-    /* log_debug("site-lib: %s", utstring_body(site_lib)); */
+        log_debug("site-lib: %s", site_lib);
+        log_debug("modules: %s", utstring_body(modules_dir));
+    }
+
+    UT_string *tmp;
+    utstring_new(tmp);
+    utstring_printf(tmp, "%s/%s",
+                    utstring_body(modules_dir),
+                    pkg_dir);
+    _mkdir_r(utstring_body(tmp));
 
     utstring_renew(meta_path);
     utstring_printf(meta_path, "%s/%s/META",
@@ -179,88 +189,231 @@ void pkg_handler(char *site_lib, char *pkg_dir)
         log_info("meta_path: %s", utstring_body(meta_path));
 
     errno = 0;
-    if ( access(utstring_body(meta_path), F_OK) == 0 ) {
-        /* exists */
-        /* log_info("accessible: %s", utstring_body(meta_path)); */
-
-        struct obzl_meta_package *pkg
-            = obzl_meta_parse_file(utstring_body(meta_path));
-        if (pkg == NULL) {
-            if (errno == -1) {
-#if defined(TRACING)
-                log_warn("Empty META file: %s", utstring_body(meta_path));
-#endif
-                /* check dune-package for installed executables */
-                /* chdir(old_cwd); */
-                return;
-            } else
-                if (errno == -2)
-                    log_warn("META file contains only whitespace: %s", utstring_body(meta_path));
-                else
-                    log_error("Error parsing %s", utstring_body(meta_path));
-            /* emitted_bootstrapper = false; */
-        } else {
-#if defined(DEVBUILD)
-            if (verbose)
-                log_info("PARSED %s", utstring_body(meta_path));
-            /* if (mibl_debug_findlib) */
-                /* DUMP_PKG(0, pkg); */
-#endif
-        }
-
-
+    if ( access(utstring_body(meta_path), F_OK) != 0 ) {
+        log_warn("%s: %s",
+                 strerror(errno), utstring_body(meta_path));
+        return;
     } else {
-        /* fail */
-        /* perror(utstring_body(meta_path)); */
-#if defined(TRACING)
-        /* if (mibl_debug) */
-            log_warn("%s: %s", strerror(errno), utstring_body(meta_path));
-#endif
-        /* chdir(old_cwd); */
-        /* return; */
-        /* exit(EXIT_FAILURE); */
+        /* exists */
+        log_info("accessible: %s", utstring_body(meta_path));
     }
+
+    errno = 0;
+    struct obzl_meta_package *pkg
+        = obzl_meta_parse_file(utstring_body(meta_path));
+
+    if (pkg == NULL) {
+        if (errno == -1) {
+/* #if defined(TRACING) */
+            if (verbose)
+                log_warn("Empty META file: %s", utstring_body(meta_path));
+/* #endif */
+            /* check dune-package for installed executables */
+            /* chdir(old_cwd); */
+            return;
+        }
+        else if (errno == -2) {
+            log_warn("META file contains only whitespace: %s", utstring_body(meta_path));
+            return;
+        } else {
+            log_error("Error parsing %s", utstring_body(meta_path));
+            return;
+        }
+        /* emitted_bootstrapper = false; */
+    } else {
+        /* #if defined(DEVBUILD) */
+        if (verbose)
+            log_info("PARSED %s", utstring_body(meta_path));
+        /* if (mibl_debug_findlib) */
+        /* DUMP_PKG(0, pkg); */
+        /* #endif */
+        // write module stuff in site-lib
+        // write registry stuff
+    }
+
+    obzl_meta_value version;
+    char *pname = "version";
+    struct obzl_meta_property *version_prop = obzl_meta_package_property(pkg, pname);
+    if (version_prop) {
+#if defined(DEVBUILD)
+        dump_property(0, version_prop);
+#endif
+        version = obzl_meta_property_value(version_prop);
+        log_debug("version: %s", (char*)version);
+
+        if (!semver_is_valid(version)) {
+            log_warn("BAD VERSION STRING: %s", (char*)version);
+            /* return; */
+        }
+    } else {
+        log_warn("No version property found");
+        return; //FIXME ??? e.g. dune META has no version
+    }
+
+    /** emit workspace, module files **/
+    // WORKSPACE.bazel
+    UT_string *bazel_file;
+    utstring_new(bazel_file);
+    utstring_printf(bazel_file, "%s/%s/WORKSPACE.bazel",
+                    /* utstring_body(opam_switch_lib), */
+                    site_lib,
+                    pkg->name);
+    /* we know META file exists, so pkg path exists */
+    emit_workspace_file(bazel_file, pkg->name);
+
+    // MODULE.bazel
+    utstring_renew(bazel_file);
+    utstring_printf(bazel_file, "%s/%s/MODULE.bazel",
+                    /* utstring_body(opam_switch_lib), */
+                    site_lib,
+                    pkg->name);
+    emit_module_file(bazel_file, pkg);
+
+    // emit registry files
+    utstring_renew(bazel_file);
+    utstring_printf(bazel_file,
+                    "%s/%s",
+                    utstring_body(modules_dir),
+                    pkg->name);
+    log_info("Emitting registry record to: %s",
+             utstring_body(bazel_file));
+
+    // modules/$MODULE/metadata.json
+    UT_string *metadata_json_file;
+    utstring_new(metadata_json_file);
+    utstring_printf(metadata_json_file,
+                    "%s/metadata.json",
+                    utstring_body(bazel_file));
+    if (verbose)
+        log_info("metadata.json: %s",
+                 utstring_body(metadata_json_file));
+
+    //FIXME: from opam file: maintainer(s), homepage
+
+    char *metadata_json_template = ""
+        "{\n"
+        "    \"homepage\": \"\",\n"
+        "    \"maintainers\": [],\n"
+        "    \"versions\": [\"%s\"],\n"
+        "    \"yanked_versions\": {}\n"
+        "}\n";
+    // optional?  "repository": ["github:obazl/semverc"]
+
+    UT_string *metadata_json;
+    utstring_new(metadata_json);
+    utstring_printf(metadata_json,
+                    metadata_json_template,
+                    (char*)version);
+    if (verbose)
+        log_info("metadata_json:\n%s",
+                 utstring_body(metadata_json));
+
+    FILE *metadata_json_fd
+        = fopen(utstring_body(metadata_json_file), "w");
+    fprintf(metadata_json_fd,
+            "%s", utstring_body(metadata_json));
+    fclose (metadata_json_fd);
+
+    utstring_free(metadata_json_file);
+    utstring_free(metadata_json);
+
+    // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
+    UT_string *reg_file;
+    utstring_new(reg_file);
+    utstring_printf(reg_file,
+                    "%s/%s",
+                    utstring_body(bazel_file),
+                    (char*)version);
+    mkdir_r(utstring_body(reg_file));
+
+    utstring_printf(reg_file, "/%s", "MODULE.bazel");
+    log_info("reg MODULE.bazel: %s",
+             utstring_body(reg_file));
+
+    emit_module_file(reg_file, pkg);
+
+    utstring_renew(reg_file);
+    utstring_printf(reg_file,
+                    "%s/%s/source.json",
+                    utstring_body(bazel_file),
+                    (char*)version);
+    log_info("reg source.json : %s",
+             utstring_body(reg_file));
+
+    char *source_json_template = ""
+        "{\n"
+        "    \"type\": \"local_path\",\n"
+        "    \"path\": \"%s\"\n"
+        "}\n";
+
+    UT_string *source_json;
+    utstring_new(source_json);
+    utstring_printf(source_json,
+                    source_json_template,
+                    pkg->name);
+    if (verbose)
+        log_info("source_json:\n%s",
+                 utstring_body(source_json));
+
+    FILE *source_json_fd
+        = fopen(utstring_body(reg_file), "w");
+    fprintf(source_json_fd,
+            "%s", utstring_body(source_json));
+    fclose (source_json_fd);
+
+    utstring_free(source_json);
+
+    utstring_free(reg_file);
+    utstring_free(bazel_file);
 }
 
-void _config_bzlmod_registry(char *opam_switch)
+UT_string *_config_bzlmod_registry(char *opam_switch)
 {
     char *s = xdg_data_home();
-    log_info("xdg data home: %s", s);
+    if (verbose)
+        log_info("xdg data home: %s", s);
     UT_string *obazl_registry_home;
     utstring_new(obazl_registry_home);
     utstring_printf(obazl_registry_home,
                     "%s/obazl/registry/%s",
                     s, opam_switch);
     free(s);
-    log_info("registry: %s", utstring_body(obazl_registry_home));
+    if (verbose)
+        log_info("registry: %s",
+                 utstring_body(obazl_registry_home));
     _mkdir_r(utstring_body(obazl_registry_home));
 
     // write: bazel_registry.json
     // also MODULE.bazel, WORKSPACE???
 
     char *module_base_path = opam_switch_site_lib(opam_switch);
-    log_info("module_base_path: %s", module_base_path);
+    if (verbose)
+        log_info("module_base_path: %s", module_base_path);
+    // alternative: mbp = XDG/share/obazl/opam/<switch>
+    // or we could put coswitch stuff directly in the registry
 
     char *bazel_registry_template = ""
         "{\n"
-        "\"mirrors\": [],\n"
-        "\"module_base_path\": \"%s\"\n"
+        "    \"mirrors\": [],\n"
+        "    \"module_base_path\": \"%s\"\n"
         "}\n";
     UT_string *bazel_registry_json;
     utstring_new(bazel_registry_json);
     utstring_printf(bazel_registry_json,
                     bazel_registry_template,
                     module_base_path);
-    log_info("bazel_registry_json:\n%s",
-             utstring_body(bazel_registry_json));
+    if (verbose)
+        log_info("bazel_registry_json:\n%s",
+                 utstring_body(bazel_registry_json));
 
     UT_string *obazl_registry_json_file;
     utstring_new(obazl_registry_json_file);
     utstring_printf(obazl_registry_json_file,
                     "%s/bazel_registry.json",
                     utstring_body(obazl_registry_home));
-    log_info("bazel_registry.json:\n%s",
-             utstring_body(obazl_registry_json_file));
+    if (verbose)
+        log_info("bazel_registry.json:\n%s",
+                 utstring_body(obazl_registry_json_file));
     FILE *bazel_registry_json_fd
         = fopen(utstring_body(obazl_registry_json_file), "w");
     fprintf(bazel_registry_json_fd,
@@ -269,8 +422,11 @@ void _config_bzlmod_registry(char *opam_switch)
 
     utstring_printf(obazl_registry_home,
                     "/%s", "modules");
-    log_info("modules dir: %s", utstring_body(obazl_registry_home));
+    if (verbose)
+        log_info("modules dir: %s",
+                 utstring_body(obazl_registry_home));
     _mkdir_r(utstring_body(obazl_registry_home));
+    return obazl_registry_home;
 }
 
 int main(int argc, char *argv[])
@@ -351,34 +507,42 @@ int main(int argc, char *argv[])
         log_info("opam switch lib: %s", opam_switch_site_lib(opam_switch));
     }
 
-    _config_bzlmod_registry(opam_switch);
+    UT_string *modules = _config_bzlmod_registry(opam_switch);
 
-    char *_opam_root = opam_root();
+    /* char *_opam_root = opam_root(); */
     /* char *homedir = getenv("HOME"); */
-    UT_string *findlib_site_lib;
-    utstring_new(findlib_site_lib);
-    utstring_printf(findlib_site_lib,
-                    "%s/%s",
-                    _opam_root, opam_switch);
-                    /* "%s/.opam/%s/lib", */
-                    /* homedir, */
-                    /* opam_switch); */
-    log_info("site-lib: %s", utstring_body(findlib_site_lib));
-    log_info("switch prefix: %s", opam_switch_prefix(opam_switch));
+    /* UT_string *findlib_site_lib; */
+    /* utstring_new(findlib_site_lib); */
+    /* utstring_printf(findlib_site_lib, */
+    /*                 "%s/%s/lib", */
+    /*                 _opam_root, opam_switch); */
+    /*                 /\* "%s/.opam/%s/lib", *\/ */
+    /*                 /\* homedir, *\/ */
+    /*                 /\* opam_switch); *\/ */
+    /* log_info("site-lib: %s", utstring_body(findlib_site_lib)); */
+
+    if (verbose)
+        log_info("switch prefix: %s", opam_switch_prefix(opam_switch));
+
+    char *findlib_site_lib = opam_switch_site_lib(opam_switch);
+    if (verbose)
+        log_info("switch site-lib: %s", findlib_site_lib);
 
     utstring_new(meta_path);
 
+    //FIXME: add extras arg to pass extra info to pkg_handler
     findlib_map(opam_include_pkgs,
                 opam_exclude_pkgs,
-                utstring_body(findlib_site_lib),
-                pkg_handler);
+                findlib_site_lib,
+                pkg_handler,
+                (void*)modules);
 
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
-    utstring_free(findlib_site_lib);
+    free(findlib_site_lib);
     utstring_free(meta_path);
 
-#if defined(TRACING)
-    log_debug("exiting coswitch");
-#endif
+/* #if defined(TRACING) */
+    log_debug("exiting new:coswitch");
+/* #endif */
     /* dump_nodes(result); */
 }

@@ -27,12 +27,12 @@ def fetch_repos():
         url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
         )
 
-    maybe(
-        git_repository,
-        name = "libs7",
-        remote = "https://github.com/obazl/libs7",
-        branch = OBAZL_BRANCH
-    )
+    # maybe(
+    #     git_repository,
+    #     name = "libs7",
+    #     remote = "https://github.com/libs7/libs7",
+    #     branch = OBAZL_BRANCH
+    # )
 
     maybe(
         git_repository,
@@ -135,6 +135,16 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
         # sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
         build_file_content = all_content,
         workspace_file_content = "workspace( name = \"fswatch\" )"
+    )
+
+    maybe(
+        http_archive,
+        name = "runfiles",
+        urls = [
+            "https://github.com/obazl/runfiles/archive/refs/heads/main.zip"
+        ],
+        strip_prefix = "runfiles-main",
+        # build_file_content = all_content,
     )
 
     # maybe(

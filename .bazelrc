@@ -1,6 +1,3 @@
-# common:showdev --@cc_config//profile=dev
-# common:showdev --//config/profile=dev
-
 # common --symlink_prefix=.bazel/
 # common --experimental_cc_shared_library
 # common --enable_bzlmod

@@ -200,87 +200,87 @@ void new_workspace(char *pgm)
     }
 }
 
-void new_workspace_rf(char *pgm)
-{
-    if (debug) {
-        log_debug("new_workspace: %s\n", pgm);
-        log_debug("CWD: %s", getcwd(NULL, 0));
-        log_debug("BUILD_WORKSPACE_DIRECTORY: %s", ws_dir);
-        log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd);
-    }
+/* void new_workspace_rf(char *pgm) */
+/* { */
+/*     if (debug) { */
+/*         log_debug("new_workspace: %s\n", pgm); */
+/*         log_debug("CWD: %s", getcwd(NULL, 0)); */
+/*         log_debug("BUILD_WORKSPACE_DIRECTORY: %s", ws_dir); */
+/*         log_debug("BUILD_WORKING_DIRECTORY: %s", build_wd); */
+/*     } */
 
-    runfiles = runfiles_create(pgm);
-    char *dest;
-    char *path;
+/*     runfiles = runfiles_create(pgm); */
+/*     char *dest; */
+/*     char *path; */
 
-    int i = 0;
-    int pfx_len = 20; // "obazl/new/templates"
+/*     int i = 0; */
+/*     int pfx_len = 20; // "obazl/new/templates" */
 
-    chdir(ws_dir);
-    if (debug) log_debug("CWD: %s", getcwd(NULL, 0));
+/*     chdir(ws_dir); */
+/*     if (debug) log_debug("CWD: %s", getcwd(NULL, 0)); */
 
-    system("touch BUILD.bazel");
+/*     system("touch BUILD.bazel"); */
 
-    while (runfiles[i].key != NULL) {
-        if (prefix_matches("obazl/new/templates/BUILD.bazel", runfiles[i].key)) {
-            ; // omit
-        } else {
-            if (prefix_matches("obazl/new/templates/", runfiles[i].key)) {
-                /* printf(RED "entry %d:" CRESET " %s -> %s\n", i, */
-                /*        runfiles[i].key, runfiles[i].val); */
-                char *rp = realpath(runfiles[i].val, NULL);
-                /* printf("realpath %d: %s\n", i, rp); */
-                free(rp);
+/*     while (runfiles[i].key != NULL) { */
+/*         if (prefix_matches("obazl/new/templates/BUILD.bazel", runfiles[i].key)) { */
+/*             ; // omit */
+/*         } else { */
+/*             if (prefix_matches("obazl/new/templates/", runfiles[i].key)) { */
+/*                 /\* printf(RED "entry %d:" CRESET " %s -> %s\n", i, *\/ */
+/*                 /\*        runfiles[i].key, runfiles[i].val); *\/ */
+/*                 char *rp = realpath(runfiles[i].val, NULL); */
+/*                 /\* printf("realpath %d: %s\n", i, rp); *\/ */
+/*                 free(rp); */
 
-                dest = strndup(runfiles[i].key + pfx_len,
-                               strlen(runfiles[i].key) - pfx_len);
-                if (prefix_matches("dot/", dest)) {
-                    dest = strndup(dest + 3, strlen(dest) - 3);
-                    dest[0] = '.';
-                    /* printf(BLU "Dest:" CRESET " %s\n", dest); */
-                    path = dirname(dest);
-                    /* printf(BLU "dest dir:" CRESET " %s\n", path); */
-                    int rc = access(path, R_OK);
-                    if (rc == 0) {
-                        ;
-                        /* printf("dir accessible: %s\n", path); */
-                    } else {
-                        /* printf("dir inaccessible: %s\n", path); */
-                        mkdir_r(path);
-                    }
-                } else {
-                    /*     printf(BLU "dest:" CRESET " %s\n", dest); */
-                    /* } */
-                    /* if (prefix_matches("bzl/", dest)) { */
-                    /* dest = strndup(dest + 3, strlen(dest) - 3); */
-                    /* dest[0] = '.'; */
-                    /* printf(BLU "dest:" CRESET " %s\n", dest); */
-                    path = dirname(dest);
-                    /* printf(BLU "dest dir:" CRESET " %s\n", path); */
-                    int rc = access(path, R_OK);
-                    if (rc == 0) {
-                        ;/* printf("dir accessible: %s\n", path); */
-                    } else {
-                        /* printf("dir inaccessible: %s\n", path); */
-                        mkdir_r(path);
-                    }
-                    /* } else { */
-                    /* } */
-                }
-                copyfile(rp, dest);
-                free(dest);
+/*                 dest = strndup(runfiles[i].key + pfx_len, */
+/*                                strlen(runfiles[i].key) - pfx_len); */
+/*                 if (prefix_matches("dot/", dest)) { */
+/*                     dest = strndup(dest + 3, strlen(dest) - 3); */
+/*                     dest[0] = '.'; */
+/*                     /\* printf(BLU "Dest:" CRESET " %s\n", dest); *\/ */
+/*                     path = dirname(dest); */
+/*                     /\* printf(BLU "dest dir:" CRESET " %s\n", path); *\/ */
+/*                     int rc = access(path, R_OK); */
+/*                     if (rc == 0) { */
+/*                         ; */
+/*                         /\* printf("dir accessible: %s\n", path); *\/ */
+/*                     } else { */
+/*                         /\* printf("dir inaccessible: %s\n", path); *\/ */
+/*                         mkdir_r(path); */
+/*                     } */
+/*                 } else { */
+/*                     /\*     printf(BLU "dest:" CRESET " %s\n", dest); *\/ */
+/*                     /\* } *\/ */
+/*                     /\* if (prefix_matches("bzl/", dest)) { *\/ */
+/*                     /\* dest = strndup(dest + 3, strlen(dest) - 3); *\/ */
+/*                     /\* dest[0] = '.'; *\/ */
+/*                     /\* printf(BLU "dest:" CRESET " %s\n", dest); *\/ */
+/*                     path = dirname(dest); */
+/*                     /\* printf(BLU "dest dir:" CRESET " %s\n", path); *\/ */
+/*                     int rc = access(path, R_OK); */
+/*                     if (rc == 0) { */
+/*                         ;/\* printf("dir accessible: %s\n", path); *\/ */
+/*                     } else { */
+/*                         /\* printf("dir inaccessible: %s\n", path); *\/ */
+/*                         mkdir_r(path); */
+/*                     } */
+/*                     /\* } else { *\/ */
+/*                     /\* } *\/ */
+/*                 } */
+/*                 copyfile(rp, dest); */
+/*                 free(dest); */
 
-                int rc = access(runfiles[i].val, R_OK);
-                if (rc == 0) {
-                    /* printf("accessible: %s\n", runfiles[i].val); */
-                } else {
-                    /* printf("inaccessible: %s\n", runfiles[i].val); */
-                }
-            }
-        }
-        i++;
-    }
-}
+/*                 int rc = access(runfiles[i].val, R_OK); */
+/*                 if (rc == 0) { */
+/*                     /\* printf("accessible: %s\n", runfiles[i].val); *\/ */
+/*                 } else { */
+/*                     /\* printf("inaccessible: %s\n", runfiles[i].val); *\/ */
+/*                 } */
+/*             } */
+/*         } */
+/*         i++; */
+/*     } */
+/* } */
 
 int main(int argc, char *argv[])
 {

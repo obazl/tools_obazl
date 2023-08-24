@@ -28,7 +28,9 @@ cc_binary(
         "@gopt//src:gopt",
         "@libs7//src:s7",
         "@liblogc//src:logc",
-        "@uthash//src:uthash"
+        "@semverc//src:semverc",
+        "@uthash//src:uthash",
+        "//new/bazel"
    ],
     copts = COPTS + [
         "-I$(GENDIR)/$(@findlibc)/src",
@@ -36,6 +38,7 @@ cc_binary(
         "-I$(GENDIR)/$(@xdgc)/src",
         "-I$(@libs7)/src",
         "-I$(GENDIR)/$(@libs7)/src",
+        "-I$(@semverc)/src",
         "-I$(@)/src",
         "-I$(GENDIR)/$(@)/new",
         # "-Isrc",
@@ -392,12 +395,13 @@ makeheaders(
         "module.c",
         "package.c",
         "workspace.c",
-        "utils.c",
         "help.c",
         # "xdg.c",
         # "test.c",
     ],
     additional_srcs = [
+        "//new/bazel:emit_build_bazel.c",
+        "//src/utils:utils.c",
         "ansi_colors.h",
     ],
     # outs = [

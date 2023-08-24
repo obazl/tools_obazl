@@ -1,4 +1,6 @@
 common --symlink_prefix=.bazel/
+common --experimental_cc_shared_library
+common --enable_bzlmod
 
 common --color=yes
 common:show --subcommands=pretty_print
