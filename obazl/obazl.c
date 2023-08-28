@@ -3,7 +3,8 @@
 #include "gopt.h"
 #include "log.h"
 
-#include "s7.h"                 /* needed by libmibl.h */
+//#include "s7.h"                 /* needed by libmibl.h */
+/* #include "libs7.h" */
 #include "libmibl.h"
 
 #include "obazl.h"
@@ -20,8 +21,9 @@ extern bool mibl_trace;
 
 extern bool mibl_show_deps;
 extern bool mibl_show_traversal;
-extern bool verbose;
 
+bool verbose;
+int  verbosity;
 
 extern UT_string *mibl_runfiles_root;
 extern char *ews_root;
@@ -30,6 +32,8 @@ extern int file_ct;
 extern int dunefile_ct;
 
 extern struct mibl_config_s mibl_config;
+
+/* s7_scheme *s7; */
 
 #define DEV_MODE
 
@@ -90,102 +94,102 @@ void _update_mibl_config(struct option options[])
     /* return 0;                   /\* success *\/ */
 }
 
-void _update_s7_globals(struct option options[])
+void _update_s7_globals(s7_scheme *s7, struct option options[])
 {
     if (options[FLAG_QUIET].count > 0)
-        mibl_s7_set_flag("*mibl-quiet*", true);
+        mibl_s7_set_flag(s7, "*mibl-quiet*", true);
 
     if (options[FLAG_DEBUG].count > 0)
-        mibl_s7_set_flag("*mibl-debug-s7*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-s7*", true);
 
     if (options[FLAG_DEBUG_S7].count > 0)
-        mibl_s7_set_flag("*mibl-debug-s7*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-s7*", true);
 
     if (options[FLAG_DEBUG_UPDATERS].count) {
         /* log_error("DEBUG UPDATERS"); */
-        mibl_s7_set_flag("*mibl-debug-updaters*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-updaters*", true);
     }
 
     if (options[FLAG_DEBUG_PPX].count)
-        mibl_s7_set_flag("*mibl-debug-ppx*", true);
+        mibl_s7_set_flag(s7, "*mibl-debug-ppx*", true);
     else {
         s7_pointer fld = s7_name_to_value(s7, "*mibl-debug-ppx*");
         if (fld == s7_undefined(s7)) {
-            mibl_s7_set_flag("*mibl-debug-ppx*", false);
+            mibl_s7_set_flag(s7, "*mibl-debug-ppx*", false);
         }
     }
 
     //FIXME: make these conditional
-    mibl_s7_set_flag("*mibl-debug-show-pkgs*", false);
-    mibl_s7_set_flag("*mibl-debug-modules*", false);
-    mibl_s7_set_flag("*mibl-debug-tests*", false);
+    mibl_s7_set_flag(s7, "*mibl-debug-show-pkgs*", false);
+    mibl_s7_set_flag(s7, "*mibl-debug-modules*", false);
+    mibl_s7_set_flag(s7, "*mibl-debug-tests*", false);
 
     if (options[FLAG_SHOW_MIBL].count)
-        mibl_s7_set_flag("*mibl-show-mibl*", true);
+        mibl_s7_set_flag(s7, "*mibl-show-mibl*", true);
     else // if (mibl_config.show_mibl)
-        mibl_s7_set_flag("*mibl-show-mibl*", false);
+        mibl_s7_set_flag(s7, "*mibl-show-mibl*", false);
 
     if (options[FLAG_SHOW_PARSETREE].count)
-        mibl_s7_set_flag("*mibl-show-parsetree*", true);
+        mibl_s7_set_flag(s7, "*mibl-show-parsetree*", true);
     else if (mibl_config.show_parsetree)
-        mibl_s7_set_flag("*mibl-show-parsetree*", true);
+        mibl_s7_set_flag(s7, "*mibl-show-parsetree*", true);
 
     if (options[FLAG_EMIT_MIBL].count)
-        mibl_s7_set_flag("*mibl-emit-mibl*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-mibl*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-mibl*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-mibl*", false);
 
     if (options[FLAG_EMIT_PARSETREE].count)
-        mibl_s7_set_flag("*mibl-emit-parsetree*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-parsetree*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-parsetree*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-parsetree*", false);
 
     if (options[FLAG_EMIT_S7].count)
-        mibl_s7_set_flag("*mibl-emit-s7*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-s7*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-s7*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-s7*", false);
 
     if (options[FLAG_EMIT_WSS].count)
-        mibl_s7_set_flag("*mibl-emit-wss*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-wss*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-wss*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-wss*", false);
 
     if (options[FLAG_EMIT_RESULT].count)
-        mibl_s7_set_flag("*mibl-emit-result*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-result*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-result*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-result*", false);
 
     if (options[FLAG_EMIT_PKGS].count)
-        mibl_s7_set_flag("*mibl-emit-pkgs*", true);
+        mibl_s7_set_flag(s7, "*mibl-emit-pkgs*", true);
     else
-        mibl_s7_set_flag("*mibl-emit-pkgs*", false);
+        mibl_s7_set_flag(s7, "*mibl-emit-pkgs*", false);
 
     if (options[FLAG_CLEAN].count)
-        mibl_s7_set_flag("*mibl-clean-all*", true);
+        mibl_s7_set_flag(s7, "*mibl-clean-all*", true);
     else
-        mibl_s7_set_flag("*mibl-clean-all*", false);
+        mibl_s7_set_flag(s7, "*mibl-clean-all*", false);
     if (options[FLAG_CLEAN_MIBL].count)
-        mibl_s7_set_flag("*mibl-clean-mibl*", true);
+        mibl_s7_set_flag(s7, "*mibl-clean-mibl*", true);
     else
-        mibl_s7_set_flag("*mibl-clean-mibl*", false);
+        mibl_s7_set_flag(s7, "*mibl-clean-mibl*", false);
     if (options[FLAG_CLEAN_S7].count)
-        mibl_s7_set_flag("*mibl-clean-s7*", true);
+        mibl_s7_set_flag(s7, "*mibl-clean-s7*", true);
     else
-        mibl_s7_set_flag("*mibl-clean-s7*", false);
+        mibl_s7_set_flag(s7, "*mibl-clean-s7*", false);
 
     if (options[FLAG_TEST_MODE].count)
-        mibl_s7_set_flag("*mibl-test-mode*", true);
+        mibl_s7_set_flag(s7, "*mibl-test-mode*", true);
     else
-        mibl_s7_set_flag("*mibl-test-mode*", false);
+        mibl_s7_set_flag(s7, "*mibl-test-mode*", false);
 
     if (options[FLAG_PROMOTE].count)
         if (options[FLAG_TEST_MODE].count)
-            mibl_s7_set_flag("*mibl-test-promote*", true);
+            mibl_s7_set_flag(s7, "*mibl-test-promote*", true);
         else {
             log_warn("--promote requires --test-mode; ignoring");
         }
     else
-        mibl_s7_set_flag("*mibl-test-promote*", false);
+        mibl_s7_set_flag(s7, "*mibl-test-promote*", false);
 
     /* --flags sets vars defined above, may be used to define ad-hoc
        flags (where the scm src will not permanently refer to the
@@ -203,7 +207,7 @@ void _update_s7_globals(struct option options[])
             /* log_debug("--flags token: %s", token); */
             utstring_renew(flag);
             utstring_printf(flag, "*mibl-%s*", token);
-            mibl_s7_set_flag(utstring_body(flag), true);
+            mibl_s7_set_flag(s7, utstring_body(flag), true);
             token = strtok(NULL, sep);
         }
         utstring_free(flag);
@@ -397,6 +401,7 @@ void _set_options(struct option options[])
 
 int main(int argc, char **argv, char **envp)
 {
+    (void)envp;
     argc = gopt(argv, options);
     (void)argc;
     gopt_errors(argv[0], options);
@@ -410,14 +415,20 @@ int main(int argc, char **argv, char **envp)
     utstring_new(mibl_runfiles_root);
     utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
 
-    mibl_s7_init();
+    s7_scheme *s7 = mibl_s7_init();
 
     _update_mibl_config(options);
 
     /* struct mibl_config_s *mibl_config */
-    mibl_s7_init2("../obazl/scm",
+    mibl_s7_init2(s7,
+                  "../obazl/scm",
                   //options[OPT_MAIN].argument,  //   bazel_main.scm
                   options[OPT_WS].argument);
+
+    //TODO: obazl_init - adds obazl runfiles to s7 *load-path*
+    log_debug("XXXXXXXXXXXXXXXX");
+    log_debug("obazl BAZEL_CURRENT_REPOSITORY: " BAZEL_CURRENT_REPOSITORY);
+
     /* (void)mibl_config; */
 
     /* "../obazl/scm", */
@@ -427,7 +438,7 @@ int main(int argc, char **argv, char **envp)
     /* log_debug("tmpscm: %s", tmpdir); */
     /* s7_add_to_load_path(s7, tmpdir); */
 
-    _update_s7_globals(options);
+    _update_s7_globals(s7, options);
 
     /* libmibl always adds its runfiles to load-path */
     /* app scripts must add their own scm dirs (from their runfiles,
@@ -437,7 +448,7 @@ int main(int argc, char **argv, char **envp)
     if (options[FLAG_SHOW_CONFIG].count) {
         show_bazel_config();
         show_mibl_config();
-        show_s7_config();
+        show_s7_config(s7);
 
         /* dump env vars: */
         /* for (char **env = envp; *env != 0; env++) { */
@@ -449,7 +460,8 @@ int main(int argc, char **argv, char **envp)
 
     // if gen:bazel: bazel_main.scm
     // if gen:buck2: buck2_main.scm
-    mibl_s7_run("bazel_main.scm", // options[OPT_MAIN].argument,
+    mibl_s7_run(s7,
+                "bazel_main.scm", // options[OPT_MAIN].argument,
                 options[OPT_WS].argument);
 
     if (verbose)

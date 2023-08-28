@@ -335,7 +335,7 @@ def _inspect_impl(ctx):
 ###############
 inspect = rule(
     implementation = _inspect_impl,
-    doc = "Use ocamlobjinfo to inspect object. Pass label of object to inspect like this: bazel run @obazl//sig:inspect --@obazl//ocamlobj=//pkg:tgt",
+    doc = "Use ocamlobjinfo to inspect object. Pass label of object to inspect like this: bazel run @obazl//sig:inspect --@obazl//tgt=//pkg:tgt",
     executable = True,
     attrs = dict(
         obj = attr.label(

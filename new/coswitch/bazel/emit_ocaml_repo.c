@@ -1719,7 +1719,7 @@ void _symlink_ocaml_num(char *switch_lib, char *tgtdir)
         if(direntry->d_type==DT_REG){
             /* if (strcasestr(direntry->d_name, "num") == NULL) */
             if (strncmp("nums.", direntry->d_name, 5) != 0)
-                /* if (strncmp("libnums.", direntry->d_name, 8) != 0) */
+                if (strncmp("libnums.", direntry->d_name, 8) != 0)
                     continue;
 
             utstring_renew(src);
@@ -2012,13 +2012,16 @@ void emit_ocaml_threads_pkg(char *runfiles,
     // so we always symlink to <coswitch>/lib/ocaml/threads
     utstring_new(threads_dir);
     utstring_printf(threads_dir,
-                    "%s/ocaml/threads",
+                    "%s/ocaml",
                     switch_lib);
     utstring_renew(dst_dir);
     utstring_printf(dst_dir,
                     "%s/ocaml/threads",
                     coswitch_lib);
+
+    // symlink <switch>/lib/ocaml/threads
     _symlink_ocaml_threads(threads_dir, utstring_body(dst_dir));
+    // symlink <switch>/lib/ocaml/libthreads.s, libthreadsnat.a
 
     utstring_free(src_file);
     utstring_free(dst_file);
@@ -2040,6 +2043,53 @@ void _symlink_ocaml_threads(UT_string *threads_dir, char *tgtdir)
     utstring_new(dst);
     int rc;
 
+    utstring_printf(src, "%s/libthreads.a",
+                    utstring_body(threads_dir));
+    //FIXME: verify access
+    utstring_printf(dst, "%s/libthreads.a",
+                    tgtdir);
+    log_debug("SYMLINKING %s to %s\n",
+              utstring_body(src),
+              utstring_body(dst));
+    rc = symlink(utstring_body(src),
+                 utstring_body(dst));
+    symlink_ct++;
+    if (rc != 0) {
+        if (errno != EEXIST) {
+            log_error("ERROR: %s", strerror(errno));
+            log_error("src: %s, dst: %s",
+                      utstring_body(src),
+                      utstring_body(dst));
+            log_error("exiting");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    utstring_renew(src);
+    utstring_printf(src, "%s/libthreadsnat.a",
+                    utstring_body(threads_dir));
+    //FIXME: verify access
+    utstring_renew(dst);
+    utstring_printf(dst, "%s/libthreadsnat.a",
+                    tgtdir);
+    log_debug("SYMLINKING %s to %s\n",
+              utstring_body(src),
+              utstring_body(dst));
+    rc = symlink(utstring_body(src),
+                 utstring_body(dst));
+    symlink_ct++;
+    if (rc != 0) {
+        if (errno != EEXIST) {
+            log_error("ERROR: %s", strerror(errno));
+            log_error("src: %s, dst: %s",
+                      utstring_body(src),
+                      utstring_body(dst));
+            log_error("exiting");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    utstring_printf(threads_dir, "/%s", "threads");
     DIR *d = opendir(utstring_body(threads_dir));
     if (d == NULL) {
         fprintf(stderr, "Unable to opendir for symlinking threads: %s\n",
@@ -2299,10 +2349,37 @@ void emit_ocaml_unix_pkg(char *runfiles,
     _copy_buildfile(utstring_body(src_file), dst_file);
 
     if (toplevel) {
+        // found <switch>/lib/ocaml/unix,
         // not found: <switch>/lib/unix, means >= 5.0.0
-        // add <coswitch>/lib/unix for (bazel) compatibility
+        // link the former,
+        // add <coswitch>/lib/unix alias for (bazel) compat
         _symlink_ocaml_unix(unix_dir,
                             utstring_body(dst_dir));
+        // also link <switch>/lib/ocaml/libunix.a
+        utstring_renew(src_file);
+        utstring_printf(src_file, "%s/ocaml/libunix.a",
+                        switch_lib);
+        //FIXME: verify access
+        utstring_renew(dst_file);
+        utstring_printf(dst_file, "%s/libunix.a",
+                        utstring_body(dst_dir));
+        log_debug("SYMLINKING %s to %s\n",
+                  utstring_body(src_file),
+                  utstring_body(dst_file));
+        rc = symlink(utstring_body(src_file),
+                     utstring_body(dst_file));
+        symlink_ct++;
+        if (rc != 0) {
+            if (errno != EEXIST) {
+                log_error("ERROR: %s", strerror(errno));
+                log_error("src: %s, dst: %s",
+                          utstring_body(src_file),
+                          utstring_body(dst_file));
+                log_error("exiting");
+                exit(EXIT_FAILURE);
+            }
+        }
+
         _emit_toplevel(templates,
                        "ocaml_unix_alias.BUILD",
                        src_file,
@@ -2353,6 +2430,8 @@ void _symlink_ocaml_unix(UT_string *unix_dir, char *tgtdir)
         if(direntry->d_type==DT_REG){
             /* link files starting with "unix." */
             if (strncmp("unix.", direntry->d_name, 5) != 0)
+                if (strncmp("unixLabels.", direntry->d_name, 11) != 0)
+                    if (strncmp("libunix", direntry->d_name, 7) != 0)
                 continue;
 
             utstring_renew(src);
@@ -2362,9 +2441,9 @@ void _symlink_ocaml_unix(UT_string *unix_dir, char *tgtdir)
             utstring_renew(dst);
             utstring_printf(dst, "%s/%s",
                             tgtdir, direntry->d_name);
-            /* printf("symlinking %s to %s\n", */
-            /*        utstring_body(src), */
-            /*        utstring_body(dst)); */
+            log_debug("symlinking %s to %s",
+                   utstring_body(src),
+                   utstring_body(dst));
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
             symlink_ct++;
