@@ -1,0 +1,74 @@
+load("//config/cc:CONFIG.bzl",
+     COPTS   = "BASE_COPTS",
+     DEFINES = "BASE_DEFINES")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+
+TOOLCHAINS = ["//:repo_paths"]
+
+##########
+cc_binary(
+    name  = "coswitch",
+    visibility = ["//visibility:public"],
+    srcs  = [
+        "coswitch.c",
+        ":mkhdrs",
+    ],
+    deps = [
+        "@findlibc//src:findlibc",
+        "@libs7//src:s7",
+        "@opamc//src:opamc",
+        "@xdgc//src:xdgc",
+        "@gopt//src:gopt",
+        "@liblogc//src:logc",
+        "@semverc//src:semverc",
+        "@uthash//src:uthash",
+        "//new/coswitch/bazel"
+   ],
+    copts = COPTS + [
+        "-I$(@libs7)/src",
+        "-I$(GENDIR)/$(@libs7)/src",
+
+        "-I$(GENDIR)/$(@findlibc)/src",
+        "-I$(GENDIR)/$(@opamc)/src",
+        "-I$(GENDIR)/$(@xdgc)/src",
+        "-I$(@semverc)/src",
+        "-I$(@)/src",
+        "-I$(GENDIR)/$(@)/src",
+        "-I$(GENDIR)/$(@)/new/coswitch",
+        "-I$(GENDIR)/$(@)/src/opam",
+        "-I$(GENDIR)/$(@)/test/opam",
+
+        "-I$(@libs7)/src",
+        "-I$(@gopt)/src",
+        "-I$(@liblogc)/src",
+        "-I$(@uthash)/src",
+    ],
+    local_defines = DEFINES + select({
+        "//compilation_mode:dbg?": ["TRACING", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }),
+    linkstatic = 1,
+    toolchains = TOOLCHAINS,
+)
+
+########
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = [
+        "coswitch.c",
+        # "module.c",
+        # "package.c",
+        # "workspace.c",
+        # "help.c",
+        # "xdg.c",
+        # "test.c",
+    ],
+    additional_srcs = [
+        "//new/coswitch/bazel:emit_build_bazel.c",
+        "//new/coswitch/bazel:emit_ocaml_repo.c",
+        "//new/coswitch/bazel:emit_pkg_bindir.c",
+        "//src/utils:utils.c",
+        "//new:ansi_colors.h",
+    ],
+)

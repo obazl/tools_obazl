@@ -4,78 +4,13 @@ load("//config/cc:CONFIG.bzl",
 
 load("@makeheaders//src:RULES.bzl", "makeheaders")
 
+exports_files(["ansi_colors.h"])
+
 TOOLCHAINS = ["//:repo_paths"]
 
 alias(
     name = "ws",
     actual = ":workspace"
-)
-
-##########
-cc_binary(
-    name  = "coswitch",
-    visibility = ["//visibility:public"],
-    srcs  = [
-        "coswitch.c",
-        ":mkhdrs",
-        # "//src/hdrs:coswitch.h",
-    ],
-    deps = [
-        # "//src/coswitch",
-        "@findlibc//src:findlibc",
-        "@opamc//src:opamc",
-        "@xdgc//src:xdgc",
-        "@gopt//src:gopt",
-        "@libs7//src:s7",
-        "@liblogc//src:logc",
-        "@semverc//src:semverc",
-        "@uthash//src:uthash",
-        "//new/bazel"
-   ],
-    copts = COPTS + [
-        "-I$(GENDIR)/$(@findlibc)/src",
-        "-I$(GENDIR)/$(@opamc)/src",
-        "-I$(GENDIR)/$(@xdgc)/src",
-        "-I$(@libs7)/src",
-        "-I$(GENDIR)/$(@libs7)/src",
-        "-I$(@semverc)/src",
-        "-I$(@)/src",
-        "-I$(GENDIR)/$(@)/new",
-        # "-Isrc",
-        # "-Icoswitch",
-        # "-Iexternal/mibl/coswitch",
-        # "-I$(GENDIR)/external/mibl/coswitch",
-
-        # "-I$(GENDIR)/$(@)/src/hdrs",
-
-        # "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(
-        #     MIBL_VERSION),
-
-        "-I$(GENDIR)/$(@)/src",
-        "-I$(GENDIR)/$(@)/src/opam",
-        "-I$(GENDIR)/$(@)/test/opam",
-
-        # "-Iexternal/mibl/src",
-        # "-I$(GENDIR)/external/mibl/src",
-
-        "-I$(@libs7)/src",
-        # "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
-
-        "-I$(@gopt)/src",
-        # "-Iexternal/gopt~{}".format(GOPT_VERSION),
-
-        "-I$(@liblogc)/src",
-        # "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
-
-        "-I$(@uthash)/src",
-        # "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
-    ],
-    local_defines = DEFINES + select({
-        "//compilation_mode:dbg?": ["TRACING", "DEBUG_MIBL"],
-        "//conditions:default":   []
-    }),
-    linkstatic = 1,
-    toolchains = TOOLCHAINS,
 )
 
 ##########
@@ -401,6 +336,7 @@ makeheaders(
     ],
     additional_srcs = [
         "//new/bazel:emit_build_bazel.c",
+        "//new/bazel:emit_ocaml_repo.c",
         "//src/utils:utils.c",
         "ansi_colors.h",
     ],

@@ -10,7 +10,6 @@ bazel_dep(name = "platforms", version = "0.0.6")
 bazel_dep(name = "bazel_skylib", version = "1.4.2")
 bazel_dep(name = "cc_config", version = "1.0.0")
 
-bazel_dep(name = "libs7", version = "1.0.0")
 bazel_dep(name = "opamc", version = "1.0.0")
 bazel_dep(name = "findlibc", version = "1.0.0")
 bazel_dep(name = "xdgc", version = "1.0.0")
@@ -22,6 +21,9 @@ bazel_dep(name = "lemon", version = "3.42.0")
 bazel_dep(name = "liblogc", version = "1.0.0")
 bazel_dep(name = "makeheaders", version = "1.0.0")
 bazel_dep(name = "re2c", version = "3.1.0")
+
+bazel_dep(name = "libs7", version = "1.0.0")
+bazel_dep(name = "dune_s7",  version = "0.1.0")
 
 bazel_dep(name = "runfiles", version = "0.1.0")
 

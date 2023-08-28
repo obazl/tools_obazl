@@ -1,15 +1,17 @@
 load("@cc_config//:MACROS.bzl", "repo_paths")
 
 PROD_REPOS = [
+    "@libs7//src:s7",
+    "@dune_s7//src:dune_s7",
+
     "@gopt//src:gopt",
     "@findlibc//src:findlibc",
     "@opamc//src:opamc",
-    "@libs7//src:s7",
     "@liblogc//src:logc",
     "@runfiles//src:runfiles",
     "@semverc//src:semverc",
     "@uthash//src:uthash",
-    "@xdgc//src:xdgc"
+    "@xdgc//src:xdgc",
 ]
 
 repo_paths(

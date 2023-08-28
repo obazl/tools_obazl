@@ -1,0 +1,113 @@
+load("@bazel_skylib//rules:common_settings.bzl",
+     "bool_flag", "string_flag")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+load("@lemon//src:BUILD.bzl", "lemon")
+
+load("//config/cc:CONFIG.bzl",
+     COPTS = "BASE_COPTS",
+     "BASE_DEFINES")
+
+DEFINES = BASE_DEFINES + ["TRACING"]
+
+exports_files(["emit_build_bazel.c",
+               "emit_ocaml_repo.c",
+               "emit_pkg_bindir.c",])
+
+TOOLCHAINS = ["//:repo_paths"]
+
+###########
+cc_library(
+    name = "bazel",
+    srcs = [
+        "emit_build_bazel.c",
+        "emit_ocaml_repo.c",
+        "emit_pkg_bindir.c",
+        ":mkhdrs",
+    ],
+    deps = [
+        "@libs7//src:s7",
+        "@dune_s7//src:dune_s7",
+
+        "@findlibc//src:findlibc",
+        "@liblogc//src:logc",
+        "@opamc//src:opamc",
+        "@semverc//src:semverc",
+        "@uthash//src:uthash",
+        "//src/utils"
+    ],
+    copts = COPTS + [
+        "-I$(GENDIR)/$(@findlibc)/src",
+        "-I$(@libs7)/src",
+        "-I$(GENDIR)/$(@libs7)/src",
+        "-I$(GENDIR)/$(@opamc)/src",
+        "-I$(@liblogc)/src",
+        "-I$(@semverc)/src",
+        "-I$(@uthash)/src",
+        "-I$(GENDIR)/$(@)/new/coswitch",
+        "-I$(GENDIR)/$(@)/new/coswitch/bazel",
+    ],
+    local_defines = DEFINES,
+    data  = [
+        "//new/coswitch/templates:ocaml_bigarray.BUILD",
+        "//new/coswitch/templates:ocaml_c_api.BUILD",
+        "//new/coswitch/templates:ocaml_compiler-libs.BUILD",
+        "//new/coswitch/templates/compiler_libs:bytecomp.BUILD",
+        "//new/coswitch/templates/compiler_libs:common.BUILD",
+        "//new/coswitch/templates/compiler_libs:optcomp.BUILD",
+        "//new/coswitch/templates/compiler_libs:toplevel.BUILD",
+        "//new/coswitch/templates/compiler_libs:native_toplevel.BUILD",
+        "//new/coswitch/templates:ocaml_dynlink.BUILD",
+        "//new/coswitch/templates:ocaml_dynlink_alias.BUILD",
+        "//new/coswitch/templates:ocaml_num.BUILD",
+        "//new/coswitch/templates:ocaml_ocamldoc.BUILD",
+        "//new/coswitch/templates:ocaml_runtime.BUILD",
+        "//new/coswitch/templates:ocaml_stdlib.BUILD",
+        "//new/coswitch/templates:ocaml_str.BUILD",
+        "//new/coswitch/templates:ocaml_str_alias.BUILD",
+
+        "//new/coswitch/templates/platforms:BUILD.bazel",
+        "//new/coswitch/templates/platforms/build:BUILD.bazel",
+        "//new/coswitch/templates/platforms/target:BUILD.bazel",
+
+        "//new/coswitch/templates:toolchain/adapters/local.BUILD",
+        "//new/coswitch/templates:toolchain/adapters/local.BUILD.mustache",
+        "//new/coswitch/templates:toolchain/adapters/linux/x86_64.BUILD",
+        "//new/coswitch/templates:toolchain/adapters/linux/arm.BUILD",
+        "//new/coswitch/templates:toolchain/adapters/macos/x86_64.BUILD",
+        "//new/coswitch/templates:toolchain/adapters/macos/arm.BUILD",
+        "//new/coswitch/templates:toolchain/profiles/profiles.BUILD",
+        "//new/coswitch/templates:toolchain/selectors/local.BUILD",
+        "//new/coswitch/templates:toolchain/selectors/linux/x86_64.BUILD",
+        "//new/coswitch/templates:toolchain/selectors/linux/arm.BUILD",
+        "//new/coswitch/templates:toolchain/selectors/macos/arm.BUILD",
+        "//new/coswitch/templates:toolchain/selectors/macos/x86_64.BUILD",
+        # "//new/coswitch/templates/host/bazel:BUILD.bazel",
+        # "//new/coswitch/templates/host/build:BUILD.bazel",
+        # "//new/coswitch/templates/host/target:BUILD.bazel",
+        "//new/coswitch/templates:ocaml_threads.BUILD",
+        "//new/coswitch/templates:ocaml_threads_alias.BUILD",
+        "//new/coswitch/templates:ocaml_unix.BUILD",
+        "//new/coswitch/templates:ocaml_unix_alias.BUILD",
+    ],
+    # ] + select({
+    #     "//compilation_mode:dbg?": ["//src:debug"],
+    #     "//conditions:default": []
+    # }),
+    toolchains = TOOLCHAINS,
+    visibility = ["//visibility:public"]
+)
+
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = [
+        "emit_build_bazel.c",
+        "emit_ocaml_repo.c",
+        "emit_pkg_bindir.c",
+    ],
+    additional_srcs = [
+        "//new:ansi_colors.h",
+        "//src/utils:utils.c"
+    ],
+    visibility = ["//visibility:public"]
+)
