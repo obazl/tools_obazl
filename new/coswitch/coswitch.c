@@ -187,6 +187,7 @@ void pkg_handler(char *site_lib,
 
     errno = 0;
     if ( access(utstring_body(meta_path), F_OK) != 0 ) {
+        // no META happens for e.g. <switch>/lib/stublibs
         log_warn("%s: %s",
                  strerror(errno), utstring_body(meta_path));
         return;
@@ -243,8 +244,9 @@ void pkg_handler(char *site_lib,
             /* return; */
         }
     } else {
-        log_warn("No version property found");
-        return; //FIXME ??? e.g. dune META has no version
+        log_warn("No version property found; setting to 0.0.0");
+        version = "0.0.0";
+        /* return; //FIXME ??? e.g. dune META has no version */
     }
 
     /** emit workspace, module files for opam pkg **/
@@ -313,8 +315,11 @@ void pkg_handler(char *site_lib,
                          default_version // (char*)version
                          );
 
-    emit_pkg_bindir(site_lib, utstring_body(coswitch_lib),
-                    pkg->name);
+    //FIXME: read dunfile is choking on dune-package files,
+    // which all contain
+    //(sections (lib .) (libexec .) (doc ../../doc/<pkg>))
+    /* emit_pkg_bindir(site_lib, utstring_body(coswitch_lib), */
+    /*                 pkg->name); */
 }
 
 UT_string *_config_bzlmod_registry(char *switch_name,

@@ -138,7 +138,8 @@ EXPORT void emit_registry_record(UT_string *registry,
     log_info("reg MODULE.bazel: %s",
              utstring_body(reg_file));
 
-    if (strncmp("ocaml", pkg_name, 6) == 0) {
+    if ( (strncmp("ocaml", pkg_name, 6) == 0)
+         || (strncmp("stublibs", pkg_name, 8) == 0)) {
         // no META pkg
         FILE *ostream;
         ostream = fopen(utstring_body(reg_file), "w");
@@ -154,11 +155,22 @@ EXPORT void emit_registry_record(UT_string *registry,
         fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
                 pkg_name, version
                 );
-        fprintf(ostream, "    compatibility_level = \"0\",\n",
+        fprintf(ostream, "    compatibility_level = %d,\n",
                 default_compat);
         /* semversion.major); */
         fprintf(ostream, ")\n");
         fprintf(ostream, "\n");
+        if (strncmp("ocaml", pkg_name, 6) == 0) {
+            fprintf(ostream,
+                    "bazel_dep(name = \"platforms\", version = \"0.0.7\")\n");
+            fprintf(ostream,
+                    "bazel_dep(name = \"rules_ocaml\", version = \"1.0.0\")\n");
+
+            fprintf(ostream,
+                    "bazel_dep(name = \"stublibs\", version = \"0.0.0\")\n");
+
+            fprintf(ostream, "\n");
+        }
         fclose(ostream);
     } else {
         emit_module_file(reg_file, pkg);
@@ -296,8 +308,8 @@ void _emit_toplevel(UT_string *templates,
 
 EXPORT void _copy_buildfile(char *src_file, UT_string *to_file)
 {
-    log_debug("_copy_buildfile src: %s, dst: %s",
-              src_file, utstring_body(to_file));
+    /* log_debug("_copy_buildfile src: %s, dst: %s", */
+    /*           src_file, utstring_body(to_file)); */
     UT_string *src;
     utstring_new(src);
 
@@ -668,43 +680,77 @@ void _emit_ocaml_stublibs_symlinks(char *switch_pfx,
     closedir(srcd);
 }
 
-/* **************************************************************** */
-void emit_lib_stublibs(char *switch_stublibs, char *coswitch_lib)
+/**
+   <switch>/lib/stublibs - no META file, populated by other pkgs
+ */
+void emit_lib_stublibs_pkg(UT_string *registry,
+                           char *switch_stublibs,
+                           char *coswitch_lib)
 {
 #if defined(TRACING)
     /* if (mibl_trace) */
-        log_trace("emit_lib_stublibs");
+        log_trace("emit_lib_stublibs_pkg");
 #endif
+
+    UT_string *switch_stublibs_dir;
+    utstring_new(switch_stublibs_dir);
+    utstring_printf(switch_stublibs_dir,
+                    "%s",
+                    switch_stublibs);
+    int rc = access(utstring_body(switch_stublibs_dir), F_OK);
+    if (rc != 0) {
+#if defined(TRACING)
+        /* if (mibl_trace) */
+        log_warn(YEL "no stublibs dir found: %s",
+                 utstring_body(switch_stublibs_dir));
+#endif
+        return;
+    }
+
+    UT_string *dst_dir;
+    utstring_new(dst_dir);
+    utstring_printf(dst_dir,
+                    "%s/stublibs",
+                    coswitch_lib);
+    mkdir_r(utstring_body(dst_dir));
+
     UT_string *dst_file;
     utstring_new(dst_file);
-    /* utstring_concat(dst_file, coswitch_pfx); */
-    utstring_printf(dst_file, "%s/stublibs", coswitch_lib);
-    mkdir_r(utstring_body(dst_file));
-
-    utstring_printf(dst_file, "/WORKSPACE.bazel");
-
-    FILE *ostream = fopen(utstring_body(dst_file), "w");
+    utstring_printf(dst_file,
+                    "%s/MODULE.bazel",
+                    utstring_body(dst_dir));
+    FILE *ostream;
     ostream = fopen(utstring_body(dst_file), "w");
     if (ostream == NULL) {
-        log_error("fopen: %s: %s", strerror(errno),
-                  utstring_body(dst_file));
-        fprintf(stderr, "fopen: %s: %s", strerror(errno),
-                utstring_body(dst_file));
-        fprintf(stderr, "exiting\n");
-        /* perror(utstring_body(dst_file)); */
+        log_error("%s", strerror(errno));
+        perror(utstring_body(dst_file));
         exit(EXIT_FAILURE);
     }
-    fprintf(ostream, "workspace( name = \"stublibs\" )"
-            "    # generated file - DO NOT EDIT\n");
+    fprintf(ostream, "## generated file - DO NOT EDIT\n\n");
+    fprintf(ostream, "module(\n");
+    fprintf(ostream, "    name = \"stublibs\", version = \"%s\",\n",
+            default_version);
+    fprintf(ostream, "    compatibility_level = %d,\n",
+            default_compat);
+    fprintf(ostream, ")\n");
+    fprintf(ostream, "\n");
     fclose(ostream);
 
+    utstring_new(dst_file);
+    utstring_printf(dst_file, "%s/WORKSPACE.bazel",
+                    utstring_body(dst_dir));
+    emit_workspace_file(dst_file, "stublibs");
+
     /* now BUILD.bazel */
-    utstring_renew(dst_file);
-    /* utstring_concat(dst_file, coswitch_pfx); */
-    utstring_printf(dst_file, "%s/stublibs/lib/stublibs",
+    utstring_renew(dst_dir);
+    utstring_printf(dst_dir, "%s/stublibs/lib/stublibs",
                     coswitch_lib);
-    mkdir_r(utstring_body(dst_file));
-    utstring_printf(dst_file, "/BUILD.bazel");
+    mkdir_r(utstring_body(dst_dir));
+
+    utstring_renew(dst_file);
+    utstring_printf(dst_file,
+                    "%s/BUILD.bazel",
+                    utstring_body(dst_dir));
 
     ostream = fopen(utstring_body(dst_file), "w");
     if (ostream == NULL) {
@@ -725,8 +771,15 @@ void emit_lib_stublibs(char *switch_stublibs, char *coswitch_lib)
     fprintf(ostream, ")\n");
     fclose(ostream);
     utstring_free(dst_file);
-    /* **************************************************************** */
+
     _emit_lib_stublibs_symlinks(switch_stublibs, coswitch_lib);
+
+    emit_registry_record(registry,
+                         NULL, // meta_path
+                         "stublibs", // pkg_name
+                         NULL, // pkg
+                         "0.0.0" // default_version
+                         );
 }
 
 void _emit_lib_stublibs_symlinks(char *switch_stublibs,
@@ -2951,8 +3004,9 @@ EXPORT void emit_ocaml_workspace(UT_string *registry,
 
     emit_ocaml_stublibs(switch_pfx, coswitch_lib);
 
+    // for <switch>lib/stublibs:
     char *switch_stublibs = opam_switch_stublibs(switch_name);
-    emit_lib_stublibs(switch_stublibs, coswitch_lib);
+    emit_lib_stublibs_pkg(registry, switch_stublibs, coswitch_lib);
 
     emit_compiler_libs_pkg(runfiles, coswitch_lib);
     emit_ocaml_compiler_libs_pkg(runfiles,

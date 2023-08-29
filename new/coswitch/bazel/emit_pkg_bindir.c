@@ -151,6 +151,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 #define DUNE_BUFSZ 131072
     /* static char inbuf[DUNE_BUFSZ]; */
     /* memset(inbuf, '\0', DUNE_BUFSZ); */
+    //FIXME: malloc?
     static char outbuf[DUNE_BUFSZ + 20];
     memset(outbuf, '\0', DUNE_BUFSZ);
 
@@ -392,10 +393,12 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
             }
         }
     }
+    free(inbuf);
     return outbuf;
 
 cleanup:
     //FIXME
+    free(inbuf);
     if (instream != NULL)
     {
         fclose(instream);
@@ -441,13 +444,15 @@ s7_pointer _read_dune_package(s7_scheme *s7, UT_string *dunefile_name)
     /* read all stanzas in dunefile */
     while(true) {
 /* #if defined(TRACING) */
-/*         if (mibl_debug) log_debug("iter"); */
+        /* if (mibl_debug) */
+            log_debug("iter");
 /* #endif */
         s7_pointer stanza = s7_read(s7, sport);
         /* FIXME: error checks */
         /* errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
         /* if ((errmsg) && (*errmsg)) { */
-        /*     if (mibl_debug) log_error("[%s\n]", errmsg); */
+        /*     /\* if (mibl_debug) *\/ */
+        /*         log_error("[%s\n]", errmsg); */
         /*     s7_close_input_port(s7, sport); */
         /*     s7_quit(s7); */
         /*     exit(EXIT_FAILURE); */
@@ -470,7 +475,6 @@ s7_pointer _read_dune_package(s7_scheme *s7, UT_string *dunefile_name)
     /* close_error_config(); */
 
     /* leave error config as-is */
-    /* free(dunestring); */
     return stanzas;
 }
 

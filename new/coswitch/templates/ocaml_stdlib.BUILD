@@ -1,6 +1,6 @@
 # generated file - DO NOT EDIT
 
-load("@opam//build:rules.bzl", "opam_import")
+load("@rules_ocaml//build:rules.bzl", "ocaml_import")
 
 exports_files(glob(["**"]))
 

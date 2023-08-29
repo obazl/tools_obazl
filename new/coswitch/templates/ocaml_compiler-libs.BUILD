@@ -1,8 +1,8 @@
 # generated file - DO NOT EDIT
 
-load("@opam//build:rules.bzl", "opam_import")
+load("@rules_ocaml//build:rules.bzl", "ocaml_import")
 
-opam_import(
+ocaml_import(
     name       = "common",
     doc        = """Common compiler routines""",
     sigs       = glob(["*.cmi"]),
@@ -24,7 +24,7 @@ opam_import(
     visibility = ["//visibility:public"]
 )
 
-opam_import(
+ocaml_import(
     name       = "bytecomp",
     doc        = """Common compiler routines""",
     sigs       = glob(["*.cmi"]),
@@ -47,7 +47,7 @@ opam_import(
     visibility = ["//visibility:public"]
 )
 
-opam_import(
+ocaml_import(
     name       = "optcomp",
     doc        = """optcomp compiler routines""",
     sigs       = glob(["*.cmi"]),
@@ -70,7 +70,7 @@ opam_import(
     visibility = ["//visibility:public"]
 )
 
-opam_import(
+ocaml_import(
     name = "toplevel",
     doc = """Toplevel interactions""",
     sigs       = glob(["*.cmi"]),

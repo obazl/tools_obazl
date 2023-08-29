@@ -1,8 +1,8 @@
 # generated file - DO NOT EDIT
 
-load("@opam//build:rules.bzl", "opam_import")
+load("@rules_ocaml//build:rules.bzl", "ocaml_import")
 
-opam_import(
+ocaml_import(
     name       = "str",
     version    = """[distributed with Ocaml]""",
     doc        = """Regular expressions and string processing""",
@@ -25,7 +25,7 @@ opam_import(
     visibility = ["//visibility:public"]
 )
 
-opam_import(
+ocaml_import(
     name       = "plugin",
     plugin     =  select({
         "@ocaml//platforms/target:vm?": "str.cma",

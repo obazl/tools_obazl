@@ -40,7 +40,7 @@
 
 /* extern */ int level;
 /* extern */ int spfactor = 4;
-/* extern */ char *sp;
+/* extern */ char *sp = " ";
 
 #if defined(TRACING)
 bool mibl_debug;
@@ -327,11 +327,12 @@ void emit_bazel_hdr(FILE* ostream)
 //, int level, char *repo, char *pkg_prefix, obzl_meta_package *_pkg)
 {
     fprintf(ostream,
-            "load(\"@opam//build:rules.bzl\", \"opam_import\")\n");
+            "load(\"@rules_ocaml//build:rules.bzl\", \"ocaml_import\")\n");
 
     //FIXME: only if --enable-jsoo passed
-    fprintf(ostream,
-            "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n");
+    /* fprintf(ostream, */
+    /*         "load(\"@rules_jsoo//build:rules.bzl\", \"jsoo_library\", \"jsoo_import\")\n\n"); */
+
 }
 
 /* obzl_meta_values *resolve_setting_values(obzl_meta_setting *_setting, */
@@ -894,10 +895,10 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
     (void)_pkg;
     /* here we read the symlinks in the coswitch not the opam switch */
 #if defined(TRACING)
-    log_debug("stublibs pkg root: %s", _pkg_root);
-    log_debug("stublibs pkg prefix: %s", _pkg_prefix);
-    log_debug("stublibs pkg name: %s", _pkg_name);
-    log_debug("stublibs pkg parent: %s", utstring_body(_pkg_parent));
+    log_debug("jsoo pkg root: %s", _pkg_root);
+    log_debug("jsoo pkg prefix: %s", _pkg_prefix);
+    log_debug("jsoo pkg name: %s", _pkg_name);
+    log_debug("jsoo pkg parent: %s", utstring_body(_pkg_parent));
 #endif
 
     static UT_string *dname;
@@ -912,7 +913,7 @@ void emit_bazel_jsoo_runtime_attr(FILE* ostream,
     utstring_printf(dname, "/%s", _pkg_name);
 
 #if defined(TRACING)
-    log_debug("emit_bazel_stublibs_attr: %s", utstring_body(dname));
+    log_debug("emit_bazel_jsoo_runtime_attr: %s", utstring_body(dname));
 #endif
 
     errno = 0;
@@ -1012,7 +1013,8 @@ void emit_bazel_archive_attr(FILE* ostream,
     obzl_meta_value *archive_name = NULL;
 
     /* lhs */
-    fprintf(ostream, "%*s%s  =  select({\n", level*spfactor, sp, "archive");
+    fprintf(ostream, "%*s%s =  select({\n",
+            level*spfactor, sp, property);
 
     /* iter over archive(byte), archive(native) */
     for (int i = 0; i < settings_ct; i++) {
@@ -1525,7 +1527,7 @@ Note that "archive" should only be used for archive files that are intended to b
     /* write scheme opam-resolver table */
     //FIXME: for here-switch only
     /* write_opam_resolver(_pkg_prefix, _pkg_name, _entries); */
-    fprintf(ostream, "\nopam_import(\n");
+    fprintf(ostream, "\nocaml_import(\n");
     fprintf(ostream, "    name = \"%s\",\n", _pkg_name); /* default target provides archive */
 
     emit_bazel_metadatum(ostream, 1,
@@ -1626,7 +1628,7 @@ void emit_bazel_plugin_rule(FILE* ostream, int level,
     //FIXME: for here-switch only
     /* write_opam_resolver(_pkg_prefix, _pkg_name, _entries); */
 
-    fprintf(ostream, "\nopam_import(\n");
+    fprintf(ostream, "\nocaml_import(\n");
     fprintf(ostream, "    name = \"plugin\",\n");
     /* log_debug("PDUMPP %s", _pkg_name); */
     /* dump_entries(0, _entries); */
@@ -2468,7 +2470,7 @@ void emit_bazel_deps_target(FILE* ostream, int level,
         /* fprintf(ostream, "    visibility = [\"//visibility:public\"]\n"); */
         fprintf(ostream, ")\n");
     } else {
-        fprintf(ostream, "\nopam_import(\n");
+        fprintf(ostream, "\nocaml_import(\n");
         fprintf(ostream, "    name = \"%s\",\n", _pkg_name);
         emit_bazel_metadatum(ostream, 1,
                              _repo,
@@ -2506,7 +2508,7 @@ void emit_bazel_error_target(FILE* ostream, int level,
 #if defined(TRACING)
     log_debug("ERROR TARGET: %s", _pkg_name);
 #endif
-    fprintf(ostream, "\nopam_import( # error\n");
+    fprintf(ostream, "\nocaml_import( # error\n");
     fprintf(ostream, "    name = \"%s\",\n", _pkg_name);
     emit_bazel_metadatum(ostream, 1,
                          _repo,
@@ -2885,13 +2887,17 @@ EXPORT void emit_module_file(UT_string *module_file,
             _pkg->name, default_version
             //(char*)version
             );
-    fprintf(ostream, "    compatibility_level = \"%d\",\n",
+    fprintf(ostream, "    compatibility_level = %d,\n",
             default_compat);
             /* semversion.major); */
     fprintf(ostream, ")\n");
     fprintf(ostream, "\n");
 
-    UT_array *pkg_deps = findlib_pkg_deps(_pkg, false);
+    fprintf(ostream, "bazel_dep(name = \"rules_ocaml\", version = \"1.0.0\")\n");
+    fprintf(ostream, "bazel_dep(name = \"ocaml\", version = \"0.0.0\")\n");
+
+    // get **repo** deps: direct deps of pkg and all subpkgs
+    UT_array *pkg_deps = findlib_pkg_deps(_pkg, true);
 
     char **p = NULL;
     while ( (p=(char**)utarray_next(pkg_deps, p))) {
@@ -3406,7 +3412,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
               and if this is the case, generate separate import targets
               for them. Unlike findlib we do not use flags to select the
               files we want; instead we expose everything using
-              opam_import targets.
+              ocaml_import targets.
             */
 
             if (e->type == OMP_PROPERTY) {
