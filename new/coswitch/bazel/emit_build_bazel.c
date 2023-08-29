@@ -2895,8 +2895,10 @@ EXPORT void emit_module_file(UT_string *module_file,
 
     char **p = NULL;
     while ( (p=(char**)utarray_next(pkg_deps, p))) {
-        fprintf(ostream, "bazel_dep(name = \"%s\", version = \"%s\")\n",
-                *p, default_version); //  "1.0.0");
+        if (strncmp(*p, _pkg->name, 512) != 0) {
+            fprintf(ostream, "bazel_dep(name = \"%s\", version = \"%s\")\n",
+                    *p, default_version); //  "1.0.0");
+        }
     }
     fprintf(ostream, "\n");
 
@@ -3014,9 +3016,9 @@ void emit_pkg_symlinks(UT_string *opam_switch_lib,
                             direntry->d_name);
 /* #if defined(TRACING) */
 /*             if (mibl_debug) { */
-                log_debug("pkg symlinking");
-                fprintf(stderr, "  from %s\n", utstring_body(src));
-                fprintf(stderr, "  to   %s\n", utstring_body(dst));
+                /* log_debug("pkg symlinking"); */
+                /* fprintf(stderr, "  from %s\n", utstring_body(src)); */
+                /* fprintf(stderr, "  to   %s\n", utstring_body(dst)); */
 /*             } */
 /* #endif */
             rc = symlink(utstring_body(src),

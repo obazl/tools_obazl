@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "findlibc.h"
 #include "opamc.h"
 #include "utarray.h"
 #include "utstring.h"
@@ -38,6 +39,178 @@ extern UT_string *mibl_runfiles_root;
 #if defined(TRACING)
 bool mibl_debug_symlinks = false;
 #endif
+
+EXPORT void _mkdir_r(const char *dir) {
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp),"%s",dir);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
+    mkdir(tmp, S_IRWXU);
+}
+
+//FIXME: mv to emit_registry.c???
+EXPORT void emit_registry_record(UT_string *registry,
+                                 UT_string *meta_path,
+                                 char *pkg_name,
+                                 struct obzl_meta_package *pkg,
+                                 char *version
+                                 )
+{
+    log_debug(UBLU "emit_registry_record" CRESET);
+    UT_string *tmp;
+    utstring_new(tmp);
+    utstring_printf(tmp, "%s/modules/%s",
+                    utstring_body(registry),
+                    pkg_name);
+    _mkdir_r(utstring_body(tmp));
+
+    UT_string *reg_dir;
+    utstring_new(reg_dir);
+    utstring_printf(reg_dir,
+                    "%s/modules/%s",
+                    utstring_body(registry),
+                    pkg_name);
+                    /* pkg->name); */
+                    /* default_version); */
+                    /* (char*)version); */
+    mkdir_r(utstring_body(reg_dir));
+    log_debug("regdir: %s", utstring_body(reg_dir));
+
+    // modules/$MODULE/metadata.json
+    /* UT_string *metadata_json_file; */
+    UT_string *bazel_file;
+    utstring_new(bazel_file);
+    utstring_printf(bazel_file,
+                    "%s/metadata.json",
+                    utstring_body(reg_dir));
+    /* if (verbose) */
+        log_info("metadata.json: %s",
+                 utstring_body(bazel_file));
+
+    //FIXME: from opam file: maintainer(s), homepage
+
+    char *metadata_json_template = ""
+        "{\n"
+        "    \"homepage\": \"\",\n"
+        "    \"maintainers\": [],\n"
+        "    \"versions\": [\"%s\"],\n"
+        "    \"yanked_versions\": {}\n"
+        "}\n";
+    // optional?  "repository": ["github:obazl/semverc"]
+
+    UT_string *metadata_json;
+    utstring_new(metadata_json);
+    utstring_printf(metadata_json,
+                    metadata_json_template,
+                    version);
+    /* if (verbose) */
+        log_info("metadata_json:\n%s",
+                 utstring_body(metadata_json));
+
+    FILE *metadata_json_fd
+        = fopen(utstring_body(bazel_file), "w");
+    fprintf(metadata_json_fd,
+            "%s", utstring_body(metadata_json));
+    fclose (metadata_json_fd);
+
+    utstring_free(metadata_json);
+
+    // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
+    utstring_printf(reg_dir, "/%s", default_version);
+    mkdir_r(utstring_body(reg_dir));
+    log_debug("regdir: %s", utstring_body(reg_dir));
+
+    UT_string *reg_file;
+    utstring_new(reg_file);
+    utstring_printf(reg_file,
+                    "%s/MODULE.bazel",
+                    utstring_body(reg_dir));
+    log_info("reg MODULE.bazel: %s",
+             utstring_body(reg_file));
+
+    if (strncmp("ocaml", pkg_name, 6) == 0) {
+        // no META pkg
+        FILE *ostream;
+        ostream = fopen(utstring_body(reg_file), "w");
+        if (ostream == NULL) {
+            log_error("%s", strerror(errno));
+            perror(utstring_body(reg_file));
+            exit(EXIT_FAILURE);
+        }
+
+        fprintf(ostream, "## generated file - DO NOT EDIT\n\n");
+
+        fprintf(ostream, "module(\n");
+        fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
+                pkg_name, version
+                );
+        fprintf(ostream, "    compatibility_level = \"0\",\n",
+                default_compat);
+        /* semversion.major); */
+        fprintf(ostream, ")\n");
+        fprintf(ostream, "\n");
+        fclose(ostream);
+    } else {
+        emit_module_file(reg_file, pkg);
+    }
+
+    if (meta_path) {
+        utstring_new(reg_file);
+        utstring_printf(reg_file,
+                        "%s/META",
+                        utstring_body(reg_dir));
+        log_info("reg META: %s",
+             utstring_body(reg_file));
+
+        _copy_buildfile(utstring_body(meta_path),
+                        reg_file);
+    }
+
+    utstring_renew(reg_file);
+    utstring_printf(reg_file,
+                    "%s/source.json",
+                    utstring_body(reg_dir));
+    log_info("reg source.json : %s",
+             utstring_body(reg_file));
+
+    char *source_json_template = ""
+        "{\n"
+        "    \"type\": \"local_path\",\n"
+        "    \"path\": \"%s\"\n"
+        "}\n";
+
+    UT_string *source_json;
+    utstring_new(source_json);
+    utstring_printf(source_json,
+                    source_json_template,
+                    pkg_name);
+                    /* pkg->name); */
+    if (verbose) {
+        log_info("source_json:\n%s",
+                 utstring_body(source_json));
+        log_info("regfile: %s", utstring_body(reg_file));
+    }
+    FILE *source_json_fd
+        = fopen(utstring_body(reg_file), "w");
+    fprintf(source_json_fd,
+            "%s", utstring_body(source_json));
+    fclose (source_json_fd);
+
+    utstring_free(source_json);
+
+    utstring_free(reg_file);
+    utstring_free(bazel_file);
+}
 
 void _emit_toplevel(UT_string *templates,
                     char *template,
@@ -121,10 +294,10 @@ void _emit_toplevel(UT_string *templates,
     _copy_buildfile(utstring_body(src_file), dst_file);
 }
 
-void _copy_buildfile(char *src_file, UT_string *to_file)
+EXPORT void _copy_buildfile(char *src_file, UT_string *to_file)
 {
-    /* log_debug("_copy_buildfile src: %s, dst: %s", */
-    /*           src_file, utstring_body(to_file)); */
+    log_debug("_copy_buildfile src: %s, dst: %s",
+              src_file, utstring_body(to_file));
     UT_string *src;
     utstring_new(src);
 
@@ -2133,6 +2306,7 @@ void _symlink_ocaml_threads(UT_string *threads_dir, char *tgtdir)
 }
 
 /* ***************************************** */
+//FIXMEFIXME
 void emit_ocaml_ocamldoc_pkg(char *runfiles,
                              char *switch_lib,
                              char *coswitch_lib)
@@ -2253,9 +2427,9 @@ void _symlink_ocaml_ocamldoc(UT_string *ocamldoc_dir,
             utstring_renew(dst);
             utstring_printf(dst, "%s/%s",
                             tgtdir, direntry->d_name);
-            log_debug("symlinking %s to %s",
-                      utstring_body(src),
-                      utstring_body(dst));
+            /* log_debug("ocamldoc symlinking %s to %s", */
+            /*           utstring_body(src), */
+            /*           utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
             symlink_ct++;
@@ -2441,9 +2615,9 @@ void _symlink_ocaml_unix(UT_string *unix_dir, char *tgtdir)
             utstring_renew(dst);
             utstring_printf(dst, "%s/%s",
                             tgtdir, direntry->d_name);
-            log_debug("symlinking %s to %s",
-                   utstring_body(src),
-                   utstring_body(dst));
+            /* log_debug("symlinking %s to %s", */
+            /*        utstring_body(src), */
+            /*        utstring_body(dst)); */
             rc = symlink(utstring_body(src),
                          utstring_body(dst));
             symlink_ct++;
@@ -2687,7 +2861,8 @@ void _symlink_ocaml_c_libs(char *switch_lib, char *tgtdir)
       or project-local _opam/
   bootstrap_FILE: remains open so opam pkgs can write to it
  */
-EXPORT void emit_ocaml_workspace(char *switch_name,
+EXPORT void emit_ocaml_workspace(UT_string *registry,
+                                 char *switch_name,
                                  char *switch_pfx,
                                  char *coswitch_lib) //dst
 {
@@ -2699,6 +2874,16 @@ EXPORT void emit_ocaml_workspace(char *switch_name,
 #endif
 
     char *switch_lib = opam_switch_lib(switch_name);
+
+    // emit registry record for @ocaml
+    log_debug("registry: %s", utstring_body(registry));
+
+    emit_registry_record(registry,
+                         NULL, // meta_path
+                         "ocaml", // pkg_name
+                         NULL, // pkg
+                         "0.0.0" // default_version
+                         );
 
     /* UT_string *switch_lib; */
     /* utstring_new(switch_lib); */
@@ -2780,7 +2965,8 @@ EXPORT void emit_ocaml_workspace(char *switch_name,
 
     emit_ocaml_num_pkg(runfiles, switch_lib, coswitch_lib);
 
-    /* emit_ocaml_ocamldoc_pkg(runfiles, switch_lib, coswitch_lib); */
+    //FIXMEFIXME:
+    emit_ocaml_ocamldoc_pkg(runfiles, switch_lib, coswitch_lib);
 
     emit_ocaml_str_pkg(runfiles, switch_lib, coswitch_lib);
 
@@ -2790,10 +2976,4 @@ EXPORT void emit_ocaml_workspace(char *switch_name,
     emit_ocaml_unix_pkg(runfiles, switch_lib, coswitch_lib);
 
     emit_ocaml_c_api_pkg(runfiles, switch_lib, coswitch_lib);
-    log_info(RED "ENDXXXXXXXXXXXXXXXX" CRESET);
-    return;
-
-    // stdlib?
-    // version-dependent: bigarray, num, raw_spacetime
-    /* utstring_free(switch_lib); */
 }

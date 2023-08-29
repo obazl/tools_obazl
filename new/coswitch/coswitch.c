@@ -159,30 +159,12 @@ void _set_options(struct option options[])
 }
 
 /* FIXME: put this in @cc_config//utils, for sharing? */
-void _mkdir_r(const char *dir) {
-    char tmp[256];
-    char *p = NULL;
-    size_t len;
-
-    snprintf(tmp, sizeof(tmp),"%s",dir);
-    len = strlen(tmp);
-    if (tmp[len - 1] == '/')
-        tmp[len - 1] = 0;
-    for (p = tmp + 1; *p; p++)
-        if (*p == '/') {
-            *p = 0;
-            mkdir(tmp, S_IRWXU);
-            *p = '/';
-        }
-    mkdir(tmp, S_IRWXU);
-}
-
 /* **************** **************** */
 // coswitch_dst: either <switch>/lib
 //     or XDG_DATA_HOME/obazl/opam/<switch>/lib
 //     or <project>/_opam/lib
-void pkg_handler(char *site_lib, char *pkg_dir,
-                 /* char *_coswitch_lib, */
+void pkg_handler(char *site_lib,
+                 char *pkg_dir,
                  void *_paths)
 {
     struct paths_s *paths = (struct paths_s*)_paths;
@@ -194,13 +176,6 @@ void pkg_handler(char *site_lib, char *pkg_dir,
         log_debug("registry: %s", utstring_body(registry));
         log_debug("coswitch: %s", utstring_body(coswitch_lib));
     }
-
-    UT_string *tmp;
-    utstring_new(tmp);
-    utstring_printf(tmp, "%s/%s",
-                    utstring_body(registry),
-                    pkg_dir);
-    _mkdir_r(utstring_body(tmp));
 
     utstring_renew(meta_path);
     utstring_printf(meta_path, "%s/%s/META",
@@ -331,103 +306,12 @@ void pkg_handler(char *site_lib, char *pkg_dir,
     /* ******************************** */
     // finally, the registry record
     // emit registry files
-    UT_string *reg_dir;
-    utstring_new(reg_dir);
-    utstring_printf(reg_dir,
-                    "%s/%s",
-                    utstring_body(registry),
-                    pkg->name);
-                    /* default_version); */
-                    /* (char*)version); */
-    mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
-
-    // modules/$MODULE/metadata.json
-    /* UT_string *metadata_json_file; */
-    utstring_renew(bazel_file);
-    utstring_printf(bazel_file,
-                    "%s/metadata.json",
-                    utstring_body(reg_dir));
-    if (verbose)
-        log_info("metadata.json: %s",
-                 utstring_body(bazel_file));
-
-    //FIXME: from opam file: maintainer(s), homepage
-
-    char *metadata_json_template = ""
-        "{\n"
-        "    \"homepage\": \"\",\n"
-        "    \"maintainers\": [],\n"
-        "    \"versions\": [\"%s\"],\n"
-        "    \"yanked_versions\": {}\n"
-        "}\n";
-    // optional?  "repository": ["github:obazl/semverc"]
-
-    UT_string *metadata_json;
-    utstring_new(metadata_json);
-    utstring_printf(metadata_json,
-                    metadata_json_template,
-                    (char*)version);
-    if (verbose)
-        log_info("metadata_json:\n%s",
-                 utstring_body(metadata_json));
-
-    FILE *metadata_json_fd
-        = fopen(utstring_body(bazel_file), "w");
-    fprintf(metadata_json_fd,
-            "%s", utstring_body(metadata_json));
-    fclose (metadata_json_fd);
-
-    utstring_free(metadata_json);
-
-    // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
-    utstring_printf(reg_dir, "/%s", default_version);
-    mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
-
-    UT_string *reg_file;
-    utstring_new(reg_file);
-    utstring_printf(reg_file,
-                    "%s/MODULE.bazel",
-                    utstring_body(reg_dir));
-    log_info("reg MODULE.bazel: %s",
-             utstring_body(reg_file));
-    emit_module_file(reg_file, pkg);
-
-    utstring_renew(reg_file);
-    utstring_printf(reg_file,
-                    "%s/source.json",
-                    utstring_body(reg_dir));
-    log_info("reg source.json : %s",
-             utstring_body(reg_file));
-
-    char *source_json_template = ""
-        "{\n"
-        "    \"type\": \"local_path\",\n"
-        "    \"path\": \"%s\"\n"
-        "}\n";
-
-    UT_string *source_json;
-    utstring_new(source_json);
-    utstring_printf(source_json,
-                    source_json_template,
-                    pkg->name);
-    if (verbose) {
-        log_info("source_json:\n%s",
-                 utstring_body(source_json));
-        log_info("regfile: %s", utstring_body(reg_file));
-    }
-    FILE *source_json_fd
-        = fopen(utstring_body(reg_file), "w");
-    fprintf(source_json_fd,
-            "%s", utstring_body(source_json));
-    fclose (source_json_fd);
-
-    utstring_free(source_json);
-
-    utstring_free(reg_file);
-    utstring_free(bazel_file);
-    log_debug("xxxxxxxxxxxxxxxx");
+    emit_registry_record(registry,
+                         meta_path,
+                         pkg_dir,
+                         pkg,
+                         default_version // (char*)version
+                         );
 
     emit_pkg_bindir(site_lib, utstring_body(coswitch_lib),
                     pkg->name);
@@ -629,7 +513,8 @@ int main(int argc, char *argv[])
 
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
 
-    emit_ocaml_workspace(switch_name,
+    emit_ocaml_workspace(registry,
+                         switch_name,
                          switch_pfx,
                          utstring_body(coswitch_lib));
 
