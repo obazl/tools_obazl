@@ -15,14 +15,14 @@
 #include <unistd.h>
 
 #include "gopt.h"
-#include "log.h"
-#include "semver.h"
-#include "utarray.h"
-#include "utstring.h"
-
 #include "libs7.h"
+#include "log.h"
 #include "findlibc.h"
 #include "opamc.h"
+#include "semver.h"
+#include "utarray.h"
+#include "uthash.h"
+#include "utstring.h"
 #include "xdgc.h"
 
 #include "coswitch.h"
@@ -46,6 +46,7 @@ UT_string *pkg_parent;
 struct paths_s {
     UT_string *registry;
     UT_string *coswitch_lib;
+    struct obzl_meta_package *pkgs;
 };
 
 UT_string *mibl_runfiles_root;
@@ -170,11 +171,15 @@ void pkg_handler(char *site_lib,
     struct paths_s *paths = (struct paths_s*)_paths;
     UT_string *registry = (UT_string*)paths->registry;
     UT_string *coswitch_lib = (UT_string*)paths->coswitch_lib;
+    struct obzl_meta_package *pkgs
+        = (struct obzl_meta_package*)paths->pkgs;
+
     if (verbosity > 1) {
         log_debug("pkg_handler: %s", pkg_dir);
         log_debug("site-lib: %s", site_lib);
         log_debug("registry: %s", utstring_body(registry));
         log_debug("coswitch: %s", utstring_body(coswitch_lib));
+        log_debug("pkgs ct: %d", HASH_COUNT(pkgs));
     }
 
     utstring_renew(meta_path);
@@ -197,6 +202,7 @@ void pkg_handler(char *site_lib,
     }
 
     errno = 0;
+    // pkg must be freed...
     struct obzl_meta_package *pkg
         = obzl_meta_parse_file(utstring_body(meta_path));
 
@@ -229,25 +235,41 @@ void pkg_handler(char *site_lib,
         // write registry stuff
     }
 
-    obzl_meta_value version;
-    char *pname = "version";
-    struct obzl_meta_property *version_prop = obzl_meta_package_property(pkg, pname);
-    if (version_prop) {
-#if defined(DEVBUILD)
-        dump_property(0, version_prop);
-#endif
-        version = obzl_meta_property_value(version_prop);
-        log_debug("version: %s", (char*)version);
+    /* struct obzl_meta_packages_s *pkg */
+    /*     = malloc(sizeof(obzl_meta_packages_s)); */
+    /* char *n =  "TEST"; */
+    /* pkg->name = n; */
 
-        if (!semver_is_valid(version)) {
-            log_warn("BAD VERSION STRING: %s", (char*)version);
-            /* return; */
-        }
-    } else {
-        log_warn("No version property found; setting to 0.0.0");
-        version = "0.0.0";
-        /* return; //FIXME ??? e.g. dune META has no version */
-    }
+    /* if (HASH_COUNT(pkgs) == 0) { */
+    /*     log_debug("adding initial pkg: %s", pkg->name); */
+    /*     pkgs = pkg; */
+    /* } else { */
+    /*     log_debug("adding next pkg", pkg->name); */
+    /*     HASH_ADD_PTR(pkgs, name, pkg); */
+    /* } */
+
+    /* log_debug("adding next pkg: %s, (%p)", pkg->name, pkg); */
+    /* log_debug("  keyptr: %p", pkg->name); */
+    /* log_debug("  path: %s (%p)", pkg->path, pkg->path); */
+    HASH_ADD_KEYPTR(hh, paths->pkgs,
+                    pkg->name, strlen(pkg->name),
+                    pkg);
+    /* log_debug("HASH CT: %d", HASH_COUNT(paths->pkgs)); */
+    /* struct obzl_meta_package *p; */
+    /* HASH_FIND_STR(paths->pkgs, pkg->name, p); */
+    /* if (p) */
+    /*     log_debug("found: %s", p->name); */
+    /* else */
+    /*     log_debug("NOT found: %s", pkg->name); */
+
+    /* log_debug("iterating"); */
+    /* struct obzl_meta_package *s; */
+    /* for (s = paths->pkgs; s != NULL; s = s->hh.next) { */
+    /*     log_debug("\tpkg ptr %p", s); */
+    /*     log_debug("\tpkg name %s", s->name); */
+    /*     log_debug("\tpkg path %s (%p)", s->path, s->path); */
+    /* } */
+
 
     /** emit workspace, module files for opam pkg **/
     // WORKSPACE.bazel
@@ -268,13 +290,7 @@ void pkg_handler(char *site_lib,
                     utstring_body(ws_root));
     emit_workspace_file(bazel_file, pkg->name);
 
-    // MODULE.bazel
-    utstring_renew(bazel_file);
-    utstring_printf(bazel_file, "%s/MODULE.bazel",
-                    utstring_body(ws_root));
-                    /* site_lib, */
-                    /* pkg->name); */
-    emit_module_file(bazel_file, pkg);
+    // MODULE.bazel emitted later, after all pkgs parsed
 
     // then emit the BUILD.bazel files for the opam pkg
     utstring_new(imports_path);
@@ -308,12 +324,12 @@ void pkg_handler(char *site_lib,
     /* ******************************** */
     // finally, the registry record
     // emit registry files
-    emit_registry_record(registry,
-                         meta_path,
-                         pkg_dir,
-                         pkg,
-                         default_version // (char*)version
-                         );
+    /* emit_registry_record(registry, */
+    /*                      meta_path, */
+    /*                      pkg_dir, */
+    /*                      pkg, */
+    /*                      default_version // (char*)version */
+    /*                      ); */
 
     //FIXME: read dunfile is choking on dune-package files,
     // which all contain
@@ -389,6 +405,14 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     return obazl_registry_home;
 }
 
+/**
+   Method:
+   1. Iterate over switch, converting META to BUILD.bazel
+      and collecting toplevel packages in pkgs utarray
+   2. Iterate over pkgs array, emitting
+      - MODULE.bazel to coswitch
+      - registry record
+ */
 int main(int argc, char *argv[])
 {
     argc = gopt(argv, options);
@@ -441,25 +465,6 @@ int main(int argc, char *argv[])
     /*     chdir(ws); */
     /* } */
 
-    //LEGACY: opam_configure() sets globals in mibl
-    //TODO: use libopam
-    // opam_configure must be run from root ws to account for local switches
-    // sets global opam_switch_* vars
-    /* if (opam_switch) */
-    /*     opam_configure(opam_switch); */
-    /* else */
-    /*     opam_configure(""); */
-
-    /* if (options[FLAG_CLEAN].count) { */
-    /*     clean_coswitch(); */
-    /*     if (options[FLAG_QUIET].count < 1) */
-    /*         printf(GRN "INFO: " CRESET */
-    /*                "Cleaned and reset coswitch." */
-    /*                " To reinitialize run 'bazel run @obazl//coswitch'\n"); */
-    /* } else { */
-    /*     convert_findlib_pkgs(opam_include_pkgs, opam_exclude_pkgs); */
-    /* } */
-
     //FIXME: get site-lib from libopam
     if (verbosity > 0) {
         log_info("switch: %s", switch_name);
@@ -467,17 +472,14 @@ int main(int argc, char *argv[])
         log_info("opam switch lib: %s", opam_switch_lib(switch_name));
     }
 
-    /* char *_opam_root = opam_root(); */
-    /* char *homedir = getenv("HOME"); */
-    /* UT_string *findlib_site_lib; */
-    /* utstring_new(findlib_site_lib); */
-    /* utstring_printf(findlib_site_lib, */
-    /*                 "%s/%s/lib", */
-    /*                 _opam_root, switch_name); */
-    /*                 /\* "%s/.opam/%s/lib", *\/ */
-    /*                 /\* homedir, *\/ */
-    /*                 /\* switch_name); *\/ */
-    /* log_info("site-lib: %s", utstring_body(findlib_site_lib)); */
+    /* struct obzl_meta_package_s *pkgs = NULL; */
+    /* struct obzl_meta_packages_s *pkg */
+    /*     = malloc(sizeof(obzl_meta_packages_s)); */
+    /* char *n =  "TEST"; */
+    /* pkg->name = n; */
+    /* HASH_ADD_INT(pkgs, name, pkg); */
+    /* log_debug("pkgs ct: %d", HASH_COUNT(pkgs)); */
+    /* log_debug("pkgs ptr: %p", pkgs); */
 
     if (verbose)
         log_info("switch prefix: %s", opam_switch_prefix(switch_name));
@@ -504,9 +506,11 @@ int main(int argc, char *argv[])
 
     utstring_new(meta_path);
 
+    struct obzl_meta_package *pkgs = NULL;
     struct paths_s paths = {
         .registry = registry,
         .coswitch_lib = coswitch_lib
+        /* .pkgs = pkgs */
     };
 
     //FIXME: add extras arg to pass extra info to pkg_handler
@@ -516,9 +520,49 @@ int main(int argc, char *argv[])
                 pkg_handler,
                 (void*)&paths);
 
+    log_debug("FINAL HASH CT: %d", HASH_COUNT(paths.pkgs));
+    struct obzl_meta_package *pkg;
+    for (pkg = paths.pkgs; pkg != NULL; pkg = pkg->hh.next) {
+        log_debug("pkg name %s", pkg->name);
+        semver_t *version = findlib_pkg_version(pkg);
+        log_debug("    version %d.%d.%d",
+                  version->major, version->minor,
+                  version->patch);
+        log_debug("    compat: %d", version->major);
+        log_debug("    path %s", pkg->path);
+        log_debug("    path ptr %p", pkg->path);
+        log_debug("    dir %s", pkg->directory);
+        log_debug("    meta %s", pkg->metafile);
+        log_debug("    entries ptr %p", pkg->entries);
+
+        /* ******************************** */
+        emit_registry_record(registry, pkg, paths.pkgs);
+                             /* s->metafile, */
+                             /* s->directory, */
+                             /* s, */
+                             /* default_version // (char*)version */
+                             /* ); */
+
+        UT_string *mfile;
+        utstring_new(mfile);
+        utstring_printf(mfile, "%s/%s",
+                        utstring_body(coswitch_lib),
+                        /* version->major, version->minor, */
+                        /* version->patch, */
+                        pkg->name);
+        free(version);
+        log_debug("MKDIR %s", utstring_body(mfile));
+        _mkdir_r(utstring_body(mfile));
+        utstring_printf(mfile, "/MODULE.bazel");
+                        /* utstring_body(mfile)); */
+        emit_module_file(mfile, pkg, paths.pkgs);
+        utstring_free(mfile);
+    }
+
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
 
     emit_ocaml_workspace(registry,
+                         paths.pkgs,
                          switch_name,
                          switch_pfx,
                          utstring_body(coswitch_lib));

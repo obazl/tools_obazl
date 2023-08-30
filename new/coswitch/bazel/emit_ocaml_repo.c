@@ -58,172 +58,6 @@ EXPORT void _mkdir_r(const char *dir) {
     mkdir(tmp, S_IRWXU);
 }
 
-//FIXME: mv to emit_registry.c???
-EXPORT void emit_registry_record(UT_string *registry,
-                                 UT_string *meta_path,
-                                 char *pkg_name,
-                                 struct obzl_meta_package *pkg,
-                                 char *version
-                                 )
-{
-    log_debug(UBLU "emit_registry_record" CRESET);
-    UT_string *tmp;
-    utstring_new(tmp);
-    utstring_printf(tmp, "%s/modules/%s",
-                    utstring_body(registry),
-                    pkg_name);
-    _mkdir_r(utstring_body(tmp));
-
-    UT_string *reg_dir;
-    utstring_new(reg_dir);
-    utstring_printf(reg_dir,
-                    "%s/modules/%s",
-                    utstring_body(registry),
-                    pkg_name);
-                    /* pkg->name); */
-                    /* default_version); */
-                    /* (char*)version); */
-    mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
-
-    // modules/$MODULE/metadata.json
-    /* UT_string *metadata_json_file; */
-    UT_string *bazel_file;
-    utstring_new(bazel_file);
-    utstring_printf(bazel_file,
-                    "%s/metadata.json",
-                    utstring_body(reg_dir));
-    /* if (verbose) */
-        log_info("metadata.json: %s",
-                 utstring_body(bazel_file));
-
-    //FIXME: from opam file: maintainer(s), homepage
-
-    char *metadata_json_template = ""
-        "{\n"
-        "    \"homepage\": \"\",\n"
-        "    \"maintainers\": [],\n"
-        "    \"versions\": [\"%s\"],\n"
-        "    \"yanked_versions\": {}\n"
-        "}\n";
-    // optional?  "repository": ["github:obazl/semverc"]
-
-    UT_string *metadata_json;
-    utstring_new(metadata_json);
-    utstring_printf(metadata_json,
-                    metadata_json_template,
-                    version);
-    /* if (verbose) */
-        log_info("metadata_json:\n%s",
-                 utstring_body(metadata_json));
-
-    FILE *metadata_json_fd
-        = fopen(utstring_body(bazel_file), "w");
-    fprintf(metadata_json_fd,
-            "%s", utstring_body(metadata_json));
-    fclose (metadata_json_fd);
-
-    utstring_free(metadata_json);
-
-    // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
-    utstring_printf(reg_dir, "/%s", default_version);
-    mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
-
-    UT_string *reg_file;
-    utstring_new(reg_file);
-    utstring_printf(reg_file,
-                    "%s/MODULE.bazel",
-                    utstring_body(reg_dir));
-    log_info("reg MODULE.bazel: %s",
-             utstring_body(reg_file));
-
-    if ( (strncmp("ocaml", pkg_name, 6) == 0)
-         || (strncmp("stublibs", pkg_name, 8) == 0)) {
-        // no META pkg
-        FILE *ostream;
-        ostream = fopen(utstring_body(reg_file), "w");
-        if (ostream == NULL) {
-            log_error("%s", strerror(errno));
-            perror(utstring_body(reg_file));
-            exit(EXIT_FAILURE);
-        }
-
-        fprintf(ostream, "## generated file - DO NOT EDIT\n\n");
-
-        fprintf(ostream, "module(\n");
-        fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
-                pkg_name, version
-                );
-        fprintf(ostream, "    compatibility_level = %d,\n",
-                default_compat);
-        /* semversion.major); */
-        fprintf(ostream, ")\n");
-        fprintf(ostream, "\n");
-        if (strncmp("ocaml", pkg_name, 6) == 0) {
-            fprintf(ostream,
-                    "bazel_dep(name = \"platforms\", version = \"0.0.7\")\n");
-            fprintf(ostream,
-                    "bazel_dep(name = \"rules_ocaml\", version = \"1.0.0\")\n");
-
-            fprintf(ostream,
-                    "bazel_dep(name = \"stublibs\", version = \"0.0.0\")\n");
-
-            fprintf(ostream, "\n");
-        }
-        fclose(ostream);
-    } else {
-        emit_module_file(reg_file, pkg);
-    }
-
-    if (meta_path) {
-        utstring_new(reg_file);
-        utstring_printf(reg_file,
-                        "%s/META",
-                        utstring_body(reg_dir));
-        log_info("reg META: %s",
-             utstring_body(reg_file));
-
-        _copy_buildfile(utstring_body(meta_path),
-                        reg_file);
-    }
-
-    utstring_renew(reg_file);
-    utstring_printf(reg_file,
-                    "%s/source.json",
-                    utstring_body(reg_dir));
-    log_info("reg source.json : %s",
-             utstring_body(reg_file));
-
-    char *source_json_template = ""
-        "{\n"
-        "    \"type\": \"local_path\",\n"
-        "    \"path\": \"%s\"\n"
-        "}\n";
-
-    UT_string *source_json;
-    utstring_new(source_json);
-    utstring_printf(source_json,
-                    source_json_template,
-                    pkg_name);
-                    /* pkg->name); */
-    if (verbose) {
-        log_info("source_json:\n%s",
-                 utstring_body(source_json));
-        log_info("regfile: %s", utstring_body(reg_file));
-    }
-    FILE *source_json_fd
-        = fopen(utstring_body(reg_file), "w");
-    fprintf(source_json_fd,
-            "%s", utstring_body(source_json));
-    fclose (source_json_fd);
-
-    utstring_free(source_json);
-
-    utstring_free(reg_file);
-    utstring_free(bazel_file);
-}
-
 void _emit_toplevel(UT_string *templates,
                     char *template,
                     UT_string *src_file,
@@ -773,13 +607,7 @@ void emit_lib_stublibs_pkg(UT_string *registry,
     utstring_free(dst_file);
 
     _emit_lib_stublibs_symlinks(switch_stublibs, coswitch_lib);
-
-    emit_registry_record(registry,
-                         NULL, // meta_path
-                         "stublibs", // pkg_name
-                         NULL, // pkg
-                         "0.0.0" // default_version
-                         );
+    /* registry record for stublibs emitted by emit_ocaml_workspace */
 }
 
 void _emit_lib_stublibs_symlinks(char *switch_stublibs,
@@ -2915,6 +2743,7 @@ void _symlink_ocaml_c_libs(char *switch_lib, char *tgtdir)
   bootstrap_FILE: remains open so opam pkgs can write to it
  */
 EXPORT void emit_ocaml_workspace(UT_string *registry,
+                                 struct obzl_meta_package *pkgs,
                                  char *switch_name,
                                  char *switch_pfx,
                                  char *coswitch_lib) //dst
@@ -2931,12 +2760,8 @@ EXPORT void emit_ocaml_workspace(UT_string *registry,
     // emit registry record for @ocaml
     log_debug("registry: %s", utstring_body(registry));
 
-    emit_registry_record(registry,
-                         NULL, // meta_path
-                         "ocaml", // pkg_name
-                         NULL, // pkg
-                         "0.0.0" // default_version
-                         );
+    /* this emits reg record for both ocaml and stublibs pkgs */
+    emit_registry_record(registry, NULL, pkgs);
 
     /* UT_string *switch_lib; */
     /* utstring_new(switch_lib); */

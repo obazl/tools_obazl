@@ -12,7 +12,8 @@ DEFINES = BASE_DEFINES + ["TRACING"]
 
 exports_files(["emit_build_bazel.c",
                "emit_ocaml_repo.c",
-               "emit_pkg_bindir.c",])
+               "emit_pkg_bindir.c",
+               "registry.c",])
 
 TOOLCHAINS = ["//:repo_paths"]
 
@@ -23,6 +24,7 @@ cc_library(
         "emit_build_bazel.c",
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
+        "registry.c",
         ":mkhdrs",
     ],
     deps = [
@@ -104,6 +106,7 @@ makeheaders(
         "emit_build_bazel.c",
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
+        "registry.c",
     ],
     additional_srcs = [
         "//new:ansi_colors.h",

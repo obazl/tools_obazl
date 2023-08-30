@@ -68,6 +68,7 @@ makeheaders(
         "//new/coswitch/bazel:emit_build_bazel.c",
         "//new/coswitch/bazel:emit_ocaml_repo.c",
         "//new/coswitch/bazel:emit_pkg_bindir.c",
+        "//new/coswitch/bazel:registry.c",
         "//src/utils:utils.c",
         "//new:ansi_colors.h",
     ],

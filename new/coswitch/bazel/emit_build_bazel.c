@@ -38,9 +38,15 @@
 /* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
 /* /\* const char *errmsg = NULL; *\/ */
 
-/* extern */ int level;
-/* extern */ int spfactor = 4;
-/* extern */ char *sp = " ";
+int level = 0;
+#if defined(DEVBUILD)
+extern int level;
+extern int spfactor = 4;
+extern char *sp;
+#else
+int spfactor = 4;
+char *sp = " ";
+#endif
 
 #if defined(TRACING)
 bool mibl_debug;
@@ -2839,7 +2845,8 @@ EXPORT void emit_workspace_file(UT_string *ws_file, const char *repo_name)
 }
 
 EXPORT void emit_module_file(UT_string *module_file,
-                             struct obzl_meta_package *_pkg)
+                             struct obzl_meta_package *_pkg,
+                             struct obzl_meta_package *_pkgs)
 
 {
 /* #if defined(TRACING) */
@@ -2847,35 +2854,42 @@ EXPORT void emit_module_file(UT_string *module_file,
               utstring_body(module_file));
 /* #endif */
 
-    semver_t semversion;
-    obzl_meta_value version;
-    char *pname = "version";
-    struct obzl_meta_property *version_prop = obzl_meta_package_property(_pkg, pname);
-    if (version_prop) {
-#if defined(DEVBUILD)
-        dump_property(0, version_prop);
-#endif
-        version = obzl_meta_property_value(version_prop);
-        log_debug("version: %s", (char*)version);
+    semver_t *semv;
+    char version[256];
+    semv = findlib_pkg_version(_pkg);
+    sprintf(version, "%d.%d.%d",
+            semv->major, semv->minor, semv->patch);
 
-        if (!semver_is_valid(version)) {
-            log_warn("BAD VERSION STRING: %s", (char*)version);
-            /* return; */
-        } else {
-            semver_parse(version, &semversion);
-            log_debug("major: %d", semversion.major);
-        }
-    } else {
-        log_warn("No version property found");
-        /* return; //FIXME ??? e.g. dune META has no version */
-    }
+/*     obzl_meta_value version; */
+/*     char *pname = "version"; */
+/*     struct obzl_meta_property *version_prop = obzl_meta_package_property(_pkg, pname); */
+/*     if (version_prop) { */
+/* #if defined(DEVBUILD) */
+/*         dump_property(0, version_prop); */
+/* #endif */
+/*         version = obzl_meta_property_value(version_prop); */
+/*         log_debug("version: %s", (char*)version); */
 
-    version = "0.0.0";
+/*         if (!semver_is_valid(version)) { */
+/*             log_warn("BAD VERSION STRING: %s", (char*)version); */
+/*             /\* return; *\/ */
+/*         } else { */
+/*             semver_parse(version, &semversion); */
+/*             log_debug("major: %d", semversion.major); */
+/*         } */
+/*     } else { */
+/*         log_warn("No version property found"); */
+/*         /\* return; //FIXME ??? e.g. dune META has no version *\/ */
+/*     } */
+
+/*     version = "0.0.0"; */
 
     FILE *ostream;
     ostream = fopen(utstring_body(module_file), "w");
     if (ostream == NULL) {
-        log_error("%s", strerror(errno));
+        log_error("fopen fail: %s %s",
+                  utstring_body(module_file),
+                  strerror(errno));
         perror(utstring_body(module_file));
         exit(EXIT_FAILURE);
     }
@@ -2884,8 +2898,9 @@ EXPORT void emit_module_file(UT_string *module_file,
 
     fprintf(ostream, "module(\n");
     fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
-            _pkg->name, default_version
-            //(char*)version
+            _pkg->name,
+            //default_version
+            version
             );
     fprintf(ostream, "    compatibility_level = %d,\n",
             default_compat);
@@ -2900,10 +2915,31 @@ EXPORT void emit_module_file(UT_string *module_file,
     UT_array *pkg_deps = findlib_pkg_deps(_pkg, true);
 
     char **p = NULL;
+    struct obzl_meta_package *pkg;
+    log_debug("HASH CT: %d", HASH_COUNT(_pkgs));
+    /* exit(0); */
     while ( (p=(char**)utarray_next(pkg_deps, p))) {
         if (strncmp(*p, _pkg->name, 512) != 0) {
+            HASH_FIND_STR(_pkgs, *p, pkg);
+            if (pkg) {
+                free(semv);
+                version[0] = '\0';
+                semv = findlib_pkg_version(pkg);
+                sprintf(version, "%d.%d.%d",
+                        semv->major, semv->minor, semv->patch);
+            } else {
+                //FIXME: pkg 'compiler-libs' (a dep of
+                // ppxlib.astlib etc.) is a pseudo-pkg,
+                // referring to lib/ocaml/compiler-libs,
+                // so it has neither pkg entry nor version
+                if (strncmp(*p, "compiler-libs", 13) == 0) {
+                    sprintf(version, "%d.%d.%d", 0,0,0);
+                } else {
+                    sprintf(version, "%d.%d.%d", -1, -1 , -1);
+                }
+            }
             fprintf(ostream, "bazel_dep(name = \"%s\", version = \"%s\")\n",
-                    *p, default_version); //  "1.0.0");
+                    *p, version); //  "1.0.0");
         }
     }
     fprintf(ostream, "\n");
@@ -3492,15 +3528,18 @@ EXPORT void emit_build_bazel(// char *ws_name,
                     continue;
                 }
 
-                //FIXME: only if --enable-jsoo passed
-                if (strncmp(e->property->name, "jsoo_runtime", 12) == 0) {
-                    obzl_meta_value ds = obzl_meta_property_value(e->property);
-                    fprintf(ostream, "\njsoo_import(\n");
-                    fprintf(ostream, "    name = \"jsoo_runtime\",\n");
-                    fprintf(ostream, "    src = \"%s\",\n", (char*)ds);
-                    fprintf(ostream, ")\n");
-                }
+                /* **************** */
+                //TODO:FIXME: only if --enable-jsoo passed
+                /* if (strncmp(e->property->name, "jsoo_runtime", 12) == 0) { */
+                /*     obzl_meta_value ds = obzl_meta_property_value(e->property); */
+                /*     fprintf(ostream, "\njsoo_import(\n"); */
+                /*     fprintf(ostream, "    name = \"jsoo_runtime\",\n"); */
+                /*     fprintf(ostream, "    src = \"%s\",\n", (char*)ds); */
+                /*     fprintf(ostream, ")\n"); */
+                /* } */
 
+
+                /* **************** */
                 /* if (strncmp(_pkg->name, "ppx_fixed_literal", 17) == 0) */
                 /*     log_debug("PPX_fixed_literal, entry %d, name: %s, type %d", */
                 /*               i, e->property->name, e->type); */
