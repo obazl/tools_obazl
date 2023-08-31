@@ -66,7 +66,7 @@ EXPORT void emit_registry_record(UT_string *registry,
     char version[256];
     semver_t *semv;
     if (pkg) {
-        pkg_name = pkg->name;
+        pkg_name = pkg->module_name;
         semv = findlib_pkg_version(pkg);
         sprintf(version, "%d.%d.%d",
                 semv->major, semv->minor, semv->patch);

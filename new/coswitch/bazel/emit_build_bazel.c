@@ -2898,7 +2898,7 @@ EXPORT void emit_module_file(UT_string *module_file,
 
     fprintf(ostream, "module(\n");
     fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
-            _pkg->name,
+            _pkg->module_name,
             //default_version
             version
             );
@@ -2992,7 +2992,7 @@ void emit_pkg_symlinks(UT_string *opam_switch_lib,
     log_debug("opening src_dir for read: %s", utstring_body(opamdir));
 #endif
     DIR *d = opendir(utstring_body(opamdir));
-    if (d == NULL) {
+    if (d == NULL) { // inaccessible
         if (strncmp(pkg_name, "care", 4) == 0) {
             if (strncmp(utstring_body(src_dir),
                         "topkg/../topkg-care",
@@ -3305,11 +3305,11 @@ EXPORT void emit_build_bazel(// char *ws_name,
     mkdir_r(utstring_body(build_bazel_file));
     utstring_printf(build_bazel_file, "/%s", "BUILD.bazel");
 
-#if defined(TRACING)
+/* #if defined(TRACING) */
     log_debug("bazel_pkg_root: %s", utstring_body(bazel_pkg_root));
     log_debug(CYN "build_bazel_file:" CRESET);
     log_debug(CYN "\t%s" CRESET, utstring_body(build_bazel_file));
-#endif
+/* #endif */
 
     errno = 0;
     int rc = access(utstring_body(build_bazel_file), F_OK);
@@ -3330,14 +3330,14 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /*                         _pkg); */
 
 /* #if defined(TRACING) */
-/*     log_debug("fopening for write: %s", utstring_body(build_bazel_file)); */
+    log_debug("fopening for write: %s", utstring_body(build_bazel_file));
 /* #endif */
 
     FILE *ostream;
     ostream = fopen(utstring_body(build_bazel_file), "w");
     if (ostream == NULL) {
         perror(utstring_body(build_bazel_file));
-        /* log_error("fopen failure for %s", utstring_body(build_bazel_file)); */
+        log_error("fopen failure for %s", utstring_body(build_bazel_file));
         /* log_error("Value of errno: %d", errno); */
         /* log_error("fopen error %s", strerror( errnum )); */
         exit(EXIT_FAILURE);
@@ -3356,7 +3356,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     /* **************************************************************** */
     /* if (_pkg->entries != NULL) { */
         /* if (strncmp(pkg_name, _pkg_root, strlen(pkgname)) == 0) { */
-            /* symlinks only needed for base pkg, not subpkgs */
+    /*FIXME symlinks only needed for base pkg, not subpkgs */
     emit_pkg_symlinks(opam_switch_lib,
                       bazel_pkg_root, /* dest */
                       new_filedeps_path, /* src */
@@ -3568,6 +3568,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
     }
     /* emit_bazel_flags(ostream, coswitch_lib, ws_name, _pkg_suffix, _pkg); */
 
+    log_debug("fclosing %s", utstring_body(build_bazel_file));
     fclose(ostream);
 
     /* printf("pkg pfx: %s, pkg name: %s\n", _pkg_suffix, pkg_name); */

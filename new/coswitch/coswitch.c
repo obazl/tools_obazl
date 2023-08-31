@@ -1,5 +1,6 @@
 //FIXME: support -j (--jsoo-enable) flag
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -248,11 +249,20 @@ void pkg_handler(char *site_lib,
     /*     HASH_ADD_PTR(pkgs, name, pkg); */
     /* } */
 
-    /* log_debug("adding next pkg: %s, (%p)", pkg->name, pkg); */
+    log_debug("pkg->name: %s", pkg->name);
+    log_debug("pkg->module_name: %s", pkg->module_name);
+
+    char *pkg_name = strdup(pkg->module_name);
+    log_debug("pkg_name: %s", pkg_name);
+
+    /* char *p = pkg_name; */
+    /* for (p = pkg_name; *p; ++p) *p = tolower(*p); */
+
+    log_debug("adding next pkg: %s, (%p)", pkg->name, pkg);
     /* log_debug("  keyptr: %p", pkg->name); */
     /* log_debug("  path: %s (%p)", pkg->path, pkg->path); */
     HASH_ADD_KEYPTR(hh, paths->pkgs,
-                    pkg->name, strlen(pkg->name),
+                    pkg_name, strlen(pkg_name),
                     pkg);
     /* log_debug("HASH CT: %d", HASH_COUNT(paths->pkgs)); */
     /* struct obzl_meta_package *p; */
@@ -271,6 +281,7 @@ void pkg_handler(char *site_lib,
     /* } */
 
 
+    log_debug("coswitch_lib: %s", utstring_body(coswitch_lib));
     /** emit workspace, module files for opam pkg **/
     // WORKSPACE.bazel
     UT_string *ws_root;
@@ -279,7 +290,7 @@ void pkg_handler(char *site_lib,
                     /* utstring_body(opam_switch_lib), */
                     /* site_lib, */
                     utstring_body(coswitch_lib),
-                    pkg->name);
+                    pkg_name);
                     /* (char*)version); */
     log_debug("MKDIR %s", utstring_body(ws_root));
     _mkdir_r(utstring_body(ws_root));
@@ -288,13 +299,13 @@ void pkg_handler(char *site_lib,
     utstring_new(bazel_file);
     utstring_printf(bazel_file, "%s/WORKSPACE.bazel",
                     utstring_body(ws_root));
-    emit_workspace_file(bazel_file, pkg->name);
+    emit_workspace_file(bazel_file, pkg_name);
 
     // MODULE.bazel emitted later, after all pkgs parsed
 
     // then emit the BUILD.bazel files for the opam pkg
     utstring_new(imports_path);
-    utstring_printf(imports_path, "%s", pkg->name);
+    utstring_printf(imports_path, "%s", pkg_name);
                     /* obzl_meta_package_name(pkg)); */
 
     utstring_new(pkg_parent);
@@ -308,7 +319,7 @@ void pkg_handler(char *site_lib,
                      utstring_body(coswitch_lib),
                      /* utstring_body(ws_root), */
                      0,         /* indent level */
-                     pkg->name,
+                     pkg_name,
                      pkg_parent, /* needed for handling subpkgs */
                      NULL, // "buildfiles",        /* _pkg_prefix */
                      utstring_body(imports_path),
@@ -522,8 +533,11 @@ int main(int argc, char *argv[])
 
     log_debug("FINAL HASH CT: %d", HASH_COUNT(paths.pkgs));
     struct obzl_meta_package *pkg;
+    char *pkg_name, *p;
     for (pkg = paths.pkgs; pkg != NULL; pkg = pkg->hh.next) {
-        log_debug("pkg name %s", pkg->name);
+        pkg_name = strdup(pkg->name);
+        for (p = pkg_name; *p; ++p) *p = tolower(*p);
+        log_debug("pkg name %s", pkg_name);
         semver_t *version = findlib_pkg_version(pkg);
         log_debug("    version %d.%d.%d",
                   version->major, version->minor,
@@ -549,14 +563,15 @@ int main(int argc, char *argv[])
                         utstring_body(coswitch_lib),
                         /* version->major, version->minor, */
                         /* version->patch, */
-                        pkg->name);
+                        pkg_name);
         free(version);
-        log_debug("MKDIR %s", utstring_body(mfile));
+        log_debug("%s MKDIR %s", pkg_name, utstring_body(mfile));
         _mkdir_r(utstring_body(mfile));
         utstring_printf(mfile, "/MODULE.bazel");
                         /* utstring_body(mfile)); */
         emit_module_file(mfile, pkg, paths.pkgs);
         utstring_free(mfile);
+        free(pkg_name);
     }
 
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */

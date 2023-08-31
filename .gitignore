@@ -3,6 +3,7 @@
 .bazel
 bazel-*
 user.bazelrc
+*.tgz
 
 *.log
 obsolete
