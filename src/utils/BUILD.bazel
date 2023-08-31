@@ -1,0 +1,54 @@
+load("//config/cc:CONFIG.bzl",
+     COPTS   = "BASE_COPTS",
+     DEFINES = "BASE_DEFINES")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+
+TOOLCHAINS = ["//:repo_paths"]
+
+exports_files(["utils.c"])
+
+##########
+cc_library(
+    name  = "utils",
+    visibility = ["//visibility:public"],
+    srcs  = [
+        "utils.c",
+        ":mkhdrs",
+        # "//src/hdrs:coswitch.h",
+    ],
+    deps = [
+        "@liblogc//src:logc",
+        "@uthash//src:uthash"
+
+        # "@findlibc//src:findlibc",
+        # "@opamc//src:opamc",
+        # "@xdgc//src:xdgc",
+        # "@gopt//src:gopt",
+        # "@libs7//src:s7",
+        # "@liblogc//src:logc",
+   ],
+    copts = COPTS + [
+        "-I$(@liblogc)/src",
+        "-I$(@uthash)/src",
+        "-I$(GENDIR)/$(@)/src/utils"
+
+        # "-I$(GENDIR)/$(@findlibc)/src",
+        # "-I$(GENDIR)/$(@opamc)/src",
+        # "-I$(GENDIR)/$(@xdgc)/src",
+        # "-I$(@libs7)/src",
+        # "-I$(GENDIR)/$(@libs7)/src",
+        # "-I$(@)/src",
+        # "-I$(GENDIR)/$(@)/new",
+    ],
+    local_defines = DEFINES,
+    linkstatic = 1,
+    toolchains = TOOLCHAINS,
+)
+
+################
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = ["utils.c"]
+)
+

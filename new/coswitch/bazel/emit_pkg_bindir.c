@@ -156,7 +156,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
     memset(outbuf, '\0', DUNE_BUFSZ);
 
     off_t file_size;
-    char *inbuf;
+    char *inbuf = NULL;
     struct stat stbuf;
     int fd;
     FILE *instream = NULL;
@@ -398,7 +398,8 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 
 cleanup:
     //FIXME
-    free(inbuf);
+    if (inbuf != NULL)
+        free(inbuf);
     if (instream != NULL)
     {
         fclose(instream);
