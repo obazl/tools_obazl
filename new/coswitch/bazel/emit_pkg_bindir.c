@@ -179,7 +179,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
     if (mibl_debug) log_debug("filesize: %d", file_size);
 #endif
 
-    inbuf = (char*)malloc(file_size);
+    inbuf = (char*)malloc(file_size + 1);
     if (inbuf == NULL) {
         /* Handle error */
         log_error("malloc file_size fail");
@@ -358,8 +358,8 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 /* #if defined(DEVBUILD) */
 /*             if (mibl_debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
-            size_t ct = strlcpy(outptr, (const char*)inptr, file_size); // strlen(outptr));
-            (void)ct;           /* prevent -Wunused-variable */
+            (void)strncpy(outptr, (const char*)inptr, file_size);
+            outptr[file_size] = '\0';
 /* #if defined(DEVBUILD) */
 /*             if (mibl_debug) log_debug("concatenated: '%s'", outptr); */
 /* #endif */
