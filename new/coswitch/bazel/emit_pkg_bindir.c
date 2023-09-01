@@ -20,10 +20,14 @@ extern s7_scheme *s7;
 
 /* extern UT_string *opam_switch_lib; */
 
+#if defined(DEVBUID)
 static char *tostr1 = NULL;
 LOCAL char *tostr2 = NULL;
 #define TO_STR(x) s7_object_to_c_string(s7, x)
 #define LOG_S7_DEBUG(msg, obj) ((tostr1 = TO_STR(obj)), (fprintf(stderr, GRN " S7: " CRESET "%s:%d " #msg ": %s\n", __FILE__, __LINE__, tostr1)), (free(tostr1)))
+#else
+#define LOG_S7_DEBUG(msg, obj)
+#endif
 
 /* **************************************************************** */
 /* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
@@ -130,7 +134,7 @@ UT_array *_get_pkg_stublibs(s7_scheme *s7, char *pkg, void *_stanzas)
 #if defined(DEVBUILD)
         LOG_S7_DEBUG("stublib_file", stublib_file);
 #endif
-        f = TO_STR(stublib_file);
+        f = s7_object_to_c_string(s7, stublib_file);
         utarray_push_back(stubs, &f);
         free(f);
     }
@@ -148,6 +152,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
     /* core/dune file size: 45572 */
     // 2K
 
+    //FIXME: malloc
 #define DUNE_BUFSZ 131072
     /* static char inbuf[DUNE_BUFSZ]; */
     /* memset(inbuf, '\0', DUNE_BUFSZ); */
@@ -358,6 +363,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 /* #if defined(DEVBUILD) */
 /*             if (mibl_debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
+            //FIXME: strlcpy? strscpy?
             (void)strncpy(outptr, (const char*)inptr, file_size);
             outptr[file_size] = '\0';
 /* #if defined(DEVBUILD) */
@@ -368,29 +374,33 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 #if defined(DEVBUILD)
             if (mibl_debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
 #endif
-            size_t ct = strlcpy(outptr, (const char*)inptr, cursor - inptr);
-#if defined(DEVBUILD)
-            if (mibl_debug) {
-                log_debug("copied %d chars", ct);
-                /* log_debug("to buf: '%s'", outptr); */
-            }
-#endif
-            if (ct >= DUNE_BUFSZ) {
-                printf("output string has been truncated!\n");
-            }
+            //FIXME: strlcpy? strscpy?
+            (void)strncpy(outptr, (const char*)inptr, cursor - inptr);
+            outptr[cursor-inptr] = '\0';
+/* #if defined(DEVBUILD) */
+/*             if (mibl_debug) { */
+/*                 log_debug("copied %d chars", ct); */
+/*                 /\* log_debug("to buf: '%s'", outptr); *\/ */
+/*             } */
+/* #endif */
+            /* if (ct >= DUNE_BUFSZ) { */
+            /*     printf("output string has been truncated!\n"); */
+            /* } */
             outptr = outptr + (cursor - inptr) - 1;
             outptr[cursor - inptr] = '\0';
-            ct = strlcat(outptr, " ./", DUNE_BUFSZ);
+            //FIXME: strlcat? strscat?
+            (void)strncat(outptr, " ./", DUNE_BUFSZ);
+            outptr[DUNE_BUFSZ] = '\0';
             outptr += 3;
 
             inptr = inptr + (cursor - inptr) + 1;
             /* printf(GRN "inptr:\n" CRESET " %s\n", inptr); */
 
-            if (ct >= DUNE_BUFSZ) {
-                printf(RED "ERROR" CRESET "write count exceeded output bufsz\n");
-                exit(EXIT_FAILURE);
-                // output string has been truncated
-            }
+            /* if (ct >= DUNE_BUFSZ) { */
+            /*     printf(RED "ERROR" CRESET "write count exceeded output bufsz\n"); */
+            /*     exit(EXIT_FAILURE); */
+            /*     // output string has been truncated */
+            /* } */
         }
     }
     free(inbuf);

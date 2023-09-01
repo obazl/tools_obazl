@@ -521,6 +521,7 @@ void emit_lib_stublibs_pkg(UT_string *registry,
                            char *switch_stublibs,
                            char *coswitch_lib)
 {
+    (void)registry;
 #if defined(TRACING)
     /* if (mibl_trace) */
         log_trace("emit_lib_stublibs_pkg");

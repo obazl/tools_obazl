@@ -37,6 +37,9 @@ extern bool mibl_debug;
 extern int  debug_level;
 extern bool debug_findlib;
 extern bool mibl_trace;
+int level = 0;
+int spfactor = 2;
+char *sp = " ";
 #endif
 
 s7_scheme *s7;
@@ -470,7 +473,7 @@ int main(int argc, char *argv[])
     /* } */
 
     /* chdir(rootws);            /\* always run from base ws root *\/ */
-    char *ws = getenv("BUILD_WORKSPACE_DIRECTORY");
+    /* char *ws = getenv("BUILD_WORKSPACE_DIRECTORY"); */
     /* if (ws) { */
     /*     /\* we launched from bazel workspace, cd to launch dir *\/ */
     /*     chdir(ws); */
@@ -517,7 +520,7 @@ int main(int argc, char *argv[])
 
     utstring_new(meta_path);
 
-    struct obzl_meta_package *pkgs = NULL;
+    /* struct obzl_meta_package *pkgs = NULL; */
     struct paths_s paths = {
         .registry = registry,
         .coswitch_lib = coswitch_lib

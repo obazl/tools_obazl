@@ -38,15 +38,9 @@
 /* s7_scheme *s7;                  /\* GLOBAL s7 *\/ */
 /* /\* const char *errmsg = NULL; *\/ */
 
-int level = 0;
-#if defined(DEVBUILD)
 extern int level;
-extern int spfactor = 4;
+extern int spfactor;
 extern char *sp;
-#else
-int spfactor = 4;
-char *sp = " ";
-#endif
 
 #if defined(TRACING)
 bool mibl_debug;
@@ -2820,6 +2814,7 @@ The variable "directory" redefines the location of the package directory. Normal
 
 EXPORT void emit_workspace_file(UT_string *ws_file, const char *repo_name)
 {
+    (void)repo_name;
 /* #if defined(TRACING) */
     log_debug("emit_workspace_file: %s", utstring_body(ws_file));
 /* #endif */
