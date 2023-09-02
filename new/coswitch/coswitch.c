@@ -33,14 +33,15 @@ static UT_string *meta_path;
 static char *switch_name;
 
 #if defined(DEVBUILD)
-extern bool mibl_debug;
-extern int  debug_level;
-extern bool debug_findlib;
-extern bool mibl_trace;
+bool coswitch_debug;
+int  coswitch_debug_level;
+bool debug_findlib;
+bool coswitch_trace;
+#endif
+
 int level = 0;
 int spfactor = 2;
 char *sp = " ";
-#endif
 
 s7_scheme *s7;
 
@@ -53,13 +54,15 @@ struct paths_s {
     struct obzl_meta_package *pkgs;
 };
 
-UT_string *mibl_runfiles_root;
+UT_string *coswitch_runfiles_root;
 
 char *default_version = "0.0.0";
 int   default_compat  = 0;
 
 bool verbose;
 int  verbosity;
+
+int log_writes = 2; // threshhold for logging all writes
 /* extern */ bool enable_jsoo;
 
 char *pkg_path = NULL;
@@ -138,14 +141,14 @@ void _set_options(struct option options[])
 
     if (options[FLAG_DEBUG].count) {
 #if defined(TRACING)
-        mibl_debug = true;
-        mibl_debug_level = options[FLAG_DEBUG].count;
+        coswitch_debug = true;
+        coswitch_debug_level = options[FLAG_DEBUG].count;
 #endif
     }
 
     if (options[FLAG_TRACE].count) {
 #if defined(TRACING)
-        mibl_trace = true;
+        coswitch_trace = true;
 #endif
     }
 
@@ -197,12 +200,12 @@ void pkg_handler(char *site_lib,
     errno = 0;
     if ( access(utstring_body(meta_path), F_OK) != 0 ) {
         // no META happens for e.g. <switch>/lib/stublibs
-        log_warn("%s: %s",
-                 strerror(errno), utstring_body(meta_path));
+        /* log_warn("%s: %s", */
+        /*          strerror(errno), utstring_body(meta_path)); */
         return;
-    } else {
-        /* exists */
-        log_info("accessible: %s", utstring_body(meta_path));
+    /* } else { */
+    /*     /\* exists *\/ */
+    /*     log_info("accessible: %s", utstring_body(meta_path)); */
     }
 
     errno = 0;
@@ -232,7 +235,7 @@ void pkg_handler(char *site_lib,
         /* #if defined(DEVBUILD) */
         if (verbose)
             log_info("PARSED %s", utstring_body(meta_path));
-        /* if (mibl_debug_findlib) */
+        /* if (coswitch_debug_findlib) */
         /* DUMP_PKG(0, pkg); */
         /* #endif */
         // write module stuff in site-lib
@@ -252,21 +255,23 @@ void pkg_handler(char *site_lib,
     /*     HASH_ADD_PTR(pkgs, name, pkg); */
     /* } */
 
-    log_debug("pkg->name: %s", pkg->name);
-    log_debug("pkg->module_name: %s", pkg->module_name);
+    /* log_debug("pkg->name: %s", pkg->name); */
+    /* log_debug("pkg->module_name: %s", pkg->module_name); */
 
     char *pkg_name = strdup(pkg->module_name);
-    log_debug("pkg_name: %s", pkg_name);
+    /* log_debug("pkg_name: %s", pkg_name); */
 
     /* char *p = pkg_name; */
     /* for (p = pkg_name; *p; ++p) *p = tolower(*p); */
 
-    log_debug("adding next pkg: %s, (%p)", pkg->name, pkg);
+    /* log_debug("adding next pkg: %s, (%p)", pkg->name, pkg); */
     /* log_debug("  keyptr: %p", pkg->name); */
     /* log_debug("  path: %s (%p)", pkg->path, pkg->path); */
+
     HASH_ADD_KEYPTR(hh, paths->pkgs,
                     pkg_name, strlen(pkg_name),
                     pkg);
+
     /* log_debug("HASH CT: %d", HASH_COUNT(paths->pkgs)); */
     /* struct obzl_meta_package *p; */
     /* HASH_FIND_STR(paths->pkgs, pkg->name, p); */
@@ -284,7 +289,8 @@ void pkg_handler(char *site_lib,
     /* } */
 
 
-    log_debug("coswitch_lib: %s", utstring_body(coswitch_lib));
+    /* log_debug("coswitch_lib: %s", utstring_body(coswitch_lib)); */
+
     /** emit workspace, module files for opam pkg **/
     // WORKSPACE.bazel
     UT_string *ws_root;
@@ -295,8 +301,7 @@ void pkg_handler(char *site_lib,
                     utstring_body(coswitch_lib),
                     pkg_name);
                     /* (char*)version); */
-    log_debug("MKDIR %s", utstring_body(ws_root));
-    _mkdir_r(utstring_body(ws_root));
+    mkdir_r(utstring_body(ws_root));
 
     UT_string *bazel_file;
     utstring_new(bazel_file);
@@ -367,7 +372,7 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     if (verbose)
         log_info("registry home: %s",
                  utstring_body(obazl_registry_home));
-    _mkdir_r(utstring_body(obazl_registry_home));
+    mkdir_r(utstring_body(obazl_registry_home));
 
     // write: bazel_registry.json
     // also MODULE.bazel, WORKSPACE???
@@ -415,7 +420,7 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     if (verbose)
         log_info("modules dir: %s",
                  utstring_body(obazl_registry_home));
-    _mkdir_r(utstring_body(obazl_registry_home));
+    mkdir_r(utstring_body(obazl_registry_home));
     return obazl_registry_home;
 }
 
@@ -436,16 +441,16 @@ int main(int argc, char *argv[])
 
     _set_options(options);
 
-    utstring_new(mibl_runfiles_root);
-    utstring_printf(mibl_runfiles_root, "%s", getcwd(NULL, 0));
+    utstring_new(coswitch_runfiles_root);
+    utstring_printf(coswitch_runfiles_root, "%s", getcwd(NULL, 0));
 
-    /* s7_scheme *s7 = mibl_s7_init(); */
+    /* s7_scheme *s7 = coswitch_s7_init(); */
     s7 = libs7_init();
 
-    /* mibl_s7_init2(NULL, // options[OPT_MAIN].argument, */
+    /* coswitch_s7_init2(NULL, // options[OPT_MAIN].argument, */
     /*              NULL); // options[OPT_WS].argument); */
 
-    /* mibl_configure(); */
+    /* coswitch_configure(); */
     /* config_mibl.c reads miblrc, may call s7 */
     /* utstring_new(setter); */
 
@@ -457,17 +462,17 @@ int main(int argc, char *argv[])
 
     // globals in config_bazel.c:
     // bzl_mode
-    // mibl_runfiles_root, runtime_data_dir
+    // coswitch_runfiles_root, runtime_data_dir
     // obazl_ini_path
     // rootws, ews_root
     // traversal_root
     // build_ws_dir, build_wd, launch_dir
     // may call config_xdg_dirs()
-    /* bazel_configure(NULL);      /\* run by mibl_s7_init??? *\/ */
+    /* bazel_configure(NULL);      /\* run by coswitch_s7_init??? *\/ */
 
     /* if (options[FLAG_SHOW_CONFIG].count) { */
     /*     show_bazel_config(); */
-    /*     show_mibl_config(); */
+    /*     show_coswitch_config(); */
     /*     show_s7_config(); */
     /*     exit(0); */
     /* } */
@@ -534,24 +539,26 @@ int main(int argc, char *argv[])
                 pkg_handler,
                 (void*)&paths);
 
-    log_debug("FINAL HASH CT: %d", HASH_COUNT(paths.pkgs));
+    /* log_debug("FINAL HASH CT: %d", HASH_COUNT(paths.pkgs)); */
     struct obzl_meta_package *pkg;
     char *pkg_name, *p;
     for (pkg = paths.pkgs; pkg != NULL; pkg = pkg->hh.next) {
         pkg_name = strdup(pkg->name);
         for (p = pkg_name; *p; ++p) *p = tolower(*p);
-        log_debug("pkg name %s", pkg_name);
+        if (verbosity > 0)
+            log_debug(BLU " PKG %s" CRESET, pkg_name);
         semver_t *version = findlib_pkg_version(pkg);
-        log_debug("    version %d.%d.%d",
-                  version->major, version->minor,
-                  version->patch);
-        log_debug("    compat: %d", version->major);
-        log_debug("    path %s", pkg->path);
-        log_debug("    path ptr %p", pkg->path);
-        log_debug("    dir %s", pkg->directory);
-        log_debug("    meta %s", pkg->metafile);
-        log_debug("    entries ptr %p", pkg->entries);
-
+        if (verbosity > 2) {
+            log_debug("    version %d.%d.%d",
+                      version->major, version->minor,
+                      version->patch);
+            log_debug("    compat: %d", version->major);
+            log_debug("    path %s", pkg->path);
+            log_debug("    path ptr %p", pkg->path);
+            log_debug("    dir %s", pkg->directory);
+            log_debug("    meta %s", pkg->metafile);
+            log_debug("    entries ptr %p", pkg->entries);
+        }
         /* ******************************** */
         emit_registry_record(registry, pkg, paths.pkgs);
                              /* s->metafile, */
@@ -568,8 +575,7 @@ int main(int argc, char *argv[])
                         /* version->patch, */
                         pkg_name);
         free(version);
-        log_debug("%s MKDIR %s", pkg_name, utstring_body(mfile));
-        _mkdir_r(utstring_body(mfile));
+        mkdir_r(utstring_body(mfile));
         utstring_printf(mfile, "/MODULE.bazel");
                         /* utstring_body(mfile)); */
         emit_module_file(mfile, pkg, paths.pkgs);
@@ -588,8 +594,8 @@ int main(int argc, char *argv[])
     free(findlib_site_lib);
     utstring_free(meta_path);
 
-/* #if defined(TRACING) */
+#if defined(TRACING)
     log_debug("exiting new:coswitch");
-/* #endif */
+#endif
     /* dump_nodes(result); */
 }

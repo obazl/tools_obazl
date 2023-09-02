@@ -49,6 +49,7 @@ cc_library(
 ################
 makeheaders(
     name = "mkhdrs",
-    hdrs_srcs = ["utils.c"]
+    hdrs_srcs = ["utils.c"],
+    additional_srcs = ["//src:ansi_colors.h"]
 )
 

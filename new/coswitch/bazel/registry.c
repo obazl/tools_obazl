@@ -9,9 +9,13 @@
 const char *platforms_version = "0.0.7";
 const char *rules_ocaml_version = "1.0.0";
 
+#if INTERFACE
+#define INFOFD stdout
+#endif
+
 void _emit_reg_rec(UT_string *reg_file, char *pkg_name)
 {
-    log_debug("_emit_reg_rec regfile: %s", utstring_body(reg_file));
+    TRACE_ENTRY;
     FILE *ostream;
     ostream = fopen(utstring_body(reg_file), "w");
     if (ostream == NULL) {
@@ -49,6 +53,8 @@ void _emit_reg_rec(UT_string *reg_file, char *pkg_name)
     fprintf(ostream, "\n");
     /* } */
     fclose(ostream);
+    if (verbosity > log_writes)
+        fprintf(INFOFD, GRN "INFO" CRESET " wrote %s\n", utstring_body(reg_file));
 }
 
 /**
@@ -62,6 +68,7 @@ EXPORT void emit_registry_record(UT_string *registry,
                                  struct obzl_meta_package *pkg,
                                  struct obzl_meta_package *pkgs)
 {
+    TRACE_ENTRY;
     char *pkg_name;
     char version[256];
     semver_t *semv;
@@ -81,7 +88,7 @@ EXPORT void emit_registry_record(UT_string *registry,
         _emit_registry_record(registry, pkg, pkgs,
                               "compiler-libs", "0.0.0");
     }
-
+    TRACE_EXIT;
 }
 
 EXPORT void _emit_registry_record(UT_string *registry,
@@ -90,14 +97,13 @@ EXPORT void _emit_registry_record(UT_string *registry,
                                   char *pkg_name,
                                   char *version)
 {
-    log_debug(UBLU "emit_registry_record" CRESET);
-
+    TRACE_ENTRY;
     UT_string *tmp;
     utstring_new(tmp);
     utstring_printf(tmp, "%s/modules/%s",
                     utstring_body(registry),
                     pkg_name);
-    _mkdir_r(utstring_body(tmp));
+    mkdir_r(utstring_body(tmp));
 
     UT_string *reg_dir;
     utstring_new(reg_dir);
@@ -109,7 +115,7 @@ EXPORT void _emit_registry_record(UT_string *registry,
                     /* default_version); */
                     /* (char*)version); */
     mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
+    /* log_debug("regdir: %s", utstring_body(reg_dir)); */
 
     // modules/$MODULE/metadata.json
     /* UT_string *metadata_json_file; */
@@ -119,8 +125,8 @@ EXPORT void _emit_registry_record(UT_string *registry,
                     "%s/metadata.json",
                     utstring_body(reg_dir));
     /* if (verbose) */
-        log_info("metadata.json: %s",
-                 utstring_body(bazel_file));
+        /* log_info("metadata.json: %s", */
+        /*          utstring_body(bazel_file)); */
 
     //FIXME: from opam file: maintainer(s), homepage
 
@@ -139,29 +145,33 @@ EXPORT void _emit_registry_record(UT_string *registry,
                     metadata_json_template,
                     version);
     /* if (verbose) */
-        log_info("metadata_json:\n%s",
-                 utstring_body(metadata_json));
+        /* log_info("metadata_json:\n%s", */
+        /*          utstring_body(metadata_json)); */
 
     FILE *metadata_json_fd
         = fopen(utstring_body(bazel_file), "w");
     fprintf(metadata_json_fd,
             "%s", utstring_body(metadata_json));
     fclose (metadata_json_fd);
+    if (verbosity > log_writes) {
+        fprintf(INFOFD, GRN "INFO" CRESET " wrote %s\n", utstring_body(bazel_file));
+        /* fflush(NULL); */
+    }
 
     utstring_free(metadata_json);
 
     // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
     utstring_printf(reg_dir, "/%s", version);
     mkdir_r(utstring_body(reg_dir));
-    log_debug("regdir: %s", utstring_body(reg_dir));
+    /* log_debug("regdir: %s", utstring_body(reg_dir)); */
 
     UT_string *reg_file;
     utstring_new(reg_file);
     utstring_printf(reg_file,
                     "%s/MODULE.bazel",
                     utstring_body(reg_dir));
-    log_info("reg MODULE.bazel: %s",
-             utstring_body(reg_file));
+    /* log_info("reg MODULE.bazel: %s", */
+    /*          utstring_body(reg_file)); */
 
     /* if ( (strncmp("ocaml", pkg_name, 6) == 0) */
     /*      || (strncmp("stublibs", pkg_name, 8) == 0)) { */
@@ -172,25 +182,27 @@ EXPORT void _emit_registry_record(UT_string *registry,
         emit_module_file(reg_file, pkg, pkgs);
     }
     // JUST FOR DEBUGGING:
+#if defined(DEVBUILD)
     if (pkg) {
         if (pkg->metafile) {
             utstring_new(reg_file);
             utstring_printf(reg_file,
                             "%s/META",
                             utstring_body(reg_dir));
-            log_info("reg META: %s",
-                     utstring_body(reg_file));
+            /* log_info("reg META: %s", */
+            /*          utstring_body(reg_file)); */
 
-            _copy_buildfile(pkg->metafile, reg_file);
+            copy_buildfile(pkg->metafile, reg_file);
         }
     }
+#endif
 
     utstring_renew(reg_file);
     utstring_printf(reg_file,
                     "%s/source.json",
                     utstring_body(reg_dir));
-    log_info("reg source.json : %s",
-             utstring_body(reg_file));
+    /* log_info("reg source.json : %s", */
+    /*          utstring_body(reg_file)); */
 
     char *source_json_template = ""
         "{\n"
@@ -204,21 +216,25 @@ EXPORT void _emit_registry_record(UT_string *registry,
                     source_json_template,
                     pkg_name);
                     /* pkg_name); */
-    if (verbose) {
-        log_info("source_json:\n%s",
-                 utstring_body(source_json));
-        log_info("regfile: %s", utstring_body(reg_file));
-    }
+    /* if (verbose) { */
+    /*     log_info("source_json:\n%s", */
+    /*              utstring_body(source_json)); */
+    /*     log_info("regfile: %s", utstring_body(reg_file)); */
+    /* } */
     FILE *source_json_fd
         = fopen(utstring_body(reg_file), "w");
     fprintf(source_json_fd,
             "%s", utstring_body(source_json));
     fclose (source_json_fd);
+    if (verbosity > log_writes) {
+        fprintf(INFOFD, GRN "INFO" CRESET " wrote %s\n", utstring_body(reg_file));
+    }
 
     utstring_free(source_json);
 
     utstring_free(reg_file);
     utstring_free(bazel_file);
+    TRACE_EXIT;
 }
 
 /* EXPORT void emit_registry_record(UT_string *registry, */

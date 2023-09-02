@@ -8,7 +8,8 @@ load("//config/cc:CONFIG.bzl",
      COPTS = "BASE_COPTS",
      "BASE_DEFINES")
 
-DEFINES = BASE_DEFINES + ["TRACING"]
+DEFINES = BASE_DEFINES
+# + ["TRACING"]
 
 exports_files(["emit_build_bazel.c",
                "emit_ocaml_repo.c",
@@ -25,6 +26,7 @@ cc_library(
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
         "registry.c",
+        "utils.c",
         ":mkhdrs",
     ],
     deps = [
@@ -107,10 +109,19 @@ makeheaders(
         "emit_ocaml_repo.c",
         "emit_pkg_bindir.c",
         "registry.c",
+        "utils.c"
     ],
     additional_srcs = [
         "//new:ansi_colors.h",
         "//src/utils:utils.c"
-    ],
+    ] + select({
+        "//config/profile:dev?": [
+            "//src:trace_dev.h",
+        ],
+        "//conditions:default":   [
+            "//src:trace_prod.h",
+        ]
+    }),
+
     visibility = ["//visibility:public"]
 )

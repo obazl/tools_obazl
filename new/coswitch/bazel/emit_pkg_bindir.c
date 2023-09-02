@@ -97,7 +97,7 @@ UT_array *_get_pkg_stublibs(s7_scheme *s7, char *pkg, void *_stanzas)
     }
 
 #if defined(DEVBUILD)
-    if (mibl_debug) {
+    if (coswitch_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         LOG_S7_DEBUG(RED "STUBLIBS" CRESET, stublibs);
     }
@@ -181,7 +181,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 
     file_size = stbuf.st_size;
 #if defined(DEVBUILD)
-    if (mibl_debug) log_debug("filesize: %d", file_size);
+    if (coswitch_debug) log_debug("filesize: %d", file_size);
 #endif
 
     inbuf = (char*)malloc(file_size + 1);
@@ -205,7 +205,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
         goto cleanup;
     } else {
 #if defined(DEVBUILD)
-        if (mibl_debug) log_debug("fdopened %s",
+        if (coswitch_debug) log_debug("fdopened %s",
                                   dunefile_name);
                                   /* utstring_body(dunefile_name)); */
 #endif
@@ -214,7 +214,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
     // now read the entire file
     size_t read_ct = fread(inbuf, 1, file_size, instream);
 #if defined(DEVBUILD)
-    if (mibl_debug) log_debug("read_ct: %d", read_ct);
+    if (coswitch_debug) log_debug("read_ct: %d", read_ct);
 #endif
     if ((off_t)read_ct != file_size) {
         if (ferror(instream) != 0) {
@@ -253,7 +253,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 /*         exit(EXIT_FAILURE); */
 /*     } else { */
 /* #if defined(DEVBUILD) */
-/*         if (mibl_debug) log_debug("fopened %s", */
+/*         if (coswitch_debug) log_debug("fopened %s", */
 /*                                   dunefile_name); */
 /*                                   /\* utstring_body(dunefile_name)); *\/ */
 /* #endif */
@@ -266,7 +266,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
     /* } */
     /* uint64_t fileSize = ftell(instream); */
 /* #if defined(DEVBUILD) */
-/*     if (mibl_debug) log_debug("filesize: %d", fileSize); */
+/*     if (coswitch_debug) log_debug("filesize: %d", fileSize); */
 /* #endif */
 
     /* if (fileSize > DUNE_BUFSZ) { */
@@ -313,7 +313,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 /*         else { */
 /*             read_ct = fread(inbuf, 1, (size_t) outFileSizeCounter, instream); */
 /* #if defined(DEVBUILD) */
-/*             if (mibl_debug) log_debug("read_ct: %d", read_ct); */
+/*             if (coswitch_debug) log_debug("read_ct: %d", read_ct); */
 /* #endif */
 /*             if (read_ct != outFileSizeCounter) { */
 /*                 if (ferror(instream) != 0) { */
@@ -342,7 +342,7 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 /*         } */
 /*     } while (outFileSizeCounter > 0); */
 /* #if defined(DEVBUILD) */
-/*     if (mibl_debug) { */
+/*     if (coswitch_debug) { */
 /*         log_debug(RED "readed" CRESET " %d bytes", read_ct); */
 /*         /\* log_debug(RED "readed string:" CRESET " '%s'", inbuf); *\/ */
 /*     } */
@@ -361,24 +361,24 @@ LOCAL char *_dunefile_to_string(const char *dunefile_name)
 
         if (cursor == NULL) {
 /* #if defined(DEVBUILD) */
-/*             if (mibl_debug) log_debug("remainder: '%s'", inptr); */
+/*             if (coswitch_debug) log_debug("remainder: '%s'", inptr); */
 /* #endif */
             //FIXME: strlcpy? strscpy?
             (void)strncpy(outptr, (const char*)inptr, file_size);
             outptr[file_size] = '\0';
 /* #if defined(DEVBUILD) */
-/*             if (mibl_debug) log_debug("concatenated: '%s'", outptr); */
+/*             if (coswitch_debug) log_debug("concatenated: '%s'", outptr); */
 /* #endif */
             break;
         } else {
 #if defined(DEVBUILD)
-            if (mibl_debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
+            if (coswitch_debug) log_error("FOUND and fixing \".)\" at pos: %d", cursor - inbuf);
 #endif
             //FIXME: strlcpy? strscpy?
             (void)strncpy(outptr, (const char*)inptr, cursor - inptr);
             outptr[cursor-inptr] = '\0';
 /* #if defined(DEVBUILD) */
-/*             if (mibl_debug) { */
+/*             if (coswitch_debug) { */
 /*                 log_debug("copied %d chars", ct); */
 /*                 /\* log_debug("to buf: '%s'", outptr); *\/ */
 /*             } */
@@ -428,7 +428,7 @@ s7_pointer _read_dune_package(s7_scheme *s7, UT_string *dunefile_name)
 
     char *dunestring = _dunefile_to_string(utstring_body(dunefile_name));
 /* #if defined(DEVBUILD) */
-/*     if (mibl_debug) log_debug("readed str: %s", dunestring); */
+/*     if (coswitch_debug) log_debug("readed str: %s", dunestring); */
 /* #endif */
 
     /* stanza accumulator */
@@ -448,21 +448,21 @@ s7_pointer _read_dune_package(s7_scheme *s7, UT_string *dunefile_name)
     }
 
 #if defined(TRACING)
-    /* if (mibl_debug) */
+    /* if (coswitch_debug) */
     log_debug("s7 reading stanzas");
 #endif
 
     /* read all stanzas in dunefile */
     while(true) {
 /* #if defined(TRACING) */
-        /* if (mibl_debug) */
+        /* if (coswitch_debug) */
             log_debug("iter");
 /* #endif */
         s7_pointer stanza = s7_read(s7, sport);
         /* FIXME: error checks */
         /* errmsg = s7_get_output_string(s7, s7_current_error_port(s7)); */
         /* if ((errmsg) && (*errmsg)) { */
-        /*     /\* if (mibl_debug) *\/ */
+        /*     /\* if (coswitch_debug) *\/ */
         /*         log_error("[%s\n]", errmsg); */
         /*     s7_close_input_port(s7, sport); */
         /*     s7_quit(s7); */
@@ -478,7 +478,7 @@ s7_pointer _read_dune_package(s7_scheme *s7, UT_string *dunefile_name)
     }
     s7_close_input_port(s7, sport);
 #if defined(TRACING)
-    /* if (mibl_debug) */
+    /* if (coswitch_debug) */
         log_debug("finished reading");
 #endif
 
@@ -540,7 +540,7 @@ UT_array *_get_pkg_executables(s7_scheme *s7, void *_stanzas)
     }
 
 #if defined(DEVBUILD)
-    if (mibl_debug) {
+    if (coswitch_debug) {
         /* log_debug("Pkg: %s", utstring_body(dune_pkg_file)); */
         LOG_S7_DEBUG("executables", executables);
     }
@@ -614,7 +614,7 @@ void emit_opam_pkg_bindir(char *switch_pfx,
                           /* bool emitted_bootstrapper) */
 {
 #if defined(TRACING)
-    /* if (mibl_trace) */
+    /* if (coswitch_trace) */
         log_trace("emit_opam_pkg_bindir");
 #endif
 
@@ -661,7 +661,7 @@ void emit_opam_pkg_bindir(char *switch_pfx,
                     coswitch_lib,
                     pkg);
 #if defined(TRACING)
-    if (mibl_debug)
+    if (coswitch_debug)
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
@@ -790,7 +790,7 @@ void emit_opam_pkg_bindir(char *switch_pfx,
                     pkg);
 
 #if defined(TRACING)
-    /* if (mibl_debug) */
+    /* if (coswitch_debug) */
         log_debug("checking ws: %s", utstring_body(outpath));
 #endif
     if (access(utstring_body(outpath), F_OK) != 0) {
@@ -888,7 +888,7 @@ void emit_opam_pkg_bindir(char *switch_pfx,
  exit: ;
     /* utstring_free(outpath); */
 #if defined(TRACING)
-    if (mibl_trace) printf("exiting emit_opam_pkg_bindir\n");
+    if (coswitch_trace) printf("exiting emit_opam_pkg_bindir\n");
 #endif
 }
 
@@ -900,7 +900,7 @@ EXPORT void emit_pkg_bindir(char *opam_switch_lib,
                             const char *pkg)
 {
 #if defined(TRACING)
-    /* if (mibl_trace) */
+    /* if (coswitch_trace) */
         log_trace("emit_pkg_bindir: %s", pkg);
 #endif
 
@@ -910,7 +910,7 @@ EXPORT void emit_pkg_bindir(char *opam_switch_lib,
                     pkg);
 
 #if defined(TRACING)
-    if (mibl_trace)
+    if (coswitch_trace)
         log_debug("CHECKING DUNE-PACKAGE: %s\n", utstring_body(dune_pkg_file));
 #endif
     if (access(utstring_body(dune_pkg_file), F_OK) == 0) {

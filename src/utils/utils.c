@@ -24,6 +24,11 @@
 
 UT_string *runfiles_root;
 
+extern int verbosity;
+extern int log_writes;
+
+#define INFOFD stdout
+
 EXPORT void mkdir_r(const char *dir) {
     /* log_debug("mkdir_r %s", dir); */
     char tmp[512];
@@ -43,7 +48,8 @@ EXPORT void mkdir_r(const char *dir) {
     mkdir(tmp, S_IRWXU);
 }
 
-int copyfile(char *fromfile, char *tofile) {
+int copyfile(char *fromfile, char *tofile)
+{
     char ch;// source_file[20], target_file[20];
 
     FILE *source = fopen(fromfile, "r");
@@ -65,6 +71,8 @@ int copyfile(char *fromfile, char *tofile) {
 /* #endif */
     fclose(source);
     fclose(target);
+    if (verbosity > log_writes)
+        fprintf(INFOFD, GRN "INFO" CRESET " cp template to %s\n", tofile);
     return 0;
 }
 
