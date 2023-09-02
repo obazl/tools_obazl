@@ -134,8 +134,6 @@ void _set_options(struct option options[])
     if (options[OPT_SWITCH].count) {
         switch_name = options[OPT_SWITCH].argument;
     } else {
-        if (verbose)
-            log_info("using current switch: %s", opam_switch_name());
         switch_name = opam_switch_name();
     }
 
@@ -424,6 +422,48 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     return obazl_registry_home;
 }
 
+void _write_registry_directive(char *switch_name)
+{
+    char *home = getenv("HOME");
+    //FIXME: verify $HOME defined
+
+    UT_string *content;
+    utstring_new(content);
+    utstring_printf(content,
+                    "common --registry=file://%s/.local/share/obazl/registry/%s",
+                    home, switch_name);
+    /* log_debug("CONTENT: %s", utstring_body(content)); */
+
+    UT_string *fname;
+    utstring_new(fname);
+    char *wsd = getenv("BUILD_WORKSPACE_DIRECTORY");
+    utstring_printf(fname,
+                    "%s/.config",
+                    wsd);
+    mkdir_r(utstring_body(fname));
+    utstring_printf(fname, "/coswitch_registry.bazelrc");
+    /* log_debug("bazelrc: %s", utstring_body(fname)); */
+
+    FILE *ostream;
+    errno = 0;
+    ostream = fopen(utstring_body(fname), "w");
+    if (ostream == NULL) {
+        log_error("Fileopen %s error %s",
+                  utstring_body(fname),
+                  strerror(errno));
+        return;
+    }
+    fprintf(ostream, "%s", utstring_body(content));
+    fclose(ostream);
+
+    if (verbosity > log_writes)
+        fprintf(INFOFD, GRN "INFO" CRESET
+                " wrote: %s\n", utstring_body(fname));
+
+    utstring_free(fname);
+    utstring_free(content);
+}
+
 /**
    Method:
    1. Iterate over switch, converting META to BUILD.bazel
@@ -486,7 +526,7 @@ int main(int argc, char *argv[])
 
     //FIXME: get site-lib from libopam
     if (verbosity > 0) {
-        log_info("switch: %s", switch_name);
+        log_info("switch name: %s", switch_name);
         log_info("opam root: %s", opam_root());
         log_info("opam switch lib: %s", opam_switch_lib(switch_name));
     }
@@ -593,6 +633,8 @@ int main(int argc, char *argv[])
 
     free(findlib_site_lib);
     utstring_free(meta_path);
+
+    _write_registry_directive(switch_name);
 
 #if defined(TRACING)
     log_debug("exiting new:coswitch");

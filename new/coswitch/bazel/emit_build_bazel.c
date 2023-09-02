@@ -3373,7 +3373,7 @@ EXPORT void emit_build_bazel(// char *ws_name,
         if (strncmp(_pkg->name, "foreign", 7) == 0) {
             if (emit_special_case_rule(ostream, _pkg)) {
                 /* #if defined(TRACING) */
-                log_trace("emit_special_case_rule:TRUE %s", _pkg->name);
+                /* log_trace("emit_special_case_rule:TRUE %s", _pkg->name); */
                 /* #endif */
                 return;
             }

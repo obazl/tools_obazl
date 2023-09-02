@@ -18,6 +18,10 @@
 
 extern s7_scheme *s7;
 
+#if defined(DEVBUILD)
+extern bool coswitch_debug;
+#endif
+
 /* extern UT_string *opam_switch_lib; */
 
 #if defined(DEVBUID)
