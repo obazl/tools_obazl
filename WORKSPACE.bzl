@@ -124,18 +124,18 @@ filegroup(name = "hdrs", srcs = ["ini.h"], visibility = ["//visibility:public"])
     #     sha256 = "f8612276169e3bfcbcfb8f226195bfc6e466fe13042f1076cbde92b7ec96bbfb"
     # )
 
-    maybe(
-        http_archive,
-        name = "fswatch",
-        urls = [
-            "https://github.com/emcrisostomo/fswatch/archive/refs/tags/1.16.0.zip",
-            # "https://github.com/emcrisostomo/fswatch/archive/365624dd6088d79a452c2196b17fb1d6aab8ff91.zip",
-        ],
-        strip_prefix = "fswatch-1.16.0",
-        # sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
-        build_file_content = all_content,
-        workspace_file_content = "workspace( name = \"fswatch\" )"
-    )
+    # maybe(
+    #     http_archive,
+    #     name = "fswatch",
+    #     urls = [
+    #         "https://github.com/emcrisostomo/fswatch/archive/refs/tags/1.16.0.zip",
+    #         # "https://github.com/emcrisostomo/fswatch/archive/365624dd6088d79a452c2196b17fb1d6aab8ff91.zip",
+    #     ],
+    #     strip_prefix = "fswatch-1.16.0",
+    #     # sha256 = "4a4db635cdaecd63fa7c8813f9cce3f385d0081b626835b11a3da3b66412d75d",
+    #     build_file_content = all_content,
+    #     workspace_file_content = "workspace( name = \"fswatch\" )"
+    # )
 
     maybe(
         http_archive,

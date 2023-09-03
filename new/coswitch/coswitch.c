@@ -458,7 +458,7 @@ void _write_registry_directive(char *switch_name)
 
     if (verbosity > log_writes)
         fprintf(INFOFD, GRN "INFO" CRESET
-                " wrote: %s\n", utstring_body(fname));
+                " WROTE: %s\n", utstring_body(fname));
 
     utstring_free(fname);
     utstring_free(content);
