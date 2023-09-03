@@ -31,6 +31,7 @@
 static UT_string *meta_path;
 
 static char *switch_name;
+static char *coswitch_name; // may be "local"
 
 #if defined(DEVBUILD)
 bool coswitch_debug;
@@ -129,12 +130,6 @@ void _set_options(struct option options[])
         /* printf("verbose ct: %d\n", options[FLAG_VERBOSE].count); */
         verbose = true;
         verbosity = options[FLAG_VERBOSE].count;
-    }
-
-    if (options[OPT_SWITCH].count) {
-        switch_name = options[OPT_SWITCH].argument;
-    } else {
-        switch_name = opam_switch_name();
     }
 
     if (options[FLAG_DEBUG].count) {
@@ -353,18 +348,18 @@ void pkg_handler(char *site_lib,
 }
 
 UT_string *_config_bzlmod_registry(char *switch_name,
-                                   char *coswitch_lib)
+                                   UT_string *coswitch_root)
 {
-    char *s = xdg_data_home();
-    if (verbose)
-        log_info("xdg data home: %s", s);
+    log_debug("_config_bzlmod_registry %s, %s",
+              switch_name, utstring_body(coswitch_root));
     UT_string *obazl_registry_home;
     utstring_new(obazl_registry_home);
     utstring_printf(obazl_registry_home,
-                    "%s/obazl/registry/%s",
-                    s, switch_name);
-    free(s);
-    if (verbose)
+                    "%s/registry/%s",
+                    utstring_body(coswitch_root),
+                    switch_name);
+
+    if (verbosity > 0)
         log_info("registry home: %s",
                  utstring_body(obazl_registry_home));
     mkdir_r(utstring_body(obazl_registry_home));
@@ -372,11 +367,15 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     // write: bazel_registry.json
     // also MODULE.bazel, WORKSPACE???
 
-    /* char *module_base_path = opam_switch_lib(switch_name); */
-    char *module_base_path = coswitch_lib;
-    if (verbose)
+    UT_string *module_base_path;
+    utstring_new(module_base_path);
+    utstring_printf(module_base_path,
+                    "%s/opam/%s/lib",
+                    utstring_body(coswitch_root),
+                    switch_name);
+    if (verbosity > 0)
         log_info("module_base_path: %s",
-                 module_base_path);
+                 utstring_body(module_base_path));
     // alternative: mbp = XDG/share/obazl/opam/<switch>
     // or we could put coswitch stuff directly in the registry
 
@@ -390,7 +389,8 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     utstring_new(bazel_registry_json);
     utstring_printf(bazel_registry_json,
                     bazel_registry_template,
-                    module_base_path);
+                    utstring_body(module_base_path));
+    utstring_free(module_base_path);
 
     if (verbose)
         log_info("bazel_registry_json:\n%s",
@@ -413,22 +413,25 @@ UT_string *_config_bzlmod_registry(char *switch_name,
     /* utstring_printf(obazl_registry_home, */
     /*                 "/%s", "modules"); */
     if (verbose)
-        log_info("modules dir: %s",
+        log_info("registry home: %s",
                  utstring_body(obazl_registry_home));
     mkdir_r(utstring_body(obazl_registry_home));
     return obazl_registry_home;
 }
 
-void _write_registry_directive(char *switch_name)
+void _write_registry_directive(char *registry)
+                               /* char *switch_name) */
 {
-    char *home = getenv("HOME");
+    log_debug("_write_registry_directive: %s", //%s",
+              registry); //, switch_name);
+    /* char *home = getenv("HOME"); */
     //FIXME: verify $HOME defined
 
     UT_string *content;
     utstring_new(content);
     utstring_printf(content,
-                    "common --registry=file://%s/.local/share/obazl/registry/%s",
-                    home, switch_name);
+                    "common --registry=file://%s", // /%s",
+                    registry); //, switch_name);
     /* log_debug("CONTENT: %s", utstring_body(content)); */
 
     UT_string *fname;
@@ -469,7 +472,7 @@ void _write_registry_directive(char *switch_name)
       - MODULE.bazel to coswitch
       - registry record
  */
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char **envp)
 {
     argc = gopt(argv, options);
     (void)argc;
@@ -477,6 +480,13 @@ int main(int argc, char *argv[])
     gopt_errors (argv[0], options);
 
     _set_options(options);
+
+    /* dump env vars: */
+    /* log_debug("ENV"); */
+    /* for (char **env = envp; *env != 0; env++) { */
+    /*     char *thisEnv = *env; */
+    /*     log_info("%s", thisEnv); */
+    /* } */
 
     utstring_new(coswitch_runfiles_root);
     utstring_printf(coswitch_runfiles_root, "%s", getcwd(NULL, 0));
@@ -521,48 +531,79 @@ int main(int argc, char *argv[])
     /*     chdir(ws); */
     /* } */
 
-    //FIXME: get site-lib from libopam
-    if (verbosity > 0) {
-        log_info("switch name: %s", switch_name);
-        log_info("opam root: %s", opam_root());
-        log_info("opam switch lib: %s", opam_switch_lib(switch_name));
+    char *launch_dir = getcwd(NULL,0);
+
+    char *bws_dir = getenv("BUILD_WORKSPACE_DIRECTORY");
+    chdir(bws_dir);
+
+    if (options[OPT_SWITCH].count) {
+        switch_name = options[OPT_SWITCH].argument;
+    } else {
+        switch_name = opam_switch_name(envp);
     }
-
-    /* struct obzl_meta_package_s *pkgs = NULL; */
-    /* struct obzl_meta_packages_s *pkg */
-    /*     = malloc(sizeof(obzl_meta_packages_s)); */
-    /* char *n =  "TEST"; */
-    /* pkg->name = n; */
-    /* HASH_ADD_INT(pkgs, name, pkg); */
-    /* log_debug("pkgs ct: %d", HASH_COUNT(pkgs)); */
-    /* log_debug("pkgs ptr: %p", pkgs); */
-
-    if (verbose)
-        log_info("switch prefix: %s", opam_switch_prefix(switch_name));
-
-    char *findlib_site_lib = opam_switch_lib(switch_name);
-    if (verbose)
-        log_info("switch site-lib: %s", findlib_site_lib);
-
-    UT_string *coswitch_lib;
-    utstring_new(coswitch_lib);
-    utstring_printf(coswitch_lib,
-                    "%s/obazl/opam/%s/lib",
-                    xdg_data_home(),
-                    switch_name);
-                    /* "%s/modules", */
-                    /* utstring_body(registry)); */
-
-    UT_string *registry = _config_bzlmod_registry(switch_name,
-                                                  utstring_body(coswitch_lib));
 
     char *compiler_version = opam_switch_base_compiler_version(switch_name);
 
     char *switch_pfx = opam_switch_prefix(switch_name);
+    if (verbose) log_info("switch prefix: %s", switch_pfx);
+
+    char *switch_lib = opam_switch_lib(switch_name);
     if (verbose)
-        log_info("switch prefix: %s", switch_pfx);
+        log_info("switch site-lib: %s", switch_lib);
+
+    chdir(launch_dir);
+
+    /*
+      coswitch_root: if cwd contains '_opam' dir, its a local
+      switch, so coswitch and registry go in
+      <wsroot>/.config/obazl
+      else they go in XDG_DATA_HOME/obazl
+      coswitch_repo: <coswitch_root>/opam
+      coswitch_registry: <coswitch_root>/registry
+     */
+    UT_string *coswitch_root;
+    utstring_new(coswitch_root);
+    utstring_printf(coswitch_root,
+                    "%s/_opam",
+                    bws_dir);
+    int rc = access(utstring_body(coswitch_root), F_OK);
+    if (rc == 0) {
+        // found <>/_opam - local switch
+        coswitch_name = "local";
+        utstring_renew(coswitch_root);
+        utstring_printf(coswitch_root,
+                        "%s/.config/obazl",
+                        bws_dir);
+    } else {
+        coswitch_name = switch_name;
+        utstring_renew(coswitch_root);
+        utstring_printf(coswitch_root,
+                        "%s/obazl",
+                        xdg_data_home()); // ~/.local/share
+    }
+    log_debug("coswitch_root: %s", utstring_body(coswitch_root));
+
+    UT_string *coswitch_lib;
+    utstring_new(coswitch_lib);
+    utstring_printf(coswitch_lib,
+                    "%s/opam/%s/lib",
+                    utstring_body(coswitch_root),
+                    coswitch_name);
+
+    UT_string *registry = _config_bzlmod_registry(coswitch_name,
+                                                  coswitch_root);
 
     utstring_new(meta_path);
+
+    //FIXME: get site-lib from libopam
+    if (verbosity > 0) {
+        log_info("switch name: %s", switch_name);
+        log_info("coswitch name: %s", coswitch_name);
+        log_info("registry: %s", utstring_body(registry));
+        log_info("opam root: %s", opam_root());
+        log_info("switch lib: %s", switch_lib);
+        log_info("coswitch lib: %s", utstring_body(coswitch_lib));
+    }
 
     /* struct obzl_meta_package *pkgs = NULL; */
     struct paths_s paths = {
@@ -574,7 +615,7 @@ int main(int argc, char *argv[])
     //FIXME: add extras arg to pass extra info to pkg_handler
     findlib_map(opam_include_pkgs,
                 opam_exclude_pkgs,
-                findlib_site_lib,
+                switch_lib,
                 pkg_handler,
                 (void*)&paths);
 
@@ -622,20 +663,21 @@ int main(int argc, char *argv[])
         utstring_free(mfile);
         free(pkg_name);
     }
-
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
-
+    log_debug("AAAAAAAAAAAAAAAA");
     emit_ocaml_workspace(registry,
                          compiler_version,
                          paths.pkgs,
                          switch_name,
                          switch_pfx,
                          utstring_body(coswitch_lib));
+    log_debug("BBBBBBBBBBBBBBBB");
 
-    free(findlib_site_lib);
+    free(switch_lib);
     utstring_free(meta_path);
 
-    _write_registry_directive(switch_name);
+    _write_registry_directive(utstring_body(registry));
+    // , coswitch_name);
 
 #if defined(TRACING)
     log_debug("exiting new:coswitch");

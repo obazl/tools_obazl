@@ -2654,7 +2654,7 @@ EXPORT void emit_ocaml_workspace(UT_string *registry,
 {
     TRACE_ENTRY;
 #if defined(TRACING)
-    if (verbosity > 2) {
+    if (verbosity > 0) {
         log_trace(BLU "EMIT_ocaml_workspace:" CRESET
                   " switch_pfx:%s, dst: %s",
                   switch_pfx, coswitch_lib);
