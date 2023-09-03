@@ -2646,6 +2646,7 @@ void _symlink_ocaml_c_libs(char *switch_lib, char *tgtdir)
   bootstrap_FILE: remains open so opam pkgs can write to it
  */
 EXPORT void emit_ocaml_workspace(UT_string *registry,
+                                 char *compiler_version,
                                  struct obzl_meta_package *pkgs,
                                  char *switch_name,
                                  char *switch_pfx,
@@ -2667,7 +2668,7 @@ EXPORT void emit_ocaml_workspace(UT_string *registry,
         log_debug("registry: %s", utstring_body(registry));
 
     /* this emits reg record for both ocaml and stublibs pkgs */
-    emit_registry_record(registry, NULL, pkgs);
+    emit_registry_record(registry, compiler_version, NULL, pkgs);
 
     /* UT_string *switch_lib; */
     /* utstring_new(switch_lib); */

@@ -65,6 +65,7 @@ void _emit_reg_rec(UT_string *reg_file, char *pkg_name)
        <reg>/modules/<module>/<version>/patches ???
  */
 EXPORT void emit_registry_record(UT_string *registry,
+                                 char *compiler_version,
                                  struct obzl_meta_package *pkg,
                                  struct obzl_meta_package *pkgs)
 {
@@ -77,21 +78,30 @@ EXPORT void emit_registry_record(UT_string *registry,
         semv = findlib_pkg_version(pkg);
         sprintf(version, "%d.%d.%d",
                 semv->major, semv->minor, semv->patch);
-        _emit_registry_record(registry, pkg, pkgs,
+        _emit_registry_record(registry,
+                              compiler_version,
+                              pkg, pkgs,
                               pkg_name,
                               version); //, semv->major);
     } else {
-        _emit_registry_record(registry, pkg, pkgs,
+        _emit_registry_record(registry,
+                              compiler_version,
+                              pkg, pkgs,
                               "ocaml", "0.0.0");
-        _emit_registry_record(registry, pkg, pkgs,
+        _emit_registry_record(registry,
+                              compiler_version,
+                              pkg, pkgs,
                               "stublibs", "0.0.0");
-        _emit_registry_record(registry, pkg, pkgs,
+        _emit_registry_record(registry,
+                              compiler_version,
+                              pkg, pkgs,
                               "compiler-libs", "0.0.0");
     }
     TRACE_EXIT;
 }
 
 EXPORT void _emit_registry_record(UT_string *registry,
+                                  char *compiler_version,
                                   struct obzl_meta_package *pkg,
                                   struct obzl_meta_package *pkgs,
                                   char *pkg_name,
@@ -161,7 +171,7 @@ EXPORT void _emit_registry_record(UT_string *registry,
     utstring_free(metadata_json);
 
     // modules/$MODULE/$VERSION/[MODULE.bazel, source.json]
-    utstring_printf(reg_dir, "/%s", version);
+    utstring_printf(reg_dir, "/%s", default_version); //version);
     mkdir_r(utstring_body(reg_dir));
     /* log_debug("regdir: %s", utstring_body(reg_dir)); */
 
@@ -179,7 +189,7 @@ EXPORT void _emit_registry_record(UT_string *registry,
         // emit lib/ocaml and lib/stublibs
         _emit_reg_rec(reg_file, pkg_name);
     } else {
-        emit_module_file(reg_file, pkg, pkgs);
+        emit_module_file(reg_file, compiler_version, pkg, pkgs);
     }
     // JUST FOR DEBUGGING:
 #if defined(DEVBUILD)
@@ -236,11 +246,3 @@ EXPORT void _emit_registry_record(UT_string *registry,
     utstring_free(bazel_file);
     TRACE_EXIT;
 }
-
-/* EXPORT void emit_registry_record(UT_string *registry, */
-/*                                  char *meta_path, */
-/*                                  char *pkg_name, */
-/*                                  struct obzl_meta_package *pkg, */
-/*                                  char *version */
-/*                                  ) */
-

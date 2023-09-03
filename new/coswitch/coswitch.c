@@ -294,11 +294,8 @@ void pkg_handler(char *site_lib,
     UT_string *ws_root;
     utstring_new(ws_root);
     utstring_printf(ws_root, "%s/%s",
-                    /* utstring_body(opam_switch_lib), */
-                    /* site_lib, */
                     utstring_body(coswitch_lib),
                     pkg_name);
-                    /* (char*)version); */
     mkdir_r(utstring_body(ws_root));
 
     UT_string *bazel_file;
@@ -559,6 +556,8 @@ int main(int argc, char *argv[])
     UT_string *registry = _config_bzlmod_registry(switch_name,
                                                   utstring_body(coswitch_lib));
 
+    char *compiler_version = opam_switch_base_compiler_version(switch_name);
+
     char *switch_pfx = opam_switch_prefix(switch_name);
     if (verbose)
         log_info("switch prefix: %s", switch_pfx);
@@ -600,7 +599,8 @@ int main(int argc, char *argv[])
             log_debug("    entries ptr %p", pkg->entries);
         }
         /* ******************************** */
-        emit_registry_record(registry, pkg, paths.pkgs);
+        emit_registry_record(registry, compiler_version,
+                             pkg, paths.pkgs);
                              /* s->metafile, */
                              /* s->directory, */
                              /* s, */
@@ -618,7 +618,7 @@ int main(int argc, char *argv[])
         mkdir_r(utstring_body(mfile));
         utstring_printf(mfile, "/MODULE.bazel");
                         /* utstring_body(mfile)); */
-        emit_module_file(mfile, pkg, paths.pkgs);
+        emit_module_file(mfile, compiler_version, pkg, paths.pkgs);
         utstring_free(mfile);
         free(pkg_name);
     }
@@ -626,6 +626,7 @@ int main(int argc, char *argv[])
     /* FIXME: free opam_include_pkgs, opam_exclude_pkgs */
 
     emit_ocaml_workspace(registry,
+                         compiler_version,
                          paths.pkgs,
                          switch_name,
                          switch_pfx,

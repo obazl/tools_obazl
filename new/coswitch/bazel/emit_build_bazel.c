@@ -2856,6 +2856,7 @@ EXPORT void emit_workspace_file(UT_string *ws_file, const char *repo_name)
 }
 
 EXPORT void emit_module_file(UT_string *module_file,
+                             char *compiler_version,
                              struct obzl_meta_package *_pkg,
                              struct obzl_meta_package *_pkgs)
 
@@ -2866,30 +2867,6 @@ EXPORT void emit_module_file(UT_string *module_file,
     semv = findlib_pkg_version(_pkg);
     sprintf(version, "%d.%d.%d",
             semv->major, semv->minor, semv->patch);
-
-/*     obzl_meta_value version; */
-/*     char *pname = "version"; */
-/*     struct obzl_meta_property *version_prop = obzl_meta_package_property(_pkg, pname); */
-/*     if (version_prop) { */
-/* #if defined(DEVBUILD) */
-/*         dump_property(0, version_prop); */
-/* #endif */
-/*         version = obzl_meta_property_value(version_prop); */
-/*         log_debug("version: %s", (char*)version); */
-
-/*         if (!semver_is_valid(version)) { */
-/*             log_warn("BAD VERSION STRING: %s", (char*)version); */
-/*             /\* return; *\/ */
-/*         } else { */
-/*             semver_parse(version, &semversion); */
-/*             log_debug("major: %d", semversion.major); */
-/*         } */
-/*     } else { */
-/*         log_warn("No version property found"); */
-/*         /\* return; //FIXME ??? e.g. dune META has no version *\/ */
-/*     } */
-
-/*     version = "0.0.0"; */
 
     FILE *ostream;
     ostream = fopen(utstring_body(module_file), "w");
@@ -2904,19 +2881,20 @@ EXPORT void emit_module_file(UT_string *module_file,
     fprintf(ostream, "## generated file - DO NOT EDIT\n\n");
 
     fprintf(ostream, "module(\n");
-    fprintf(ostream, "    name = \"%s\", version = \"%s\",\n",
-            _pkg->module_name,
-            //default_version
-            version
-            );
-    fprintf(ostream, "    compatibility_level = %d,\n",
-            default_compat);
-            /* semversion.major); */
+    fprintf(ostream, "    name = \"%s\",\n", _pkg->module_name);
+    fprintf(ostream, "    version = \"%s\",  # %s\n",
+            default_version, version);
+    fprintf(ostream, "    compatibility_level = %d, # %d\n",
+            default_compat, semv->major);
     fprintf(ostream, ")\n");
     fprintf(ostream, "\n");
 
-    fprintf(ostream, "bazel_dep(name = \"rules_ocaml\", version = \"1.0.0\")\n");
-    fprintf(ostream, "bazel_dep(name = \"ocaml\", version = \"0.0.0\")\n");
+    fprintf(ostream, "bazel_dep(name = \"rules_ocaml\",");
+    fprintf(ostream, " version = \"1.0.0\")\n");
+    fprintf(ostream, "bazel_dep(name = \"ocaml\", # %s\n",
+            compiler_version);
+    fprintf(ostream, "          version = \"0.0.0\")\n");
+    fprintf(ostream, "\n");
 
     // get **repo** deps: direct deps of pkg and all subpkgs
     UT_array *pkg_deps = findlib_pkg_deps(_pkg, true);
@@ -2945,8 +2923,10 @@ EXPORT void emit_module_file(UT_string *module_file,
                     sprintf(version, "%d.%d.%d", -1, -1 , -1);
                 }
             }
-            fprintf(ostream, "bazel_dep(name = \"%s\", version = \"%s\")\n",
-                    *p, version); //  "1.0.0");
+            fprintf(ostream, "bazel_dep(name = \"%s\", # %s\n",
+                    *p, version);
+            fprintf(ostream, "          version = \"%s\")\n",
+                    default_version);
         }
     }
     fprintf(ostream, "\n");
