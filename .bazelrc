@@ -1,10 +1,13 @@
-common --symlink_prefix=.bazel/
 common --experimental_cc_shared_library
 common --enable_bzlmod
 
-try-import .config/registries.bazelrc
-common --registry=https://raw.githubusercontent.com/obazl/registry/main/
-common --registry=https://bcr.bazel.build
+try-import .config/coswitch_registry.bazelrc
+
+always --registry=file:///Users/gar/obazl/registry
+
+# always --registry=https://raw.githubusercontent.com/obazl/registry/dev/
+# common --registry=https://raw.githubusercontent.com/obazl/registry/main/
+always --registry=https://bcr.bazel.build
 
 # common --color=yes
 # common:show --subcommands=pretty_print

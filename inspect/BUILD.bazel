@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load(":INSPECT.bzl", "extract", "inspect")
+load(":INSPECT.bzl", "inspect")
 
 ## //tgt is a label-typed build setting; its default value is the
 ## null module.  It must be overriden by passing a command-line arg:

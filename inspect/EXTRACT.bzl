@@ -83,21 +83,12 @@ def _write_codeps_file(ctx, provider, text):
 
 ################
 def _write_providers_file(ctx, tgt, text):
-    provider = tgt[DefaultInfo]
     text = text + CCCYN + "DefaultInfo:\n"
+    provider = tgt[DefaultInfo]
     for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
             text = text + "  " + str(val) + "\n"
-    text = text + CCRED + "  Files:" + CCRESET + "\n"
-    for f in provider.files.to_list():
-        text = text + "    " + f.path + "\n"
-
-    text = text + CCRED + "  Runfiles:" + CCRESET + "\n"
-    # for f in provider.data_runfiles.files.to_list():
-    #     text = text + "  data_runfile: " + f.path + "\n"
-    for f in provider.default_runfiles.files.to_list():
-        text = text + "    " + f.path + "\n"
 
     if OcamlProvider in tgt:
         provider = tgt[OcamlProvider]
@@ -234,15 +225,15 @@ def _inspect_impl(ctx):
             else:
                 fail("Target is not ocaml_import")
 
-        # if ctx.label.name == "objinfo":
-        #     providers = True
-        #     print("ctx.attr.obj: %s" % ctx.attr.obj)
-        #     tool = ctx.expand_location(
-        #         "$(execpath @ocaml//bin:ocamlobjinfo)",
-        #         targets = [ctx.attr._tool],
-        #         ## short_paths = True # unexpected kw argument error
-        #     )
-        #     objs = [ctx.attr.obj[0][DefaultInfo].files.to_list()[0]]
+        if ctx.label.name == "objinfo":
+            providers = True
+            print("ctx.attr.obj: %s" % ctx.attr.obj)
+            tool = ctx.expand_location(
+                "$(execpath @ocaml//bin:ocamlobjinfo)",
+                targets = [ctx.attr._tool],
+                ## short_paths = True # unexpected kw argument error
+            )
+            objs = [ctx.attr.obj[0][DefaultInfo].files.to_list()[0]]
 
         if ctx.label.name == "providers":
             providers = True
@@ -368,18 +359,81 @@ inspect = rule(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
         ),
 
-        # _ocamlobjinfo = attr.label(
-        #     executable = True,
-        #     cfg = "exec",
-        #     allow_files = True,
-        #     default = Label("@ocaml//bin:ocamlobjinfo"),
-        # ),
-        # _tool = attr.label(
-        #     executable = True,
-        #     cfg = "exec",
-        #     allow_files = True,
-        #     default = Label("@ocaml//bin:ocamlobjinfo"),
-        # )
+        _ocamlobjinfo = attr.label(
+            executable = True,
+            cfg = "exec",
+            allow_files = True,
+            default = Label("@ocaml//bin:ocamlobjinfo"),
+        ),
+        _tool = attr.label(
+            executable = True,
+            cfg = "exec",
+            allow_files = True,
+            default = Label("@ocaml//bin:ocamlobjinfo"),
+        )
     ),
     toolchains = ["@rules_ocaml//toolchain/type:std"],
+)
+
+################################################################
+def _extract_impl(ctx):
+    if ctx.label.package == "sig":
+        # if OcamlSignatureProvider in ctx.attr.obj:
+        #    print("extracting from ocaml_signature target")
+        # else:
+        #    print("extracting from ocaml_module target")
+        objs = ctx.attr.obj[OutputGroupInfo].cmi.to_list()
+    elif ctx.label.package == "struct":
+            objs = ctx.attr.obj[DefaultInfo].files.to_list()
+
+    out = ctx.actions.declare_file("extract.sh")
+
+    runfiles = ctx.runfiles(
+        files = objs + [ctx.executable._tool]
+    )
+
+    cmd = " ".join([
+        ctx.executable._tool.path,
+        "`pwd`/{}".format(objs[0].short_path),
+    ])
+    print("CMD: %s" % cmd)
+
+    ctx.actions.write(
+        output  = out,
+        content = cmd,
+        is_executable = True,
+    )
+
+    defaultInfo = DefaultInfo(
+        executable = out,
+        runfiles   = runfiles
+    )
+    return defaultInfo
+
+extract = rule(
+    implementation = _extract_impl,
+    doc = "Use cmitomli to extract sigfile from cmi file",
+    executable = True,
+    attrs = dict(
+        obj = attr.label(
+            doc = "Label of ocaml_module target. Interface code will be inferred from module output (*.cmo or *.cmx)",
+            mandatory = True,
+            providers = [
+                [OcamlModuleMarker],
+                [OcamlSignatureProvider],
+            ]
+        ),
+        _tool = attr.label(
+            executable = True,
+            cfg = "exec",
+            allow_files = True,
+            default = Label("@ocaml//bin:cmitomli"),
+        ),
+        _cmitomli = attr.label(
+            executable = True,
+            cfg = "exec",
+            allow_files = True,
+            default = Label("@ocaml//bin:cmitomli"),
+        )
+    )
 )
