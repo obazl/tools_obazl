@@ -1,0 +1,5 @@
+## replace $HOME
+
+common --registry=file:///$HOME/.opam/<switch>/share/obazl
+
+# common --registry=file:///$HOME/.local/share/obazl/registry/<switch>

@@ -1,0 +1,15 @@
+load("@cc_config//:MACROS.bzl", "repo_paths")
+
+PROD_REPOS = [
+]
+
+repo_paths(
+    name = "repo_paths",
+    repos = PROD_REPOS
+)
+
+repo_paths(
+    name = "test_repo_paths",
+    repos = PROD_REPOS + [
+    ]
+)

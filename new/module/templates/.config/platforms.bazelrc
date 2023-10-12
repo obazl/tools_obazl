@@ -1,0 +1,4 @@
+common --config=ocamlopt.opt
+#common --config=ocamlc.byte
+#common --config=ocamlopt.byte
+#common --config=ocamlc.opt

@@ -1,0 +1,6 @@
+# common --announce_rc
+# test --keep_going
+
+# try-import %workspace%/.config/overrides.bazelrc
+
+
