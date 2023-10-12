@@ -5,7 +5,8 @@ load("@rules_ocaml//ocaml:providers.bzl",
      "OcamlModuleMarker",
      "OcamlProvider",
      "OcamlNsResolverProvider",
-     "OcamlSignatureProvider")
+     "OcamlSignatureProvider",
+     "OpamInstallProvider")
 
 load("@rules_ocaml//ppx:providers.bzl",
      "PpxCodepsProvider",
@@ -102,6 +103,15 @@ def _write_providers_file(ctx, tgt, text):
     if OcamlProvider in tgt:
         provider = tgt[OcamlProvider]
         text = text + CCCYN + "OcamlProvider:\n"
+        for d in dir(provider):
+            text = text + "  " + CCRED + d + CCRESET
+            val = getattr(provider, d)
+            text = text + "  " + str(val) + "\n"
+
+    if OpamInstallProvider in tgt:
+        provider = tgt[OpamInstallProvider]
+        text = text + CCCYN + "OpamInstallProvider:\n"
+        print("IARCH %s" % provider.archives)
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)

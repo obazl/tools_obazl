@@ -19,13 +19,14 @@ cc_binary(
     linkstatic = True,
     srcs  = [
         "module.c", "module.h",
-        "xdg.c", "xdg.h",
-        "utarray.h", "utstring.h", "uthash.h"
+        # "xdg.c", "xdg.h",
+        # "utarray.h", "utstring.h", "uthash.h"
     ],
     deps = [
         ":helper",
         "@runfiles//src:runfiles",
-        # "@uthash//:include"
+        "@uthash//src:uthash",
+        "@xdgc//src:xdgc"
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
@@ -80,9 +81,9 @@ cc_binary(
     }) + [
     ],
     data  = [
-        "//new/templates:all",
-        "//new/templates/xdg/bin:all",
-        "//new/templates/xdg/data/queries:all",
+        "//new/module/templates:all",
+        # "//new/templates/xdg/bin:all",
+        # "//new/templates/xdg/data/queries:all",
         # "//new/templates/bzl/host:BUILD.bazel",
         # "//new/templates/bzl/profile:BUILD.bazel",
         "//man/man1:new_workspace.1",
@@ -253,14 +254,23 @@ cc_library(
     linkstatic = True,
     srcs  = [
         "help.c",
-        "log.c", "log.h",
-        "utils.c"
+        # "utils.c"
     ],
     hdrs = [
         "help.h",
         "log.h",
         "utils.h",
         "utstring.h"
+    ],
+    deps = [
+        "//src/utils",
+        # "@mibl//src:mibl",
+        # "@mibl//external/libinih:inih",
+        "@liblogc//src:logc",
+        # "//external/libinih:inih",
+        # "@libs7//src:s7",
+        # "@libs7//src:c_s7",
+        # "@libs7//vendored/linenoise",
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -306,17 +316,8 @@ cc_library(
         # "-lc_s7"
     ],
     data  = [
-        "//new/templates:all",
+        "//new/module/templates:all",
         "//man/man1:new_workspace.1",
-    ],
-    deps = [
-        # "@mibl//src:mibl",
-        # "@mibl//external/libinih:inih",
-        # "@logc//:logc",
-        # "//external/libinih:inih",
-        # "@libs7//src:s7",
-        # "@libs7//src:c_s7",
-        # "@libs7//vendored/linenoise",
     ],
     toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
@@ -326,7 +327,7 @@ cc_library(
 makeheaders(
     name = "mkhdrs",
     hdrs_srcs = [
-        "coswitch.c",
+        # "coswitch.c",
         "module.c",
         "package.c",
         "workspace.c",
@@ -335,8 +336,8 @@ makeheaders(
         # "test.c",
     ],
     additional_srcs = [
-        "//new/bazel:emit_build_bazel.c",
-        "//new/bazel:emit_ocaml_repo.c",
+        # "//new/bazel:emit_build_bazel.c",
+        # "//new/bazel:emit_ocaml_repo.c",
         "//src/utils:utils.c",
         "ansi_colors.h",
     ],

@@ -2,27 +2,53 @@
 :toc: auto
 :toclevels: 3
 
-WARNING: currently under heavy development, do not use.
+WARNING: Currently under heavy development.
 
-A collection of Bazel tools, mainly for OCaml development using obazl_rules_ocaml.
+A collection of Bazel tools, mainly for OCaml development using OBazl link:https://github.com/obazl/rules_ocaml[rules_ocaml,window=_blank].
 
-== setup
+== Getting started
+
+Start by installing link:https://github.com/bazelbuild/bazelisk[bazelisk,window=_blank].
+
+1. Put this at the root of your project:
+
+..bazelrc
+----
+always --enable_bzlmod
+common --registry=https://raw.githubusercontent.com/obazl/registry/main/
+common --registry=https://bcr.bazel.build
+----
+
+..bazelrc
+----
+latest
+----
+
+
+.MODULE.bazel
+----
+module(
+    name = "mymodule",
+    version = "0.1.0",
+    compatibility_level = 0,
+    bazel_compatibility = [">=6.0.0"]
+)
+bazel_dep(name = "obazl", version = "x.y.x",   <1>
+          dev_dependency = True)
+----
+<1> See Releases page for latest version.
 
 .WORKSPACE.bazel
 ----
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "obazl",  ## do not change name
-    url = "https://github.com/obazl/tools_obazl/archive/352c4a1b39f19c8f377d0dafda9e6233cf3aee52.zip",
-    strip_prefix = "tools_obazl-352c4a1b39f19c8f377d0dafda9e6233cf3aee52",
-    sha256 = "936feae1df3d46eb7e297a252c1003eebf3780fd64e0fa3f17974b9e0a347a94"
-)
+                    <1>
 ----
+<1> Empty. This file will no longer be necessary with Bazel 7, due out in mid Oct 2023.
 
-(Dev: add --override_repository to .bazelrc, e.g.
+Now run the following commands:
 
-    common --override_repository=obazl=/path/to/tools_obazl
+
+    $ bazel run @obazl//new:workspace
+
 
 == tools
 

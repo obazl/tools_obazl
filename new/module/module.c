@@ -71,7 +71,7 @@ void new_workspace(char *pgm)
     utstring_printf(abs_dest, "touch %s/BUILD.bazel", ws_dir);
     system(utstring_body(abs_dest));
 
-    fprintf(stderr, "BCR: %s", BAZEL_CURRENT_REPOSITORY);
+    fprintf(stderr, "Bazel current repo: %s", BAZEL_CURRENT_REPOSITORY);
 
     template = _templates;
 

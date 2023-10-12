@@ -1,5 +1,11 @@
 load("@cc_config//:MACROS.bzl", "repo_paths")
 
+filegroup(
+    name = "all",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"]
+)
+
 PROD_REPOS = [
 ]
 

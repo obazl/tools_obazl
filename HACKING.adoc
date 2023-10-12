@@ -5,20 +5,6 @@ This documents the process I use to develop OBazl tools locally, in
 case you'd like to give it a try.
 
 
-== Getting started
-
-1. Create:
-
-.WORKSPACE.bazel
-----
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "obazl",  ## do not change name
-    remote = "https://github.com/obazl/tools_obazl",
-    branch = "alpha"
-)
-----
 
 2. `$ bazel run @obazl//new:workspace`  (or `new:ws`)
 
