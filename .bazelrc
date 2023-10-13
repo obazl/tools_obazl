@@ -1,38 +1,10 @@
+common --incompatible_enable_cc_toolchain_resolution
 common --experimental_cc_shared_library
 common --enable_bzlmod
 
-try-import .config/coswitch_registry.bazelrc
+try-import .config/registries.bazelrc
 
-always --registry=file:///Users/gar/obazl/registry
-
-# always --registry=https://raw.githubusercontent.com/obazl/registry/dev/
-# common --registry=https://raw.githubusercontent.com/obazl/registry/main/
-always --registry=https://bcr.bazel.build
-
-# common --color=yes
-# common:show --subcommands=pretty_print
-# common:show --verbose_failures
-
-test:dbg --test_arg=-v
-test:dbg --test_arg=-v
-test:dbg --test_arg=-d
-test:dbg --test_arg=-t
-
-# toolchain selection: vm (bytecode), sys (nativecode) E.g. to compile
-# with ocamlc.opt, pass --config=ocamlc.opt (sys to vm). this means:
-# cross-compile from sys platform (native code) to vm platform (bytecode).
-## IMPORTANT: --host_platform sets buildhost; --platforms sets targethost
-# default platform is sys for both buildhost and targethost
-build:ocamlc.byte --host_platform=@ocaml//platforms/build:vm
-build:ocamlc.byte --platforms=@ocaml//platforms/target:vm
-
-build:ocamlc.opt --host_platform=@ocaml//platforms/build:sys
-build:ocamlc.opt --platforms=@ocaml//platforms/target:vm
-
-build:ocamlopt.byte --host_platform=@ocaml//platforms/build:vm
-build:ocamlopt.byte --platforms=@ocaml//platforms/target:sys
-
-build:ocamlopt.opt --host_platform=@ocaml//platforms/build:sys
-build:ocamlopt.opt --platforms=@ocaml//platforms/target:sys
+common --registry=https://raw.githubusercontent.com/obazl/registry/main/
+common --registry=https://bcr.bazel.build
 
 try-import .config/user.bazelrc

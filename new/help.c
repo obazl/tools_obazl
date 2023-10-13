@@ -109,7 +109,8 @@ int spawn_cmd_with_stdout(char *executable, int argc, char *argv[])
     return rc;
 }
 
-EXPORT void display_manpage(char *section, char *manpage) {
+EXPORT void display_manpage(char *section, char *manpage)
+{
 
     printf("display_manpage: %s\n", manpage);
 
@@ -149,7 +150,8 @@ EXPORT void display_manpage(char *section, char *manpage) {
     return;
 }
 
-EXPORT void execlp_manpage(char *section, char *manpage) {
+EXPORT void execlp_manpage(char *section, char *manpage)
+{
 
     printf("display_manpage: %s\n", manpage);
 

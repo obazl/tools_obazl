@@ -4,7 +4,7 @@ load("//config/cc:CONFIG.bzl",
 
 load("@makeheaders//src:RULES.bzl", "makeheaders")
 
-TOOLCHAINS = ["//:repo_paths"]
+TOOLCHAINS = ["//:module_profiles"]
 
 exports_files(["utils.c"])
 
@@ -23,7 +23,7 @@ cc_library(
 
         # "@findlibc//src:findlibc",
         # "@opamc//src:opamc",
-        # "@xdgc//src:xdgc",
+        # "@xdgc//lib:xdgc",
         # "@gopt//src:gopt",
         # "@libs7//src:s7",
         # "@liblogc//src:logc",

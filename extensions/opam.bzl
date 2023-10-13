@@ -171,7 +171,7 @@ exports_files(["opam", "var.sh"])
 #     visibility = ["//visibility:public"]
 # )
 
-# load("@cc_config//:MACROS.bzl", "repo_paths")
+# load("@obazl_tools_cc//:MACROS.bzl", "repo_paths")
 
 # PROD_REPOS = [
 # ]

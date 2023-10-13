@@ -1,0 +1,41 @@
+load("//config/cc:CONFIG.bzl",
+     "BASE_COPTS",
+     "BASE_LINKOPTS",
+     "BASE_LOCAL_DEFINES")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+
+exports_files(["ansi_colors.h", "manpager.c"])
+
+TOOLCHAINS = ["//:module_profiles"]
+
+cc_library(
+    name  = "manpager",
+    linkstatic = True,
+    srcs  = [
+        "manpager.c",
+        ":mkhdrs",
+    ],
+    deps = [
+        "@obazl_tools_cc//src/utils:obazl_utils",
+        "@liblogc//src:logc",
+        "@uthash//src:uthash"
+    ],
+    copts = BASE_COPTS + [
+        "-I$(GENDIR)/$(@)/man",
+        "-I$(@liblogc)/src",
+        "-I$(GENDIR)/$(@obazl_tools_cc)/src/utils",
+        "-I$(@uthash)/src",
+        "'-D$(MODULE_NAME)_VERSION=\"$(MODULE_VERSION)\"'"
+    ],
+    local_defines = BASE_LOCAL_DEFINES,
+    linkopts = BASE_LINKOPTS,
+    toolchains = TOOLCHAINS,
+    visibility = ["//visibility:public"]
+)
+
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = ["manpager.c"]
+)
+

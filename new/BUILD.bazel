@@ -6,7 +6,7 @@ load("@makeheaders//src:RULES.bzl", "makeheaders")
 
 exports_files(["ansi_colors.h"])
 
-TOOLCHAINS = ["//:repo_paths"]
+TOOLCHAINS = ["//:module_profiles"]
 
 alias(
     name = "ws",
@@ -26,7 +26,7 @@ cc_binary(
         ":helper",
         "@runfiles//src:runfiles",
         "@uthash//src:uthash",
-        "@xdgc//src:xdgc"
+        "@xdgc//lib:xdgc"
     ],
     copts = select({
         "//bzl/host:macos": ["-std=c11"],
@@ -341,21 +341,6 @@ makeheaders(
         "//src/utils:utils.c",
         "ansi_colors.h",
     ],
-    # outs = [
-    #     "module.h",
-    #     "package.h",
-    #     "workspace.h",
-    #     "utils.h",
-    #     "help.h",
-    #     "xdg.h",
-    #     # "test.h"
-    # ],
-    # cmd = "\n".join([
-    #     "$(execpath //vendored/makeheaders) $(SRCS);",
-    #     "cp `dirname $(location help.c)`/*.h $(RULEDIR)",
-    # ]),
-    # tools = ["//vendored/makeheaders"],
-    # visibility = ["//visibility:public"]
 )
 
 ################################################################

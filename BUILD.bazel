@@ -1,4 +1,5 @@
-load("@cc_config//:MACROS.bzl", "repo_paths")
+load("@obazl_tools_cc//rules:module_profiles.bzl",
+     "module_profiles")
 
 PROD_REPOS = [
     "@libs7//src:s7",
@@ -8,19 +9,20 @@ PROD_REPOS = [
     "@findlibc//src:findlibc",
     "@opamc//src:opamc",
     "@liblogc//src:logc",
+    "@obazl_tools_cc//:version",
     "@runfiles//src:runfiles",
     "@semverc//src:semverc",
     "@uthash//src:uthash",
-    "@xdgc//src:xdgc",
+    "@xdgc//lib:xdgc",
 ]
 
-repo_paths(
-    name = "repo_paths",
+module_profiles(
+    name = "module_profiles",
     repos = PROD_REPOS
 )
 
-repo_paths(
-    name = "test_repo_paths",
+module_profiles(
+    name = "test_module_profiles",
     repos = PROD_REPOS + [
         "@unity//src:unity"
     ]

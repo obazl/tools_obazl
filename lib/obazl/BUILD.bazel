@@ -1,0 +1,59 @@
+load("//config/cc:CONFIG.bzl",
+     "BASE_COPTS",
+     "BASE_LINKOPTS",
+     "BASE_DEFINES")
+
+load("@makeheaders//src:RULES.bzl", "makeheaders")
+
+exports_files(["obazl.c"])
+
+TOOLCHAINS = ["//:module_profiles"]
+
+cc_library(
+    name  = "obazl",
+    linkstatic = True,
+    alwayslink = True,
+    srcs  = [
+        "obazl.c",
+        ":mkhdrs",
+    ],
+    deps = [
+        "@runfiles//src:runfiles",
+        "@liblogc//src:logc",
+        "@uthash//src:uthash",
+        "@xdgc//lib:xdgc",
+
+        ## application code:
+        "//new/bazel:new_bazel",
+        "//new/ocaml:new_ocaml",
+        "//man:manpager",
+
+    ],
+    copts = BASE_COPTS + [
+        "-Wno-unused-function",
+
+        "-I$(GENDIR)/$(@)/lib/obazl",
+        "-I$(@liblogc)/src",
+        "-I$(@runfiles)/src",
+    ],
+    linkopts = BASE_LINKOPTS,
+    data  = [
+        "//new/module/templates:all",
+        "//man/man1:new_workspace.1",
+    ],
+    toolchains = TOOLCHAINS,
+    visibility = ["//visibility:public"]
+)
+
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = [
+        "obazl.c",
+    ],
+    additional_srcs = [
+        "//new/bazel:new_bazel.c",
+        "//new/ocaml:new_ocaml.c",
+        "//man:manpager.c"
+    ],
+)
+
