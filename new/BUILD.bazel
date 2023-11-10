@@ -1,6 +1,6 @@
 load("//config/cc:CONFIG.bzl",
      COPTS   = "BASE_COPTS",
-     DEFINES = "BASE_DEFINES")
+     LOCAL_DEFINES = "BASE_LOCAL_DEFINES")
 
 load("@makeheaders//src:RULES.bzl", "makeheaders")
 
@@ -72,6 +72,7 @@ cc_binary(
         "-lm",
         # "-lc_s7"
     ],
+    local_defines = LOCAL_DEFINES,
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []

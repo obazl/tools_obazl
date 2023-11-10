@@ -8,16 +8,18 @@ module(
 ## bcr deps:
 bazel_dep(name = "platforms",    version = "0.0.7")
 bazel_dep(name = "bazel_skylib", version = "1.4.2")
+bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_foreign_cc", version = "0.9.0")
 
 ## obazl deps:
-bazel_dep(name = "cc_config",    version = "2.0.0")
+bazel_dep(name = "obazl_tools_cc", version = "1.0.0")
 bazel_dep(name = "rules_ocaml",  version = "2.0.0")
 
 bazel_dep(name = "liblogc",      version = "1.0.0")
-bazel_dep(name = "makeheaders",  version = "1.0.0")
+bazel_dep(name = "makeheaders",  version = "1.0.2")
 
 bazel_dep(name = "tomlc", version = "1.0.0")
-bazel_dep(name = "libs7", version = "1.0.0")
+bazel_dep(name = "libs7", version = "1.0.7")
 
 ## obazl dev deps:
 # bazel_dep(name = "obazl",           version = "1.0.0",
