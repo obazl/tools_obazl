@@ -11,10 +11,8 @@
 #include "liblogc.h"
 #include "librunfiles.h"
 
-//FIXME: we should get cjson from mustachios?
-#include "cJSON.h"
 #include "cwalk.h"
-/* #include "mustache_cjson.h" */
+#include "mustache_cjson.h"
 #include "mustachios.h"
 #include "utarray.h"
 #include "utlist.h"
@@ -42,8 +40,15 @@ bool quiet;
 char *ws_dir;                  /* BUILD_WORKSPACE_DIRECTORY */
 char *build_wd;                /* BUILD_WORKING_DIRECTORY */
 
+/* json data from cmd line */
+char *name = "mydemo";
+char *json_data;
+UT_string *jsondat;
+
 enum OPTS {
     OPT_TEMPLATE = 0,
+    OPT_JSON,
+    OPT_NAME,
     FLAG_LIST,
 
     FLAG_DEBUG,
@@ -58,6 +63,10 @@ enum OPTS {
 static struct option options[] = {
     /* 0 */
     [OPT_TEMPLATE] = {.long_name="template",.short_name='t',
+                 .flags=GOPT_ARGUMENT_REQUIRED},
+    [OPT_JSON] = {.long_name="data",
+                 .flags=GOPT_ARGUMENT_REQUIRED},
+    [OPT_NAME] = {.long_name="name",
                  .flags=GOPT_ARGUMENT_REQUIRED},
     [FLAG_LIST] = {.long_name="list",.short_name='l',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
@@ -84,6 +93,8 @@ void _print_usage(void) {
     printf("\t-l, --list\t\tList templates available in template library.\n");
 
     printf("\t-t, --template <name>\tName of template to use. Default: default\n");
+
+    printf("\t-t, --name <name>\tName to use for pkg etc. Default: 'mydemo'\n");
 
     printf("\t-d, --debug\t\tEnable debug flags. Repeatable.\n");
     printf("\t-t, --trace\t\tEnable all trace flags (debug only).\n");
@@ -112,6 +123,10 @@ void _set_options(struct option options[])
     }
     if (options[FLAG_TRACE].count) {
         trace_new = true;
+    }
+
+    if (options[OPT_NAME].count) {
+        name = strdup(options[OPT_NAME].argument);
     }
 }
 
@@ -174,7 +189,7 @@ static int subcat_cmp(struct subcat_s *a, struct subcat_s *b)
     return strcmp(a->name, b->name);
 }
 
-void _list_templates(char *template)
+void _template_lister(char *template)
 {
     TRACE_ENTRY;
     LOG_DEBUG(0, "template file: %s", template);
@@ -182,7 +197,6 @@ void _list_templates(char *template)
     /* utarray_new(categories,&ut_str_icd); */
 
     char f[FILENAME_MAX];
-
     cwk_path_normalize(template, f, sizeof(f));
     LOG_DEBUG(0, "normalized: %s", f);
 
@@ -231,26 +245,172 @@ void _list_templates(char *template)
     return;
 }
 
+void _list_templates(UT_string *fts_root, char *templates_root)
+{
+        utstring_new(seg0);
+        utstring_new(seg1);
+        rf_fts(utstring_body(fts_root), _template_lister);
+        utstring_free(seg0);
+        utstring_free(seg1);
+
+        // drop the trailing '+' from the repo name:
+        int len = strlen(templates_root);
+        fprintf(stdout, "Templates available from library @%.*s\n",
+                len-1, templates_root);
+
+        FILE *docstr_file;
+        UT_string *docstr;
+        utstring_new(docstr);
+        HASH_ITER(hh, cats, cat, tmp) {
+            LL_FOREACH_SAFE(cat->subcat, subcat_p, subcat_tmp) {
+                fprintf(stdout, "\t%s/%s\n", cat->name, subcat_p->name);
+                utstring_renew(docstr);
+                utstring_printf(docstr, "%s/%s/%s/DOCSTRING",
+                                utstring_body(fts_root),
+                                cat->name, subcat_p->name);
+                int rc = access(utstring_body(docstr), R_OK);
+                if (rc == 0) {
+                    LOG_DEBUG(0, "found docstring: %s",
+                              utstring_body(docstr));
+#define BUFSZ 512
+                    char buf[BUFSZ];
+                    docstr_file = fopen(utstring_body(docstr), "r");
+                    if (docstr_file == NULL) {
+                        fprintf(stderr, "fopen failure %s",
+                                utstring_body(docstr));
+                    }
+                    while (fgets(buf, BUFSZ, docstr_file)) {
+                        fprintf(stdout, "\t\t%s", buf);
+                    }
+                    fclose(docstr_file);
+
+                } else {
+                    LOG_DEBUG(0, "NOT found docstring: %s",
+                              utstring_body(docstr));
+                }
+
+                LL_DELETE(cat->subcat , subcat_p);
+                free(subcat_p);
+            }
+            /* LL_FOREACH(cat->subcat, subcat_tmp) { */
+            /* } */
+            HASH_DEL(cats, cat);
+            free(cat);
+        }
+        utstring_free(docstr);
+}
+
+UT_string *ofile;
+
 void _handle_file(char *template)
 {
     TRACE_ENTRY;
-    LOG_DEBUG(0, "template file: %s", template);
+    static char buffer[FILENAME_MAX];
 
-    char *d = "{\"name\": \"myproj\"}";
+    char tfile_src[FILENAME_MAX];
+    cwk_path_normalize(template, tfile_src, sizeof(tfile_src));
+    LOG_DEBUG(0, "template:    %s", realpath(tfile_src, NULL));
 
-    /* if ext == ".mustache" or ".template": */
-    cJSON *data = cJSON_Parse(d);
-    /* if (data == 0) { */
-    /*     log_error("cjson parse error: %s", d); */
-    /*     TEST_FAIL_MESSAGE("cJSON_Parse error"); */
-    /*     cJSON_free(data); */
-    /* } else { */
-    /*     const char *result = mustache_json_render(template, */
-    /*                                               0, */
-    /*                                               data, */
-    /*                                               0); */
+    /* first get data for mustachios */
+    /* **** load json data **** */
+    /* char *json_str = mustachios_readfile(data_infile, &file_sz); */
+    /* log_debug("json file_sz: %d", file_sz); */
+    utstring_renew(jsondat);
+    utstring_printf(jsondat, "{\"name\": \"%s\"}", name);
+    cJSON *json_str = cjsonx_read_string(utstring_body(jsondat));
+    if (json_str == 0) {
+        LOG_ERROR(0, "cjson parse error: %s", utstring_body(jsondat));
+        /* cJSON_free(data); */
+    }
+
+    /* next, transform filename */
+    int flags = Mustach_With_AllExtensions;
+    /* if (options[FLAG_STRICT].count) { */
+    /*     flags |= Mustach_With_ErrorUndefined; */
     /* } */
-    cJSON_free(data);
+    errno = 0;
+    const char *tfile = mustache_json_render(tfile_src, 0, json_str, flags);
+    LOG_DEBUG(0, "transformed tfile: %s", tfile);
+
+    if (strncmp(tfile, "DOCSTRING", 9) == 0) return;
+
+    const char *extension;
+    size_t length;
+    if (cwk_path_has_extension(tfile)) {
+        cwk_path_get_extension(tfile, &extension, &length);
+        /* printf("The extension is: '%.*s'\n", (int)length, extension); */
+
+        if (strncmp(extension, ".mustache", 9) == 0) {
+
+            /* **** load template **** */
+            size_t file_sz = 0;
+            char *template_str = mustachios_readfile(tfile_src, &file_sz);
+            LOG_DEBUG(0, "template file_sz: %d", file_sz);
+
+            // remove extension
+            cwk_path_change_extension(tfile, "", buffer, sizeof(buffer));
+            buffer[strlen(buffer) - 1] = '\0';
+            utstring_renew(ofile);
+            utstring_printf(ofile, "%s/%s/%s",
+                            ws_dir, name, strdup(buffer));
+            LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
+
+            /* **** render **** */
+            errno = 0;
+            const char *result = mustache_json_render(template_str, 0, json_str, flags);
+            free(template_str);
+
+            cwk_path_get_dirname(utstring_body(ofile), &length);
+            char *dname = strndup(utstring_body(ofile), length);
+            LOG_DEBUG(0, "The dirname is: '%s'", dname);
+            mkdir_r(dname);
+            free(dname);
+
+            FILE *outstream = fopen(utstring_body(ofile), "w");
+            if (outstream == NULL) {
+                LOG_ERROR(0, "fopen failure %s", utstring_body(ofile));
+            }
+
+            /* **** write outfile **** */
+            int buflen = strlen(result);
+            int ct = fwrite(result, 1, buflen, outstream);
+            if (ct != buflen) {
+                log_error("failed fwrite");
+            }
+
+            /* int rc = mustache_json_frender( */
+            /*                                            outstream, */
+            /*                                            tfile, */
+            /*                                            0, */
+            /*                                            json_str, */
+            /*                                            0); */
+            /* (void)rc; */
+            fclose(outstream);
+            cJSON_free(json_str);
+        } else {
+            utstring_renew(ofile);
+            utstring_printf(ofile, "%s/%s/%s",
+                            ws_dir, name, tfile);
+            LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
+            cwk_path_get_dirname(utstring_body(ofile), &length);
+            char *dname = strndup(utstring_body(ofile), length);
+            LOG_DEBUG(0, "The dirname is: '%s'", dname);
+            mkdir_r(dname);
+            copyfile((char*)tfile_src, utstring_body(ofile));
+            free(dname);
+        }
+    } else {
+        utstring_renew(ofile);
+        utstring_printf(ofile, "%s/%s/%s",
+                        ws_dir, name, tfile);
+        LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
+        cwk_path_get_dirname(utstring_body(ofile), &length);
+        char *dname = strndup(utstring_body(ofile), length);
+        LOG_DEBUG(0, "The dirname is: '%s'", dname);
+        mkdir_r(dname);
+        copyfile((char*)tfile_src, utstring_body(ofile));
+        free(dname);
+    }
     TRACE_EXIT;
     return;
 }
@@ -338,7 +498,10 @@ int main(int argc, char *argv[])
 
     rf_init(argv[0]);
 
+    LOG_DEBUG(0, "cwd: %s", getcwd(NULL, 0));
+
     ws_dir = getenv("BUILD_WORKSPACE_DIRECTORY");
+    LOG_DEBUG(0, "ws dir: %s", ws_dir);
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
     utstring_new(abs_dest);
     utstring_new(abs_dir);
@@ -356,58 +519,24 @@ int main(int argc, char *argv[])
     utstring_new(fts_root);
     utstring_printf(fts_root, "%s/%s", rfroot, templates_root);
 
+    utstring_new(ofile);
+
+    if (options[OPT_JSON].count) {
+        LOG_DEBUG(0, "JSON: %s", options[OPT_JSON].argument);
+    }
+
+
     if (options[FLAG_LIST].count) {
-        utstring_new(seg0);
-        utstring_new(seg1);
-        rf_fts(utstring_body(fts_root), _list_templates);
-        utstring_free(seg0);
-        utstring_free(seg1);
-        fprintf(stdout, "rootdir %s\n", utstring_body(fts_root));
-        FILE *docstr_file;
-        UT_string *docstr;
-        utstring_new(docstr);
-        HASH_ITER(hh, cats, cat, tmp) {
-            LL_FOREACH_SAFE(cat->subcat, subcat_p, subcat_tmp) {
-                fprintf(stdout, "%s/%s\n", cat->name, subcat_p->name);
-                utstring_renew(docstr);
-                utstring_printf(docstr, "%s/%s/%s/DOCSTRING",
-                                utstring_body(fts_root),
-                                cat->name, subcat_p->name);
-                int rc = access(utstring_body(docstr), R_OK);
-                if (rc == 0) {
-                    LOG_DEBUG(0, "found docstring: %s",
-                              utstring_body(docstr));
-#define BUFSZ 512
-                    char buf[BUFSZ];
-                    docstr_file = fopen(utstring_body(docstr), "r");
-                    if (docstr_file == NULL) {
-                        fprintf(stderr, "fopen failure %s",
-                                utstring_body(docstr));
-                    }
-                    while (fgets(buf, BUFSZ, docstr_file)) {
-                        fprintf(stdout, "\t%s\n", buf);
-                    }
-                    fclose(docstr_file);
-
-                } else {
-                    LOG_DEBUG(0, "NOT found docstring: %s",
-                              utstring_body(docstr));
-                }
-
-                LL_DELETE(cat->subcat , subcat_p);
-                free(subcat_p);
-            }
-            /* LL_FOREACH(cat->subcat, subcat_tmp) { */
-            /* } */
-            HASH_DEL(cats, cat);
-            free(cat);
-        }
-        utstring_free(docstr);
-    } else {
+        _list_templates(fts_root, templates_root);
+    }
+    else if (options[OPT_TEMPLATE].count) {
+        utstring_printf(fts_root, "/%s", options[OPT_TEMPLATE].argument);
+        LOG_DEBUG(0, "FTS root: %s", utstring_body(fts_root));
         rf_fts(utstring_body(fts_root), _handle_file);
     }
 
     utstring_free(fts_root);
+    utstring_free(ofile);
 
     LOG_DEBUG(0, "workspace exit...", "");
     return 0;

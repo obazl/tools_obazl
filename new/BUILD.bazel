@@ -47,13 +47,13 @@ cc_binary(
         # "-lc_s7"
     ],
     data  = [
-        "//template",
+        "//templates",
         "//man/man1:new_workspace.1",
     ],
     deps = [
-        "@cjson//:cjson",
         "@cwalk//lib:cwalk",
         "@gopt//lib:gopt",
+        "@mustachios//adapter/json/cjson:mustache_json",
         "@mustachios//lib:mustachios",
         "@obazl_cc//lib:spawn_cmd",
         "@runfiles//lib:runfiles",
