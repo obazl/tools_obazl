@@ -31,7 +31,7 @@ cc_binary(
         "-I$(GENDIR)/repl",
         "-I$(GENDIR)/external/obazl/repl",
 
-        "-Iexternal/mibl/vendored/uthash",
+        # "-Iexternal/mibl/vendored/uthash",
         # "-Iexternal/libinih",
         # "-Iexternal/logc/src",
 
@@ -41,7 +41,7 @@ cc_binary(
         # "-Iexternal/mibl/libs7/src",
 
         "-Iexternal/libs7/src",
-        "-Iexternal/libs7/vendored/linenoise",
+        # "-Iexternal/libs7/vendored/linenoise",
         # "-Iexternal/mibl/libs7/vendored/linenoise",
     ],
     linkopts = select({
@@ -51,13 +51,13 @@ cc_binary(
     }) + ["-lm"],
     data = [
         "//scm:srcs",
-        "//scm/starlark:srcs"
+        # "//scm/starlark:srcs"
     ],
     deps = [
-        "@mibl//src:mibl",
-        "@mibl//vendored/uthash",
-        "@libs7//src:s7",
-        "@libs7//src:c_s7",
+        "@mibl//lib:mibl",
+        "@uthash//lib:uthash",
+        "@libs7//lib:s7",
+        "@libs7//lib:c_s7",
         # "@logc//:logc",  # provided in libmibl.a
         # "//external/libinih:inih",
         # "@libs7//vendored/linenoise",
@@ -100,8 +100,8 @@ genrule(
 #     srcs  = [
 #         "deploy.c", "deploy.h",
 #         "deploy_config.c", "deploy_config.h",
-#         # "//src:mibl_config.h",
-#         # "//src:fs.h"
+#         # "//lib:mibl_config.h",
+#         # "//lib:fs.h"
 #     ],
 #     defines = select({
 #         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -137,7 +137,7 @@ genrule(
 #         "-Iexternal/mibl/libs7/src",
 #     ],
 #     data = [
-#         "@mibl//src:mibl",  # libmibl.so
+#         "@mibl//lib:mibl",  # libmibl.so
 #         # "//repl", # so we can find it in MANIFEST
 #         "@mibl//mibl:srcs",
 #         "@mibl//mibl/dune:srcs",
@@ -156,10 +156,10 @@ genrule(
 #     ],
 #     deps = [
 #         # "//repl",
-#         "@mibl//src:mibl", # since we depend on its config files
+#         "@mibl//lib:mibl", # since we depend on its config files
 #         "//external/libinih:inih",
 #         # "@logc//:logc",
-#         # "@libs7//src:s7",
+#         # "@libs7//lib:s7",
 #         # "@libs7//vendored/linenoise",
 #     ],
 #     visibility = ["//visibility:public"]

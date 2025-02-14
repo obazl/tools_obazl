@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "log.h"
+#include "liblogc.h"
 /* #include "utarray.h" */
 #include "utstring.h"
 
@@ -24,10 +24,15 @@
 
 UT_string *runfiles_root;
 
-extern int verbosity;
-extern int log_writes;
+/* #if LOCAL_INTERFACE */
+/* #define DEBUG_LEVEL debug_new */
+/* #define TRACE_FLAG trace_new */
+/* #endif */
+/* extern int  DEBUG_LEVEL; */
+/* extern bool TRACE_FLAG; */
 
-#define INFOFD stdout
+int verbosity;                  /* FIXME */
+int log_writes;
 
 EXPORT void mkdir_r(const char *dir) {
     /* log_debug("mkdir_r %s", dir); */
@@ -72,7 +77,7 @@ int copyfile(char *fromfile, char *tofile)
     fclose(source);
     fclose(target);
     if (verbosity > log_writes)
-        fprintf(INFOFD, GRN "INFO" CRESET " cp template to %s\n", tofile);
+        fprintf(stdout, GRN "INFO" CRESET " cp template to %s\n", tofile);
     return 0;
 }
 

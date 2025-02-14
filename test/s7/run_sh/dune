@@ -1,0 +1,11 @@
+(rule
+ (targets libocxmr_tectonic.a dllocxmr_tectonic.so)
+ (deps
+  Cargo.toml
+  (glob_files_rec *.rs))
+ (action
+  (progn
+   (run
+    sh
+    -c
+    "rm -f libocxmr_tectonic.a && cp %{workspace_root}/../../bazel-bin/tectonic/tectonic/libcxmr_tectonic_ocaml_static.a libocxmr_tectonic.a"))))

@@ -1,11 +1,11 @@
-load("//:BUILD.bzl",
-     "GOPT_VERSION",
-     "INIH_VERSION",
-     "LIBS7_VERSION",
-     "MIBL_VERSION",
-     "UTHASH_VERSION")
+# load("//:BUILD.bzl",
+#      "GOPT_VERSION",
+#      "INIH_VERSION",
+#      "LIBS7_VERSION",
+#      "MIBL_VERSION",
+#      "UTHASH_VERSION")
 
-load("//config/cc:BUILD.bzl",
+load("//cfg/cc:CONFIG.bzl",
      SRCS = "BASE_SRCS",
      DEPS = "BASE_DEPS",
      "BASE_INCLUDE_PATHS",
@@ -28,10 +28,10 @@ def script(name = "obazl", main = None, **kwargs):
         linkstatic = True,
         srcs  = SRCS + ["obazl.c", "obazl.h"],
         deps = DEPS + [
-            "@gopt//src:gopt",
+            "@gopt//lib:gopt",
             "@inih//:inih",
-            "@uthash//src:uthash",
-            "@mibl//src:mibl",
+            "@uthash//lib:uthash",
+            "@mibl//lib:mibl",
             # "@mibl//vendored/gopt",
             # "@mibl//vendored/libinih:inih",
             # "@mibl//vendored/logc",
@@ -39,16 +39,19 @@ def script(name = "obazl", main = None, **kwargs):
         ],
         copts = COPTS + [
             "-I$(GENDIR)/obazl",
+            "-I$(GENDIR)/external/{}/obazl".format(
+                native.repository_name()[1:]
+            ),
 
-            "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
-            "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(MIBL_VERSION),
+            # "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+            # "-I$(GENDIR)/external/mibl~{}/src/hdrs".format(MIBL_VERSION),
 
-            "-Iexternal/gopt~{}/src".format(GOPT_VERSION),
+            # "-Iexternal/gopt~{}/src".format(GOPT_VERSION),
 
-            "-Iexternal/inih~{}/src".format(INIH_VERSION),
+            # "-Iexternal/inih~{}/src".format(INIH_VERSION),
             # "-Iexternal/mibl/vendored/libinih",
 
-            "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
+            # "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
             # "-Iexternal/mibl/vendored/uthash",
 
             # "-Iexternal/mibl/vendored/logc",
@@ -79,6 +82,10 @@ def script(name = "obazl", main = None, **kwargs):
             "//bzl/host:linux": ["-ldl", "-lm"],
             "//conditions:default": {}
         }),
+        defines = [
+            "LOCAL_REPO=\\\"{}\\\"".format(
+                native.repository_name()[1:])
+        ],
         local_defines = select({
             "//bzl/host:debug": ["DEBUG_TRACE"],
             "//conditions:default":   []
@@ -91,7 +98,7 @@ def script(name = "obazl", main = None, **kwargs):
         data = [
             "//scm:srcs",
             "//scm/bazel:srcs",
-     # these are already in runfiles, from dep @mibl//src:mibl
+     # these are already in runfiles, from dep @mibl//lib:mibl
             # "@mibl//scm:srcs",
             # "@mibl//scm/dune:srcs",
             # "@mibl//scm/meta:srcs",

@@ -1,0 +1,12 @@
+((:ws-path "/Users/gar/obazl/mibl/test/s7/inline_tests") (:pkg-path "ppx_assert/test")
+  (:realpath "/Users/gar/obazl/mibl/test/s7/inline_tests/ppx_assert/test")
+  (dune (library (name ppx_assert_test_lib) (libraries sexplib str)
+                 (preprocess (pps ppx_compare ppx_sexp_conv ppx_here ppx_assert ppx_inline_test))))
+  (:structures (:static (Ppx_assert_test . ppx_assert_test.ml)))
+  (:mibl (:ns-archive (:ns . ppx_assert_test_lib) (:privname . ppx_assert_test_lib) (:ppx . 1)
+                      (:deps (:resolved . 1)) (:manifest (:modules Ppx_assert_test)))
+         (:shared-ppx ((1 (:manifest @ppx_compare//lib/ppx_compare @ppx_sexp_conv//lib/ppx_sexp_conv
+                                     @ppx_here//lib/ppx_here @ppx_assert//lib/ppx_assert
+                                     @ppx_inline_test//lib/ppx_inline_test)
+                          (:args ("-inline-test-lib" "ppx_assert_test_lib")))))
+         (:shared-deps ((1 @sexplib//lib/sexplib @ocaml//str)))))

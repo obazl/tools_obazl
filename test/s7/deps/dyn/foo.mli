@@ -1,0 +1,1 @@
+val foomsg : string

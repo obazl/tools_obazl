@@ -1,20 +1,20 @@
 #include <unistd.h>
 
 #include "gopt.h"
-#include "log.h"
+#include "liblogc.h"
 
 //#include "s7.h"                 /* needed by libmibl.h */
 /* #include "libs7.h" */
-#include "libmibl.h"
+#include "mibl.h"
 
 #include "obazl.h"
 
 #if defined(DEBUG_TRACE)
 extern bool mibl_debug;
-extern bool mibl_debug_deps;
-extern bool mibl_debug_mibl;
-extern bool mibl_debug_miblrc;
-extern bool mibl_debug_traversal;
+/* extern bool mibl_debug_deps; */
+/* extern bool mibl_debug_mibl; */
+/* extern bool mibl_debug_miblrc; */
+/* extern bool mibl_debug_traversal; */
 extern bool mibl_trace;
 /* extern bool mibl_trace_mibl; */
 #endif
@@ -357,7 +357,7 @@ void _set_options(struct option options[])
 
     if (options[FLAG_DEBUG_DEPS].count) {
 #if defined(DEBUG_TRACE)
-        mibl_debug_deps = true;
+        /* mibl_debug_deps = true; */
 #else
         log_error("--debug-deps requires debug build, -c dbg");
         exit(EXIT_FAILURE);
@@ -366,8 +366,8 @@ void _set_options(struct option options[])
 
     if (options[FLAG_DEBUG_MIBLRC].count) {
 #if defined(DEBUG_TRACE)
-        mibl_debug_mibl   = true;
-        mibl_debug_miblrc = true;
+        /* mibl_debug_mibl   = true; */
+        /* mibl_debug_miblrc = true; */
 #else
         log_error("--debug-miblrc requires debug build, -c dbg");
         exit(EXIT_FAILURE);
@@ -376,7 +376,7 @@ void _set_options(struct option options[])
 
     if (options[FLAG_DEBUG_TRAVERSAL].count) {
 #if defined(DEBUG_TRACE)
-        mibl_debug_traversal = true;
+        /* mibl_debug_traversal = true; */
 #else
         log_error("--debug-traversal requires debug build, -c dbg");
         exit(EXIT_FAILURE);
@@ -426,8 +426,7 @@ int main(int argc, char **argv, char **envp)
                   options[OPT_WS].argument);
 
     //TODO: obazl_init - adds obazl runfiles to s7 *load-path*
-    log_debug("XXXXXXXXXXXXXXXX");
-    log_debug("obazl BAZEL_CURRENT_REPOSITORY: " BAZEL_CURRENT_REPOSITORY);
+    log_debug("obazl local REPO: " LOCAL_REPO);
 
     /* (void)mibl_config; */
 

@@ -1,0 +1,4 @@
+(rule
+ (targets output.txt)
+ (deps (:< gen.sh))
+ (action (run %{<} %{targets})))

@@ -28,19 +28,15 @@ cc_binary(
         # "-I", "$(GENDIR)/external/obazl/src/lib/metadune",
         # "-I", "$(GENDIR)/external/tools_obazl/src/lib/metadune",
 
-        "-I", "$(GENDIR)/src/include/obazl",
-        "-I", "$(GENDIR)/external/obazl/src/include/obazl",
-        "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
-
-        "-I", "vendored/logc",
-        "-I", "external/obazl/vendored/logc",
-        "-I", "external/tools_obazl/vendored/logc",
+        "-I", "$(GENDIR)/lib/include/obazl",
+        "-I", "$(GENDIR)/external/obazl/lib/include/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/lib/include/obazl",
 
         "-I", "external/uthash/include",
     ],
     deps = [
-        "//src:metadune",
-        "//vendored/logc"
+        "//lib:metadune",
+        "@liblogc//lib/logc"
     ],
     linkopts = [
         # "-L/usr/local/lib",     # FIXME
@@ -57,7 +53,7 @@ cc_binary(
         "@uthash//:include",
     ],
     data = [
-        # "//src/lua:dune.lua"
+        # "//lib/lua:dune.lua"
     ],
     copts = [
         "-std=c11",
@@ -65,27 +61,23 @@ cc_binary(
 
         "-I", "$(GENDIR)/test",
 
-        "-I", "$(GENDIR)/src",
+        "-I", "$(GENDIR)/lib",
 
-        # "-I", "$(GENDIR)/external/obazl/src/lib/metadune",
-        # "-I", "$(GENDIR)/external/tools_obazl/src/lib/metadune",
+        # "-I", "$(GENDIR)/external/obazl/lib/lib/metadune",
+        # "-I", "$(GENDIR)/external/tools_obazl/lib/lib/metadune",
 
-        "-I", "$(GENDIR)/src/include/obazl",
-        "-I", "$(GENDIR)/external/obazl/src/include/obazl",
-        "-I", "$(GENDIR)/external/tools_obazl/src/include/obazl",
-
-        "-I", "vendored/logc",
-        "-I", "external/obazl/vendored/logc",
-        "-I", "external/tools_obazl/vendored/logc",
+        "-I", "$(GENDIR)/lib/include/obazl",
+        "-I", "$(GENDIR)/external/obazl/lib/include/obazl",
+        "-I", "$(GENDIR)/external/tools_obazl/lib/include/obazl",
 
         "-I", "external/uthash/include",
 
-        "-Iexternal/libs7/src"
+        "-Iexternal/libs7/lib"
     ],
     deps = [
-        "//src:metadune",
-        "//vendored/logc",
-        "@libs7//src:s7"
+        "//lib:metadune",
+        "@liblogc//lib:logc",
+        "@libs7//lib:s7"
     ],
     linkstatic = 1
 )

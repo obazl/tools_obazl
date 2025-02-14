@@ -1,0 +1,31 @@
+;; from dune docs:
+;; (inline_tests (deps data.txt))
+;; (inline_tests (flags (-foo bar)))
+;; (inline_tests (modes byte best js))
+
+;; (inline_tests
+;;  (flags (-foo bar)) ;; cli args to executable
+;;  (executable
+;;   (flags (-foo bar)))) ;; build flags for executable
+;; (inline_tests
+;;  (executable
+;;   (link_flags -linkall -noautolink -cclib -Wl,-Bstatic -cclib -lm)))
+
+;; "If your tests are reading files, you must tell Dune by adding a deps field the inline_tests field."
+
+(library
+    (name ilt_options)
+  (modules :standard \ ilt_test)
+  (libraries foo bar)
+  (preprocess (pps ppx_jane)))
+
+(library
+    (name ilt_options_tester)
+ (modules ilt_test)
+ (libraries foo bar)
+ (inline_tests
+  (deps data.txt)  ;; => :runtime-data-deps
+  (flags (-foo bar)) ;; => :runtime-opts
+  (modes byte best js)) ;; => modes
+ (preprocess (pps ppx_jane)))
+

@@ -1,0 +1,24 @@
+(library
+ (name ilt_backend)
+ ;; (modules a b)
+ (libraries foo bar)
+
+ (inline_tests.backend
+  (generate_runner (run sed "s/(\\*TEST:\\(.*\\)\\*)/let () = \\1;;/" %{impl-files})))
+
+ ;; (inline_tests.backend
+ ;;  (generate_runner   <action>)
+
+ ;; <action> may use vars:
+ ;; %{library-name} — the name of the library being tested
+ ;; %{impl-files} — the list of implementation files in the library, i.e., all the .ml and .re files
+ ;; %{intf-files} — the list of interface files in the library, i.e., all the .mli and .rei files
+
+ ;;  (runner_libraries (<ocaml-libraries>))
+ ;;  (flags             <flags>)
+ ;;  (extends          (<backends>)))
+ (preprocess (pps ppx_jane)))
+
+;; from ppx_expect/src/dune
+ ;; (inline_tests.backend (runner_libraries ppx_expect.evaluator)
+ ;;                       (extends ppx_inline_test)))

@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_ocaml//build:rules.bzl", "ppx_executable", "ppx_module")
+
+#############
+ppx_module(
+    name       = "Ppx_driver",
+    struct     = ":ppx_driver.ml",
+    visibility = ["//visibility:public"],
+    deps       = ["@ppxlib//lib/ppxlib"],
+)
+
+########
+genrule(
+    name = "__ppx_driver__",
+    outs = ["ppx_driver.ml"],
+    cmd = "\n".join([
+        "echo \"(* GENERATED FILE - DO NOT EDIT *)\" > \"$@\"",
+        "echo \"let () = Ppxlib.Driver.standalone ()\" >> \"$@\"",
+    ])
+)

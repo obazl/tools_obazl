@@ -1,0 +1,10 @@
+exports_files(glob(["**"]))
+
+filegroup(
+    name = "mwe",
+    data = glob(["**"],
+                # exclude = ["BUILD.bazel"]
+                ),
+    visibility = ["//visibility:public"]
+)
+

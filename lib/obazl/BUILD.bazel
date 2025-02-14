@@ -1,9 +1,9 @@
-load("//config/cc:CONFIG.bzl",
+load("//cfg/cc:CONFIG.bzl",
      "BASE_COPTS",
      "BASE_LINKOPTS",
      "BASE_DEFINES")
 
-load("@makeheaders//src:RULES.bzl", "makeheaders")
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
 
 exports_files(["obazl.c"])
 
@@ -18,9 +18,9 @@ cc_library(
         ":mkhdrs",
     ],
     deps = [
-        "@runfiles//src:runfiles",
-        "@liblogc//src:logc",
-        "@uthash//src:uthash",
+        # "@runfiles//src:runfiles",
+        "@liblogc//lib:logc",
+        "@uthash//lib:uthash",
         "@xdgc//lib:xdgc",
 
         ## application code:
@@ -34,7 +34,7 @@ cc_library(
 
         "-I$(GENDIR)/$(@)/lib/obazl",
         "-I$(@liblogc)/src",
-        "-I$(@runfiles)/src",
+        # "-I$(@runfiles)/src",
     ],
     linkopts = BASE_LINKOPTS,
     data  = [

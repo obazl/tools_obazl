@@ -1,0 +1,7 @@
+##########
+filegroup(
+    name = "glob_STAR.html",
+    srcs = glob(["*.html"]),
+    visibility = ["//deps/glob/mixed/sub:__pkg__"]
+)
+

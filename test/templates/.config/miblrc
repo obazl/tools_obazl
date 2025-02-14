@@ -1,0 +1,23 @@
+; mibl config
+
+[mibl]
+version = 0.1.0
+grammar=1.0.0-BETA  ;; version number of config grammar, not obazl program
+
+;; emit = ...  ; none | exports | parsetree | mibl | starlark (default)
+;; dump = ...  ; parsetree | mibl | ppx (default: null)
+;; pkg = ...
+
+[srcs]
+
+;; 'include' is exclusive (?)
+;; include = test
+
+;;;; excludes override includes
+;; excluded by default:
+;; _build (dune output dir)
+;; bazel-bin, bazel-out etc. - bazel symlinks
+;; hidden files and dirs (.git/, .github/, .merlin, etc.)
+
+;exclude = docs
+;exclude = test/foo  ;; e.g. if test/foo contains broken stuff

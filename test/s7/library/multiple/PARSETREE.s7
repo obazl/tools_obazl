@@ -1,0 +1,1 @@
+"(list (list :ws-path \"/Users/gar/obazl/mibl/test/s7/library/multiple\") (list :pkg-path \".\") (list :realpath \"/Users/gar/obazl/mibl/test/s7/library/multiple\") (list :files (list :static \"PARSETREE.s7\" \"PKG.mibl\" \"WORKSPACE\")) (list :cc-srcs (list :static \"Test.c\")))"

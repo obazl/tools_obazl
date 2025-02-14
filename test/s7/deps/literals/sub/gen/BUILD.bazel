@@ -1,0 +1,7 @@
+
+filegroup(
+    name = "*gen.sh*",
+    srcs = ["gen.sh"],
+    visibility = ["//visibility:public"]
+)
+

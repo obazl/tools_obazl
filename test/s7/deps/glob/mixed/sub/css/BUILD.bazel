@@ -1,0 +1,7 @@
+##########
+filegroup(
+    name = "glob_STAR.css",
+    srcs = glob(["*.css"]),
+    visibility = ["//deps/glob/mixed/sub:__pkg__"]
+)
+

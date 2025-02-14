@@ -1,0 +1,7 @@
+(library
+ (name foobar_impl)
+ (wrapped false)
+ (public_name foobar.impl))
+
+;; bazel: replace this with a dep on ocaml_signature target
+(rule (copy# %{lib:foobar:foobar.mli} foobar.mli))

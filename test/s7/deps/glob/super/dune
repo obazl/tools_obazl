@@ -1,0 +1,4 @@
+(rule
+ (targets output.css)
+ (deps (:< concat.sh) (:css (glob_files ../css/*.css)))
+ (action (run %{<} %{css} %{targets})))

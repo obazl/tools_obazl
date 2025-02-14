@@ -1,0 +1,81 @@
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_ns_archive",
+     "ocaml_module",
+     "ocaml_signature",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+TEST_A_DEPS = [
+        "tezos-stdlib",
+        "lwt",
+        "re",
+        "tezos-error-monad",
+        "tezos-lwt-result-stdlib"
+]
+
+TEST_A_OPTS = [
+        "-open",
+        "Tezos_stdlib",
+        "-open",
+        "Tezos_error_monad",
+        "-open",
+        "Tezos_error_monad.TzLwtreslib"
+]
+
+#############################
+####  Aggregate Targets  ####
+
+#################
+ocaml_ns_archive(
+    name       = "test-a",
+    submodules = [
+        ":A",
+        ":A2",
+        ":B"
+    ],
+)
+
+#############################
+####  Singleton Targets  ####
+
+ocaml_module(
+    name          = "A",
+    struct        = "a.ml",
+    sig           = ":A.cmi",
+    opts          = TEST_A_OPTS,
+    deps          = TEST_A_DEPS,
+)
+
+ocaml_module(
+    name          = "A2",
+    struct        = "a2.ml",
+    sig           = ":A2.cmi",
+    opts          = TEST_A_OPTS,
+    deps          = TEST_A_DEPS,
+)
+
+ocaml_module(
+    name          = "B",
+    struct        = "b.ml",
+    opts          = TEST_A_OPTS,
+    deps          = TEST_A_DEPS,
+)
+
+#############################
+####  Signature Targets  ####
+
+ocaml_signature(
+    name          = "A.cmi",
+    sig           = "a.mli",
+    opts          = TEST_A_OPTS,
+    deps          = TEST_A_DEPS,
+)
+
+ocaml_signature(
+    name          = "A2.cmi",
+    sig           = "a2.mli",
+    opts          = TEST_A_OPTS,
+    deps          = TEST_A_DEPS,
+)
+

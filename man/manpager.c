@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #include "obazl_utils.h"
-#include "log.h"
+#include "liblogc.h"
 
 #include "utstring.h"
 

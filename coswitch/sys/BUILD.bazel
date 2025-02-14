@@ -1,4 +1,0 @@
-alias(
-    name = "refresh",
-    actual = "@mibl//coswitch"
-)

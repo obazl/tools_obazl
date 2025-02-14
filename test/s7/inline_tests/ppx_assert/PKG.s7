@@ -1,0 +1,1 @@
+"(list (list :ws-path \"/Users/gar/obazl/mibl/test/s7/inline_tests\") (list :pkg-path \"ppx_assert\") (list :realpath \"/Users/gar/obazl/mibl/test/s7/inline_tests/ppx_assert\") (list :cc-srcs (list :static \"ppx_assert_test.c\")))"

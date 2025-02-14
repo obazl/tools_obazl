@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
 
 # use libstarlark to parse and update BUILD.bazel file
 
@@ -12,35 +13,29 @@ cc_binary(
     copts = [
         "-std=c11",
         "-pedantic-errors",
-        "-I", "vendored/logc",
         "-I", "$(GENDIR)/update", # update.h
         "-I", "$(GENDIR)/external/libstarlark/src", # starlark.h
         "-I", "external/uthash/include",
     ],
     deps = [
         "@libstarlark//src:starlark",
-        "//vendored/logc"
+        "@liblogc//lib:logc",
     ],
     linkstatic = 1
 )
 
 ########
-genrule(
+makeheaders(
     name = "mkhdrs",
-    srcs = [
-        "update.c",
-    ],
-    outs = [
-        "update.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location update.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(location @makeheaders//:makeheaders) \\",
-        "    $(location update.c) \\",
-        "    > $@",
-    ]),
-    tools = ["@makeheaders//:makeheaders"],
+    hdrs_srcs = ["update.c"],
+    additional_srcs = select({
+        "@obazl_cc//profile:dev?": [
+            "@liblogc//macros:ansi_colors.h",
+            "@liblogc//macros:logging_debug.h"
+        ],
+        "//conditions:default": [
+            "@liblogc//macros:logging_ndebug.h"
+        ]
+    }),
     visibility = ["//visibility:public"]
 )
-

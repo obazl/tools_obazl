@@ -1,0 +1,34 @@
+((:@ (:name "@")
+     (:path /Users/gar/obazl/tools_obazl/test/s7/deps/dyn) (:exports (hash-table))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '::wsroot ((:ws-path "/Users/gar/obazl/tools_obazl/test/s7/deps/dyn") (:pkg-path ::wsroot)
+                       (:realpath "/Users/gar/obazl/tools_obazl/test/s7/deps/dyn")
+                       (:files (:static "EXPECTED.mibl" "EXPECTED.s7" "PARSETREE.mibl"
+                                        "PARSETREE.s7"))
+                       (dune (rule (target goodbye.ml)
+                                   (action
+                                    (write-file goodbye.ml
+                                                "let () = print_endline \\\"bye\\\"
+
+let msg = \\\"bye-bye\\\"
+")))
+                             (rule (target dynstruct.ml)
+                                   (action
+                                    (write-file dynstruct.ml
+                                                "let () = print_endline \\\"dynstruct\\\"
+
+let dynstruct_msg = \\\"hi dyn\\\"")))
+                             (rule (target dynsig.mli)
+                                   (action
+                                    (write-file dynsig.mli "val dynsig_msg: string")))
+                             (rule (target dynsig2.mli)
+                                   (action
+                                    (write-file dynsig2.mli "val dynsig2_msg: string"))))
+                       (dune-project (lang dune 3.0))
+                       (:modules (Foo (:ml . foo.ml) (:mli . foo.mli)))
+                       (:signatures (:static (Goodbye . goodbye.mli) (Staticsig . staticsig.mli)))
+                       (:structures (:static (Hello . hello.ml) (Mytest . mytest.ml)))
+                       (:opam "mwe.opam"))))))

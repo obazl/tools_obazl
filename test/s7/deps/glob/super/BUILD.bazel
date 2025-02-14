@@ -1,0 +1,23 @@
+package(default_visibility = ["//visibility:public"])
+
+############################# Rules ##################################
+
+########
+genrule(
+    outs  = [
+        "output.css"
+    ],
+    name  = "__output.css__",
+    srcs  = [
+        "//deps/glob/css:glob_STAR.css"
+    ],
+    cmd   = " ".join([
+        "$(execpath concat.sh)",
+        "`realpath $(locations //deps/glob/css:glob_STAR.css)`",
+        "$(location output.css)",
+    ]),
+    exec_tools = [
+        "concat.sh"
+    ]
+)
+

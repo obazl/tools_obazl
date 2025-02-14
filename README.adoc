@@ -42,7 +42,7 @@ bazel_dep(name = "obazl", version = "x.y.x",   <1>
 ----
                     <1>
 ----
-<1> Empty. This file will no longer be necessary with Bazel 7, due out in mid Oct 2023.
+<1> Empty. A future version of Bazel will eliminate this.
 
 Now run the following commands:
 

@@ -1,3 +1,7 @@
+## OBSOLETE? runs mibl_s7_run
+
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
 load(":BUILD.bzl", "script") # , "convert")
 
 script(name = "obazl")
@@ -7,21 +11,27 @@ script(name = "convert", main = "bazel_main.scm")
 # convert()
 
 ########
-genrule(
+makeheaders(
     name = "mkhdrs",
-    srcs = [
-        "obazl.c",
-    ],
-    outs = [
-        "obazl.h",
-    ],
-    cmd = "\n".join([
-        "SRC1=$(location obazl.c)",
-        "SRCDIR1=`dirname $$SRC1`",
-        "$(location //vendored/makeheaders) \\",
-        "    $(location obazl.c);",
-        "cp $${SRCDIR1}/*.h $(@D)",
-    ]),
-    tools = ["//vendored/makeheaders"],
-    visibility = ["//visibility:public"]
+    out  = "obazl.h",
+    hdrs_srcs = ["obazl.c"]
 )
+
+# genrule(
+#     name = "mkhdrs",
+#     srcs = [
+#         "obazl.c",
+#     ],
+#     outs = [
+#         "obazl.h",
+#     ],
+#     cmd = "\n".join([
+#         "SRC1=$(location obazl.c)",
+#         "SRCDIR1=`dirname $$SRC1`",
+#         "$(location //vendored/makeheaders) \\",
+#         "    $(location obazl.c);",
+#         "cp $${SRCDIR1}/*.h $(@D)",
+#     ]),
+#     tools = ["//vendored/makeheaders"],
+#     visibility = ["//visibility:public"]
+# )

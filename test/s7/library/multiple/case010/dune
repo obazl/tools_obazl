@@ -1,0 +1,21 @@
+(library
+ (name orderbook)
+ (modules orderbook)
+ (public_name ocxmr.orderbook)
+ (libraries ocxmr.make_orderbook ocxmr.quote_include)
+ (preprocess
+  (pps ppx_jane ppx_sexp_conv)))
+
+(library
+ (name make_orderbook)
+ (modules make_orderbook orderbook_intf)
+ (public_name ocxmr.make_orderbook)
+ (libraries core ocxmr.price_comparator ocxmr.market_event)
+ (preprocess (pps ppx_jane)))
+
+(library
+ (name orderbook_test)
+ (modules orderbook_test)
+ (libraries ocxmr.orderbook)
+ (inline_tests)
+ (preprocess (pps ppx_jane)))

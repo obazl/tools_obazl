@@ -1,0 +1,40 @@
+(library
+  (name my_version)
+  (public_name my.version)
+  (modules version))
+
+(rule
+  (targets local-rev)
+  (deps    (universe))
+  (action  (ignore-stderr (with-stdout-to %{targets} (system "cat ../../../../../../../../LOCAL_REV || echo 0")))))
+
+(rule
+  (targets git-sha)
+  (deps    (universe))
+  (action  (ignore-stderr (with-stdout-to %{targets} (system "git rev-parse --short --quiet --verify HEAD || echo .")))))
+
+(rule
+  (targets git-describe)
+  (deps    (universe))
+  (action  (ignore-stderr (with-stdout-to %{targets} (system "git describe --exact HEAD || echo [dev]")))))
+
+(rule
+  (targets no-git-version)
+  (mode fallback)
+  (action (copy git-sha %{targets})))
+
+(rule
+  (with-stdout-to get_git_version.ml
+    (echo "print_string @@ \
+             let v = \"%{read-lines:no-git-version}\" in \
+             let w = \"%{read-lines:git-describe}\" in \
+             let r = \"%{read-lines:local-rev}\" in \
+             if v = \"\" || v = \".\" || w <> \"[dev]\" then \
+               \"let local_rev = \\\"\" ^ r ^
+               \"\\\"let version = \\\"unknown\\\"\" \
+             else \
+               \"let local_rev = \\\"\" ^ r ^
+               \"\\\"let version = \\\"\" ^ v ^ \"\\\"\"")))
+
+(rule
+  (with-stdout-to version.ml (run ocaml %{dep:get_git_version.ml})))

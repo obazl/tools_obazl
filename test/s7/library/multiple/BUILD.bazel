@@ -1,0 +1,70 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+## FIXME: running under test, the program (multiple_test) will be in
+## the runfiles dir so it will be found by the treewalker. fix
+## load_project to detect and avoid this.
+
+CMD_FLAGS = [
+    "-std=c11",
+    "-pedantic-errors",
+    "-Iexternal/uthash/include",
+]
+## macos: -UDEBUG
+
+BOOTSTRAP_INCLUDES = [
+    "-I.",
+    "-Isrc",
+    "-Iexternal/mibl/src",
+    "-Ivendored/libs7/src",
+
+    "-I$(GENDIR)",
+    "-I$(GENDIR)/src",
+]
+
+########
+cc_test(
+    name = "test",
+    srcs = ["Test.c"],
+    data = glob(["**"]), # required
+    copts = CMD_FLAGS + BOOTSTRAP_INCLUDES + [
+        "-I$(GENDIR)/src/hdrs",
+
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/unity",
+        "-Iexternal/mibl/vendored/unity",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+
+        "-Iexternal/libs7/src"  # s7.h
+    ] + select({
+        "//bzl/host:debug": [""],
+        "//conditions:default":   []
+    }),
+    # data = [
+    #     "//scm/dune:srcs"
+    # ],
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "//src:mibl",
+        "//vendored/gopt",
+        "//vendored/logc",
+        "//vendored/unity",
+        "//vendored/uthash",
+    ],
+    timeout = "short"
+)

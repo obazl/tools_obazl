@@ -1,0 +1,28 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_ocaml//build:rules.bzl",
+     "ocaml_module",
+)
+
+######################## Modules & Signatures ########################
+############################# Rules ##################################
+
+########
+genrule(
+    outs  = [
+        "foo.ml"
+    ],
+    name  = "__foo.ml__",
+    srcs  = [
+        "//deps/glob/sub/css:glob_STAR.css"
+    ],
+    cmd   = " ".join([
+        "$(execpath concat.sh)",
+        "`realpath $(locations //deps/glob/sub/css:glob_STAR.css)`",
+        "$(location foo.ml)",
+    ]),
+    exec_tools = [
+        "concat.sh"
+    ]
+)
+

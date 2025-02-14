@@ -1,0 +1,73 @@
+((:@ (:name "@")
+     (:path /Users/gar/obazl/tools_obazl/test/s7/deps/dyn)
+     (:exports
+         (hash-table
+           ':goodbye.ml ((:pkg . ::wsroot) (:tgt . :goodbye.ml))
+           ':dynstruct.ml ((:pkg . ::wsroot) (:tgt . :dynstruct.ml))
+           ':dynsig.mli ((:pkg . ::wsroot) (:tgt . :dynsig.mli))
+           ':dynsig2.mli ((:pkg . ::wsroot) (:tgt . :dynsig2.mli))))
+     (:opam
+         (hash-table)) (:shared-ppx (hash-table)) (:filegroups (hash-table))
+     (:pkgs
+         (hash-table
+           '::wsroot ((:ws-path "/Users/gar/obazl/tools_obazl/test/s7/deps/dyn") (:pkg-path ::wsroot)
+                       (:realpath "/Users/gar/obazl/tools_obazl/test/s7/deps/dyn")
+                       (:files (:static "EXPECTED.mibl" "EXPECTED.s7" "PARSETREE.mibl"
+                                        "PARSETREE.s7"))
+                       (dune (rule (target goodbye.ml)
+                                   (action
+                                    (write-file goodbye.ml
+                                                "let () = print_endline \\\"bye\\\"
+
+let msg = \\\"bye-bye\\\"
+")))
+                             (rule (target dynstruct.ml)
+                                   (action
+                                    (write-file dynstruct.ml
+                                                "let () = print_endline \\\"dynstruct\\\"
+
+let dynstruct_msg = \\\"hi dyn\\\"")))
+                             (rule (target dynsig.mli)
+                                   (action
+                                    (write-file dynsig.mli "val dynsig_msg: string")))
+                             (rule (target dynsig2.mli)
+                                   (action
+                                    (write-file dynsig2.mli "val dynsig2_msg: string"))))
+                       (dune-project (lang dune 3.0))
+                       (:modules (Foo (:ml . foo.ml) (:mli . foo.mli))
+                                 (Goodbye (:ml_ . goodbye.ml) (:mli . goodbye.mli)))
+                       (:signatures (:static (Staticsig . staticsig.mli))
+                                    (:dynamic (Dynsig . dynsig.mli) (Dynsig2 . dynsig2.mli)))
+                       (:structures (:static (Hello . hello.ml) (Mytest . mytest.ml))
+                                    (:dynamic (Dynstruct . dynstruct.ml)))
+                       (:opam "mwe.opam")
+                       (:mibl (:write-file (:outputs
+                                            (:goodbye.ml (:pkg . ::wsroot) (:tgt . "goodbye.ml")))
+                                           (:actions
+                                            (:cmd (:tool :write-file)
+                                                  (:args
+                                                    :goodbye.ml (:content "let () = print_endline \\\"bye\\\"
+
+let msg = \\\"bye-bye\\\"
+")))))
+                              (:write-file (:outputs
+                                            (:dynstruct.ml (:pkg . ::wsroot)
+                                                           (:tgt . "dynstruct.ml")))
+                                           (:actions
+                                            (:cmd (:tool :write-file)
+                                                  (:args
+                                                    :dynstruct.ml (:content "let () = print_endline \\\"dynstruct\\\"
+
+let dynstruct_msg = \\\"hi dyn\\\"")))))
+                              (:write-file (:outputs
+                                            (:dynsig.mli (:pkg . ::wsroot) (:tgt . "dynsig.mli")))
+                                           (:actions
+                                            (:cmd (:tool :write-file)
+                                                  (:args
+                                                    :dynsig.mli (:content "val dynsig_msg: string")))))
+                              (:write-file (:outputs
+                                            (:dynsig2.mli (:pkg . ::wsroot) (:tgt . "dynsig2.mli")))
+                                           (:actions
+                                            (:cmd (:tool :write-file)
+                                                  (:args
+                                                    :dynsig2.mli (:content "val dynsig2_msg: string")))))))))))

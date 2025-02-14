@@ -1,0 +1,7 @@
+module(
+    name = "obazl_mwe",
+    version = "0.1.0",
+    compatibility_level = 0,
+)
+
+bazel_dep(name = "rules_ocaml", version = "5.0.0")

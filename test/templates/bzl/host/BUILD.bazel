@@ -1,0 +1,48 @@
+exports_files(["BUILD.bazel"])
+
+package(default_visibility = ["//visibility:public"])
+
+###############
+config_setting(name = "linux",
+               constraint_values = ["@platforms//os:linux"])
+
+config_setting(name = "macos",
+               constraint_values = ["@platforms//os:macos"])
+
+###############
+config_setting(
+    name = "linux_dev",
+    constraint_values = ["@platforms//os:linux"],
+    values = {"compilation_mode": "fastbuild"}
+)
+
+config_setting(
+    name = "linux_debug",
+    constraint_values = ["@platforms//os:linux"],
+    values = {"compilation_mode": "dbg"}
+)
+
+config_setting(
+    name = "linux_opt",
+    constraint_values = ["@platforms//os:linux"],
+    values = {"compilation_mode": "opt"}
+)
+
+################################################################
+config_setting(
+    name = "macos_dev",
+    constraint_values = ["@platforms//os:macos"],
+    values = {"compilation_mode": "fastbuild"}
+)
+
+config_setting(
+    name = "macos_dbg",
+    constraint_values = ["@platforms//os:macos"],
+    values = {"compilation_mode": "dbg"}
+)
+
+config_setting(
+    name = "macos_opt",
+    constraint_values = ["@platforms//os:macos"],
+    values = {"compilation_mode": "opt"}
+)
