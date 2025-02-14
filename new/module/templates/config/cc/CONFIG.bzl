@@ -8,5 +8,5 @@ BASE_LINKOPTS = _BASE_LINKOPTS
 BASE_DEFINES = _BASE_DEFINES
 
 BASE_SRCS = []
-BASE_DEPS = ["@liblogc//src:logc"]
+BASE_DEPS = ["@liblogc//lib:logc"]
 BASE_INCLUDE_PATHS = ["-I$(@liblogc)/src"]

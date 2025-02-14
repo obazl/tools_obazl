@@ -7,8 +7,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "librunfiles.h"
+#include "liblogc.h"
+/* #include "librunfiles.h" */
 #include "utstring.h"
 
 #include "module.h"

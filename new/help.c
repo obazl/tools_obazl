@@ -5,141 +5,154 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "log.h"
+#include "liblogc.h"
+#include "runfiles.h"
+#include "spawn_cmd.h"
 
 #include "utstring.h"
 
 #include "help.h"
 
-int spawn_cmd_with_stdout(char *executable, int argc, char *argv[])
-{
-#if defined(DEBUG_TRACE)
-    log_trace("spawn_cmd_with_stdout");
-#endif
-    if (verbose) { // || dry_run) {
-        UT_string *cmd_str;
-        utstring_new(cmd_str);
-        for (int i =0; i < argc; i++) {
-            utstring_printf(cmd_str, "%s ", (char*)argv[i]);
-        }
-        /* log_info("%s", utstring_body(cmd_str)); */
-        /* log_info("obazl:"); */
-        printf(YEL "EXEC: " CMDCLR);
-        printf("%s ", utstring_body(cmd_str));
-        printf(CRESET "\n");
-    }
+bool verbose;
 
-    /* if (dry_run) return 0; */
+/* #if LOCAL_INTERFACE */
+#define DEBUG_LEVEL debug_new
+#define TRACE_FLAG trace_new
+/* #endif */
+/* extern int  DEBUG_LEVEL; */
+/* extern bool TRACE_FLAG; */
 
-    pid_t pid;
-    int rc;
+/* int spawn_cmd_with_stdout(char *executable, int argc, char *argv[]) */
+/* { */
+/* #if defined(DEBUG_TRACE) */
+/*     log_trace("spawn_cmd_with_stdout"); */
+/* #endif */
+/*     if (verbose) { // || dry_run) { */
+/*         UT_string *cmd_str; */
+/*         utstring_new(cmd_str); */
+/*         for (int i =0; i < argc; i++) { */
+/*             utstring_printf(cmd_str, "%s ", (char*)argv[i]); */
+/*         } */
+/*         /\* log_info("%s", utstring_body(cmd_str)); *\/ */
+/*         /\* log_info("obazl:"); *\/ */
+/*         printf(YEL "EXEC: " CMDCLR); */
+/*         printf("%s ", utstring_body(cmd_str)); */
+/*         printf(CRESET "\n"); */
+/*     } */
 
-    extern char **environ;
+/*     /\* if (dry_run) return 0; *\/ */
 
-    errno = 0;
-    rc = posix_spawnp(&pid, executable, NULL, NULL, argv, environ);
+/*     pid_t pid; */
+/*     int rc; */
 
-    if (rc == 0) {
-#if defined(DEBUG_TRACE)
-        /* log_trace("posix_spawn child pid: %i\n", pid); */
-#endif
-        errno = 0;
-        int waitrc = waitpid(pid, &rc, WUNTRACED);
-        if (waitrc == -1) {
-            perror("spawn_cmd waitpid error");
-            /* log_error("spawn_cmd"); */
-            /* posix_spawn_file_actions_destroy(&action); */
-            return -1;
-        } else {
-#if defined(DEBUG_TRACE)
-        /* log_trace("waitpid rc: %d", waitrc); */
-#endif
-            // child exit OK
-            if ( WIFEXITED(rc) ) {
-                // terminated normally by a call to _exit(2) or exit(3).
-#if defined(DEBUG_TRACE)
-                /* log_trace("WIFEXITED(rc)"); */
-                /* log_trace("WEXITSTATUS(rc): %d", WEXITSTATUS(rc)); */
-#endif
-                /* log_debug("WEXITSTATUS: %d", WEXITSTATUS(rc)); */
-                /* "widow" the pipe (delivers EOF to reader)  */
-                /* close(stdout_pipe[1]); */
-                /* dump_pipe(STDOUT_FILENO, stdout_pipe[0]); */
-                /* close(stdout_pipe[0]); */
+/*     extern char **environ; */
 
-                /* /\* "widow" the pipe (delivers EOF to reader)  *\/ */
-                /* close(stderr_pipe[1]); */
-                /* dump_pipe(STDERR_FILENO, stderr_pipe[0]); */
-                /* close(stderr_pipe[0]); */
+/*     errno = 0; */
+/*     rc = posix_spawnp(&pid, executable, NULL, NULL, argv, environ); */
 
-                fflush(stdout);
-                fflush(stderr);
-                return EXIT_SUCCESS;
-            }
-            else if (WIFSIGNALED(rc)) {
-                // terminated due to receipt of a signal
-                /* log_error("WIFSIGNALED(rc)"); */
-                /* log_error("WTERMSIG: %d", WTERMSIG(rc)); */
-                /* log_error("WCOREDUMP?: %d", WCOREDUMP(rc)); */
-                return -1;
-            } else if (WIFSTOPPED(rc)) {
-                /* process has not terminated, but has stopped and can
-                   be restarted. This macro can be true only if the
-                   wait call specified the WUNTRACED option or if the
-                   child process is being traced (see ptrace(2)). */
-                /* log_error("WIFSTOPPED(rc)"); */
-                /* log_error("WSTOPSIG: %d", WSTOPSIG(rc)); */
-                return -1;
-            }
-        }
-        /* else { */
-        /*     log_error("spawn_cmd: stopped or terminated child pid: %d", */
-        /*               waitrc); */
-        /*     /\* posix_spawn_file_actions_destroy(&action); *\/ */
-        /*     return -1; */
-        /* } */
-    } else {
-        /* posix_spawnp rc != 0; does not set errno */
-        /* log_fatal("spawn_cmd error rc: %d, %s", rc, strerror(rc)); */
-        /* posix_spawn_file_actions_destroy(&action); */
-        return rc;
-    }
-    //  should not reach here?
-    /* log_error("BAD FALL_THROUGH"); */
-    return rc;
-}
+/*     if (rc == 0) { */
+/* #if defined(DEBUG_TRACE) */
+/*         /\* log_trace("posix_spawn child pid: %i\n", pid); *\/ */
+/* #endif */
+/*         errno = 0; */
+/*         int waitrc = waitpid(pid, &rc, WUNTRACED); */
+/*         if (waitrc == -1) { */
+/*             perror("spawn_cmd waitpid error"); */
+/*             /\* log_error("spawn_cmd"); *\/ */
+/*             /\* posix_spawn_file_actions_destroy(&action); *\/ */
+/*             return -1; */
+/*         } else { */
+/* #if defined(DEBUG_TRACE) */
+/*         /\* log_trace("waitpid rc: %d", waitrc); *\/ */
+/* #endif */
+/*             // child exit OK */
+/*             if ( WIFEXITED(rc) ) { */
+/*                 // terminated normally by a call to _exit(2) or exit(3). */
+/* #if defined(DEBUG_TRACE) */
+/*                 /\* log_trace("WIFEXITED(rc)"); *\/ */
+/*                 /\* log_trace("WEXITSTATUS(rc): %d", WEXITSTATUS(rc)); *\/ */
+/* #endif */
+/*                 /\* log_debug("WEXITSTATUS: %d", WEXITSTATUS(rc)); *\/ */
+/*                 /\* "widow" the pipe (delivers EOF to reader)  *\/ */
+/*                 /\* close(stdout_pipe[1]); *\/ */
+/*                 /\* dump_pipe(STDOUT_FILENO, stdout_pipe[0]); *\/ */
+/*                 /\* close(stdout_pipe[0]); *\/ */
+
+/*                 /\* /\\* "widow" the pipe (delivers EOF to reader)  *\\/ *\/ */
+/*                 /\* close(stderr_pipe[1]); *\/ */
+/*                 /\* dump_pipe(STDERR_FILENO, stderr_pipe[0]); *\/ */
+/*                 /\* close(stderr_pipe[0]); *\/ */
+
+/*                 fflush(stdout); */
+/*                 fflush(stderr); */
+/*                 return EXIT_SUCCESS; */
+/*             } */
+/*             else if (WIFSIGNALED(rc)) { */
+/*                 // terminated due to receipt of a signal */
+/*                 /\* log_error("WIFSIGNALED(rc)"); *\/ */
+/*                 /\* log_error("WTERMSIG: %d", WTERMSIG(rc)); *\/ */
+/*                 /\* log_error("WCOREDUMP?: %d", WCOREDUMP(rc)); *\/ */
+/*                 return -1; */
+/*             } else if (WIFSTOPPED(rc)) { */
+/*                 /\* process has not terminated, but has stopped and can */
+/*                    be restarted. This macro can be true only if the */
+/*                    wait call specified the WUNTRACED option or if the */
+/*                    child process is being traced (see ptrace(2)). *\/ */
+/*                 /\* log_error("WIFSTOPPED(rc)"); *\/ */
+/*                 /\* log_error("WSTOPSIG: %d", WSTOPSIG(rc)); *\/ */
+/*                 return -1; */
+/*             } */
+/*         } */
+/*         /\* else { *\/ */
+/*         /\*     log_error("spawn_cmd: stopped or terminated child pid: %d", *\/ */
+/*         /\*               waitrc); *\/ */
+/*         /\*     /\\* posix_spawn_file_actions_destroy(&action); *\\/ *\/ */
+/*         /\*     return -1; *\/ */
+/*         /\* } *\/ */
+/*     } else { */
+/*         /\* posix_spawnp rc != 0; does not set errno *\/ */
+/*         /\* log_fatal("spawn_cmd error rc: %d, %s", rc, strerror(rc)); *\/ */
+/*         /\* posix_spawn_file_actions_destroy(&action); *\/ */
+/*         return rc; */
+/*     } */
+/*     //  should not reach here? */
+/*     /\* log_error("BAD FALL_THROUGH"); *\/ */
+/*     return rc; */
+/* } */
 
 EXPORT void display_manpage(char *section, char *manpage)
 {
-
-    printf("display_manpage: %s\n", manpage);
+    TRACE_ENTRY;
+    LOG_INFO(0, "display_manpage: %s", manpage);
+    LOG_INFO(0, "BAZEL_CURRENT_REPOSITORY: %s", BAZEL_CURRENT_REPOSITORY);
 
     char *exe = "man";
     int result;
 
     char *runfiles_root = getcwd(NULL, 0);
 
-    printf("runfiles_root: %s\n", runfiles_root);
+    LOG_DEBUG(0, "runfiles_root: %s", runfiles_root);
 
     UT_string *pagesrc;
     utstring_new(pagesrc);
     utstring_printf(pagesrc,
-                    /* "%s/man/%s/%s", */
-                    "%s/external/opam/man/%s/@%s.1",
-                    runfiles_root,
-                    section,
-                    manpage);
-    printf("page src: %s\n", utstring_body(pagesrc));
+                    BAZEL_CURRENT_REPOSITORY
+                    "/man/%s/%s.1",
+                    section, manpage);
+    LOG_DEBUG(0, "pagesrc: %s", utstring_body(pagesrc));
+    char *pagesrc_rf =  rf_rlocation(utstring_body(pagesrc));
+    LOG_DEBUG(0, "pagesrc rf: %s", pagesrc_rf);
 
     char *argv[] = {
         "man",
-        utstring_body(pagesrc),
+        pagesrc_rf,
+        /* utstring_body(pagesrc), */
         NULL
     };
 
     int argc = (sizeof(argv) / sizeof(argv[0])) - 1;
     if (verbose)
-        printf("displaying manpage %s\n", utstring_body(pagesrc));
+        printf("displaying manpage %s\n", pagesrc_rf);
     result = spawn_cmd_with_stdout(exe, argc, argv);
     if (result != 0) {
         fprintf(stderr, "FAIL: spawn_cmd_with_stdout for man\n");
@@ -152,7 +165,6 @@ EXPORT void display_manpage(char *section, char *manpage)
 
 EXPORT void execlp_manpage(char *section, char *manpage)
 {
-
     printf("display_manpage: %s\n", manpage);
 
     char *runfiles_root = getcwd(NULL, 0);

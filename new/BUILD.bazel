@@ -1,277 +1,27 @@
-load("//config/cc:CONFIG.bzl",
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
+load("//cfg/cc:CONFIG.bzl",
      COPTS   = "BASE_COPTS",
-     LOCAL_DEFINES = "BASE_LOCAL_DEFINES")
+     _LOCAL_DEFINES = "BASE_LOCAL_DEFINES")
 
-load("@makeheaders//src:RULES.bzl", "makeheaders")
-
-exports_files(["ansi_colors.h"])
-
-TOOLCHAINS = ["//:module_profiles"]
-
-alias(
-    name = "ws",
-    actual = ":workspace"
-)
+LOCAL_DEFINES = _LOCAL_DEFINES + [
+    "BAZEL_CURRENT_REPOSITORY=\\\"{}\\\"".format(
+        repo_name())
+        # native.package_relative_label("@tools_obazl").repo_name
+]
 
 ##########
 cc_binary(
-    name  = "module",
+    name  = "new",
     linkstatic = True,
+    includes = ["."],
     srcs  = [
-        "module.c", "module.h",
-        # "xdg.c", "xdg.h",
-        # "utarray.h", "utstring.h", "uthash.h"
-    ],
-    deps = [
-        ":helper",
-        "@runfiles//src:runfiles",
-        "@uthash//src:uthash",
-        "@xdgc//lib:xdgc"
-    ],
-    copts = select({
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11",
-                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
-                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-x", "c",
-        "-Wall",
-        "-Wpedantic",
-        "-Wno-unused-function",
-
-        "-I.",
-        "-Iobazl/new",
-        "-I$(GENDIR)/new",
-        "-I$(GENDIR)/external/obazl/new",
-
-        "-I$(GENDIR)",
-
-        "-I$(@runfiles)/src",
-        # "-I$(GENDIR)/runfiles",
-        # "-I$(GENDIR)/external/runfiles~{}/src".format(
-        #     RUNFILES_VERSION),
-
-        # "-I$(GENDIR)/external/mibl/new",
-        # "-I$(GENDIR)/external/mibl/src",
-
-        # "-Iexternal/uthash/include",
-        # "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
-
-        # "-Iexternal/libs7/src",
-
-        # "-Iexternal/uthash",
-        # "-Iexternal/uthash/include",
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-        "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
-    local_defines = LOCAL_DEFINES,
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-    ],
-    data  = [
-        "//new/module/templates:all",
-        # "//new/templates/xdg/bin:all",
-        # "//new/templates/xdg/data/queries:all",
-        # "//new/templates/bzl/host:BUILD.bazel",
-        # "//new/templates/bzl/profile:BUILD.bazel",
-        "//man/man1:new_workspace.1",
-    ],
-    toolchains = TOOLCHAINS,
-    visibility = ["//visibility:public"]
-)
-
-##########
-cc_binary(
-    name  = "workspace",
-    linkstatic = True,
-    srcs  = [
-        "workspace.c", "workspace.h",
-        "xdg.c", "xdg.h",
-        "utarray.h", "utstring.h", "uthash.h"
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-    ],
-    copts = select({
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11",
-                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
-                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-x", "c",
-        "-Wall",
-        "-Wpedantic",
-        "-Wno-unused-function",
-
-        "-I.",
-        "-Iobazl/new",
-        "-I$(GENDIR)/new",
-        "-I$(GENDIR)/external/obazl/new",
-
-        "-I$(GENDIR)",
-
-        "-I$(@runfiles)/src",
-        # "-I$(GENDIR)/external/runfiles~{}/src".format(
-        #     RUNFILES_VERSION),
-        # "-I$(GENDIR)/runfiles",
-        # "-I$(GENDIR)/external/obazl/runfiles",
-
-        # "-I$(GENDIR)/external/mibl/new",
-        # "-I$(GENDIR)/external/mibl/src",
-
-        # "-Iexternal/uthash/include",
-        # "-Iexternal/libinih",
-        # "-Iexternal/logc/src",
-
-        # "-Iexternal/libs7/src",
-
-        # "-Iexternal/uthash",
-        # "-Iexternal/uthash/include",
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-        "//conditions:default": {}
-    }) + [
-        "-lm",
-        # "-lc_s7"
-    ],
-    data  = [
-        "//new/templates:all",
-        "//new/templates/xdg/bin:all",
-        "//new/templates/xdg/data/queries:all",
-        # "//new/templates/bzl/host:BUILD.bazel",
-        # "//new/templates/bzl/profile:BUILD.bazel",
-        "//man/man1:new_workspace.1",
-    ],
-    deps = [
-        ":helper",
-        "@runfiles//src:runfiles",
-        # "@uthash//:include"
-    ],
-    toolchains = TOOLCHAINS,
-    visibility = ["//visibility:public"]
-)
-
-##########
-alias(
-    name = "pkg",
-    actual = ":package"
-)
-
-cc_binary(
-    name  = "package",
-    linkstatic = True,
-    srcs  = [
-        "package.c", "package.h",
-        # "log.c", "log.h",  ## provided by libmibl.a
-        # "@uthash//:include",
-        "utarray.h", "utstring.h", "uthash.h"
-    ],
-    defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
-        "//conditions:default":   []
-    }) + select({
-        "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
-        "//conditions:default":   []
-    }) + [
-        "WITH_C_LOADER"
-    ],
-    copts = select({
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11",
-                             "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
-                             "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-Wall",
-        "-Wpedantic",
-        "-Wno-unused-function",
-
-        "-Inew",
-        "-Iexternal/obazl/new",
-        "-I$(GENDIR)/new",
-        "-I$(GENDIR)/external/obazl/new",
-
-        "-I$(GENDIR)/external/mibl/src",
-
-        "-Iexternal/uthash/include",
-        "-Iexternal/libinih",
-        "-Iexternal/logc/src",
-
-        # "-Iexternal/mibl/src",
-        "-I$(GENDIR)/external/mibl/src", # mibl.h is generated
-        "-Iexternal/libs7/src",
-        "-Iexternal/libs7/vendored/linenoise",
-        "-Iexternal/mibl/libs7/vendored/linenoise",
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
-        "//conditions:default": {}
-    }) + [
-        "-lm",
-    ],
-    data = [
-        "//scm:srcs",
-        "//scm/starlark:srcs",
-        "//new/templates:all",
-        # "//new/templates/bzl/host:BUILD.bazel",
-        # "//new/templates/bzl/profile:BUILD.bazel",
-        "//man/man1:new_workspace.1",
-    ],
-    deps = [
-        ":helper",
-        "//vendored/logc",
-        "@mibl//src:mibl",
-        "@mibl//external/libinih:inih",
-    ],
-    toolchains = TOOLCHAINS,
-    visibility = ["//visibility:public"]
-)
-
-##########
-cc_library(
-    name  = "helper",
-    linkstatic = True,
-    srcs  = [
+        "new.c",
         "help.c",
-        # "utils.c"
+        ":mkhdrs"
     ],
-    hdrs = [
-        "help.h",
-        "log.h",
-        "utils.h",
-        "utstring.h"
-    ],
-    deps = [
-        "//src/utils",
-        # "@mibl//src:mibl",
-        # "@mibl//external/libinih:inih",
-        "@liblogc//src:logc",
-        # "//external/libinih:inih",
-        # "@libs7//src:s7",
-        # "@libs7//src:c_s7",
-        # "@libs7//vendored/linenoise",
+    local_defines = [
+        "BAZEL_CURRENT_REPOSITORY=\\\"{}\\\"".format(package_relative_label("@tools_obazl").repo_name)
     ],
     defines = select({
         "//bzl/host:debug": ["DEBUG_TRACE"],
@@ -280,71 +30,39 @@ cc_library(
         "//bzl/host:linux": ["_XOPEN_SOURCE=500"], # strdup
         "//conditions:default":   []
     }) + [
-        "WITH_C_LOADER"
     ],
-    copts = select({
+    copts = COPTS + select({
         "//bzl/host:macos": ["-std=c11"],
         "//bzl/host:linux": ["-std=gnu11",
                              "-D_POSIX_C_SOURCE=200809L", ## strndup etc.
                              "-D_DEFAULT_SOURCE"], ## DT_* from dirent.h
         "//conditions:default": ["-std=c11"],
-    }) + [
-        "-Wall",
-        "-Wpedantic",
-        "-Wno-unused-function",
-
-        "-Inew",
-        "-I$(GENDIR)/new",
-        "-I$(GENDIR)/external/obazl/new",
-        # "-I$(GENDIR)/src",
-
-        # "-I$(GENDIR)/external/mibl/new",
-        # "-I$(GENDIR)/external/mibl/src",
-
-        # "-Iexternal/uthash/include",
-        # "-Iexternal/libinih",
-
-        "-Iexternal/logc/src",
-
-        # "-Iexternal/libs7/src",
-    ],
+    }),
     linkopts = select({
         "//bzl/host:macos": [],
         "//bzl/host:linux": [ "-Wl,-E", "-ldl"],
         "//conditions:default": {}
     }) + [
-        "-lm",
+        # "-lm",
         # "-lc_s7"
     ],
     data  = [
-        "//new/module/templates:all",
+        "//template",
         "//man/man1:new_workspace.1",
     ],
-    toolchains = TOOLCHAINS,
+    deps = [
+        "@cjson//:cjson",
+        "@cwalk//lib:cwalk",
+        "@gopt//lib:gopt",
+        "@mustachios//lib:mustachios",
+        "@obazl_cc//lib:spawn_cmd",
+        "@runfiles//lib:runfiles",
+        "//src/utils",
+    ],
     visibility = ["//visibility:public"]
 )
 
 ########
-makeheaders(
-    name = "mkhdrs",
-    hdrs_srcs = [
-        # "coswitch.c",
-        "module.c",
-        "package.c",
-        "workspace.c",
-        "help.c",
-        # "xdg.c",
-        # "test.c",
-    ],
-    additional_srcs = [
-        # "//new/bazel:emit_build_bazel.c",
-        # "//new/bazel:emit_ocaml_repo.c",
-        "//src/utils:utils.c",
-        "ansi_colors.h",
-    ],
-)
-
-################################################################
 cc_test(
     name  = "test",
     srcs  = [
@@ -396,25 +114,30 @@ cc_test(
     deps = [
         "//vendored/unity",
     ],
-    toolchains = TOOLCHAINS,
     visibility = ["//visibility:public"]
 )
 
-################
-# makeheaders(
-#     name = "mkhdrs",
-#     srcs = ["coswitch.c"]
-#     # additional_srcs = [
-#     # ] + select({
-#     #     "//config/profile:dev?": [
-#     #     "//src:ansi_colors.h",
-#     #     "//src:trace_dev.h",
-#     #     ],
-#     #     "//conditions:default":   [
-#     #         "//src:ansi_colors.h",
-#     #         "//src:trace_prod.h",
-#     #     ]
-#     # }),
-#     # visibility = ["//visibility:public"]
-# )
+############
+makeheaders(
+    name = "mkhdrs",
+    hdrs_srcs = [
+        "new.c",
+        "help.c",
+        "//src/utils:utils.c",
+    ],
+    additional_srcs = [
+        "@liblogc//macros:ansi_colors.h"
+    ] + select({
+        "@obazl_cc//profile:dev?": [
+            "@liblogc//macros:logging_debug.h"
+        ],
+        # special case: built as tool, transitioned to opt
+        # "@makeheaders//compilation_mode:opt": [
+        #     "@liblogc//macros:logging_debug.h"
+        # ],
+        "//conditions:default": [
+            "@liblogc//macros:logging_ndebug.h"
+        ]
+    })
+)
 

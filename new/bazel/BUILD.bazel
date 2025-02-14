@@ -1,9 +1,9 @@
-load("//config/cc:CONFIG.bzl",
+load("//cfg/cc:CONFIG.bzl",
      "BASE_COPTS",
      "BASE_LOCAL_DEFINES",
      "BASE_LINKOPTS")
 
-load("@makeheaders//src:RULES.bzl", "makeheaders")
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
 
 TOOLCHAINS = ["//:module_profiles"]
 
@@ -27,18 +27,20 @@ cc_library(
         "//man:manpager",
         "@liblogc//lib:logc",
         "@obazl_tools_cc//src/utils:obazl_utils",
-        "@runfiles//src:runfiles",
-        "@uthash//src:uthash",
-        "@xdgc//lib:xdgc"
+        # "@runfiles//src:runfiles",
+        "@uthash//lib:uthash",
+        "@xdgc//lib:xdgc",
+        "@bazel_tools//tools/cpp/runfiles"
     ],
     copts = BASE_COPTS + [
         "-I$(GENDIR)/$(@)/new/bazel",
-        "-I$(GENDIR)/$(@)/man",
+
+        # "-I$(GENDIR)/$(@)/man",
         # "-I$(@liblogc)/src",
-        "-I$(GENDIR)/$(@obazl_tools_cc)/src/utils",
-        "-I$(GENDIR)/$(@runfiles)/src",
-        "-I$(@uthash)/src",
-        "-I$(GENDIR)/$(@xdgc)/lib"
+        # "-I$(GENDIR)/$(@obazl_tools_cc)/src/utils",
+        # "-I$(GENDIR)/$(@runfiles)/src",
+        # "-I$(@uthash)/src",
+        # "-I$(GENDIR)/$(@xdgc)/lib"
     ],
     linkopts = BASE_LINKOPTS,
     local_defines = BASE_LOCAL_DEFINES,
@@ -55,6 +57,17 @@ makeheaders(
     additional_srcs = [
         "//man:manpager.c",
         "//lib/obazl:obazl.c",
-        "@obazl_tools_cc//src:ansi_colors.h"
-    ],
+        "@liblogc//macros:ansi_colors.h"
+    ] + select({
+        "@obazl_cc//profile:dev?": [
+            "@liblogc//macros:logging_debug.h"
+        ],
+        # special case: built as tool, transitioned to opt
+        # "@makeheaders//compilation_mode:opt": [
+        #     "@liblogc//macros:logging_debug.h"
+        # ],
+        "//conditions:default": [
+            "@liblogc//macros:logging_ndebug.h"
+        ]
+    }),
 )

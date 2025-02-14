@@ -1,9 +1,9 @@
-load("//config/cc:CONFIG.bzl",
+load("//cfg/cc:CONFIG.bzl",
      "BASE_COPTS",
      "BASE_LOCAL_DEFINES",
      "BASE_LINKOPTS")
 
-load("@makeheaders//src:RULES.bzl", "makeheaders")
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
 
 TOOLCHAINS = ["//:module_profiles"]
 
@@ -24,10 +24,10 @@ cc_library(
     ],
     deps = [
         "//man:manpager",
-        "@liblogc//src:logc",
+        "@liblogc//lib:logc",
         "@obazl_tools_cc//src/utils:obazl_utils",
-        "@runfiles//src:runfiles",
-        "@uthash//src:uthash",
+        # "@runfiles//src:runfiles",
+        "@uthash//lib:uthash",
         "@xdgc//lib:xdgc"
     ],
     copts = BASE_COPTS + [
@@ -35,7 +35,7 @@ cc_library(
         "-I$(GENDIR)/$(@)/man",
         "-I$(@liblogc)/src",
         "-I$(GENDIR)/$(@obazl_tools_cc)/src/utils",
-        "-I$(GENDIR)/$(@runfiles)/src",
+        # "-I$(GENDIR)/$(@runfiles)/src",
         "-I$(@uthash)/src",
         "-I$(GENDIR)/$(@xdgc)/lib"
     ],
