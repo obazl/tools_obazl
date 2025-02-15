@@ -11,8 +11,14 @@ LOCAL_DEFINES = _LOCAL_DEFINES + [
 ]
 
 ##########
+# mymacro(
+#     name  = "here",
+#     # expands to new, with args = ["--here"]
+# )
+
 cc_binary(
     name  = "new",
+    # args = ["--here"], # write to current dir
     linkstatic = True,
     includes = ["."],
     srcs  = [

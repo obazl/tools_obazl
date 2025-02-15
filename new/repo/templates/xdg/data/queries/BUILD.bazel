@@ -1,5 +1,0 @@
-filegroup(
-    name = "all",
-    data = glob(["*.qry.bzl"]),
-    visibility = ["//visibility:public"]
-)

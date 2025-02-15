@@ -1,10 +1,13 @@
+#include <ctype.h>
 #include <libgen.h>
+#include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "gopt.h"
@@ -41,12 +44,13 @@ char *ws_dir;                  /* BUILD_WORKSPACE_DIRECTORY */
 char *build_wd;                /* BUILD_WORKING_DIRECTORY */
 
 /* json data from cmd line */
-char *name = "mydemo";
+char *default_name = "myproj";
 char *json_data;
-UT_string *jsondat;
+cJSON *json_str;
 
 enum OPTS {
     OPT_TEMPLATE = 0,
+    OPT_DATA,
     OPT_JSON,
     OPT_NAME,
     FLAG_LIST,
@@ -64,7 +68,9 @@ static struct option options[] = {
     /* 0 */
     [OPT_TEMPLATE] = {.long_name="template",.short_name='t',
                  .flags=GOPT_ARGUMENT_REQUIRED},
-    [OPT_JSON] = {.long_name="data",
+    [OPT_DATA] = {.long_name="data",
+                 .flags=GOPT_ARGUMENT_REQUIRED},
+    [OPT_JSON] = {.long_name="json",
                  .flags=GOPT_ARGUMENT_REQUIRED},
     [OPT_NAME] = {.long_name="name",
                  .flags=GOPT_ARGUMENT_REQUIRED},
@@ -94,7 +100,7 @@ void _print_usage(void) {
 
     printf("\t-t, --template <name>\tName of template to use. Default: default\n");
 
-    printf("\t-t, --name <name>\tName to use for pkg etc. Default: 'mydemo'\n");
+    printf("\t-t, --name <name>\tName to use for pkg etc. Default: 'myproj'\n");
 
     printf("\t-d, --debug\t\tEnable debug flags. Repeatable.\n");
     printf("\t-t, --trace\t\tEnable all trace flags (debug only).\n");
@@ -126,7 +132,7 @@ void _set_options(struct option options[])
     }
 
     if (options[OPT_NAME].count) {
-        name = strdup(options[OPT_NAME].argument);
+        default_name = strdup(options[OPT_NAME].argument);
     }
 }
 
@@ -306,22 +312,12 @@ void _handle_file(char *template)
 {
     TRACE_ENTRY;
     static char buffer[FILENAME_MAX];
+    memset(buffer, 0, sizeof(buffer));
 
     char tfile_src[FILENAME_MAX];
+    memset(tfile_src, 0, sizeof(tfile_src));
     cwk_path_normalize(template, tfile_src, sizeof(tfile_src));
     LOG_DEBUG(0, "template:    %s", realpath(tfile_src, NULL));
-
-    /* first get data for mustachios */
-    /* **** load json data **** */
-    /* char *json_str = mustachios_readfile(data_infile, &file_sz); */
-    /* log_debug("json file_sz: %d", file_sz); */
-    utstring_renew(jsondat);
-    utstring_printf(jsondat, "{\"name\": \"%s\"}", name);
-    cJSON *json_str = cjsonx_read_string(utstring_body(jsondat));
-    if (json_str == 0) {
-        LOG_ERROR(0, "cjson parse error: %s", utstring_body(jsondat));
-        /* cJSON_free(data); */
-    }
 
     /* next, transform filename */
     int flags = Mustach_With_AllExtensions;
@@ -352,19 +348,23 @@ void _handle_file(char *template)
             buffer[strlen(buffer) - 1] = '\0';
             utstring_renew(ofile);
             utstring_printf(ofile, "%s/%s/%s",
-                            ws_dir, name, strdup(buffer));
+                            ws_dir, default_name, strdup(buffer));
             LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
-
+            /* LOG_DEBUG(0, "template_str: %s", template_str); */
+            /* LOG_DEBUG(0, "END TEMPLATE_STR", ""); */
             /* **** render **** */
             errno = 0;
             const char *result = mustache_json_render(template_str, 0, json_str, flags);
             free(template_str);
+
 
             cwk_path_get_dirname(utstring_body(ofile), &length);
             char *dname = strndup(utstring_body(ofile), length);
             LOG_DEBUG(0, "The dirname is: '%s'", dname);
             mkdir_r(dname);
             free(dname);
+
+            /* LOG_DEBUG(0, "%s", result); */
 
             FILE *outstream = fopen(utstring_body(ofile), "w");
             if (outstream == NULL) {
@@ -377,20 +377,11 @@ void _handle_file(char *template)
             if (ct != buflen) {
                 log_error("failed fwrite");
             }
-
-            /* int rc = mustache_json_frender( */
-            /*                                            outstream, */
-            /*                                            tfile, */
-            /*                                            0, */
-            /*                                            json_str, */
-            /*                                            0); */
-            /* (void)rc; */
             fclose(outstream);
-            cJSON_free(json_str);
         } else {
             utstring_renew(ofile);
             utstring_printf(ofile, "%s/%s/%s",
-                            ws_dir, name, tfile);
+                            ws_dir, default_name, tfile);
             LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
             cwk_path_get_dirname(utstring_body(ofile), &length);
             char *dname = strndup(utstring_body(ofile), length);
@@ -402,7 +393,7 @@ void _handle_file(char *template)
     } else {
         utstring_renew(ofile);
         utstring_printf(ofile, "%s/%s/%s",
-                        ws_dir, name, tfile);
+                        ws_dir, default_name, tfile);
         LOG_DEBUG(0, "output file: %s", utstring_body(ofile));
         cwk_path_get_dirname(utstring_body(ofile), &length);
         char *dname = strndup(utstring_body(ofile), length);
@@ -482,6 +473,57 @@ char *_get_templates_root(void)
     return troot;
 }
 
+void _augment_data(void)
+{
+    const cJSON *nm = NULL;
+    nm = cJSON_GetObjectItemCaseSensitive(json_str, "name");
+    if (cJSON_IsString(nm)
+        && (nm->valuestring != NULL)) {
+        LOG_DEBUG(0, "name: '%s'", nm->valuestring);
+        default_name = strdup(nm->valuestring);
+    } else {
+        // default name == myproj
+        cJSON *_name = cJSON_CreateString(default_name);
+        if (_name == NULL) {
+            LOG_ERROR(0, "cJSON_CreateString fail: _name %s", _name);
+            exit(EXIT_FAILURE);
+        }
+        cJSON_AddItemToObject(json_str, "name", _name);
+    }
+    /* add capitalized name */
+    char *uc_name = strdup(default_name);
+    uc_name[0] = toupper(uc_name[0]);
+    cJSON *ucname = cJSON_CreateString(uc_name);
+    if (ucname == NULL) {
+        LOG_ERROR(0, "cJSON_CreateString fail: ucname %s", uc_name);
+        exit(EXIT_FAILURE);
+    }
+    cJSON_AddItemToObject(json_str, "_Name", ucname);
+
+    const char *homedir = getenv("HOME");
+    if (homedir == NULL) {
+        struct passwd *pw = getpwuid(getuid());
+        homedir = pw->pw_dir;
+    }
+    cJSON *home = cJSON_CreateString(homedir);
+    if (ucname == NULL) {
+        LOG_ERROR(0, "cJSON_CreateString fail: home %s", homedir);
+        exit(EXIT_FAILURE);
+    }
+    cJSON_AddItemToObject(json_str, "_HOME", home);
+
+    const char *xdghome = getenv("XDG_DATA_HOME");
+    if (xdghome == NULL) {
+        xdghome = homedir;
+    }
+    cJSON *xdg = cJSON_CreateString(xdghome);
+    if (ucname == NULL) {
+        LOG_ERROR(0, "cJSON_CreateString fail: xdg %s", xdghome);
+        exit(EXIT_FAILURE);
+    }
+    cJSON_AddItemToObject(json_str, "_XDG", xdg);
+}
+
 int main(int argc, char *argv[])
 {
     argc = gopt(argv, options);
@@ -532,7 +574,35 @@ int main(int argc, char *argv[])
     else if (options[OPT_TEMPLATE].count) {
         utstring_printf(fts_root, "/%s", options[OPT_TEMPLATE].argument);
         LOG_DEBUG(0, "FTS root: %s", utstring_body(fts_root));
+
+        /* first get data for mustachios */
+        UT_string *jsondat;
+        utstring_new(jsondat);
+        /* char *json_str = mustachios_readfile(data_infile, &file_sz); */
+        if (options[OPT_DATA].count) {
+            utstring_printf(jsondat, "%s",
+                            options[OPT_DATA].argument);
+            /* log_debug("json file_sz: %d", file_sz); */
+            /* utstring_printf(jsondat, "{\"name\": \"%s\"}", name); */
+            json_str = cjsonx_read_string(utstring_body(jsondat));
+            if (json_str == 0) {
+                LOG_ERROR(0, "cjson parse error: %s", utstring_body(jsondat));
+                exit(EXIT_FAILURE);
+            }
+        } else {
+            // no options[OPT_DATA].count
+            json_str = cJSON_CreateObject();
+            cJSON *_name = cJSON_CreateString(default_name);
+            if (_name == NULL) {
+                LOG_ERROR(0, "cJSON_CreateString fail: _name %s", _name);
+                exit(EXIT_FAILURE);
+            }
+            cJSON_AddItemToObject(json_str, "name", _name);
+        }
+        _augment_data();
         rf_fts(utstring_body(fts_root), _handle_file);
+        /* utstring_free(jsondat); */
+        /* cJSON_free(json_str); */
     }
 
     utstring_free(fts_root);

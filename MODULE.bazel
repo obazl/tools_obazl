@@ -12,7 +12,7 @@ bazel_dep(name = "rules_cc",       version = "0.0.17")
 ## obazl deps:
 bazel_dep(name = "rules_ocaml",     version = "5.0.0")
 bazel_dep(name = "templates_ocaml", version = "0.1.0")
-bazel_dep(name = "templates_dune",  version = "0.1.0")
+# bazel_dep(name = "templates_dune",  version = "0.1.0")
 
 bazel_dep(name = "obazl_config_cc", version = "3.0.0",
           repo_name = "obazl_cc")

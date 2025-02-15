@@ -1,5 +1,0 @@
-# common --override_module=<module>=/path/to/module
-
-common --override_module=dune_s7=/Users/gar/libs7/dune_s7
-common --override_module=libs7=/Users/gar/libs7/libs7
-common --override_module=findlibc=/Users/gar/obazl/findlibc

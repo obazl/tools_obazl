@@ -1,2 +1,0 @@
-bazel_dep(name = "<module>")
-local_path_override(module_name = "<module>", path = "..")

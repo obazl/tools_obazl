@@ -1,5 +1,0 @@
-filegroup(
-    name = "all",
-    data = ["obazlinfo"],
-    visibility = ["//visibility:public"]
-)
