@@ -30,7 +30,7 @@ output:
 
 ----
 Providers for //interop/ffi/case110:Main
-OcamlProvider:
+OCamlDepsProvider:
   afiles  depset([], order = "postorder")
   archives  depset([], order = "postorder")
   astructs  depset([], order = "postorder")
@@ -66,5 +66,5 @@ $ bazel cquery //interop/ffi/case110:Main --output=starlark --starlark:expr="[p 
 
 output:
 
-["@rules_ocaml//ocaml/_providers:ocaml.bzl%OcamlModuleMarker", "@rules_ocaml//ocaml/_providers:ocaml.bzl%OcamlProvider", "CcInfo", "FileProvider", "FilesToRunProvider", "OutputGroupInfo"]
+["@rules_ocaml//ocaml/_providers:ocaml.bzl%OCamlModuleProvider", "@rules_ocaml//ocaml/_providers:ocaml.bzl%OCamlDepsProvider", "CcInfo", "FileProvider", "FilesToRunProvider", "OutputGroupInfo"]
 
