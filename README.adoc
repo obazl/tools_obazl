@@ -14,16 +14,9 @@ Start by installing link:https://github.com/bazelbuild/bazelisk[bazelisk,window=
 
 ..bazelrc
 ----
-always --enable_bzlmod
 common --registry=https://raw.githubusercontent.com/obazl/registry/main/
 common --registry=https://bcr.bazel.build
 ----
-
-..bazelrc
-----
-latest
-----
-
 
 .MODULE.bazel
 ----
@@ -33,16 +26,13 @@ module(
     compatibility_level = 0,
     bazel_compatibility = [">=6.0.0"]
 )
-bazel_dep(name = "obazl", version = "x.y.x",   <1>
+bazel_dep(name = "tools_obazl", version = "x.y.x",   <1>
+               repo_name = "obazl"                  <2>
           dev_dependency = True)
 ----
 <1> See Releases page for latest version.
+<2> This makes the repo accessible as `@obazl` rather than `@tools_obazl`.
 
-.WORKSPACE.bazel
-----
-                    <1>
-----
-<1> Empty. A future version of Bazel will eliminate this.
 
 Now run the following commands:
 

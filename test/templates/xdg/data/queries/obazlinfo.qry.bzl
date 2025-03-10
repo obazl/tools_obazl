@@ -1,12 +1,12 @@
 # bazel cquery $1 --output=starlark --starlark:file="./queries/ocamlinfo.bzl"
 
-ocamlInfo = "@rules_ocaml//ocaml/_providers:ocaml.bzl%OcamlProvider"
+ocamlInfo = "@rules_ocaml//ocaml/_providers:ocaml.bzl%OCamlDepsProvider"
 
 moduleInfo = "@rules_ocaml//providers:moduleinfo.bzl%OCamlModuleInfo"
 
-resolverInfo = "@rules_ocaml//ocaml/_providers:ocaml.bzl%OcamlNsResolverProvider"
+resolverInfo = "@rules_ocaml//ocaml/_providers:ocaml.bzl%OCamlNsResolverProvider"
 
-ppxCodepsInfo = "@rules_ocaml//ppx:providers.bzl%PpxCodepsInfo"
+ppxCodepsInfo = "@rules_ocaml//build:providers.bzl%OCamlCodepsProvider"
 
 def dump_cc_library_to_link(idx, lib):
     print("dump_cc_library_to_link")

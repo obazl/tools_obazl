@@ -1,22 +1,22 @@
-load("@rules_ocaml//ocaml:providers.bzl",
+load("@rules_ocaml//build:providers.bzl",
      "OcamlArchiveMarker",
      "OcamlImportMarker",
      "OcamlLibraryMarker",
-     "OcamlModuleMarker",
-     "OcamlProvider",
-     "OcamlNsResolverProvider",
-     "OcamlSignatureProvider")
+     "OCamlModuleProvider",
+     "OCamlDepsProvider",
+     "OCamlNsResolverProvider",
+     "OCamlSignatureProvider")
 
-load("@rules_ocaml//ppx:providers.bzl",
-     "PpxCodepsProvider",
+load("@rules_ocaml//build:providers.bzl",
+     "OCamlCodepsProvider",
      "PpxExecutableMarker",
 )
 
-load("@rules_ocaml//ocaml/_rules:impl_ccdeps.bzl",
+load("@rules_ocaml//build/_lib:ccdeps.bzl",
      "dump_compilation_context",
      "ccinfo_to_string")
 
-load("@rules_ocaml//ocaml/_debug:colors.bzl",
+load("@rules_ocaml//lib:colors.bzl",
      "CCRED", "CCGRN", "CCBLU", "CCMAG", "CCCYN", "CCRESET")
 
 #####################################################
@@ -24,7 +24,7 @@ def _inspect_out_transition_impl(settings, attr):
     # print(">>> INSPECT_OUT_TRANSITION: %s" % attr.name)
     return {
         # "@rules_ocaml//ppx:stop": True,
-        "@rules_ocaml//ppx/print": "text"
+        "@rules_ppx//print:text": True
     }
 
 ################
@@ -33,7 +33,7 @@ inspect_out_transition = transition(
     inputs = [],
     outputs = [
         # "@rules_ocaml//ppx:stop",
-        "@rules_ocaml//ppx/print"
+        "@rules_ppx//print:text"
     ]
 )
 
@@ -90,18 +90,18 @@ def _write_providers_file(ctx, tgt, text):
             val = getattr(provider, d)
             text = text + "  " + str(val) + "\n"
 
-    if OcamlProvider in tgt:
-        provider = tgt[OcamlProvider]
-        text = text + CCCYN + "OcamlProvider:\n"
+    if OCamlDepsProvider in tgt:
+        provider = tgt[OCamlDepsProvider]
+        text = text + CCCYN + "OCamlDepsProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
             text = text + "  " + str(val) + "\n"
 
-    if PpxCodepsProvider in tgt:
-        provider = tgt[PpxCodepsProvider]
+    if OCamlCodepsProvider in tgt:
+        provider = tgt[OCamlCodepsProvider]
         text = text + "\n"
-        text = text + CCCYN + "PpxCodepsProvider:\n"
+        text = text + CCCYN + "OCamlCodepsProvider:\n"
         for d in dir(provider):
             text = text + "  " + CCRED + d + CCRESET
             val = getattr(provider, d)
@@ -127,7 +127,7 @@ def _write_providers_file(ctx, tgt, text):
 def _write_import_providers_file(ctx, tgt, text):
     # tc = ctx.toolchains["@rules_ocaml//toolchain/type:std"]
 
-    provider = tgt[OcamlProvider]
+    provider = tgt[OCamlDepsProvider]
     INDENT = "  "
     text = text + "structs:\n"
     for struct in provider.structs.to_list():
@@ -159,8 +159,8 @@ def _write_import_providers_file(ctx, tgt, text):
         text = text + INDENT + ccinfo_to_string(ctx, tgt[CcInfo]) + "\n"
 
     ################
-    if PpxCodepsProvider in tgt:
-        provider = tgt[PpxCodepsProvider]
+    if OCamlCodepsProvider in tgt:
+        provider = tgt[OCamlCodepsProvider]
         text = text + "PPX CODEPS\n"
         text = text + "ppx_codep structs:\n"
         for struct in provider.structs.to_list():
@@ -251,8 +251,8 @@ def _inspect_impl(ctx):
         elif ctx.label.name == "codeps":
             ## get provider, dump to file, show file
             tmp = ctx.attr.obj[0]
-            if PpxCodepsProvider in tmp:
-                provider = tmp[PpxCodepsProvider]
+            if OCamlCodepsProvider in tmp:
+                provider = tmp[OCamlCodepsProvider]
                 tmpfile = _write_codeps_file(ctx, provider, text)
                 tool = "echo '{f}:'; cat".format(f=tmpfile.path)
                 ppx = True
@@ -271,7 +271,7 @@ def _inspect_impl(ctx):
 
         elif ctx.label.name == "struct":
             tool = ctx.executable._tool.path
-            if OcamlModuleMarker in ctx.attr.obj[0]:
+            if OCamlModuleProvider in ctx.attr.obj[0]:
                 objs = ctx.attr.obj[0][DefaultInfo].files.to_list()
             else:
                 print("ctx.attr.obj: %s" % ctx.attr.obj[0][DefaultInfo])
@@ -280,11 +280,11 @@ def _inspect_impl(ctx):
         elif ctx.label.name == "src":
             if OcamlLibraryMarker in ctx.attr.obj:
                 fail("No srcfile in ocaml_library target: %s" % ctx.attr.obj)
-            elif OcamlNsResolverProvider in ctx.attr.obj:
-                objs = [ctx.attr.obj[OcamlNsResolverProvider].resolver_file]
+            elif OCamlNsResolverProvider in ctx.attr.obj:
+                objs = [ctx.attr.obj[OCamlNsResolverProvider].resolver_file]
             else:
-                if OcamlProvider in ctx.attr.obj:
-                    objs = [ctx.attr.obj[OcamlProvider].srcs.to_list()[0]]
+                if OCamlDepsProvider in ctx.attr.obj:
+                    objs = [ctx.attr.obj[OCamlDepsProvider].srcs.to_list()[0]]
                 else:
                     fail("No srcfile in inspect target: %s" % ctx.attr.obj)
             tool = "echo '{f}:'; cat".format(f=objs[0].path)
@@ -294,7 +294,7 @@ def _inspect_impl(ctx):
         objs = ctx.attr.obj[OutputGroupInfo].cmi.to_list()
     elif ctx.label.package == "struct":
         tool = ctx.executable._tool.path
-        if OcamlModuleMarker in ctx.attr.obj:
+        if OCamlModuleProvider in ctx.attr.obj:
             objs = ctx.attr.obj[DefaultInfo].files.to_list()
         else:
             fail("No struct for sig target")
@@ -345,9 +345,9 @@ inspect = rule(
                 [OcamlArchiveMarker],
                 [OcamlLibraryMarker],
                 [OcamlImportMarker],
-                [OcamlModuleMarker],
-                [OcamlNsResolverProvider],
-                [OcamlSignatureProvider],
+                [OCamlModuleProvider],
+                [OCamlNsResolverProvider],
+                [OCamlSignatureProvider],
                 [PpxExecutableMarker],
                 [CcInfo]
             ],
@@ -378,7 +378,7 @@ inspect = rule(
 ################################################################
 def _extract_impl(ctx):
     if ctx.label.package == "sig":
-        # if OcamlSignatureProvider in ctx.attr.obj:
+        # if OCamlSignatureProvider in ctx.attr.obj:
         #    print("extracting from ocaml_signature target")
         # else:
         #    print("extracting from ocaml_module target")
@@ -419,8 +419,8 @@ extract = rule(
             doc = "Label of ocaml_module target. Interface code will be inferred from module output (*.cmo or *.cmx)",
             mandatory = True,
             providers = [
-                [OcamlModuleMarker],
-                [OcamlSignatureProvider],
+                [OCamlModuleProvider],
+                [OCamlSignatureProvider],
             ]
         ),
         _tool = attr.label(

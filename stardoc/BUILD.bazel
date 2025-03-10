@@ -8,7 +8,7 @@ bzl_library( # for stardoc
     srcs = [
         "//tools:BUILD.bzl",
         #NB: the _providers:stardoc dep makes this accessible:
-        "@rules_ocaml//ocaml:providers.bzl",
+        "@rules_ocaml//build:providers.bzl",
     ],
     deps = [
         # _providers:stardoc is a bzl_library target:
