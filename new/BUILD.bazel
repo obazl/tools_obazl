@@ -61,7 +61,7 @@ cc_binary(
         "@gopt//lib:gopt",
         "@mustachios//adapter/json/cjson:mustache_json",
         "@mustachios//lib:mustachios",
-        "@obazl_cc//lib:spawn_cmd",
+        "@obazl_cc//lib/spawn:spawn_cmd",
         "@runfiles//lib:runfiles",
         "//src/utils",
     ],

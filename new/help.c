@@ -130,6 +130,7 @@ EXPORT void display_manpage(char *section, char *manpage)
     int result;
 
     char *runfiles_root = getcwd(NULL, 0);
+    (void)runfiles_root;
 
     LOG_DEBUG(0, "runfiles_root: %s", runfiles_root);
 
