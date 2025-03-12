@@ -1,6 +1,6 @@
 module(
     name                = "tools_obazl",
-    version             = "3.0.0",
+    version             = "3.0.0.dev",
     compatibility_level = 3,
     bazel_compatibility = [">=8.0.0"],
 )
@@ -11,61 +11,22 @@ bazel_dep(name = "bazel_skylib",   version = "1.7.1")
 bazel_dep(name = "rules_cc",       version = "0.1.1")
 
 ## obazl deps:
-bazel_dep(name = "rules_ocaml",     version = "3.0.0")
-git_override(module_name = "rules_ocaml",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/rules_ocaml.git")
-
-bazel_dep(name = "templates_ocaml", version = "1.0.0")
-git_override(module_name = "templates_ocaml",
-             branch  = "1.0.0.dev",
-             remote = "https://github.com/obazl/templates_ocaml.git")
-git_override(module_name = "opamc",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/opamc.git")
-# bazel_dep(name = "templates_dune",  version = "0.1.0")
-
-bazel_dep(name = "rules_ppx",     version = "3.0.0")
-git_override(module_name = "rules_ppx",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/rules_ppx.git")
-
-bazel_dep(name = "obazl_tools_cc",  version = "3.0.0",
+bazel_dep(name = "obazl_tools_cc",  version = "3.0.0.dev",
           repo_name = "obazl_cc")
-git_override(module_name = "obazl_tools_cc",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/obazl_tools_cc.git"
-             )
-
-bazel_dep(name = "findlibc",       version = "3.0.0")
-local_path_override(module_name = "findlibc",
-                    path="/Users/gar/obazlc/findlibc")
+bazel_dep(name = "rules_ocaml",     version = "3.0.0.dev")
+bazel_dep(name = "templates_ocaml", version = "1.0.0.dev")
+bazel_dep(name = "rules_ppx",       version = "3.0.0.dev")
+bazel_dep(name = "findlibc",        version = "3.0.0.dev")
 # bazel_dep(name = "mibl",           version = "3.0.0")
 
-bazel_dep(name = "opamc",          version = "3.0.0")
-bazel_dep(name = "runfiles",       version = "3.0.0")
-local_path_override(module_name="runfiles",
-                    path="/Users/gar/obazlc/runfiles")
-bazel_dep(name = "xdgc",           version = "3.0.0")
-git_override(module_name = "xdgc",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/xdgc.git"
-             )
+bazel_dep(name = "opamc",          version = "3.0.0.dev")
+bazel_dep(name = "runfiles",       version = "3.0.0.dev")
+bazel_dep(name = "xdgc",           version = "3.0.0.dev")
 
 ## 3rd party
 # bazel_dep(name = "cjson",          version = "1.7.18")
 bazel_dep(name = "cwalk",          version = "1.2.9")
-bazel_dep(name = "mustachios",     version = "3.0.0")
-git_override(module_name = "mustachios",
-             branch  = "bazel",
-             remote = "git@gitlab.com:obazl/mustachios.git")
-# mustachios dep:
-bazel_dep(name = "tomlc",          version = "3.0.0")
-git_override(module_name = "tomlc",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/obazl/tomlc.git")
-
-
+bazel_dep(name = "mustachios",     version = "3.0.0.dev")
 bazel_dep(name = "semverc",        version = "3.0.0")
 bazel_dep(name = "gopt",           version = "10.0.0")
 bazel_dep(name = "inih",           version = "57.0.0")
@@ -74,18 +35,10 @@ bazel_dep(name = "liblogc",        version = "3.0.0")
 bazel_dep(name = "makeheaders",    version = "3.0.0")
 bazel_dep(name = "re2c",           version = "3.1.0")
 bazel_dep(name = "fswatch",        version = "1.17.1")
-
-bazel_dep(name = "libs7",          version = "3.0.0")
-git_override(module_name = "libs7",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/libs7/libs7.git")
-
-bazel_dep(name = "dune_s7",        version = "3.0.0")
-git_override(module_name = "dune_s7",
-             branch  = "3.0.0.dev",
-             remote = "https://github.com/libs7/dune_s7.git")
-
 bazel_dep(name = "uthash",         version = "2.3.0.bzl")
+
+bazel_dep(name = "libs7",          version = "3.0.0.dev")
+bazel_dep(name = "dune_s7",        version = "3.0.0.dev")
 
 bazel_dep(name = "unity",          version = "2.6.1.bzl",
           dev_dependency = True)
