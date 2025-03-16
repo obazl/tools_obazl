@@ -45,14 +45,16 @@ char *build_wd;                /* BUILD_WORKING_DIRECTORY */
 
 /* json data from cmd line */
 char *default_name = "myproj";
+char *default_path = ".";
 char *json_data;
 cJSON *json_str;
 
 enum OPTS {
     OPT_TEMPLATE = 0,
-    OPT_DATA,
+    OPT_DATA,                   /* json string? */
     OPT_JSON,
     OPT_NAME,
+    OPT_PATH,
     FLAG_LIST,
 
     FLAG_DEBUG,
@@ -70,10 +72,12 @@ static struct option options[] = {
                  .flags=GOPT_ARGUMENT_REQUIRED},
     [OPT_DATA] = {.long_name="data",
                  .flags=GOPT_ARGUMENT_REQUIRED},
-    [OPT_JSON] = {.long_name="json",
+    [OPT_JSON] = {.long_name="json", .short_name='j',
                  .flags=GOPT_ARGUMENT_REQUIRED},
-    [OPT_NAME] = {.long_name="name",
-                 .flags=GOPT_ARGUMENT_REQUIRED},
+    [OPT_NAME] = {.long_name="name", .short_name='n',
+                  .flags=GOPT_ARGUMENT_REQUIRED},
+    [OPT_PATH] = {.long_name="path", .short_name='p',
+                  .flags=GOPT_ARGUMENT_REQUIRED},
     [FLAG_LIST] = {.long_name="list",.short_name='l',
                     .flags=GOPT_ARGUMENT_FORBIDDEN},
     [FLAG_DEBUG] = {.long_name="debug",.short_name='d',
@@ -92,21 +96,25 @@ static struct option options[] = {
 };
 
 void _print_usage(void) {
-    printf("Usage:\t$ bazel run @obazl//new [tlib] [args]\n\n");
-    printf("tlib: label of template library. Default: @templates_ocaml\n\n");
+    printf("Usage:\t$ bazel run @obazl//new [--@obazl//tlib:@<tlib>] -- [opts]\n\n");
+    printf("@<tlib>: label of template library repo. Default: @templates_ocaml\n\n");
 
-    printf("Args:\n");
+    printf("Options:\n");
     printf("\t-l, --list\t\tList templates available in template library.\n");
 
     printf("\t-t, --template <name>\tName of template to use. Default: default\n");
 
-    printf("\t-t, --name <name>\tName to use for pkg etc. Default: 'myproj'\n");
+    printf("\t-n, --name <name>\tName to use for pkg etc. Default: 'myproj'\n");
 
     printf("\t-d, --debug\t\tEnable debug flags. Repeatable.\n");
     printf("\t-t, --trace\t\tEnable all trace flags (debug only).\n");
     printf("\t-q, --quiet\t\tSuppress all stdout msgs.\n");
     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n");
-    printf("\t    --version\t\tPrint version identifier.\n");
+    printf("\t    --version\t\tPrint version identifier.\n\n");
+
+    printf("Examples:\n");
+    printf("\t$ bazel run @obazl//new --@obazl//tlib:@templates_dune -- --list\n\n");
+
 }
 
 void _set_options(struct option options[])
@@ -134,6 +142,9 @@ void _set_options(struct option options[])
     if (options[OPT_NAME].count) {
         default_name = strdup(options[OPT_NAME].argument);
     }
+    if (options[OPT_PATH].count) {
+        default_path = strdup(options[OPT_PATH].argument);
+    }
 }
 
 bool prefix_matches(const char *pfx, const char *str)
@@ -142,27 +153,27 @@ bool prefix_matches(const char *pfx, const char *str)
 }
 
 /* we expect this to always be run by bazel, as an external tool */
-char *_templates[] = {
-    /* dest: BUILD_WORKSPACE_DIRECTORY */
-    "new/repo/templates/.bazelignore",
-    "new/repo/templates/.bazeliskrc",
-    "new/repo/templates/.bazelrc",
-    "new/repo/templates/.bazelversion",
-    "new/repo/templates/.config/.gitignore",
-    "new/repo/templates/.config/miblrc",
-    "new/repo/templates/.config/user.bazelrc",
-    "new/repo/templates/WORKSPACE.bazel",
-    "new/repo/templates/WORKSPACE.bzl",
-    "new/repo/templates/WORKSPACE.opam.bzl",
+/* char *_templates[] = { */
+/*     /\* dest: BUILD_WORKSPACE_DIRECTORY *\/ */
+/*     "new/repo/templates/.bazelignore", */
+/*     "new/repo/templates/.bazeliskrc", */
+/*     "new/repo/templates/.bazelrc", */
+/*     "new/repo/templates/.bazelversion", */
+/*     "new/repo/templates/.config/.gitignore", */
+/*     "new/repo/templates/.config/miblrc", */
+/*     "new/repo/templates/.config/user.bazelrc", */
+/*     "new/repo/templates/WORKSPACE.bazel", */
+/*     "new/repo/templates/WORKSPACE.bzl", */
+/*     "new/repo/templates/WORKSPACE.opam.bzl", */
 
-    /* dest: XDG_DATA_HOME/obazl */
-    /* "new/repo/templates/xdg/data/queries/obazlinfo.qry.bzl", */
+/*     /\* dest: XDG_DATA_HOME/obazl *\/ */
+/*     /\* "new/repo/templates/xdg/data/queries/obazlinfo.qry.bzl", *\/ */
 
-    /* dest: XDG_BIN_HOME ($HOME/.local/bin) */
-    /* "new/repo/templates/xdg/bin/obazlinfo", */
+/*     /\* dest: XDG_BIN_HOME ($HOME/.local/bin) *\/ */
+/*     /\* "new/repo/templates/xdg/bin/obazlinfo", *\/ */
 
-    "" /* <<== do not remove terminating null string */
-};
+/*     "" /\* <<== do not remove terminating null string *\/ */
+/* }; */
 char **template;
 int pfx_len = 29; // strlen("external/obazl/new/templates") + 1
 
@@ -409,7 +420,7 @@ void _handle_file(char *template)
 /*
   Repo mapping: user may have passed e.g.
       --@obazl//template=@templates_foo//proj/tplg
-  But we now way of knowing that. What we do know is
+  But we have no way of knowing that. What we do know is
   that the default template is templates_ocaml/project/mwe,
   so the repo mapping contains just:
       templates_ocaml+,templates_ocaml,templates_ocaml+
@@ -526,10 +537,11 @@ void _augment_data(void)
 
 int main(int argc, char *argv[])
 {
+    int argc_raw = argc;
     argc = gopt(argv, options);
     (void)argc;
 
-    gopt_errors (argv[0], options);
+    gopt_errors(argv[0], options);
 
     _set_options(options);
 
@@ -544,6 +556,8 @@ int main(int argc, char *argv[])
 
     ws_dir = getenv("BUILD_WORKSPACE_DIRECTORY");
     LOG_DEBUG(0, "ws dir: %s", ws_dir);
+    /* FIXME: outdir set by --path */
+
     build_wd = getenv("BUILD_WORKING_DIRECTORY");
     utstring_new(abs_dest);
     utstring_new(abs_dir);
@@ -560,6 +574,11 @@ int main(int argc, char *argv[])
     UT_string *fts_root;
     utstring_new(fts_root);
     utstring_printf(fts_root, "%s/%s", rfroot, templates_root);
+
+    if (argc_raw < 2) {
+        _list_templates(fts_root, templates_root);
+        exit(EXIT_SUCCESS);
+    }
 
     utstring_new(ofile);
 

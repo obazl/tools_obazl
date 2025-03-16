@@ -53,7 +53,7 @@ cc_binary(
         # "-lc_s7"
     ],
     data  = [
-        "//templates",
+        "//tlib",
         "//man/man1:new_workspace.1",
     ],
     deps = [
@@ -61,7 +61,7 @@ cc_binary(
         "@gopt//lib:gopt",
         "@mustachios//adapter/json/cjson:mustache_json",
         "@mustachios//lib:mustachios",
-        "@obazl_cc//lib/spawn:spawn_cmd",
+        "@obazl_cc//lib/spawn",
         "@runfiles//lib:runfiles",
         "//src/utils",
     ],
