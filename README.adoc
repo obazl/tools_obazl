@@ -2,7 +2,7 @@
 :toc: auto
 :toclevels: 3
 
-WARNING: Currently under heavy development.
+WARNING: Documentation is woefully outdated. I’m working on it.
 
 A collection of Bazel tools, mainly for OCaml development using OBazl link:https://github.com/obazl/rules_ocaml[rules_ocaml,window=_blank].
 
