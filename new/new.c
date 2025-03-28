@@ -96,8 +96,8 @@ static struct option options[] = {
 };
 
 void _print_usage(void) {
-    printf("Usage:\t$ bazel run @obazl//new [--@obazl//tlib:@<tlib>] -- [opts]\n\n");
-    printf("@<tlib>: label of template library repo. Default: @templates_ocaml\n\n");
+    printf("\nUsage:\t$ bazel run @obazl//new [--@obazl//tlib=@<tlib>] -- [opts]\n\n");
+    printf("@<tlib>: label of template library repo. Must be listed as a 'bazel_dep' in MODULE.bazel. Default: @templates_ocaml\n\n");
 
     printf("Options:\n");
     printf("\t-l, --list\t\tList templates available in template library.\n");
@@ -113,8 +113,11 @@ void _print_usage(void) {
     printf("\t    --version\t\tPrint version identifier.\n\n");
 
     printf("Examples:\n");
-    printf("\t$ bazel run @obazl//new --@obazl//tlib:@templates_dune -- --list\n\n");
-
+    printf("\t$ bazel run @obazl//new -- --list\n");
+    printf("\t$ bazel run @obazl//new -- -t proj/hello -n howdy\n");
+    printf("\n");
+    printf("With 'bazel_dep(name=\"templates_dune\", version=\"0.1.0.dev\")' in MODULE.bazel:\n");
+    printf("\t$ bazel run @obazl//new --@obazl//tlib=@templates_dune -- --list\n\n");
 }
 
 void _set_options(struct option options[])

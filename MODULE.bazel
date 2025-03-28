@@ -11,22 +11,34 @@ bazel_dep(name = "bazel_skylib",   version = "1.7.1")
 bazel_dep(name = "rules_cc",       version = "0.1.1")
 
 ## obazl deps:
-bazel_dep(name = "obazl_tools_cc",  version = "3.0.0.dev",
+bazel_dep(name = "obazl_tools_cc",  version = "3.0.0",
           repo_name = "obazl_cc")
 bazel_dep(name = "rules_ocaml",     version = "3.0.0.dev")
 bazel_dep(name = "templates_ocaml", version = "1.0.0.dev")
 bazel_dep(name = "rules_ppx",       version = "3.0.0.dev")
-bazel_dep(name = "findlibc",        version = "3.0.0.dev")
+
+bazel_dep(name = "tools_opam",      version = "1.0.0.dev")
+opam = use_extension("@tools_opam//extensions:opam.bzl", "opam")
+opam.deps(
+    pkgs = {
+        "stublibs": "",
+        "utop": "2.15.0-1",
+    },
+)
+use_repo(opam, "opam", "opam.ocamlsdk",
+         "opam.stublibs", "opam.utop")
+
+bazel_dep(name = "findlibc",        version = "3.0.0")
 # bazel_dep(name = "mibl",           version = "3.0.0")
 
-bazel_dep(name = "opamc",          version = "3.0.0.dev")
-bazel_dep(name = "runfiles",       version = "3.0.0.dev")
-bazel_dep(name = "xdgc",           version = "3.0.0.dev")
+bazel_dep(name = "opamc",          version = "3.0.0")
+bazel_dep(name = "runfiles",       version = "3.0.0")
+bazel_dep(name = "xdgc",           version = "3.0.0")
 
 ## 3rd party
 # bazel_dep(name = "cjson",          version = "1.7.18")
 bazel_dep(name = "cwalk",          version = "1.2.9")
-bazel_dep(name = "mustachios",     version = "3.0.0.dev")
+bazel_dep(name = "mustachios",     version = "3.0.0")
 bazel_dep(name = "semverc",        version = "3.0.0")
 bazel_dep(name = "gopt",           version = "10.0.0")
 bazel_dep(name = "inih",           version = "57.0.0")
@@ -37,8 +49,8 @@ bazel_dep(name = "re2c",           version = "3.1.0")
 bazel_dep(name = "fswatch",        version = "1.17.1")
 bazel_dep(name = "uthash",         version = "2.3.0.bzl")
 
-bazel_dep(name = "libs7",          version = "3.0.0.dev")
-bazel_dep(name = "dune_s7",        version = "3.0.0.dev")
+bazel_dep(name = "libs7",          version = "3.0.0")
+bazel_dep(name = "dune_s7",        version = "3.0.0")
 
 bazel_dep(name = "unity",          version = "2.6.1.bzl",
           dev_dependency = True)
