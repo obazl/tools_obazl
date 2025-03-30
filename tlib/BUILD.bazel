@@ -1,0 +1,4 @@
+label_flag(name = "tlib",
+           build_setting_default = "@templates_ocaml",
+           visibility = ["//visibility:public"])
+
