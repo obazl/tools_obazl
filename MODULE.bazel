@@ -24,8 +24,7 @@ opam.deps(
         "stublibs": "",
     },
 )
-use_repo(opam, "opam", "opam.ocamlsdk",
-         "opam.stublibs")
+use_repo(opam, "opam.ocamlsdk", "opam.stublibs")
 
 bazel_dep(name = "findlibc",        version = "3.0.0")
 # bazel_dep(name = "mibl",           version = "3.0.0")
