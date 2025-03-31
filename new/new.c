@@ -204,6 +204,11 @@ UT_string *seg0;
 UT_string *seg1;
 
 
+static int cat_cmp(struct categories *a, struct categories *b)
+{
+    return strcmp(a->name, b->name);
+}
+
 static int subcat_cmp(struct subcat_s *a, struct subcat_s *b)
 {
     return strcmp(a->name, b->name);
@@ -260,7 +265,10 @@ void _template_lister(char *template)
         LL_PREPEND(tmp->subcat, subcat_p);
         HASH_ADD_STR(cats, name, tmp);
     }
-
+    HASH_SORT(cats, cat_cmp);
+    for (tmp = cats; tmp != NULL; tmp = tmp->hh.next) {
+        LL_SORT(tmp->subcat, subcat_cmp);
+    }
     TRACE_EXIT;
     return;
 }
